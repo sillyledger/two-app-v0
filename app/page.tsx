@@ -16,15 +16,25 @@ export default function NotesPage() {
   const [editingNote, setEditingNote] = useState<Note | null>(null)
   const router = useRouter()
 
-useEffect(() => {
-  fetch('/api/auth/me').then((res) => {
-    if (!res.ok) router.push('/login')
-  })
-}, [])
+  useEffect(() => {
+    fetch('/api/auth/me').then((res) => {
+      if (!res.ok) router.push('/login')
+    })
+  }, [])
 
-  const handleNewNote = () => {
-    setEditingNote(null)
-    setIsModalOpen(true)
+  const handleNewNote = async () => {
+    try {
+      const res = await fetch('/api/notes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: 'Untitled', content: '', color: 'yellow' }),
+      })
+      const note = await res.json()
+      mutate()
+      router.push(`/notes/${note.id}`)
+    } catch (error) {
+      console.error('Failed to create note:', error)
+    }
   }
 
   const handleEditNote = (note: Note) => {
@@ -74,17 +84,12 @@ useEffect(() => {
   return (
     <div className="flex min-h-screen bg-background">
       <Sidebar onNewNote={handleNewNote} />
-
       <main className="flex-1 p-8 lg:p-12">
         <h1 className="mb-8 text-4xl font-bold text-foreground">Notes</h1>
-
         {!notes ? (
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
             {[...Array(6)].map((_, i) => (
-              <div
-                key={i}
-                className="h-64 animate-pulse rounded-2xl bg-muted"
-              />
+              <div key={i} className="h-64 animate-pulse rounded-2xl bg-muted" />
             ))}
           </div>
         ) : notes.length === 0 ? (
@@ -112,7 +117,6 @@ useEffect(() => {
           </div>
         )}
       </main>
-
       <NoteModal
         note={editingNote}
         isOpen={isModalOpen}
