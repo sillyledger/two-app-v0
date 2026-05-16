@@ -25,7 +25,7 @@ export function Editor({ content, onChange }: EditorProps) {
   const [menuOpen, setMenuOpen] = useState(false)
   const [menuPos, setMenuPos] = useState({ top: 0, left: 0 })
   const slashFromRef = useRef<number>(0)
-  const menuRef = useRef<HTMLDivElement>(null)
+  const editorRef = useRef<ReturnType<typeof useEditor>>(null)
 
   const editor = useEditor({
     extensions: [
@@ -42,20 +42,12 @@ export function Editor({ content, onChange }: EditorProps) {
     },
     onUpdate({ editor }) {
       onChange(editor.getHTML())
-
       const { from } = editor.state.selection
-      const textBefore = editor.state.doc.textBetween(
-        Math.max(0, from - 1),
-        from
-      )
-
+      const textBefore = editor.state.doc.textBetween(Math.max(0, from - 1), from)
       if (textBefore === '/') {
         slashFromRef.current = from
         const coords = editor.view.coordsAtPos(from)
-        setMenuPos({
-          top: coords.bottom + 8,
-          left: coords.left,
-        })
+        setMenuPos({ top: coords.bottom + 8, left: coords.left })
         setMenuOpen(true)
       } else if (menuOpen) {
         setMenuOpen(false)
@@ -63,56 +55,55 @@ export function Editor({ content, onChange }: EditorProps) {
     },
   })
 
+  // Keep a ref to editor so we can use it in runCommand without closure issues
+  useEffect(() => {
+    editorRef.current = editor
+  }, [editor])
+
   useEffect(() => {
     if (!editor || !content) return
     editor.commands.setContent(content)
   }, [])
 
-  useEffect(() => {
-    function handleKeyDown(e: KeyboardEvent) {
-      if (e.key === 'Escape') setMenuOpen(false)
-    }
-    document.addEventListener('keydown', handleKeyDown)
-    return () => document.removeEventListener('keydown', handleKeyDown)
-  }, [])
-
   const runCommand = (cmd: string) => {
-    if (!editor) return
+    const ed = editorRef.current
+    if (!ed) return
 
-    const from = slashFromRef.current
     setMenuOpen(false)
 
-    editor.chain()
-      .focus()
-      .deleteRange({ from: from - 1, to: from })
-      .run()
+    const from = slashFromRef.current
 
-    requestAnimationFrame(() => {
+    // Re-focus the editor first, then run everything in one chain
+    ed.view.focus()
+
+    // Use a transaction to delete slash and apply formatting atomically
+    const { state, dispatch } = ed.view
+    const tr = state.tr.delete(from - 1, from)
+    dispatch(tr)
+
+    // Now apply the block type
+    setTimeout(() => {
+      const e = editorRef.current
+      if (!e) return
       switch (cmd) {
-        case 'h1': editor.chain().focus().setHeading({ level: 1 }).run(); break
-        case 'h2': editor.chain().focus().setHeading({ level: 2 }).run(); break
-        case 'h3': editor.chain().focus().setHeading({ level: 3 }).run(); break
-        case 'bullet': editor.chain().focus().toggleBulletList().run(); break
-        case 'ordered': editor.chain().focus().toggleOrderedList().run(); break
-        case 'quote': editor.chain().focus().toggleBlockquote().run(); break
-        case 'code': editor.chain().focus().toggleCodeBlock().run(); break
+        case 'h1': e.commands.setHeading({ level: 1 }); break
+        case 'h2': e.commands.setHeading({ level: 2 }); break
+        case 'h3': e.commands.setHeading({ level: 3 }); break
+        case 'bullet': e.commands.toggleBulletList(); break
+        case 'ordered': e.commands.toggleOrderedList(); break
+        case 'quote': e.commands.toggleBlockquote(); break
+        case 'code': e.commands.toggleCodeBlock(); break
       }
-    })
+      onChange(e.getHTML())
+    }, 50)
   }
 
   return (
     <div className="relative">
       <EditorContent editor={editor} />
-
       {menuOpen && typeof window !== 'undefined' && createPortal(
         <div
-          ref={menuRef}
-          style={{
-            position: 'fixed',
-            top: menuPos.top,
-            left: menuPos.left,
-            zIndex: 9999,
-          }}
+          style={{ position: 'fixed', top: menuPos.top, left: menuPos.left, zIndex: 9999 }}
           className="w-64 rounded-xl border border-input bg-background shadow-xl overflow-hidden"
         >
           {menuItems.map((item) => (
@@ -120,7 +111,6 @@ export function Editor({ content, onChange }: EditorProps) {
               key={item.cmd}
               onPointerDown={(e) => {
                 e.preventDefault()
-                e.stopPropagation()
                 runCommand(item.cmd)
               }}
               className="w-full flex flex-col px-4 py-2 text-left hover:bg-muted transition-colors border-b border-input last:border-0"
