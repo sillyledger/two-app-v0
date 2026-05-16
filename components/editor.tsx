@@ -25,7 +25,7 @@ export function Editor({ content, onChange }: EditorProps) {
         placeholder: 'Start writing...',
       }),
       Link.configure({
-        openOnClick: true,
+        openOnClick: false,
         HTMLAttributes: {
           class: 'text-blue-500 underline cursor-pointer',
         },
@@ -35,6 +35,15 @@ export function Editor({ content, onChange }: EditorProps) {
     editorProps: {
       attributes: {
         class: 'outline-none min-h-[60vh] text-base leading-snug',
+      },
+      handleClick(view, pos, event) {
+        const target = event.target as HTMLElement
+        const link = target.closest('a') as HTMLAnchorElement | null
+        if (link && (event.metaKey || event.ctrlKey)) {
+          window.open(link.href, '_blank')
+          return true
+        }
+        return false
       },
     },
     onUpdate({ editor }) {
@@ -47,7 +56,6 @@ export function Editor({ content, onChange }: EditorProps) {
     editor.commands.setContent(content)
   }, [])
 
-  // Cmd+K shortcut
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
@@ -77,16 +85,15 @@ export function Editor({ content, onChange }: EditorProps) {
 
   if (!editor) return null
 
-  // Get current link href
   const currentHref = editor.getAttributes('link').href
 
   return (
     <div>
-      {/* Bubble menu — shows when cursor is on a link */}
+      {/* Bubble menu — shows when cursor is inside a link */}
       <BubbleMenu
         editor={editor}
         shouldShow={({ editor }) => editor.isActive('link')}
-        tippyOptions={{ duration: 100 }}
+        tippyOptions={{ duration: 100, placement: 'bottom' }}
       >
         <div className="flex items-center gap-2 bg-background border border-input rounded-lg shadow-lg px-3 py-2">
           
@@ -99,14 +106,20 @@ export function Editor({ content, onChange }: EditorProps) {
           </a>
           <span className="text-muted-foreground text-xs">·</span>
           <button
-            onMouseDown={(e) => {
-              e.preventDefault()
-              handleRemoveLink()
-            }}
+            onMouseDown={(e) => { e.preventDefault(); handleRemoveLink() }}
             className="text-xs text-red-500 hover:text-red-700 transition-colors"
           >
             Remove
           </button>
+          <span className="text-muted-foreground text-xs">·</span>
+          
+            href={currentHref}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+          >
+            Open ↗
+          </a>
         </div>
       </BubbleMenu>
 
