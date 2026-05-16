@@ -1,9 +1,8 @@
 'use client'
-
 import { useEffect, useState, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { Sidebar } from '@/components/sidebar'
-import { Editor } from '@/components/editor'
+import Sidebar from '@/components/sidebar'
+import Editor from '@/components/editor'
 import type { Note } from '@/lib/db'
 
 export default function NotePage() {
@@ -64,7 +63,6 @@ export default function NotePage() {
       <Sidebar onNewNote={handleNewNote} />
       <main className="flex-1 flex justify-center py-16 px-6">
         <div className="w-full max-w-2xl">
-
           {/* Save status */}
           <div className="mb-4 flex justify-end h-5">
             <span className="text-sm text-muted-foreground">
@@ -72,7 +70,6 @@ export default function NotePage() {
               {saveStatus === 'saved' && 'Saved'}
             </span>
           </div>
-
           {/* Title */}
           <input
             type="text"
@@ -81,7 +78,6 @@ export default function NotePage() {
             placeholder="Untitled"
             className="mb-6 w-full bg-transparent text-4xl font-bold text-foreground placeholder:text-muted-foreground focus:outline-none"
           />
-
           {/* Rich text editor */}
           {note !== null && (
             <Editor
@@ -89,7 +85,6 @@ export default function NotePage() {
               onChange={(newContent) => setContent(newContent)}
             />
           )}
-
         </div>
       </main>
     </div>
