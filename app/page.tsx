@@ -1,123 +1,120 @@
-'use client'
+"use client"
 
-import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
-import useSWR from 'swr'
-import { Sidebar } from '@/components/sidebar'
-import type { Note } from '@/lib/db'
+import { useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
+import { Plus } from "lucide-react"
+import Sidebar from "@/components/sidebar"
 
-const fetcher = (url: string) => fetch(url).then((res) => res.json())
+interface Note {
+  id: string
+  title: string
+  content: string
+  updatedAt: string
+}
 
-export default function NotesPage() {
-  const { data: notes, mutate } = useSWR<Note[]>('/api/notes', fetcher)
-  const [search, setSearch] = useState('')
-  const [suggestions, setSuggestions] = useState<Note[]>([])
+// Pastel card colors cycling through notes (matching Figma)
+const CARD_COLORS = [
+  "#FFF0C2", // warm yellow
+  "#FFD6D6", // soft pink/red
+  "#D6F0D6", // soft green
+  "#E0D6FF", // soft purple
+  "#FFFBD6", // pale yellow-green
+  "#D6EFFF", // soft blue
+]
+
+function formatDate(dateStr: string) {
+  const date = new Date(dateStr)
+  return date.toLocaleDateString("en-US", {
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  })
+}
+
+export default function HomePage() {
   const router = useRouter()
+  const [notes, setNotes] = useState<Note[]>([])
+  const [loading, setLoading] = useState(true)
+  const [creating, setCreating] = useState(false)
 
   useEffect(() => {
-    fetch('/api/auth/me').then((res) => {
-      if (!res.ok) {
-        router.push('/login')
-      }
-    })
+    fetch("/api/notes")
+      .then((r) => r.json())
+      .then((data) => {
+        setNotes(Array.isArray(data) ? data.slice(0, 6) : [])
+        setLoading(false)
+      })
+      .catch(() => setLoading(false))
   }, [])
 
-  const handleNewNote = async () => {
+  const handleCreateNote = async () => {
+    if (creating) return
+    setCreating(true)
     try {
-      const res = await fetch('/api/notes', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: 'Untitled', content: '', color: 'yellow' }),
+      const res = await fetch("/api/notes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: "Untitled", content: "" }),
       })
       const note = await res.json()
-      mutate()
       router.push(`/notes/${note.id}`)
-    } catch (error) {
-      console.error('Failed to create note:', error)
+    } catch {
+      setCreating(false)
     }
   }
-
-  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value
-    setSearch(value)
-    if (!value.trim() || !notes) {
-      setSuggestions([])
-      return
-    }
-    const filtered = notes.filter((note) =>
-      note.title.toLowerCase().includes(value.toLowerCase()) ||
-      (note.content || '').toLowerCase().includes(value.toLowerCase())
-    )
-    setSuggestions(filtered.slice(0, 5))
-  }
-
-  const recentNotes = notes ? notes.slice(0, 4) : []
 
   return (
-    <div className="flex min-h-screen bg-background">
-      <Sidebar onNewNote={handleNewNote} />
+    <div className="flex h-screen bg-[#f5f5f5] overflow-hidden">
+      <Sidebar />
 
-      <main className="flex-1 flex flex-col items-center justify-center px-8 py-16">
-        <div className="w-full max-w-3xl">
-
-          {/* Search bar */}
-          <div className="relative mb-10">
-            <input
-              type="text"
-              value={search}
-              onChange={handleSearchChange}
-              placeholder="Search your notes..."
-              className="w-full rounded-2xl border border-input bg-background px-6 py-4 text-base shadow-sm focus:outline-none focus:ring-2 focus:ring-ring"
-            />
-            {suggestions.length > 0 && (
-              <div className="absolute top-full left-0 right-0 mt-2 rounded-2xl border border-input bg-background shadow-lg z-50 overflow-hidden">
-                {suggestions.map((note) => (
-                  <button
-                    key={note.id}
-                    onClick={() => router.push(`/notes/${note.id}`)}
-                    className="w-full px-6 py-3 text-left text-sm hover:bg-muted transition-colors border-b border-input last:border-0"
-                  >
-                    <span className="font-medium text-foreground">{note.title}</span>
-                    {note.content && (
-                      <span className="ml-2 text-muted-foreground line-clamp-1">
-                        — {note.content.slice(0, 60)}
-                      </span>
-                    )}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Recent notes grid */}
-          {!notes ? (
-            <div className="grid grid-cols-2 gap-4">
-              {[...Array(4)].map((_, i) => (
-                <div key={i} className="h-32 animate-pulse rounded-2xl bg-muted" />
-              ))}
-            </div>
-          ) : recentNotes.length > 0 ? (
-            <div className="grid grid-cols-2 gap-4">
-              {recentNotes.map((note) => (
-                <button
-                  key={note.id}
-                  onClick={() => router.push(`/notes/${note.id}`)}
-                  className="bg-muted rounded-2xl p-5 text-left transition-transform hover:scale-[1.02]"
-                >
-                  <p className="font-semibold text-foreground text-base mb-2 line-clamp-2">
-                    {note.title}
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    {new Date(note.updated_at).toLocaleDateString('en-US', {
-                      month: 'long', day: 'numeric', year: 'numeric'
-                    })}
-                  </p>
-                </button>
-              ))}
-            </div>
-          ) : null}
-
+      <main className="flex-1 overflow-y-auto px-10 py-8">
+        {/* Header */}
+        <div className="flex items-center gap-3 mb-8">
+          <button
+            onClick={handleCreateNote}
+            disabled={creating}
+            className="w-9 h-9 rounded-full bg-black text-white flex items-center justify-center hover:bg-gray-800 transition-colors shrink-0"
+            title="New Note"
+          >
+            <Plus size={20} />
+          </button>
+          <h1 className="text-2xl font-bold text-gray-900">Personal</h1>
         </div>
+
+        {/* Notes Grid */}
+        {loading ? (
+          <div className="grid grid-cols-3 gap-4">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div
+                key={i}
+                className="h-44 rounded-2xl bg-gray-200 animate-pulse"
+              />
+            ))}
+          </div>
+        ) : notes.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-64 text-gray-400">
+            <p className="text-lg font-medium mb-2">No notes yet</p>
+            <p className="text-sm">Click the + button to create your first note</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-3 gap-4">
+            {notes.map((note, i) => (
+              <button
+                key={note.id}
+                onClick={() => router.push(`/notes/${note.id}`)}
+                className="text-left p-5 rounded-2xl transition-transform hover:scale-[1.02] active:scale-[0.98] flex flex-col justify-between min-h-[172px]"
+                style={{ backgroundColor: CARD_COLORS[i % CARD_COLORS.length] }}
+              >
+                <p className="font-semibold text-gray-900 text-[15px] leading-snug line-clamp-3">
+                  {note.title || "Untitled"}
+                </p>
+                <p className="text-xs text-gray-500 mt-4">
+                  {formatDate(note.updatedAt)}
+                </p>
+              </button>
+            ))}
+          </div>
+        )}
       </main>
     </div>
   )
