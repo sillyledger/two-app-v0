@@ -67,14 +67,6 @@ export default function NotesPage() {
 
   const recentNotes = notes ? notes.slice(0, 4) : []
 
-  const colorMap: Record<string, string> = {
-    yellow: 'bg-[#FFD966]',
-    coral: 'bg-[#FF9B7A]',
-    lime: 'bg-[#D4E157]',
-    purple: 'bg-[#CE93D8]',
-    cyan: 'bg-[#4DD0E1]',
-  }
-
   return (
     <div className="flex min-h-screen bg-background">
       <Sidebar onNewNote={handleNewNote} />
@@ -94,7 +86,7 @@ export default function NotesPage() {
           {!notes ? (
             <div className="grid grid-cols-2 gap-4 mb-10">
               {[...Array(4)].map((_, i) => (
-                <div key={i} className="h-40 animate-pulse rounded-2xl bg-muted" />
+                <div key={i} className="h-32 animate-pulse rounded-2xl bg-muted" />
               ))}
             </div>
           ) : recentNotes.length > 0 ? (
@@ -103,12 +95,12 @@ export default function NotesPage() {
                 <button
                   key={note.id}
                   onClick={() => router.push(`/notes/${note.id}`)}
-                  className={`${colorMap[note.color] || 'bg-[#FFD966]'} rounded-2xl p-5 text-left transition-transform hover:scale-[1.02]`}
+                  className="bg-muted rounded-2xl p-5 text-left transition-transform hover:scale-[1.02]"
                 >
-                  <p className="font-semibold text-gray-800 text-base mb-2 line-clamp-2">
+                  <p className="font-semibold text-foreground text-base mb-2 line-clamp-2">
                     {note.title}
                   </p>
-                  <p className="text-sm text-gray-600">
+                  <p className="text-sm text-muted-foreground">
                     {new Date(note.updated_at).toLocaleDateString('en-US', {
                       month: 'long', day: 'numeric', year: 'numeric'
                     })}
