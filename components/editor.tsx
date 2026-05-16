@@ -2,10 +2,7 @@
 
 import { useEditor, EditorContent } from "@tiptap/react"
 import StarterKit from "@tiptap/starter-kit"
-import Underline from "@tiptap/extension-underline"
 import Link from "@tiptap/extension-link"
-import CodeBlockLowlight from "@tiptap/extension-code-block-lowlight"
-import { common, createLowlight } from "lowlight"
 import {
   Bold,
   Italic,
@@ -22,25 +19,18 @@ import {
 } from "lucide-react"
 import { useCallback } from "react"
 
-const lowlight = createLowlight(common)
-
 interface EditorProps {
   content: string
   onChange: (content: string) => void
 }
 
+export { Editor }
 export default function Editor({ content, onChange }: EditorProps) {
   const editor = useEditor({
     extensions: [
-      StarterKit.configure({
-        codeBlock: false,
-      }),
-      Underline,
+      StarterKit,
       Link.configure({
         openOnClick: false,
-      }),
-      CodeBlockLowlight.configure({
-        lowlight,
       }),
     ],
     content,
