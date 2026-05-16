@@ -14,6 +14,13 @@ export default function NotesPage() {
   const { data: notes, mutate } = useSWR<Note[]>('/api/notes', fetcher)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingNote, setEditingNote] = useState<Note | null>(null)
+  const router = useRouter()
+
+useEffect(() => {
+  fetch('/api/auth/me').then((res) => {
+    if (!res.ok) router.push('/login')
+  })
+}, [])
 
   const handleNewNote = () => {
     setEditingNote(null)
