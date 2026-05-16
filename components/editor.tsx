@@ -3,7 +3,7 @@
 import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import Placeholder from '@tiptap/extension-placeholder'
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef, useCallback } from 'react'
 
 interface EditorProps {
   content: string
@@ -23,6 +23,7 @@ const menuItems = [
 export function Editor({ content, onChange }: EditorProps) {
   const [slashMenu, setSlashMenu] = useState(false)
   const [menuPos, setMenuPos] = useState({ top: 0, left: 0 })
+  const [slashPos, setSlashPos] = useState(0)
   const menuRef = useRef<HTMLDivElement>(null)
 
   const editor = useEditor({
@@ -49,9 +50,8 @@ export function Editor({ content, onChange }: EditorProps) {
       )
 
       if (textBefore === '/') {
-        // Use the DOM node at cursor position
-        const { view } = editor
-        const coords = view.coordsAtPos(from)
+        const coords = editor.view.coordsAtPos(from)
+        setSlashPos(from)
         setMenuPos({
           top: coords.bottom + window.scrollY + 4,
           left: coords.left,
@@ -64,10 +64,8 @@ export function Editor({ content, onChange }: EditorProps) {
   })
 
   useEffect(() => {
-    if (!editor) return
-    if (content) {
-      editor.commands.setContent(content)
-    }
+    if (!editor || !content) return
+    editor.commands.setContent(content)
   }, [])
 
   useEffect(() => {
@@ -80,38 +78,45 @@ export function Editor({ content, onChange }: EditorProps) {
     return () => document.removeEventListener('mousedown', handleClick)
   }, [])
 
-  const runCommand = (cmd: string) => {
+  const runCommand = useCallback((cmd: string) => {
     if (!editor) return
 
-    const { from } = editor.state.selection
-    editor.chain().focus().deleteRange({ from: from - 1, to: from }).run()
-
-    switch (cmd) {
-      case 'h1':
-        editor.chain().focus().toggleHeading({ level: 1 }).run()
-        break
-      case 'h2':
-        editor.chain().focus().toggleHeading({ level: 2 }).run()
-        break
-      case 'h3':
-        editor.chain().focus().toggleHeading({ level: 3 }).run()
-        break
-      case 'bullet':
-        editor.chain().focus().toggleBulletList().run()
-        break
-      case 'ordered':
-        editor.chain().focus().toggleOrderedList().run()
-        break
-      case 'quote':
-        editor.chain().focus().toggleBlockquote().run()
-        break
-      case 'code':
-        editor.chain().focus().toggleCodeBlock().run()
-        break
-    }
-
     setSlashMenu(false)
-  }
+
+    // Delete the slash character
+    editor
+      .chain()
+      .focus()
+      .deleteRange({ from: slashPos - 1, to: slashPos })
+      .run()
+
+    // Small delay to ensure delete runs first
+    setTimeout(() => {
+      switch (cmd) {
+        case 'h1':
+          editor.chain().focus().toggleHeading({ level: 1 }).run()
+          break
+        case 'h2':
+          editor.chain().focus().toggleHeading({ level: 2 }).run()
+          break
+        case 'h3':
+          editor.chain().focus().toggleHeading({ level: 3 }).run()
+          break
+        case 'bullet':
+          editor.chain().focus().toggleBulletList().run()
+          break
+        case 'ordered':
+          editor.chain().focus().toggleOrderedList().run()
+          break
+        case 'quote':
+          editor.chain().focus().toggleBlockquote().run()
+          break
+        case 'code':
+          editor.chain().focus().toggleCodeBlock().run()
+          break
+      }
+    }, 10)
+  }, [editor, slashPos])
 
   return (
     <div className="relative">
@@ -133,6 +138,7 @@ export function Editor({ content, onChange }: EditorProps) {
               key={item.cmd}
               onMouseDown={(e) => {
                 e.preventDefault()
+                e.stopPropagation()
                 runCommand(item.cmd)
               }}
               className="w-full flex flex-col px-4 py-2 text-left hover:bg-muted transition-colors border-b border-input last:border-0"
