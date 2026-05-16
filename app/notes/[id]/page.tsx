@@ -39,7 +39,6 @@ export default function NotePage() {
     setSaveStatus('saved')
   }, [id])
 
-  // Autosave 1 second after you stop typing
   useEffect(() => {
     if (!note) return
     setSaveStatus('unsaved')
@@ -65,12 +64,11 @@ export default function NotePage() {
       <main className="flex-1 flex justify-center py-16 px-6">
         <div className="w-full max-w-2xl">
 
-          {/* Save status indicator */}
-          <div className="mb-4 flex justify-end">
+          {/* Save status — always takes up space so page never jumps */}
+          <div className="mb-4 flex justify-end h-5">
             <span className="text-sm text-muted-foreground">
               {saveStatus === 'saving' && 'Saving...'}
               {saveStatus === 'saved' && 'Saved'}
-              {saveStatus === 'unsaved' && ''}
             </span>
           </div>
 
