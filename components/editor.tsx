@@ -24,6 +24,7 @@ export function Editor({ content, onChange }: EditorProps) {
   const [slashMenu, setSlashMenu] = useState(false)
   const [menuPos, setMenuPos] = useState({ top: 0, left: 0 })
   const menuRef = useRef<HTMLDivElement>(null)
+  const wrapperRef = useRef<HTMLDivElement>(null)
 
   const editor = useEditor({
     extensions: [
@@ -42,7 +43,6 @@ export function Editor({ content, onChange }: EditorProps) {
       const html = editor.getHTML()
       onChange(html)
 
-      // Check if last character typed is /
       const { from } = editor.state.selection
       const textBefore = editor.state.doc.textBetween(
         Math.max(0, from - 1),
@@ -50,15 +50,18 @@ export function Editor({ content, onChange }: EditorProps) {
       )
 
       if (textBefore === '/') {
-        // Get cursor position on screen
         const domSelection = window.getSelection()
         if (domSelection && domSelection.rangeCount > 0) {
           const range = domSelection.getRangeAt(0)
           const rect = range.getBoundingClientRect()
-          setMenuPos({
-            top: rect.bottom + window.scrollY + 8,
-            left: rect.left,
-          })
+          const wrapperRect = wrapperRef.current?.getBoundingClientRect()
+
+          if (wrapperRect) {
+            setMenuPos({
+              top: rect.bottom - wrapperRect.top + 8,
+              left: rect.left - wrapperRect.left,
+            })
+          }
           setSlashMenu(true)
         }
       } else {
@@ -69,12 +72,11 @@ export function Editor({ content, onChange }: EditorProps) {
 
   useEffect(() => {
     if (!editor) return
-    if (editor.getHTML() !== content && content) {
+    if (content) {
       editor.commands.setContent(content)
     }
   }, [])
 
-  // Close menu when clicking outside
   useEffect(() => {
     function handleClick(e: MouseEvent) {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
@@ -88,7 +90,6 @@ export function Editor({ content, onChange }: EditorProps) {
   const runCommand = (cmd: string) => {
     if (!editor) return
 
-    // Delete the slash
     const { from } = editor.state.selection
     editor.chain().focus().deleteRange({ from: from - 1, to: from }).run()
 
@@ -120,14 +121,14 @@ export function Editor({ content, onChange }: EditorProps) {
   }
 
   return (
-    <div className="relative">
+    <div ref={wrapperRef} className="relative">
       <EditorContent editor={editor} />
 
       {slashMenu && (
         <div
           ref={menuRef}
           style={{ top: menuPos.top, left: menuPos.left }}
-          className="fixed z-50 w-64 rounded-xl border border-input bg-background shadow-xl overflow-hidden"
+          className="absolute z-50 w-64 rounded-xl border border-input bg-background shadow-xl overflow-hidden"
         >
           {menuItems.map((item) => (
             <button
