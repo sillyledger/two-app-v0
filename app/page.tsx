@@ -8,16 +8,8 @@ import type { Note } from '@/lib/db'
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json())
 
-function getGreeting() {
-  const hour = new Date().getHours()
-  if (hour < 12) return 'Good morning'
-  if (hour < 18) return 'Good afternoon'
-  return 'Good evening'
-}
-
 export default function NotesPage() {
   const { data: notes, mutate } = useSWR<Note[]>('/api/notes', fetcher)
-  const [userName, setUserName] = useState('')
   const [search, setSearch] = useState('')
   const [suggestions, setSuggestions] = useState<Note[]>([])
   const router = useRouter()
@@ -26,12 +18,6 @@ export default function NotesPage() {
     fetch('/api/auth/me').then((res) => {
       if (!res.ok) {
         router.push('/login')
-      } else {
-        res.json().then((data) => {
-          const email = data.user?.email || ''
-          const name = email.split('@')[0]
-          setUserName(name.charAt(0).toUpperCase() + name.slice(1))
-        })
       }
     })
   }, [])
@@ -74,44 +60,8 @@ export default function NotesPage() {
       <main className="flex-1 flex flex-col items-center justify-center px-8 py-16">
         <div className="w-full max-w-3xl">
 
-          {/* Greeting */}
-          <h1 className="mb-2 text-5xl font-bold text-foreground">
-            {getGreeting()},
-          </h1>
-          <h1 className="mb-12 text-5xl font-bold text-foreground">
-            {userName || '...'}
-          </h1>
-
-          {/* Recent notes grid */}
-          {!notes ? (
-            <div className="grid grid-cols-2 gap-4 mb-10">
-              {[...Array(4)].map((_, i) => (
-                <div key={i} className="h-32 animate-pulse rounded-2xl bg-muted" />
-              ))}
-            </div>
-          ) : recentNotes.length > 0 ? (
-            <div className="grid grid-cols-2 gap-4 mb-10">
-              {recentNotes.map((note) => (
-                <button
-                  key={note.id}
-                  onClick={() => router.push(`/notes/${note.id}`)}
-                  className="bg-muted rounded-2xl p-5 text-left transition-transform hover:scale-[1.02]"
-                >
-                  <p className="font-semibold text-foreground text-base mb-2 line-clamp-2">
-                    {note.title}
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    {new Date(note.updated_at).toLocaleDateString('en-US', {
-                      month: 'long', day: 'numeric', year: 'numeric'
-                    })}
-                  </p>
-                </button>
-              ))}
-            </div>
-          ) : null}
-
           {/* Search bar */}
-          <div className="relative">
+          <div className="relative mb-10">
             <input
               type="text"
               value={search}
@@ -119,8 +69,6 @@ export default function NotesPage() {
               placeholder="Search your notes..."
               className="w-full rounded-2xl border border-input bg-background px-6 py-4 text-base shadow-sm focus:outline-none focus:ring-2 focus:ring-ring"
             />
-
-            {/* Suggestions dropdown */}
             {suggestions.length > 0 && (
               <div className="absolute top-full left-0 right-0 mt-2 rounded-2xl border border-input bg-background shadow-lg z-50 overflow-hidden">
                 {suggestions.map((note) => (
@@ -140,6 +88,34 @@ export default function NotesPage() {
               </div>
             )}
           </div>
+
+          {/* Recent notes grid */}
+          {!notes ? (
+            <div className="grid grid-cols-2 gap-4">
+              {[...Array(4)].map((_, i) => (
+                <div key={i} className="h-32 animate-pulse rounded-2xl bg-muted" />
+              ))}
+            </div>
+          ) : recentNotes.length > 0 ? (
+            <div className="grid grid-cols-2 gap-4">
+              {recentNotes.map((note) => (
+                <button
+                  key={note.id}
+                  onClick={() => router.push(`/notes/${note.id}`)}
+                  className="bg-muted rounded-2xl p-5 text-left transition-transform hover:scale-[1.02]"
+                >
+                  <p className="font-semibold text-foreground text-base mb-2 line-clamp-2">
+                    {note.title}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    {new Date(note.updated_at).toLocaleDateString('en-US', {
+                      month: 'long', day: 'numeric', year: 'numeric'
+                    })}
+                  </p>
+                </button>
+              ))}
+            </div>
+          ) : null}
 
         </div>
       </main>
