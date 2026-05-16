@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { Sidebar } from '@/components/sidebar'
 import type { Note } from '@/lib/db'
@@ -11,6 +11,7 @@ export default function NotePage() {
   const [note, setNote] = useState<Note | null>(null)
   const [title, setTitle] = useState('')
   const [content, setContent] = useState('')
+  const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'unsaved'>('saved')
 
   useEffect(() => {
     fetch('/api/auth/me').then((res) => {
@@ -28,13 +29,25 @@ export default function NotePage() {
       })
   }, [id])
 
-  const handleSave = async () => {
+  const handleSave = useCallback(async (latestTitle: string, latestContent: string, latestNote: Note | null) => {
+    setSaveStatus('saving')
     await fetch(`/api/notes/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title, content, color: note?.color ?? 'yellow' }),
+      body: JSON.stringify({ title: latestTitle, content: latestContent, color: latestNote?.color ?? 'yellow' }),
     })
-  }
+    setSaveStatus('saved')
+  }, [id])
+
+  // Autosave 1 second after you stop typing
+  useEffect(() => {
+    if (!note) return
+    setSaveStatus('unsaved')
+    const timer = setTimeout(() => {
+      handleSave(title, content, note)
+    }, 1000)
+    return () => clearTimeout(timer)
+  }, [title, content])
 
   const handleNewNote = async () => {
     const res = await fetch('/api/notes', {
@@ -51,18 +64,26 @@ export default function NotePage() {
       <Sidebar onNewNote={handleNewNote} />
       <main className="flex-1 flex justify-center py-16 px-6">
         <div className="w-full max-w-2xl">
+
+          {/* Save status indicator */}
+          <div className="mb-4 flex justify-end">
+            <span className="text-sm text-muted-foreground">
+              {saveStatus === 'saving' && 'Saving...'}
+              {saveStatus === 'saved' && 'Saved'}
+              {saveStatus === 'unsaved' && ''}
+            </span>
+          </div>
+
           <input
             type="text"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            onBlur={handleSave}
             placeholder="Untitled"
             className="mb-6 w-full bg-transparent text-4xl font-bold text-foreground placeholder:text-muted-foreground focus:outline-none"
           />
           <textarea
             value={content}
             onChange={(e) => setContent(e.target.value)}
-            onBlur={handleSave}
             placeholder="Start writing..."
             className="w-full min-h-[60vh] resize-none bg-transparent text-base leading-snug text-foreground placeholder:text-muted-foreground focus:outline-none"
           />
