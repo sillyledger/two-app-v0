@@ -3,10 +3,13 @@
 import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import Placeholder from '@tiptap/extension-placeholder'
-import { Extension } from '@tiptap/core'
-import Suggestion from '@tiptap/suggestion'
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
+
+interface EditorProps {
+  content: string
+  onChange: (content: string) => void
+}
 
 const menuItems = [
   { label: 'Heading 1', sub: 'Main heading', cmd: 'h1' },
@@ -18,89 +21,11 @@ const menuItems = [
   { label: 'Code', sub: 'Code block', cmd: 'code' },
 ]
 
-interface EditorProps {
-  content: string
-  onChange: (content: string) => void
-}
-
 export function Editor({ content, onChange }: EditorProps) {
   const [menuOpen, setMenuOpen] = useState(false)
   const [menuPos, setMenuPos] = useState({ top: 0, left: 0 })
-  const commandRef = useRef<((cmd: string) => void) | null>(null)
+  const slashFromRef = useRef<number>(0)
   const menuRef = useRef<HTMLDivElement>(null)
-
-  const SlashCommands = Extension.create({
-    name: 'slashCommands',
-    addOptions() {
-      return {
-        suggestion: {
-          char: '/',
-          command: ({ editor, range, props }: any) => {
-            props.command({ editor, range })
-          },
-          items: () => menuItems,
-          render: () => {
-            return {
-              onStart: (props: any) => {
-                const { clientRect } = props
-                if (clientRect) {
-                  const rect = clientRect()
-                  setMenuPos({ top: rect.bottom + window.scrollY + 4, left: rect.left })
-                }
-                commandRef.current = (cmd: string) => {
-                  const { editor, range } = props
-                  editor.chain().focus().deleteRange(range).run()
-                  switch (cmd) {
-                    case 'h1': editor.chain().focus().toggleHeading({ level: 1 }).run(); break
-                    case 'h2': editor.chain().focus().toggleHeading({ level: 2 }).run(); break
-                    case 'h3': editor.chain().focus().toggleHeading({ level: 3 }).run(); break
-                    case 'bullet': editor.chain().focus().toggleBulletList().run(); break
-                    case 'ordered': editor.chain().focus().toggleOrderedList().run(); break
-                    case 'quote': editor.chain().focus().toggleBlockquote().run(); break
-                    case 'code': editor.chain().focus().toggleCodeBlock().run(); break
-                  }
-                  setMenuOpen(false)
-                }
-                setMenuOpen(true)
-              },
-              onUpdate: (props: any) => {
-                const { clientRect } = props
-                if (clientRect) {
-                  const rect = clientRect()
-                  setMenuPos({ top: rect.bottom + window.scrollY + 4, left: rect.left })
-                }
-                commandRef.current = (cmd: string) => {
-                  const { editor, range } = props
-                  editor.chain().focus().deleteRange(range).run()
-                  switch (cmd) {
-                    case 'h1': editor.chain().focus().toggleHeading({ level: 1 }).run(); break
-                    case 'h2': editor.chain().focus().toggleHeading({ level: 2 }).run(); break
-                    case 'h3': editor.chain().focus().toggleHeading({ level: 3 }).run(); break
-                    case 'bullet': editor.chain().focus().toggleBulletList().run(); break
-                    case 'ordered': editor.chain().focus().toggleOrderedList().run(); break
-                    case 'quote': editor.chain().focus().toggleBlockquote().run(); break
-                    case 'code': editor.chain().focus().toggleCodeBlock().run(); break
-                  }
-                  setMenuOpen(false)
-                }
-              },
-              onExit: () => {
-                setMenuOpen(false)
-              },
-            }
-          },
-        },
-      }
-    },
-    addProseMirrorPlugins() {
-      return [
-        Suggestion({
-          editor: this.editor,
-          ...this.options.suggestion,
-        }),
-      ]
-    },
-  })
 
   const editor = useEditor({
     extensions: [
@@ -108,7 +33,6 @@ export function Editor({ content, onChange }: EditorProps) {
       Placeholder.configure({
         placeholder: "Write something, or type '/' for commands...",
       }),
-      SlashCommands,
     ],
     content,
     editorProps: {
@@ -118,6 +42,24 @@ export function Editor({ content, onChange }: EditorProps) {
     },
     onUpdate({ editor }) {
       onChange(editor.getHTML())
+
+      const { from } = editor.state.selection
+      const textBefore = editor.state.doc.textBetween(
+        Math.max(0, from - 1),
+        from
+      )
+
+      if (textBefore === '/') {
+        slashFromRef.current = from
+        const coords = editor.view.coordsAtPos(from)
+        setMenuPos({
+          top: coords.bottom + 8,
+          left: coords.left,
+        })
+        setMenuOpen(true)
+      } else if (menuOpen) {
+        setMenuOpen(false)
+      }
     },
   })
 
@@ -127,14 +69,36 @@ export function Editor({ content, onChange }: EditorProps) {
   }, [])
 
   useEffect(() => {
-    function handleClick(e: MouseEvent) {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
-        setMenuOpen(false)
-      }
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape') setMenuOpen(false)
     }
-    document.addEventListener('mousedown', handleClick)
-    return () => document.removeEventListener('mousedown', handleClick)
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
   }, [])
+
+  const runCommand = (cmd: string) => {
+    if (!editor) return
+
+    const from = slashFromRef.current
+    setMenuOpen(false)
+
+    editor.chain()
+      .focus()
+      .deleteRange({ from: from - 1, to: from })
+      .run()
+
+    requestAnimationFrame(() => {
+      switch (cmd) {
+        case 'h1': editor.chain().focus().setHeading({ level: 1 }).run(); break
+        case 'h2': editor.chain().focus().setHeading({ level: 2 }).run(); break
+        case 'h3': editor.chain().focus().setHeading({ level: 3 }).run(); break
+        case 'bullet': editor.chain().focus().toggleBulletList().run(); break
+        case 'ordered': editor.chain().focus().toggleOrderedList().run(); break
+        case 'quote': editor.chain().focus().toggleBlockquote().run(); break
+        case 'code': editor.chain().focus().toggleCodeBlock().run(); break
+      }
+    })
+  }
 
   return (
     <div className="relative">
@@ -154,9 +118,10 @@ export function Editor({ content, onChange }: EditorProps) {
           {menuItems.map((item) => (
             <button
               key={item.cmd}
-              onMouseDown={(e) => {
+              onPointerDown={(e) => {
                 e.preventDefault()
-                commandRef.current?.(item.cmd)
+                e.stopPropagation()
+                runCommand(item.cmd)
               }}
               className="w-full flex flex-col px-4 py-2 text-left hover:bg-muted transition-colors border-b border-input last:border-0"
             >
