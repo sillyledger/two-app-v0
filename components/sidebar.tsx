@@ -1,5 +1,4 @@
 'use client'
-
 import { useState, useRef, useEffect } from 'react'
 import { Search, Home, FolderClosed, Clock, Plus, Settings, LogOut } from 'lucide-react'
 import { useRouter } from 'next/navigation'
@@ -15,13 +14,12 @@ export function Sidebar({ onNewNote }: SidebarProps) {
   const router = useRouter()
 
   const navItems = [
-    { icon: Search, label: 'Search', active: false },
-    { icon: Home, label: 'Home', active: true },
-    { icon: FolderClosed, label: 'Folders', active: false },
-    { icon: Clock, label: 'History', active: false },
+    { icon: Search, label: 'Search', onClick: () => {} },
+    { icon: Home, label: 'Home', onClick: () => router.push('/') },
+    { icon: FolderClosed, label: 'Folders', onClick: () => {} },
+    { icon: Clock, label: 'History', onClick: () => {} },
   ]
 
-  // Close menu when clicking outside
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
       if (settingsRef.current && !settingsRef.current.contains(e.target as Node)) {
@@ -57,12 +55,8 @@ export function Sidebar({ onNewNote }: SidebarProps) {
         {navItems.map((item) => (
           <button
             key={item.label}
-            className={cn(
-              'flex h-12 w-12 items-center justify-center rounded-xl transition-colors',
-              item.active
-                ? 'bg-sidebar-accent text-foreground'
-                : 'text-muted-foreground hover:bg-sidebar-accent hover:text-foreground'
-            )}
+            onClick={item.onClick}
+            className="flex h-12 w-12 items-center justify-center rounded-xl text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-foreground"
             aria-label={item.label}
           >
             <item.icon className="h-5 w-5" />
@@ -72,8 +66,6 @@ export function Sidebar({ onNewNote }: SidebarProps) {
 
       {/* Bottom section — settings + avatar */}
       <div className="mt-auto flex flex-col items-center gap-4">
-
-        {/* Settings with popup menu */}
         <div className="relative" ref={settingsRef}>
           <button
             onClick={() => setSettingsOpen((prev) => !prev)}
@@ -82,8 +74,6 @@ export function Sidebar({ onNewNote }: SidebarProps) {
           >
             <Settings className="h-5 w-5" />
           </button>
-
-          {/* Popup menu */}
           {settingsOpen && (
             <div className="absolute bottom-14 left-1/2 -translate-x-1/2 w-36 rounded-xl border border-border bg-background shadow-lg py-1 z-50">
               <button
@@ -104,7 +94,6 @@ export function Sidebar({ onNewNote }: SidebarProps) {
         >
           <span className="text-sm font-medium text-muted-foreground">U</span>
         </button>
-
       </div>
     </aside>
   )
