@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { Sidebar } from '@/components/sidebar'
+import { Editor } from '@/components/editor'
 import type { Note } from '@/lib/db'
 
 export default function NotePage() {
@@ -64,7 +65,7 @@ export default function NotePage() {
       <main className="flex-1 flex justify-center py-16 px-6">
         <div className="w-full max-w-2xl">
 
-          {/* Save status — always takes up space so page never jumps */}
+          {/* Save status */}
           <div className="mb-4 flex justify-end h-5">
             <span className="text-sm text-muted-foreground">
               {saveStatus === 'saving' && 'Saving...'}
@@ -72,6 +73,7 @@ export default function NotePage() {
             </span>
           </div>
 
+          {/* Title */}
           <input
             type="text"
             value={title}
@@ -79,12 +81,15 @@ export default function NotePage() {
             placeholder="Untitled"
             className="mb-6 w-full bg-transparent text-4xl font-bold text-foreground placeholder:text-muted-foreground focus:outline-none"
           />
-          <textarea
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            placeholder="Start writing..."
-            className="w-full min-h-[60vh] resize-none bg-transparent text-base leading-snug text-foreground placeholder:text-muted-foreground focus:outline-none"
-          />
+
+          {/* Rich text editor */}
+          {note !== null && (
+            <Editor
+              content={content}
+              onChange={(newContent) => setContent(newContent)}
+            />
+          )}
+
         </div>
       </main>
     </div>
