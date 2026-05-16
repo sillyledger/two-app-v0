@@ -1,6 +1,6 @@
 'use client'
 
-import { useEditor, EditorContent } from '@tiptap/react'
+import { useEditor, EditorContent, BubbleMenu } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import Placeholder from '@tiptap/extension-placeholder'
 import Link from '@tiptap/extension-link'
@@ -14,10 +14,7 @@ interface EditorProps {
 export function Editor({ content, onChange }: EditorProps) {
   const [linkUrl, setLinkUrl] = useState('')
   const [showLinkInput, setShowLinkInput] = useState(false)
-  const [linkPopup, setLinkPopup] = useState<{ href: string; top: number; left: number } | null>(null)
   const linkInputRef = useRef<HTMLInputElement>(null)
-  const popupRef = useRef<HTMLDivElement>(null)
-  const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const editor = useEditor({
     extensions: [
@@ -63,39 +60,6 @@ export function Editor({ content, onChange }: EditorProps) {
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [])
 
-  // Hover on links to show popup
-  useEffect(() => {
-    if (!editor) return
-    const editorEl = editor.view.dom
-
-    const handleMouseOver = (e: MouseEvent) => {
-      const target = e.target as HTMLElement
-      const link = target.closest('a') as HTMLAnchorElement | null
-      if (link) {
-        if (hideTimer.current) clearTimeout(hideTimer.current)
-        const rect = link.getBoundingClientRect()
-        setLinkPopup({
-          href: link.href,
-          top: rect.bottom + 6,
-          left: rect.left,
-        })
-      }
-    }
-
-    const handleMouseOut = (e: MouseEvent) => {
-      const target = e.relatedTarget as HTMLElement | null
-      if (popupRef.current && target && popupRef.current.contains(target)) return
-      hideTimer.current = setTimeout(() => setLinkPopup(null), 200)
-    }
-
-    editorEl.addEventListener('mouseover', handleMouseOver)
-    editorEl.addEventListener('mouseout', handleMouseOut)
-    return () => {
-      editorEl.removeEventListener('mouseover', handleMouseOver)
-      editorEl.removeEventListener('mouseout', handleMouseOut)
-    }
-  }, [editor])
-
   const handleLinkSubmit = () => {
     if (!editor) return
     if (linkUrl) {
@@ -109,13 +73,43 @@ export function Editor({ content, onChange }: EditorProps) {
   const handleRemoveLink = () => {
     if (!editor) return
     editor.chain().focus().unsetLink().run()
-    setLinkPopup(null)
   }
 
   if (!editor) return null
 
+  // Get current link href
+  const currentHref = editor.getAttributes('link').href
+
   return (
     <div>
+      {/* Bubble menu — shows when cursor is on a link */}
+      <BubbleMenu
+        editor={editor}
+        shouldShow={({ editor }) => editor.isActive('link')}
+        tippyOptions={{ duration: 100 }}
+      >
+        <div className="flex items-center gap-2 bg-background border border-input rounded-lg shadow-lg px-3 py-2">
+          
+            href={currentHref}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-sm text-blue-500 underline max-w-[200px] truncate"
+          >
+            {currentHref}
+          </a>
+          <span className="text-muted-foreground text-xs">·</span>
+          <button
+            onMouseDown={(e) => {
+              e.preventDefault()
+              handleRemoveLink()
+            }}
+            className="text-xs text-red-500 hover:text-red-700 transition-colors"
+          >
+            Remove
+          </button>
+        </div>
+      </BubbleMenu>
+
       {/* Toolbar */}
       <div className="flex flex-wrap items-center gap-1 mb-4 pb-3 border-b border-input">
         <ToolbarButton onClick={() => editor.chain().focus().setHeading({ level: 1 }).run()} active={editor.isActive('heading', { level: 1 })} label="H1" />
@@ -162,33 +156,6 @@ export function Editor({ content, onChange }: EditorProps) {
       </div>
 
       <EditorContent editor={editor} />
-
-      {/* Link hover popup */}
-      {linkPopup && (
-        <div
-          ref={popupRef}
-          style={{ position: 'fixed', top: linkPopup.top, left: linkPopup.left, zIndex: 9999 }}
-          className="flex items-center gap-2 bg-background border border-input rounded-lg shadow-lg px-3 py-2"
-          onMouseEnter={() => { if (hideTimer.current) clearTimeout(hideTimer.current) }}
-          onMouseLeave={() => { hideTimer.current = setTimeout(() => setLinkPopup(null), 200) }}
-        >
-          
-            href={linkPopup.href}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-sm text-blue-500 underline max-w-[200px] truncate"
-          >
-            {linkPopup.href}
-          </a>
-          <span className="text-muted-foreground text-xs">·</span>
-          <button
-            onClick={handleRemoveLink}
-            className="text-xs text-red-500 hover:text-red-700 transition-colors"
-          >
-            Remove
-          </button>
-        </div>
-      )}
     </div>
   )
 }
