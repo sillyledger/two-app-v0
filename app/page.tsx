@@ -1,5 +1,4 @@
 "use client"
-
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { Plus } from "lucide-react"
@@ -9,21 +8,22 @@ interface Note {
   id: string
   title: string
   content: string
-  updatedAt: string
+  created_at: string
 }
 
-// Pastel card colors cycling through notes (matching Figma)
 const CARD_COLORS = [
-  "#FFF0C2", // warm yellow
-  "#FFD6D6", // soft pink/red
-  "#D6F0D6", // soft green
-  "#E0D6FF", // soft purple
-  "#FFFBD6", // pale yellow-green
-  "#D6EFFF", // soft blue
+  "#FFF0C2",
+  "#FFD6D6",
+  "#D6F0D6",
+  "#E0D6FF",
+  "#FFFBD6",
+  "#D6EFFF",
 ]
 
 function formatDate(dateStr: string) {
+  if (!dateStr) return ""
   const date = new Date(dateStr)
+  if (isNaN(date.getTime())) return ""
   return date.toLocaleDateString("en-US", {
     month: "long",
     day: "numeric",
@@ -54,7 +54,7 @@ export default function HomePage() {
       const res = await fetch("/api/notes", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title: "Untitled", content: "" }),
+        body: JSON.stringify({ title: "Untitled", content: "", color: "yellow" }),
       })
       const note = await res.json()
       router.push(`/notes/${note.id}`)
@@ -66,9 +66,7 @@ export default function HomePage() {
   return (
     <div className="flex h-screen bg-[#f5f5f5] overflow-hidden">
       <Sidebar />
-
       <main className="flex-1 overflow-y-auto px-10 py-8">
-        {/* Header */}
         <div className="flex items-center gap-3 mb-8">
           <button
             onClick={handleCreateNote}
@@ -81,14 +79,10 @@ export default function HomePage() {
           <h1 className="text-2xl font-bold text-gray-900">Personal</h1>
         </div>
 
-        {/* Notes Grid */}
         {loading ? (
           <div className="grid grid-cols-3 gap-4">
             {Array.from({ length: 6 }).map((_, i) => (
-              <div
-                key={i}
-                className="h-44 rounded-2xl bg-gray-200 animate-pulse"
-              />
+              <div key={i} className="h-44 rounded-2xl bg-gray-200 animate-pulse" />
             ))}
           </div>
         ) : notes.length === 0 ? (
@@ -109,7 +103,7 @@ export default function HomePage() {
                   {note.title || "Untitled"}
                 </p>
                 <p className="text-xs text-gray-500 mt-4">
-                  {formatDate(note.updatedAt)}
+                  {formatDate(note.created_at)}
                 </p>
               </button>
             ))}
