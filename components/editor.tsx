@@ -4,7 +4,7 @@ import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import Placeholder from '@tiptap/extension-placeholder'
 import Link from '@tiptap/extension-link'
-import { useEffect, useState, useRef, useCallback } from 'react'
+import { useEffect, useState, useRef } from 'react'
 
 interface EditorProps {
   content: string
@@ -61,22 +61,32 @@ export function Editor({ content, onChange }: EditorProps) {
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [])
 
-  // Show link popup on click
+  // Handle link clicks
   useEffect(() => {
     if (!editor) return
     const editorEl = editor.view.dom
 
     const handleClick = (e: MouseEvent) => {
       const target = e.target as HTMLElement
-      const link = target.closest('a')
+      const link = target.closest('a') as HTMLAnchorElement | null
+
       if (link) {
         e.preventDefault()
-        const rect = link.getBoundingClientRect()
-        setLinkPopup({
-          href: link.href,
-          top: rect.bottom + window.scrollY + 4,
-          left: rect.left,
-        })
+        e.stopPropagation()
+
+        if (e.metaKey || e.ctrlKey) {
+          // Cmd+click opens the link
+          window.open(link.href, '_blank')
+          setLinkPopup(null)
+        } else {
+          // Normal click shows the popup
+          const rect = link.getBoundingClientRect()
+          setLinkPopup({
+            href: link.href,
+            top: rect.bottom + 8,
+            left: rect.left,
+          })
+        }
       } else {
         setLinkPopup(null)
       }
@@ -85,6 +95,15 @@ export function Editor({ content, onChange }: EditorProps) {
     editorEl.addEventListener('click', handleClick)
     return () => editorEl.removeEventListener('click', handleClick)
   }, [editor])
+
+  // Close popup when clicking outside
+  useEffect(() => {
+    const handleOutsideClick = (e: MouseEvent) => {
+      setLinkPopup(null)
+    }
+    document.addEventListener('click', handleOutsideClick)
+    return () => document.removeEventListener('click', handleOutsideClick)
+  }, [])
 
   const handleLinkSubmit = () => {
     if (!editor) return
@@ -143,24 +162,35 @@ export function Editor({ content, onChange }: EditorProps) {
             <button onMouseDown={(e) => { e.preventDefault(); setShowLinkInput(false) }} className="text-sm px-2 py-1 rounded-lg text-muted-foreground hover:bg-muted">Cancel</button>
           </div>
         ) : (
-          <ToolbarButton onClick={() => { setShowLinkInput(true); setTimeout(() => linkInputRef.current?.focus(), 50) }} active={editor.isActive('link')} label="🔗 Link" />
+          <ToolbarButton
+            onClick={() => { setShowLinkInput(true); setTimeout(() => linkInputRef.current?.focus(), 50) }}
+            active={editor.isActive('link')}
+            label="🔗 Link"
+          />
         )}
       </div>
 
       <EditorContent editor={editor} />
 
-      {/* Link hover popup */}
+      {/* Link popup — shows on normal click */}
       {linkPopup && (
         <div
           style={{ position: 'fixed', top: linkPopup.top, left: linkPopup.left, zIndex: 9999 }}
           className="flex items-center gap-2 bg-background border border-input rounded-lg shadow-lg px-3 py-2"
+          onClick={(e) => e.stopPropagation()}
         >
-          <a href={linkPopup.href} target="_blank" rel="noopener noreferrer" className="text-sm text-blue-500 underline max-w-[200px] truncate">
+          
+            href={linkPopup.href}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-sm text-blue-500 underline max-w-[200px] truncate"
+          >
             {linkPopup.href}
           </a>
+          <span className="text-muted-foreground text-xs">·</span>
           <button
             onClick={handleRemoveLink}
-            className="text-xs text-muted-foreground hover:text-destructive transition-colors ml-2"
+            className="text-xs text-red-500 hover:text-red-700 transition-colors"
           >
             Remove
           </button>
