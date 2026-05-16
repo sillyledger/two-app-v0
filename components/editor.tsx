@@ -3,6 +3,7 @@
 import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import Placeholder from '@tiptap/extension-placeholder'
+import Link from '@tiptap/extension-link'
 import { useEffect, useState } from 'react'
 
 interface EditorProps {
@@ -17,18 +18,30 @@ export function Editor({ content, onChange }: EditorProps) {
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
-        heading: {
-          levels: [1, 2, 3],
-        },
+        heading: { levels: [1, 2, 3] },
       }),
       Placeholder.configure({
         placeholder: 'Start writing...',
+      }),
+      Link.configure({
+        openOnClick: false,
+        HTMLAttributes: {
+          class: 'text-blue-500 underline cursor-pointer',
+        },
       }),
     ],
     content,
     editorProps: {
       attributes: {
         class: 'outline-none min-h-[60vh] text-base leading-snug',
+      },
+      handleKeyDown(view, event) {
+        if ((event.metaKey || event.ctrlKey) && event.key === 'k') {
+          event.preventDefault()
+          setShowLinkInput(true)
+          return true
+        }
+        return false
       },
     },
     onUpdate({ editor }) {
@@ -45,7 +58,7 @@ export function Editor({ content, onChange }: EditorProps) {
 
   const handleLinkSubmit = () => {
     if (linkUrl) {
-      editor.chain().focus().setMark('link', { href: linkUrl }).run()
+      editor.chain().focus().setLink({ href: linkUrl }).run()
     }
     setLinkUrl('')
     setShowLinkInput(false)
@@ -56,7 +69,6 @@ export function Editor({ content, onChange }: EditorProps) {
       {/* Toolbar */}
       <div className="flex flex-wrap items-center gap-1 mb-4 pb-3 border-b border-input">
 
-        {/* Headings */}
         <ToolbarButton
           onClick={() => editor.chain().focus().setHeading({ level: 1 }).run()}
           active={editor.isActive('heading', { level: 1 })}
@@ -72,15 +84,9 @@ export function Editor({ content, onChange }: EditorProps) {
           active={editor.isActive('heading', { level: 3 })}
           label="H3"
         />
-        <ToolbarButton
-          onClick={() => editor.chain().focus().setParagraph().run()}
-          active={editor.isActive('paragraph')}
-          label="¶"
-        />
 
         <Divider />
 
-        {/* Marks */}
         <ToolbarButton
           onClick={() => editor.chain().focus().toggleBold().run()}
           active={editor.isActive('bold')}
@@ -106,7 +112,6 @@ export function Editor({ content, onChange }: EditorProps) {
 
         <Divider />
 
-        {/* Lists */}
         <ToolbarButton
           onClick={() => editor.chain().focus().toggleBulletList().run()}
           active={editor.isActive('bulletList')}
@@ -120,7 +125,6 @@ export function Editor({ content, onChange }: EditorProps) {
 
         <Divider />
 
-        {/* Blocks */}
         <ToolbarButton
           onClick={() => editor.chain().focus().toggleBlockquote().run()}
           active={editor.isActive('blockquote')}
@@ -134,14 +138,16 @@ export function Editor({ content, onChange }: EditorProps) {
 
         <Divider />
 
-        {/* Link */}
         {showLinkInput ? (
           <div className="flex items-center gap-1">
             <input
               type="url"
               value={linkUrl}
               onChange={(e) => setLinkUrl(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleLinkSubmit()}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') handleLinkSubmit()
+                if (e.key === 'Escape') setShowLinkInput(false)
+              }}
               placeholder="https://..."
               autoFocus
               className="text-sm px-2 py-1 rounded-lg border border-input bg-background focus:outline-none focus:ring-1 focus:ring-ring w-40"
@@ -162,14 +168,13 @@ export function Editor({ content, onChange }: EditorProps) {
         ) : (
           <ToolbarButton
             onClick={() => setShowLinkInput(true)}
-            active={false}
+            active={editor.isActive('link')}
             label="🔗 Link"
           />
         )}
 
       </div>
 
-      {/* Editor content */}
       <EditorContent editor={editor} />
     </div>
   )
