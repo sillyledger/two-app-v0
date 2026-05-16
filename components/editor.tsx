@@ -16,6 +16,8 @@ export function Editor({ content, onChange }: EditorProps) {
   const [showLinkInput, setShowLinkInput] = useState(false)
   const [linkPopup, setLinkPopup] = useState<{ href: string; top: number; left: number } | null>(null)
   const linkInputRef = useRef<HTMLInputElement>(null)
+  const popupRef = useRef<HTMLDivElement>(null)
+  const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const editor = useEditor({
     extensions: [
@@ -26,7 +28,7 @@ export function Editor({ content, onChange }: EditorProps) {
         placeholder: 'Start writing...',
       }),
       Link.configure({
-        openOnClick: false,
+        openOnClick: true,
         HTMLAttributes: {
           class: 'text-blue-500 underline cursor-pointer',
         },
@@ -61,49 +63,38 @@ export function Editor({ content, onChange }: EditorProps) {
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [])
 
-  // Handle link clicks
+  // Hover on links to show popup
   useEffect(() => {
     if (!editor) return
     const editorEl = editor.view.dom
 
-    const handleClick = (e: MouseEvent) => {
+    const handleMouseOver = (e: MouseEvent) => {
       const target = e.target as HTMLElement
       const link = target.closest('a') as HTMLAnchorElement | null
-
       if (link) {
-        e.preventDefault()
-        e.stopPropagation()
-
-        if (e.metaKey || e.ctrlKey) {
-          // Cmd+click opens the link
-          window.open(link.href, '_blank')
-          setLinkPopup(null)
-        } else {
-          // Normal click shows the popup
-          const rect = link.getBoundingClientRect()
-          setLinkPopup({
-            href: link.href,
-            top: rect.bottom + 8,
-            left: rect.left,
-          })
-        }
-      } else {
-        setLinkPopup(null)
+        if (hideTimer.current) clearTimeout(hideTimer.current)
+        const rect = link.getBoundingClientRect()
+        setLinkPopup({
+          href: link.href,
+          top: rect.bottom + 6,
+          left: rect.left,
+        })
       }
     }
 
-    editorEl.addEventListener('click', handleClick)
-    return () => editorEl.removeEventListener('click', handleClick)
-  }, [editor])
-
-  // Close popup when clicking outside
-  useEffect(() => {
-    const handleOutsideClick = (e: MouseEvent) => {
-      setLinkPopup(null)
+    const handleMouseOut = (e: MouseEvent) => {
+      const target = e.relatedTarget as HTMLElement | null
+      if (popupRef.current && target && popupRef.current.contains(target)) return
+      hideTimer.current = setTimeout(() => setLinkPopup(null), 200)
     }
-    document.addEventListener('click', handleOutsideClick)
-    return () => document.removeEventListener('click', handleOutsideClick)
-  }, [])
+
+    editorEl.addEventListener('mouseover', handleMouseOver)
+    editorEl.addEventListener('mouseout', handleMouseOut)
+    return () => {
+      editorEl.removeEventListener('mouseover', handleMouseOver)
+      editorEl.removeEventListener('mouseout', handleMouseOut)
+    }
+  }, [editor])
 
   const handleLinkSubmit = () => {
     if (!editor) return
@@ -172,12 +163,14 @@ export function Editor({ content, onChange }: EditorProps) {
 
       <EditorContent editor={editor} />
 
-      {/* Link popup — shows on normal click */}
+      {/* Link hover popup */}
       {linkPopup && (
         <div
+          ref={popupRef}
           style={{ position: 'fixed', top: linkPopup.top, left: linkPopup.left, zIndex: 9999 }}
           className="flex items-center gap-2 bg-background border border-input rounded-lg shadow-lg px-3 py-2"
-          onClick={(e) => e.stopPropagation()}
+          onMouseEnter={() => { if (hideTimer.current) clearTimeout(hideTimer.current) }}
+          onMouseLeave={() => { hideTimer.current = setTimeout(() => setLinkPopup(null), 200) }}
         >
           
             href={linkPopup.href}
