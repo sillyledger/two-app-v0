@@ -3,16 +3,27 @@
 import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import Placeholder from '@tiptap/extension-placeholder'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 
 interface EditorProps {
   content: string
   onChange: (content: string) => void
 }
 
+const menuItems = [
+  { label: 'Heading 1', sub: 'Main heading', cmd: 'h1' },
+  { label: 'Heading 2', sub: 'Sub heading', cmd: 'h2' },
+  { label: 'Heading 3', sub: 'Sub-sub heading', cmd: 'h3' },
+  { label: 'Bullet List', sub: 'Simple bullet points', cmd: 'bullet' },
+  { label: 'Numbered List', sub: 'Ordered list', cmd: 'ordered' },
+  { label: 'Quote', sub: 'Blockquote', cmd: 'quote' },
+  { label: 'Code', sub: 'Code block', cmd: 'code' },
+]
+
 export function Editor({ content, onChange }: EditorProps) {
   const [slashMenu, setSlashMenu] = useState(false)
   const [menuPos, setMenuPos] = useState({ top: 0, left: 0 })
+  const menuRef = useRef<HTMLDivElement>(null)
 
   const editor = useEditor({
     extensions: [
@@ -22,16 +33,32 @@ export function Editor({ content, onChange }: EditorProps) {
       }),
     ],
     content,
+    editorProps: {
+      attributes: {
+        class: 'outline-none min-h-[60vh] text-base leading-snug',
+      },
+    },
     onUpdate({ editor }) {
-      onChange(editor.getHTML())
-      const text = editor.getText()
-      const lastChar = text[text.length - 1]
-      if (lastChar === '/') {
-        const selection = window.getSelection()
-        if (selection && selection.rangeCount > 0) {
-          const range = selection.getRangeAt(0)
+      const html = editor.getHTML()
+      onChange(html)
+
+      // Check if last character typed is /
+      const { from } = editor.state.selection
+      const textBefore = editor.state.doc.textBetween(
+        Math.max(0, from - 1),
+        from
+      )
+
+      if (textBefore === '/') {
+        // Get cursor position on screen
+        const domSelection = window.getSelection()
+        if (domSelection && domSelection.rangeCount > 0) {
+          const range = domSelection.getRangeAt(0)
           const rect = range.getBoundingClientRect()
-          setMenuPos({ top: rect.bottom + window.scrollY + 8, left: rect.left })
+          setMenuPos({
+            top: rect.bottom + window.scrollY + 8,
+            left: rect.left,
+          })
           setSlashMenu(true)
         }
       } else {
@@ -42,19 +69,30 @@ export function Editor({ content, onChange }: EditorProps) {
 
   useEffect(() => {
     if (!editor) return
-    if (editor.getHTML() !== content) {
+    if (editor.getHTML() !== content && content) {
       editor.commands.setContent(content)
     }
   }, [])
 
-  const runCommand = (command: string) => {
+  // Close menu when clicking outside
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setSlashMenu(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
+  }, [])
+
+  const runCommand = (cmd: string) => {
     if (!editor) return
-    // Delete the slash character first
-    editor.commands.deleteRange({
-      from: editor.state.selection.from - 1,
-      to: editor.state.selection.from,
-    })
-    switch (command) {
+
+    // Delete the slash
+    const { from } = editor.state.selection
+    editor.chain().focus().deleteRange({ from: from - 1, to: from }).run()
+
+    switch (cmd) {
       case 'h1':
         editor.chain().focus().toggleHeading({ level: 1 }).run()
         break
@@ -77,37 +115,28 @@ export function Editor({ content, onChange }: EditorProps) {
         editor.chain().focus().toggleCodeBlock().run()
         break
     }
+
     setSlashMenu(false)
   }
 
   return (
     <div className="relative">
-      <EditorContent
-        editor={editor}
-        className="prose prose-lg max-w-none focus:outline-none [&_.ProseMirror]:outline-none [&_.ProseMirror]:min-h-[60vh]"
-      />
+      <EditorContent editor={editor} />
 
       {slashMenu && (
         <div
+          ref={menuRef}
           style={{ top: menuPos.top, left: menuPos.left }}
-          className="fixed z-50 w-64 rounded-xl border border-input bg-background shadow-lg overflow-hidden"
+          className="fixed z-50 w-64 rounded-xl border border-input bg-background shadow-xl overflow-hidden"
         >
-          {[
-            { label: 'Heading 1', sub: 'Main heading', cmd: 'h1' },
-            { label: 'Heading 2', sub: 'Sub heading', cmd: 'h2' },
-            { label: 'Heading 3', sub: 'Sub-sub heading', cmd: 'h3' },
-            { label: 'Bullet List', sub: 'Simple bullet points', cmd: 'bullet' },
-            { label: 'Numbered List', sub: 'Ordered list', cmd: 'ordered' },
-            { label: 'Quote', sub: 'Blockquote', cmd: 'quote' },
-            { label: 'Code', sub: 'Code block', cmd: 'code' },
-          ].map((item) => (
+          {menuItems.map((item) => (
             <button
               key={item.cmd}
               onMouseDown={(e) => {
                 e.preventDefault()
                 runCommand(item.cmd)
               }}
-              className="w-full flex flex-col px-4 py-2 text-left hover:bg-muted transition-colors"
+              className="w-full flex flex-col px-4 py-2 text-left hover:bg-muted transition-colors border-b border-input last:border-0"
             >
               <span className="text-sm font-medium text-foreground">{item.label}</span>
               <span className="text-xs text-muted-foreground">{item.sub}</span>
