@@ -1,11 +1,18 @@
 import { NextResponse } from 'next/server'
 import { sql } from '@/lib/db'
+import { auth } from '@/lib/auth/server'
 
 export async function PUT(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const session = await auth.getSession()
+    
+    if (!session?.data?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const { id } = await params
     const body = await request.json()
     const { title, content, color, is_starred } = body
@@ -18,7 +25,7 @@ export async function PUT(
         color = COALESCE(${color}, color),
         is_starred = COALESCE(${is_starred}, is_starred),
         updated_at = CURRENT_TIMESTAMP
-      WHERE id = ${id}
+      WHERE id = ${id} AND user_id = ${session.data.user.id}
       RETURNING *
     `
 
@@ -38,10 +45,16 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const session = await auth.getSession()
+    
+    if (!session?.data?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const { id } = await params
     
     const result = await sql`
-      DELETE FROM notes WHERE id = ${id}
+      DELETE FROM notes WHERE id = ${id} AND user_id = ${session.data.user.id}
       RETURNING *
     `
 
