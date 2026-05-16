@@ -24,7 +24,6 @@ export function Editor({ content, onChange }: EditorProps) {
   const [slashMenu, setSlashMenu] = useState(false)
   const [menuPos, setMenuPos] = useState({ top: 0, left: 0 })
   const menuRef = useRef<HTMLDivElement>(null)
-  const wrapperRef = useRef<HTMLDivElement>(null)
 
   const editor = useEditor({
     extensions: [
@@ -50,20 +49,14 @@ export function Editor({ content, onChange }: EditorProps) {
       )
 
       if (textBefore === '/') {
-        const domSelection = window.getSelection()
-        if (domSelection && domSelection.rangeCount > 0) {
-          const range = domSelection.getRangeAt(0)
-          const rect = range.getBoundingClientRect()
-          const wrapperRect = wrapperRef.current?.getBoundingClientRect()
-
-          if (wrapperRect) {
-            setMenuPos({
-              top: rect.bottom - wrapperRect.top + 8,
-              left: rect.left - wrapperRect.left,
-            })
-          }
-          setSlashMenu(true)
-        }
+        // Use the DOM node at cursor position
+        const { view } = editor
+        const coords = view.coordsAtPos(from)
+        setMenuPos({
+          top: coords.bottom + window.scrollY + 4,
+          left: coords.left,
+        })
+        setSlashMenu(true)
       } else {
         setSlashMenu(false)
       }
@@ -121,14 +114,19 @@ export function Editor({ content, onChange }: EditorProps) {
   }
 
   return (
-    <div ref={wrapperRef} className="relative">
+    <div className="relative">
       <EditorContent editor={editor} />
 
       {slashMenu && (
         <div
           ref={menuRef}
-          style={{ top: menuPos.top, left: menuPos.left }}
-          className="absolute z-50 w-64 rounded-xl border border-input bg-background shadow-xl overflow-hidden"
+          style={{
+            position: 'fixed',
+            top: menuPos.top,
+            left: menuPos.left,
+            zIndex: 9999,
+          }}
+          className="w-64 rounded-xl border border-input bg-background shadow-xl overflow-hidden"
         >
           {menuItems.map((item) => (
             <button
