@@ -1,141 +1,199 @@
-'use client'
+"use client"
 
-import { useEditor, EditorContent } from '@tiptap/react'
-import StarterKit from '@tiptap/starter-kit'
-import Placeholder from '@tiptap/extension-placeholder'
-import Link from '@tiptap/extension-link'
-import { useEffect, useState, useRef } from 'react'
+import { useEditor, EditorContent } from "@tiptap/react"
+import StarterKit from "@tiptap/starter-kit"
+import Underline from "@tiptap/extension-underline"
+import Link from "@tiptap/extension-link"
+import CodeBlockLowlight from "@tiptap/extension-code-block-lowlight"
+import { common, createLowlight } from "lowlight"
+import {
+  Bold,
+  Italic,
+  Strikethrough,
+  Code,
+  List,
+  ListOrdered,
+  Quote,
+  Code2,
+  Link as LinkIcon,
+  Heading1,
+  Heading2,
+  Heading3,
+} from "lucide-react"
+import { useCallback } from "react"
+
+const lowlight = createLowlight(common)
 
 interface EditorProps {
   content: string
   onChange: (content: string) => void
 }
 
-export function Editor({ content, onChange }: EditorProps) {
-  const [linkUrl, setLinkUrl] = useState('')
-  const [showLinkInput, setShowLinkInput] = useState(false)
-  const linkInputRef = useRef(null)
-
+export default function Editor({ content, onChange }: EditorProps) {
   const editor = useEditor({
     extensions: [
-      StarterKit.configure({ heading: { levels: [1, 2, 3] } }),
-      Placeholder.configure({ placeholder: 'Start writing...' }),
+      StarterKit.configure({
+        codeBlock: false,
+      }),
+      Underline,
       Link.configure({
-        openOnClick: true,
-        HTMLAttributes: { class: 'text-blue-500 underline cursor-pointer' },
+        openOnClick: false,
+      }),
+      CodeBlockLowlight.configure({
+        lowlight,
       }),
     ],
     content,
-    editorProps: {
-      attributes: { class: 'outline-none min-h-[60vh] text-base leading-snug' },
-    },
-    onUpdate({ editor }) {
+    onUpdate: ({ editor }) => {
       onChange(editor.getHTML())
+    },
+    editorProps: {
+      attributes: {
+        class:
+          "prose prose-sm sm:prose-base max-w-none focus:outline-none min-h-[calc(100vh-200px)] px-8 py-6",
+      },
     },
   })
 
-  useEffect(() => {
-    if (!editor || !content) return
-    editor.commands.setContent(content)
-  }, [])
-
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
-        e.preventDefault()
-        setShowLinkInput(true)
-        setTimeout(() => linkInputRef.current?.focus(), 50)
-      }
-    }
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [])
-
-  const handleLinkSubmit = () => {
+  const setLink = useCallback(() => {
     if (!editor) return
-    if (linkUrl) {
-      const url = linkUrl.startsWith('http') ? linkUrl : 'https://' + linkUrl
-      editor.chain().focus().setLink({ href: url }).run()
+    const previousUrl = editor.getAttributes("link").href
+    const url = window.prompt("URL", previousUrl)
+    if (url === null) return
+    if (url === "") {
+      editor.chain().focus().extendMarkRange("link").unsetLink().run()
+      return
     }
-    setLinkUrl('')
-    setShowLinkInput(false)
-  }
-
-  const handleRemoveLink = () => {
-    if (!editor) return
-    editor.chain().focus().unsetLink().run()
-  }
+    editor.chain().focus().extendMarkRange("link").setLink({ href: url }).run()
+  }, [editor])
 
   if (!editor) return null
 
   return (
-    <div>
-      <div className="flex flex-wrap items-center gap-1 mb-4 pb-3 border-b border-input">
-        <ToolbarButton onClick={() => editor.chain().focus().setHeading({ level: 1 }).run()} active={editor.isActive('heading', { level: 1 })} label="H1" />
-        <ToolbarButton onClick={() => editor.chain().focus().setHeading({ level: 2 }).run()} active={editor.isActive('heading', { level: 2 })} label="H2" />
-        <ToolbarButton onClick={() => editor.chain().focus().setHeading({ level: 3 }).run()} active={editor.isActive('heading', { level: 3 })} label="H3" />
-        <Divider />
-        <ToolbarButton onClick={() => editor.chain().focus().toggleBold().run()} active={editor.isActive('bold')} label="B" bold />
-        <ToolbarButton onClick={() => editor.chain().focus().toggleItalic().run()} active={editor.isActive('italic')} label="I" italic />
-        <ToolbarButton onClick={() => editor.chain().focus().toggleStrike().run()} active={editor.isActive('strike')} label="S" />
-        <ToolbarButton onClick={() => editor.chain().focus().toggleCode().run()} active={editor.isActive('code')} label="`" />
-        <Divider />
-        <ToolbarButton onClick={() => editor.chain().focus().toggleBulletList().run()} active={editor.isActive('bulletList')} label="List" />
-        <ToolbarButton onClick={() => editor.chain().focus().toggleOrderedList().run()} active={editor.isActive('orderedList')} label="1. List" />
-        <Divider />
-        <ToolbarButton onClick={() => editor.chain().focus().toggleBlockquote().run()} active={editor.isActive('blockquote')} label="Quote" />
-        <ToolbarButton onClick={() => editor.chain().focus().toggleCodeBlock().run()} active={editor.isActive('codeBlock')} label="Code" />
-        <Divider />
-        {editor.isActive('link') && (
-          <button
-            onMouseDown={(e) => { e.preventDefault(); handleRemoveLink() }}
-            className="px-3 py-1 rounded-lg text-sm text-red-500 hover:bg-muted"
-          >
-            Remove Link
-          </button>
-        )}
-        {showLinkInput ? (
-          <div className="flex items-center gap-1">
-            <input
-              ref={linkInputRef}
-              type="url"
-              value={linkUrl}
-              onChange={(e) => setLinkUrl(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') handleLinkSubmit()
-                if (e.key === 'Escape') setShowLinkInput(false)
-              }}
-              placeholder="https://..."
-              autoFocus
-              className="text-sm px-2 py-1 rounded-lg border border-input bg-background focus:outline-none focus:ring-1 focus:ring-ring w-40"
-            />
-            <button onMouseDown={(e) => { e.preventDefault(); handleLinkSubmit() }} className="text-sm px-2 py-1 rounded-lg bg-foreground text-background">Add</button>
-            <button onMouseDown={(e) => { e.preventDefault(); setShowLinkInput(false) }} className="text-sm px-2 py-1 rounded-lg text-muted-foreground hover:bg-muted">Cancel</button>
-          </div>
-        ) : (
-          <ToolbarButton
-            onClick={() => { setShowLinkInput(true); setTimeout(() => linkInputRef.current?.focus(), 50) }}
-            active={editor.isActive('link')}
-            label="Link"
-          />
-        )}
+    <div className="flex flex-col h-full">
+      {/* Toolbar */}
+      <div className="flex items-center gap-1 px-4 py-2 border-b border-gray-200 bg-white flex-wrap">
+        <ToolbarButton
+          onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
+          active={editor.isActive("heading", { level: 1 })}
+          title="Heading 1"
+        >
+          <Heading1 size={16} />
+        </ToolbarButton>
+        <ToolbarButton
+          onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
+          active={editor.isActive("heading", { level: 2 })}
+          title="Heading 2"
+        >
+          <Heading2 size={16} />
+        </ToolbarButton>
+        <ToolbarButton
+          onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
+          active={editor.isActive("heading", { level: 3 })}
+          title="Heading 3"
+        >
+          <Heading3 size={16} />
+        </ToolbarButton>
+
+        <div className="w-px h-5 bg-gray-300 mx-1" />
+
+        <ToolbarButton
+          onClick={() => editor.chain().focus().toggleBold().run()}
+          active={editor.isActive("bold")}
+          title="Bold"
+        >
+          <Bold size={16} />
+        </ToolbarButton>
+        <ToolbarButton
+          onClick={() => editor.chain().focus().toggleItalic().run()}
+          active={editor.isActive("italic")}
+          title="Italic"
+        >
+          <Italic size={16} />
+        </ToolbarButton>
+        <ToolbarButton
+          onClick={() => editor.chain().focus().toggleStrike().run()}
+          active={editor.isActive("strike")}
+          title="Strikethrough"
+        >
+          <Strikethrough size={16} />
+        </ToolbarButton>
+        <ToolbarButton
+          onClick={() => editor.chain().focus().toggleCode().run()}
+          active={editor.isActive("code")}
+          title="Inline Code"
+        >
+          <Code size={16} />
+        </ToolbarButton>
+
+        <div className="w-px h-5 bg-gray-300 mx-1" />
+
+        <ToolbarButton
+          onClick={() => editor.chain().focus().toggleBulletList().run()}
+          active={editor.isActive("bulletList")}
+          title="Bullet List"
+        >
+          <List size={16} />
+        </ToolbarButton>
+        <ToolbarButton
+          onClick={() => editor.chain().focus().toggleOrderedList().run()}
+          active={editor.isActive("orderedList")}
+          title="Numbered List"
+        >
+          <ListOrdered size={16} />
+        </ToolbarButton>
+        <ToolbarButton
+          onClick={() => editor.chain().focus().toggleBlockquote().run()}
+          active={editor.isActive("blockquote")}
+          title="Quote"
+        >
+          <Quote size={16} />
+        </ToolbarButton>
+        <ToolbarButton
+          onClick={() => editor.chain().focus().toggleCodeBlock().run()}
+          active={editor.isActive("codeBlock")}
+          title="Code Block"
+        >
+          <Code2 size={16} />
+        </ToolbarButton>
+
+        <div className="w-px h-5 bg-gray-300 mx-1" />
+
+        <ToolbarButton
+          onClick={setLink}
+          active={editor.isActive("link")}
+          title="Link"
+        >
+          <LinkIcon size={16} />
+        </ToolbarButton>
       </div>
-      <EditorContent editor={editor} />
+
+      {/* Editor Content */}
+      <EditorContent editor={editor} className="flex-1 overflow-y-auto" />
     </div>
   )
 }
 
-function ToolbarButton({ onClick, active, label, bold, italic }) {
+function ToolbarButton({
+  onClick,
+  active,
+  title,
+  children,
+}: {
+  onClick: () => void
+  active: boolean
+  title: string
+  children: React.ReactNode
+}) {
   return (
     <button
-      onMouseDown={(e) => { e.preventDefault(); onClick() }}
-      className={'px-3 py-1 rounded-lg text-sm transition-colors ' + (active ? 'bg-foreground text-background' : 'text-muted-foreground hover:bg-muted') + (bold ? ' font-bold' : '') + (italic ? ' italic' : '')}
+      onClick={onClick}
+      title={title}
+      className={`p-1.5 rounded hover:bg-gray-100 transition-colors ${
+        active ? "bg-gray-200 text-gray-900" : "text-gray-600"
+      }`}
     >
-      {label}
+      {children}
     </button>
   )
-}
-
-function Divider() {
-  return <div className="w-px h-5 bg-input mx-1" />
 }
