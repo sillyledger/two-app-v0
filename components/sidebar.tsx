@@ -26,6 +26,7 @@ interface SidebarProps {
   userName?: string
   userEmail?: string
   userInitial?: string
+  onNewNote?: () => void
 }
 
 const defaultNotebooks: Notebook[] = [
@@ -40,6 +41,7 @@ export default function Sidebar({
   userName = "NamiPoint",
   userEmail = "user@example.com",
   userInitial,
+  onNewNote,
 }: SidebarProps) {
   const pathname = usePathname()
   const [notebooksOpen, setNotebooksOpen] = useState(true)
@@ -129,7 +131,10 @@ export default function Sidebar({
               ))}
 
               {/* Create Notebook */}
-              <button className="flex items-center gap-2.5 px-3 py-2 w-full text-gray-500 hover:text-gray-300 hover:bg-[#2a2d33] rounded-lg transition-colors">
+              <button
+                onClick={onNewNote}
+                className="flex items-center gap-2.5 px-3 py-2 w-full text-gray-500 hover:text-gray-300 hover:bg-[#2a2d33] rounded-lg transition-colors"
+              >
                 <Plus size={14} />
                 <span className="text-sm">Create Notebook</span>
               </button>
