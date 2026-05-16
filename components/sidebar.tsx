@@ -1,99 +1,163 @@
-'use client'
-import { useState, useRef, useEffect } from 'react'
-import { Search, Home, FolderClosed, Clock, Plus, Settings, LogOut } from 'lucide-react'
-import { useRouter } from 'next/navigation'
-import { cn } from '@/lib/utils'
+"use client"
 
-interface SidebarProps {
-  onNewNote: () => void
+import { useState } from "react"
+import Link from "next/link"
+import { usePathname } from "next/navigation"
+import {
+  Search,
+  FileText,
+  ChevronDown,
+  ChevronRight,
+  Plus,
+  Settings,
+  BookOpen,
+} from "lucide-react"
+
+interface Notebook {
+  id: string
+  name: string
+  color: string
+  count: number
 }
 
-export function Sidebar({ onNewNote }: SidebarProps) {
-  const [settingsOpen, setSettingsOpen] = useState(false)
-  const settingsRef = useRef<HTMLDivElement>(null)
-  const router = useRouter()
+interface SidebarProps {
+  notebooks?: Notebook[]
+  allNotesCount?: number
+  userName?: string
+  userEmail?: string
+  userInitial?: string
+}
 
-  const navItems = [
-    { icon: Search, label: 'Search', onClick: () => {} },
-    { icon: Home, label: 'Home', onClick: () => router.push('/') },
-    { icon: FolderClosed, label: 'Folders', onClick: () => {} },
-    { icon: Clock, label: 'History', onClick: () => {} },
-  ]
+const defaultNotebooks: Notebook[] = [
+  { id: "personal", name: "Personal", color: "#4F8EF7", count: 12 },
+  { id: "work", name: "Work Projects", color: "#F97316", count: 8 },
+  { id: "ideas", name: "Ideas", color: "#A855F7", count: 15 },
+]
 
-  useEffect(() => {
-    function handleClickOutside(e: MouseEvent) {
-      if (settingsRef.current && !settingsRef.current.contains(e.target as Node)) {
-        setSettingsOpen(false)
-      }
-    }
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [])
+export default function Sidebar({
+  notebooks = defaultNotebooks,
+  allNotesCount = 35,
+  userName = "NamiPoint",
+  userEmail = "user@example.com",
+  userInitial,
+}: SidebarProps) {
+  const pathname = usePathname()
+  const [notebooksOpen, setNotebooksOpen] = useState(true)
+  const [searchQuery, setSearchQuery] = useState("")
 
-  async function handleLogout() {
-    await fetch('/api/auth', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'logout' }),
-    })
-    router.push('/login')
-  }
+  const initial = userInitial || userName.charAt(0).toUpperCase()
 
   return (
-    <aside className="flex h-screen w-20 flex-col items-center bg-sidebar py-8">
-      {/* New note button */}
-      <button
-        onClick={onNewNote}
-        className="mb-12 flex h-14 w-14 items-center justify-center rounded-full bg-foreground text-background transition-transform hover:scale-105"
-        aria-label="Create new note"
-      >
-        <Plus className="h-6 w-6" strokeWidth={2.5} />
-      </button>
+    <aside className="w-[210px] min-w-[210px] h-screen flex flex-col bg-[#1a1d21] text-white">
+      {/* App Logo */}
+      <div className="flex items-center gap-3 px-5 pt-6 pb-4">
+        <div className="w-8 h-8 rounded-lg bg-[#7C3AED] flex items-center justify-center">
+          <BookOpen size={16} className="text-white" />
+        </div>
+        <span className="font-semibold text-[15px] tracking-tight">NamiPoint</span>
+      </div>
 
-      {/* Nav items */}
-      <nav className="flex flex-col gap-6">
-        {navItems.map((item) => (
-          <button
-            key={item.label}
-            onClick={item.onClick}
-            className="flex h-12 w-12 items-center justify-center rounded-xl text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-foreground"
-            aria-label={item.label}
-          >
-            <item.icon className="h-5 w-5" />
-          </button>
-        ))}
-      </nav>
+      {/* Search */}
+      <div className="px-4 mb-4">
+        <div className="flex items-center gap-2 bg-[#2a2d33] rounded-lg px-3 py-2">
+          <Search size={14} className="text-gray-400 shrink-0" />
+          <input
+            type="text"
+            placeholder="Search..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="bg-transparent text-sm text-gray-300 placeholder-gray-500 outline-none w-full"
+          />
+        </div>
+      </div>
 
-      {/* Bottom section — settings + avatar */}
-      <div className="mt-auto flex flex-col items-center gap-4">
-        <div className="relative" ref={settingsRef}>
+      {/* Nav */}
+      <nav className="flex-1 px-3 overflow-y-auto">
+        {/* All Notes */}
+        <Link
+          href="/"
+          className={`flex items-center justify-between px-3 py-2 rounded-lg mb-1 transition-colors ${
+            pathname === "/"
+              ? "bg-[#2a2d33] text-white"
+              : "text-gray-400 hover:bg-[#2a2d33] hover:text-white"
+          }`}
+        >
+          <div className="flex items-center gap-2.5">
+            <FileText size={15} />
+            <span className="text-sm font-medium">All Notes</span>
+          </div>
+          <span className="text-xs text-gray-500">{allNotesCount}</span>
+        </Link>
+
+        {/* Notebooks Section */}
+        <div className="mt-4 mb-1">
           <button
-            onClick={() => setSettingsOpen((prev) => !prev)}
-            className="flex h-12 w-12 items-center justify-center rounded-xl text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-foreground"
-            aria-label="Settings"
+            onClick={() => setNotebooksOpen(!notebooksOpen)}
+            className="flex items-center gap-1.5 px-3 py-1 w-full text-left text-gray-500 hover:text-gray-300 transition-colors"
           >
-            <Settings className="h-5 w-5" />
+            {notebooksOpen ? (
+              <ChevronDown size={13} />
+            ) : (
+              <ChevronRight size={13} />
+            )}
+            <span className="text-xs font-semibold uppercase tracking-wider">
+              Notebooks
+            </span>
           </button>
-          {settingsOpen && (
-            <div className="absolute bottom-14 left-1/2 -translate-x-1/2 w-36 rounded-xl border border-border bg-background shadow-lg py-1 z-50">
-              <button
-                onClick={handleLogout}
-                className="flex w-full items-center gap-2 px-3 py-2 text-sm text-muted-foreground hover:bg-sidebar-accent hover:text-foreground transition-colors"
-              >
-                <LogOut className="h-4 w-4" />
-                Log out
+
+          {notebooksOpen && (
+            <div className="mt-1 space-y-0.5">
+              {notebooks.map((nb) => (
+                <Link
+                  key={nb.id}
+                  href={`/notebook/${nb.id}`}
+                  className={`flex items-center justify-between px-3 py-2 rounded-lg transition-colors ${
+                    pathname === `/notebook/${nb.id}`
+                      ? "bg-[#2a2d33] text-white"
+                      : "text-gray-400 hover:bg-[#2a2d33] hover:text-white"
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <span
+                      className="w-2 h-2 rounded-full shrink-0"
+                      style={{ backgroundColor: nb.color }}
+                    />
+                    <span className="text-sm">{nb.name}</span>
+                  </div>
+                  <span className="text-xs text-gray-500">{nb.count}</span>
+                </Link>
+              ))}
+
+              {/* Create Notebook */}
+              <button className="flex items-center gap-2.5 px-3 py-2 w-full text-gray-500 hover:text-gray-300 hover:bg-[#2a2d33] rounded-lg transition-colors">
+                <Plus size={14} />
+                <span className="text-sm">Create Notebook</span>
               </button>
             </div>
           )}
         </div>
+      </nav>
 
-        {/* User avatar */}
-        <button
-          className="flex h-10 w-10 items-center justify-center rounded-full bg-muted overflow-hidden ring-2 ring-border hover:ring-foreground transition-all"
-          aria-label="User profile"
+      {/* Bottom: Settings + User */}
+      <div className="border-t border-[#2a2d33] px-3 py-4 space-y-1">
+        <Link
+          href="/settings"
+          className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-gray-400 hover:bg-[#2a2d33] hover:text-white transition-colors"
         >
-          <span className="text-sm font-medium text-muted-foreground">U</span>
-        </button>
+          <Settings size={15} />
+          <span className="text-sm">Settings</span>
+        </Link>
+
+        {/* User Profile */}
+        <div className="flex items-center gap-3 px-3 py-2 mt-1">
+          <div className="w-7 h-7 rounded-full bg-[#7C3AED] flex items-center justify-center shrink-0">
+            <span className="text-xs font-bold text-white">{initial}</span>
+          </div>
+          <div className="min-w-0">
+            <p className="text-sm font-medium text-white truncate">{userName}</p>
+            <p className="text-xs text-gray-500 truncate">{userEmail}</p>
+          </div>
+        </div>
       </div>
     </aside>
   )
