@@ -57,14 +57,14 @@ export default function NotePage() {
             onChange={(e) => setTitle(e.target.value)}
             onBlur={handleSave}
             placeholder="Untitled"
-            className="mb-8 w-full bg-transparent text-4xl font-bold text-foreground placeholder:text-muted-foreground focus:outline-none"
+            className="mb-6 w-full bg-transparent text-4xl font-bold text-foreground placeholder:text-muted-foreground focus:outline-none"
           />
           <textarea
             value={content}
             onChange={(e) => setContent(e.target.value)}
             onBlur={handleSave}
             placeholder="Start writing..."
-            className="w-full min-h-[60vh] resize-none bg-transparent text-base leading-relaxed text-foreground placeholder:text-muted-foreground focus:outline-none"
+            className="w-full min-h-[60vh] resize-none bg-transparent text-base leading-snug text-foreground placeholder:text-muted-foreground focus:outline-none"
           />
         </div>
       </main>
