@@ -89,7 +89,6 @@ export function Editor({ content, onChange }: EditorProps) {
 
   return (
     <div>
-      {/* Bubble menu — shows when cursor is inside a link */}
       <BubbleMenu
         editor={editor}
         shouldShow={({ editor }) => editor.isActive('link')}
@@ -123,7 +122,6 @@ export function Editor({ content, onChange }: EditorProps) {
         </div>
       </BubbleMenu>
 
-      {/* Toolbar */}
       <div className="flex flex-wrap items-center gap-1 mb-4 pb-3 border-b border-input">
         <ToolbarButton onClick={() => editor.chain().focus().setHeading({ level: 1 }).run()} active={editor.isActive('heading', { level: 1 })} label="H1" />
         <ToolbarButton onClick={() => editor.chain().focus().setHeading({ level: 2 }).run()} active={editor.isActive('heading', { level: 2 })} label="H2" />
