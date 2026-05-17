@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import {
@@ -23,9 +23,6 @@ interface Notebook {
 interface SidebarProps {
   notebooks?: Notebook[]
   allNotesCount?: number
-  userName?: string
-  userEmail?: string
-  userInitial?: string
   onNewNote?: () => void
 }
 
@@ -38,16 +35,27 @@ const defaultNotebooks: Notebook[] = [
 export default function Sidebar({
   notebooks = defaultNotebooks,
   allNotesCount = 35,
-  userName = "NamiPoint",
-  userEmail = "user@example.com",
-  userInitial,
   onNewNote,
 }: SidebarProps) {
   const pathname = usePathname()
   const [notebooksOpen, setNotebooksOpen] = useState(true)
   const [searchQuery, setSearchQuery] = useState("")
+  const [userName, setUserName] = useState("")
+  const [userEmail, setUserEmail] = useState("")
 
-  const initial = userInitial || userName.charAt(0).toUpperCase()
+  useEffect(() => {
+    fetch("/api/auth/me")
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.user) {
+          setUserName(data.user.name || data.user.email.split("@")[0])
+          setUserEmail(data.user.email)
+        }
+      })
+      .catch(() => {})
+  }, [])
+
+  const initial = userName ? userName.charAt(0).toUpperCase() : "?"
 
   return (
     <aside className="w-[210px] min-w-[210px] h-screen flex flex-col bg-[#1a1d21] text-white">
@@ -56,7 +64,9 @@ export default function Sidebar({
         <div className="w-8 h-8 rounded-lg bg-[#7C3AED] flex items-center justify-center">
           <BookOpen size={16} className="text-white" />
         </div>
-        <span className="font-semibold text-[15px] tracking-tight">NamiPoint</span>
+        <span className="font-semibold text-[15px] tracking-tight">
+          {userName || "..."}
+        </span>
       </div>
 
       {/* Search */}
@@ -75,7 +85,6 @@ export default function Sidebar({
 
       {/* Nav */}
       <nav className="flex-1 px-3 overflow-y-auto">
-        {/* All Notes */}
         <Link
           href="/"
           className={`flex items-center justify-between px-3 py-2 rounded-lg mb-1 transition-colors ${
@@ -91,20 +100,13 @@ export default function Sidebar({
           <span className="text-xs text-gray-500">{allNotesCount}</span>
         </Link>
 
-        {/* Notebooks Section */}
         <div className="mt-4 mb-1">
           <button
             onClick={() => setNotebooksOpen(!notebooksOpen)}
             className="flex items-center gap-1.5 px-3 py-1 w-full text-left text-gray-500 hover:text-gray-300 transition-colors"
           >
-            {notebooksOpen ? (
-              <ChevronDown size={13} />
-            ) : (
-              <ChevronRight size={13} />
-            )}
-            <span className="text-xs font-semibold uppercase tracking-wider">
-              Notebooks
-            </span>
+            {notebooksOpen ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
+            <span className="text-xs font-semibold uppercase tracking-wider">Notebooks</span>
           </button>
 
           {notebooksOpen && (
@@ -130,7 +132,6 @@ export default function Sidebar({
                 </Link>
               ))}
 
-              {/* Create Notebook */}
               <button
                 onClick={onNewNote}
                 className="flex items-center gap-2.5 px-3 py-2 w-full text-gray-500 hover:text-gray-300 hover:bg-[#2a2d33] rounded-lg transition-colors"
@@ -147,19 +148,22 @@ export default function Sidebar({
       <div className="border-t border-[#2a2d33] px-3 py-4 space-y-1">
         <Link
           href="/settings"
-          className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-gray-400 hover:bg-[#2a2d33] hover:text-white transition-colors"
+          className={`flex items-center gap-2.5 px-3 py-2 rounded-lg transition-colors ${
+            pathname === "/settings"
+              ? "bg-[#2a2d33] text-white"
+              : "text-gray-400 hover:bg-[#2a2d33] hover:text-white"
+          }`}
         >
           <Settings size={15} />
           <span className="text-sm">Settings</span>
         </Link>
 
-        {/* User Profile */}
         <div className="flex items-center gap-3 px-3 py-2 mt-1">
           <div className="w-7 h-7 rounded-full bg-[#7C3AED] flex items-center justify-center shrink-0">
             <span className="text-xs font-bold text-white">{initial}</span>
           </div>
           <div className="min-w-0">
-            <p className="text-sm font-medium text-white truncate">{userName}</p>
+            <p className="text-sm font-medium text-white truncate">{userName || "..."}</p>
             <p className="text-xs text-gray-500 truncate">{userEmail}</p>
           </div>
         </div>
