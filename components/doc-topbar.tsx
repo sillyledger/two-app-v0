@@ -18,6 +18,7 @@ interface DocTopbarProps {
 
 export default function DocTopbar({ docTitle, folder, saveStatus, onDelete }: DocTopbarProps) {
   const [menuOpen, setMenuOpen] = useState(false)
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -35,83 +36,64 @@ export default function DocTopbar({ docTitle, folder, saveStatus, onDelete }: Do
   const sep = <ChevronRight size={11} className="text-[#444] shrink-0 mx-0.5" />
 
   return (
-    <header className="fixed top-0 left-[210px] right-0 z-40 h-[44px] flex items-center px-4 bg-[#181818] border-b border-[#2a2a2a]">
+    <>
+      <header className="fixed top-0 left-[210px] right-0 z-40 h-[44px] flex items-center px-4 bg-[#181818] border-b border-[#2a2a2a]">
 
-      {/* Left — Breadcrumbs */}
-      <div className="flex items-center gap-0.5 min-w-0 flex-1">
-        <Link href="/" className={crumbBase}>Home</Link>
-        {sep}
-        {folder && (
-          <>
-            <span className={crumbBase}>{folder.name}</span>
-            {sep}
-          </>
-        )}
-        <span className={crumbActive}>{docTitle || "Untitled"}</span>
-      </div>
-
-      {/* Right — Save status + Share + ··· */}
-      <div className="flex items-center gap-2 shrink-0 ml-4">
-
-        {/* Autosave indicator */}
-        <div className="flex items-center gap-1.5 h-5">
-          {saveStatus === "saving" && (
+        {/* Left — Breadcrumbs */}
+        <div className="flex items-center gap-0.5 min-w-0 flex-1">
+          <Link href="/" className={crumbBase}>Home</Link>
+          {sep}
+          {folder && (
             <>
-              <span className="w-1.5 h-1.5 rounded-full bg-yellow-400/80 animate-pulse" />
-              <span className="text-[11px] text-[#555]">Saving...</span>
+              <span className={crumbBase}>{folder.name}</span>
+              {sep}
             </>
           )}
-          {saveStatus === "saved" && (
-            <>
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500/80" />
-              <span className="text-[11px] text-[#555]">Saved</span>
-            </>
-          )}
+          <span className={crumbActive}>{docTitle || "Untitled"}</span>
         </div>
 
-        {/* Share button */}
-        <button className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[12px] font-medium text-[#888] hover:bg-[#2a2a2a] hover:text-[#e8e8e8] transition-colors">
-          <Share2 size={12} />
-          Share
-        </button>
+        {/* Right — Save status + Share + ··· */}
+        <div className="flex items-center gap-2 shrink-0 ml-4">
 
-        {/* ··· menu */}
-        <div className="relative" ref={menuRef}>
-          <button
-            onClick={() => setMenuOpen((v) => !v)}
-            className="flex items-center justify-center w-7 h-7 rounded-md text-[#555] hover:bg-[#2a2a2a] hover:text-[#e8e8e8] transition-colors"
-          >
-            <MoreHorizontal size={15} />
+          {/* Autosave indicator */}
+          <div className="flex items-center gap-1.5 h-5">
+            {saveStatus === "saving" && (
+              <>
+                <span className="w-1.5 h-1.5 rounded-full bg-yellow-400/80 animate-pulse" />
+                <span className="text-[11px] text-[#555]">Saving...</span>
+              </>
+            )}
+            {saveStatus === "saved" && (
+              <>
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500/80" />
+                <span className="text-[11px] text-[#555]">Saved</span>
+              </>
+            )}
+          </div>
+
+          {/* Share button */}
+          <button className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[12px] font-medium text-[#888] hover:bg-[#2a2a2a] hover:text-[#e8e8e8] transition-colors">
+            <Share2 size={12} />
+            Share
           </button>
 
-          {menuOpen && (
-            <div className="absolute right-0 top-9 z-50 bg-[#242424] border border-[#333] rounded-lg shadow-xl w-[160px] py-1 overflow-hidden">
-              <button
-                disabled
-                className="flex items-center gap-2 w-full px-3 py-2 text-[12px] text-[#666] cursor-not-allowed"
-              >
-                Word count
-              </button>
-              <button
-                disabled
-                className="flex items-center gap-2 w-full px-3 py-2 text-[12px] text-[#666] cursor-not-allowed"
-              >
-                Export
-              </button>
-              <div className="my-1 border-t border-[#333]" />
-              <button
-                onClick={() => {
-                  setMenuOpen(false)
-                  onDelete?.()
-                }}
-                className="flex items-center gap-2 w-full px-3 py-2 text-[12px] text-red-400 hover:bg-[#2a2a2a] transition-colors"
-              >
-                Delete doc
-              </button>
-            </div>
-          )}
-        </div>
-      </div>
-    </header>
-  )
-}
+          {/* ··· menu */}
+          <div className="relative" ref={menuRef}>
+            <button
+              onClick={() => setMenuOpen((v) => !v)}
+              className="flex items-center justify-center w-7 h-7 rounded-md text-[#555] hover:bg-[#2a2a2a] hover:text-[#e8e8e8] transition-colors"
+            >
+              <MoreHorizontal size={15} />
+            </button>
+
+            {menuOpen && (
+              <div className="absolute right-0 top-9 z-50 bg-[#242424] border border-[#333] rounded-lg shadow-xl w-[160px] py-1 overflow-hidden">
+                <button
+                  disabled
+                  className="flex items-center gap-2 w-full px-3 py-2 text-[12px] text-[#666] cursor-not-allowed"
+                >
+                  Word count
+                </button>
+                <button
+                  disabled
+                  className="flex items-
