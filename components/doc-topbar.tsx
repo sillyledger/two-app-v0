@@ -96,4 +96,58 @@ export default function DocTopbar({ docTitle, folder, saveStatus, onDelete }: Do
                 </button>
                 <button
                   disabled
-                  className="flex items-
+                  className="flex items-center gap-2 w-full px-3 py-2 text-[12px] text-[#666] cursor-not-allowed"
+                >
+                  Export
+                </button>
+                <div className="my-1 border-t border-[#333]" />
+                <button
+                  onClick={() => {
+                    setMenuOpen(false)
+                    setShowDeleteModal(true)
+                  }}
+                  className="flex items-center gap-2 w-full px-3 py-2 text-[12px] text-red-400 hover:bg-[#2a2a2a] transition-colors"
+                >
+                  Delete doc
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      </header>
+
+      {/* Delete confirmation modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div
+            className="absolute inset-0 bg-black/50 backdrop-blur-[2px]"
+            onClick={() => setShowDeleteModal(false)}
+          />
+          <div className="relative bg-[#242424] border border-[#333] rounded-xl shadow-2xl w-[320px] p-5 z-10">
+            <h2 className="text-[14px] font-semibold text-[#e8e8e8] mb-1">Delete doc</h2>
+            <p className="text-[12px] text-[#666] mb-5">
+              This doc will be permanently deleted. This cannot be undone.
+            </p>
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => setShowDeleteModal(false)}
+                className="px-3 py-1.5 rounded-lg text-[12px] font-medium text-[#888] hover:bg-[#2a2a2a] transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  setShowDeleteModal(false)
+                  onDelete?.()
+                }}
+                className="px-3 py-1.5 rounded-lg text-[12px] font-medium bg-red-500/90 text-white hover:bg-red-500 transition-colors"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  )
+}
