@@ -24,6 +24,7 @@ export default function Sidebar({ onNewNote }: SidebarProps = {}) {
   const [searchQuery, setSearchQuery] = useState("")
   const [userName, setUserName] = useState("")
   const [userEmail, setUserEmail] = useState("")
+  const [workspaceName, setWorkspaceName] = useState("My Workspace")
 
   useEffect(() => {
     fetch("/api/auth/me")
@@ -35,10 +36,16 @@ export default function Sidebar({ onNewNote }: SidebarProps = {}) {
         }
       })
       .catch(() => {})
+
+    fetch("/api/workspace")
+      .then((r) => r.json())
+      .then((data) => {
+        if (data?.name) setWorkspaceName(data.name)
+      })
+      .catch(() => {})
   }, [])
 
   const initial = userName ? userName.charAt(0).toUpperCase() : "?"
-  const workspaceName = userName ? `${userName}'s Workspace` : "My Workspace"
 
   return (
     <aside className="w-[220px] min-w-[220px] h-screen flex flex-col bg-[#F4F4F4] border-r border-[#E0E0E0]">
@@ -113,7 +120,6 @@ export default function Sidebar({ onNewNote }: SidebarProps = {}) {
 
         {workspaceOpen && (
           <div className="space-y-0.5">
-            {/* Docs */}
             <Link
               href="/"
               className={`flex items-center gap-2.5 px-3 py-1.5 rounded-md transition-colors text-sm ${
@@ -126,7 +132,6 @@ export default function Sidebar({ onNewNote }: SidebarProps = {}) {
               Docs
             </Link>
 
-            {/* Projects */}
             <Link
               href="/projects"
               className={`flex items-center gap-2.5 px-3 py-1.5 rounded-md transition-colors text-sm ${
@@ -156,7 +161,6 @@ export default function Sidebar({ onNewNote }: SidebarProps = {}) {
           Settings
         </Link>
 
-        {/* User */}
         <div className="flex items-center gap-2.5 px-3 py-1.5">
           <div className="w-6 h-6 rounded-full bg-[#7C3AED] flex items-center justify-center shrink-0">
             <span className="text-xs font-bold text-white">{initial}</span>
