@@ -5,40 +5,22 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import {
   Search,
+  Inbox,
+  CheckSquare,
   FileText,
+  FolderKanban,
   ChevronDown,
   ChevronRight,
-  Plus,
   Settings,
-  BookOpen,
 } from "lucide-react"
 
-interface Notebook {
-  id: string
-  name: string
-  color: string
-  count: number
-}
-
 interface SidebarProps {
-  notebooks?: Notebook[]
-  allNotesCount?: number
   onNewNote?: () => void
 }
 
-const defaultNotebooks: Notebook[] = [
-  { id: "personal", name: "Personal", color: "#4F8EF7", count: 12 },
-  { id: "work", name: "Work Projects", color: "#F97316", count: 8 },
-  { id: "ideas", name: "Ideas", color: "#A855F7", count: 15 },
-]
-
-export default function Sidebar({
-  notebooks = defaultNotebooks,
-  allNotesCount = 35,
-  onNewNote,
-}: SidebarProps) {
+export default function Sidebar({ onNewNote }: SidebarProps = {}) {
   const pathname = usePathname()
-  const [notebooksOpen, setNotebooksOpen] = useState(true)
+  const [workspaceOpen, setWorkspaceOpen] = useState(true)
   const [searchQuery, setSearchQuery] = useState("")
   const [userName, setUserName] = useState("")
   const [userEmail, setUserEmail] = useState("")
@@ -56,23 +38,26 @@ export default function Sidebar({
   }, [])
 
   const initial = userName ? userName.charAt(0).toUpperCase() : "?"
+  const workspaceName = userName ? `${userName}'s Workspace` : "My Workspace"
 
   return (
-    <aside className="w-[210px] min-w-[210px] h-screen flex flex-col bg-[#F4F4F4] text-gray-900 border-r border-[#E0E0E0]">
-      {/* App Logo */}
-      <div className="flex items-center gap-3 px-5 pt-6 pb-4">
-        <div className="w-8 h-8 rounded-lg bg-[#7C3AED] flex items-center justify-center">
-          <BookOpen size={16} className="text-white" />
+    <aside className="w-[220px] min-w-[220px] h-screen flex flex-col bg-[#F4F4F4] border-r border-[#E0E0E0]">
+
+      {/* Top — Logo + User */}
+      <div className="flex items-center gap-2.5 px-4 pt-5 pb-3">
+        <div className="w-6 h-6 rounded-md bg-black flex items-center justify-center shrink-0">
+          <span className="text-white text-xs font-bold">T</span>
         </div>
-        <span className="font-semibold text-[15px] tracking-tight text-gray-900">
+        <span className="font-semibold text-[14px] text-gray-900 truncate">
           {userName || "..."}
         </span>
+        <ChevronDown size={13} className="text-gray-400 ml-auto shrink-0" />
       </div>
 
       {/* Search */}
-      <div className="px-4 mb-4">
-        <div className="flex items-center gap-2 bg-[#E8E8E8] rounded-lg px-3 py-2">
-          <Search size={14} className="text-gray-400 shrink-0" />
+      <div className="px-3 mb-2">
+        <div className="flex items-center gap-2 bg-[#E8E8E8] rounded-md px-3 py-1.5">
+          <Search size={13} className="text-gray-400 shrink-0" />
           <input
             type="text"
             placeholder="Search..."
@@ -83,91 +68,106 @@ export default function Sidebar({
         </div>
       </div>
 
-      {/* Nav */}
-      <nav className="flex-1 px-3 overflow-y-auto">
+      {/* Main Nav */}
+      <nav className="flex-1 px-2 overflow-y-auto mt-1">
+
+        {/* Inbox */}
         <Link
-          href="/"
-          className={`flex items-center justify-between px-3 py-2 rounded-lg mb-1 transition-colors ${
-            pathname === "/"
-              ? "bg-[#E8E8E8] text-gray-900"
+          href="/inbox"
+          className={`flex items-center gap-2.5 px-3 py-1.5 rounded-md mb-0.5 transition-colors text-sm ${
+            pathname === "/inbox"
+              ? "bg-[#E8E8E8] text-gray-900 font-medium"
               : "text-gray-500 hover:bg-[#E8E8E8] hover:text-gray-900"
           }`}
         >
-          <div className="flex items-center gap-2.5">
-            <FileText size={15} />
-            <span className="text-sm font-medium">All Notes</span>
-          </div>
-          <span className="text-xs text-gray-400">{allNotesCount}</span>
+          <Inbox size={15} />
+          Inbox
         </Link>
 
-        <div className="mt-4 mb-1">
-          <button
-            onClick={() => setNotebooksOpen(!notebooksOpen)}
-            className="flex items-center gap-1.5 px-3 py-1 w-full text-left text-gray-400 hover:text-gray-600 transition-colors"
-          >
-            {notebooksOpen ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
-            <span className="text-xs font-semibold uppercase tracking-wider">Notebooks</span>
-          </button>
+        {/* My Tasks */}
+        <Link
+          href="/tasks"
+          className={`flex items-center gap-2.5 px-3 py-1.5 rounded-md mb-0.5 transition-colors text-sm ${
+            pathname === "/tasks"
+              ? "bg-[#E8E8E8] text-gray-900 font-medium"
+              : "text-gray-500 hover:bg-[#E8E8E8] hover:text-gray-900"
+          }`}
+        >
+          <CheckSquare size={15} />
+          My Tasks
+        </Link>
 
-          {notebooksOpen && (
-            <div className="mt-1 space-y-0.5">
-              {notebooks.map((nb) => (
-                <Link
-                  key={nb.id}
-                  href={`/notebook/${nb.id}`}
-                  className={`flex items-center justify-between px-3 py-2 rounded-lg transition-colors ${
-                    pathname === `/notebook/${nb.id}`
-                      ? "bg-[#E8E8E8] text-gray-900"
-                      : "text-gray-500 hover:bg-[#E8E8E8] hover:text-gray-900"
-                  }`}
-                >
-                  <div className="flex items-center gap-2.5">
-                    <span
-                      className="w-2 h-2 rounded-full shrink-0"
-                      style={{ backgroundColor: nb.color }}
-                    />
-                    <span className="text-sm">{nb.name}</span>
-                  </div>
-                  <span className="text-xs text-gray-400">{nb.count}</span>
-                </Link>
-              ))}
+        {/* Divider */}
+        <div className="my-3 border-t border-[#E0E0E0]" />
 
-              <button
-                onClick={onNewNote}
-                className="flex items-center gap-2.5 px-3 py-2 w-full text-gray-400 hover:text-gray-600 hover:bg-[#E8E8E8] rounded-lg transition-colors"
-              >
-                <Plus size={14} />
-                <span className="text-sm">Create Notebook</span>
-              </button>
-            </div>
-          )}
-        </div>
+        {/* Workspace Section */}
+        <button
+          onClick={() => setWorkspaceOpen(!workspaceOpen)}
+          className="flex items-center gap-1.5 px-3 py-1 w-full text-left text-gray-400 hover:text-gray-600 transition-colors mb-1"
+        >
+          {workspaceOpen ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+          <span className="text-xs font-semibold uppercase tracking-wider truncate">
+            {workspaceName}
+          </span>
+        </button>
+
+        {workspaceOpen && (
+          <div className="space-y-0.5">
+            {/* Docs */}
+            <Link
+              href="/"
+              className={`flex items-center gap-2.5 px-3 py-1.5 rounded-md transition-colors text-sm ${
+                pathname === "/"
+                  ? "bg-[#E8E8E8] text-gray-900 font-medium"
+                  : "text-gray-500 hover:bg-[#E8E8E8] hover:text-gray-900"
+              }`}
+            >
+              <FileText size={15} />
+              Docs
+            </Link>
+
+            {/* Projects */}
+            <Link
+              href="/projects"
+              className={`flex items-center gap-2.5 px-3 py-1.5 rounded-md transition-colors text-sm ${
+                pathname === "/projects"
+                  ? "bg-[#E8E8E8] text-gray-900 font-medium"
+                  : "text-gray-500 hover:bg-[#E8E8E8] hover:text-gray-900"
+              }`}
+            >
+              <FolderKanban size={15} />
+              Projects
+            </Link>
+          </div>
+        )}
       </nav>
 
-      {/* Bottom: Settings + User */}
-      <div className="border-t border-[#E0E0E0] px-3 py-4 space-y-1">
+      {/* Bottom — Settings + User */}
+      <div className="border-t border-[#E0E0E0] px-2 py-3 space-y-0.5">
         <Link
           href="/settings"
-          className={`flex items-center gap-2.5 px-3 py-2 rounded-lg transition-colors ${
+          className={`flex items-center gap-2.5 px-3 py-1.5 rounded-md transition-colors text-sm ${
             pathname === "/settings"
-              ? "bg-[#E8E8E8] text-gray-900"
+              ? "bg-[#E8E8E8] text-gray-900 font-medium"
               : "text-gray-500 hover:bg-[#E8E8E8] hover:text-gray-900"
           }`}
         >
           <Settings size={15} />
-          <span className="text-sm">Settings</span>
+          Settings
         </Link>
 
-        <div className="flex items-center gap-3 px-3 py-2 mt-1">
-          <div className="w-7 h-7 rounded-full bg-[#7C3AED] flex items-center justify-center shrink-0">
+        {/* User */}
+        <div className="flex items-center gap-2.5 px-3 py-1.5">
+          <div className="w-6 h-6 rounded-full bg-[#7C3AED] flex items-center justify-center shrink-0">
             <span className="text-xs font-bold text-white">{initial}</span>
           </div>
           <div className="min-w-0">
-            <p className="text-sm font-medium text-gray-900 truncate">{userName || "..."}</p>
-            <p className="text-xs text-gray-400 truncate">{userEmail}</p>
+            <p className="text-sm font-medium text-gray-900 truncate leading-tight">{userName || "..."}</p>
+            <p className="text-xs text-gray-400 truncate leading-tight">{userEmail}</p>
           </div>
         </div>
       </div>
+
     </aside>
   )
 }
