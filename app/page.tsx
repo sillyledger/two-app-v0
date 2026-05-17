@@ -3,7 +3,6 @@ import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { Plus } from "lucide-react"
 import Sidebar from "@/components/sidebar"
-
 interface Doc {
   id: string
   title: string
@@ -11,7 +10,6 @@ interface Doc {
   type: string
   created_at: string
 }
-
 const CARD_COLORS = [
   "#2a2520",
   "#2a1f1f",
@@ -20,7 +18,6 @@ const CARD_COLORS = [
   "#2a2a1a",
   "#1a2228",
 ]
-
 function formatDate(dateStr: string) {
   if (!dateStr) return ""
   const date = new Date(dateStr)
@@ -31,28 +28,24 @@ function formatDate(dateStr: string) {
     year: "numeric",
   })
 }
-
 function stripHtml(html: string) {
   if (!html) return ""
   return html.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim()
 }
-
 export default function HomePage() {
   const router = useRouter()
   const [docs, setDocs] = useState<Doc[]>([])
   const [loading, setLoading] = useState(true)
   const [creating, setCreating] = useState(false)
-
   useEffect(() => {
     fetch("/api/docs")
       .then((r) => r.json())
       .then((data) => {
-        setDocs(Array.isArray(data) ? data.slice(0, 6) : [])
+        setDocs(Array.isArray(data) ? data.slice(0, 9) : [])
         setLoading(false)
       })
       .catch(() => setLoading(false))
   }, [])
-
   const handleCreateDoc = async () => {
     if (creating) return
     setCreating(true)
@@ -68,36 +61,34 @@ export default function HomePage() {
       setCreating(false)
     }
   }
-
   return (
     <div className="flex h-screen bg-[#1a1a1a] overflow-hidden">
       <Sidebar />
       <main className="flex-1 overflow-y-auto">
         <div className="max-w-3xl mx-auto px-8 py-8">
           {/* Header */}
-          <div className="flex items-center gap-3 mb-8">
+          <div className="flex items-center justify-between mb-8">
+            <h1 className="text-2xl font-bold text-[#e8e8e8]">Recent Docs</h1>
             <button
               onClick={handleCreateDoc}
               disabled={creating}
-              className="w-9 h-9 rounded-full bg-[#e8e8e8] text-[#1a1a1a] flex items-center justify-center hover:bg-white transition-colors shrink-0"
-              title="New Doc"
+              className="flex items-center gap-1.5 px-4 py-2 rounded-lg border border-white/20 text-[#e8e8e8] text-sm font-medium hover:bg-white/10 transition-colors"
             >
-              <Plus size={20} />
+              <Plus size={15} />
+              {creating ? "Creating..." : "Create Doc"}
             </button>
-            <h1 className="text-2xl font-bold text-[#e8e8e8]">Recent Docs</h1>
           </div>
-
           {/* Docs Grid */}
           {loading ? (
             <div className="grid grid-cols-3 gap-4">
-              {Array.from({ length: 6 }).map((_, i) => (
+              {Array.from({ length: 9 }).map((_, i) => (
                 <div key={i} className="h-44 rounded-2xl bg-[#2a2a2a] animate-pulse" />
               ))}
             </div>
           ) : docs.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-64 text-[#666]">
               <p className="text-lg font-medium mb-2">No docs yet</p>
-              <p className="text-sm">Click the + button to create your first doc</p>
+              <p className="text-sm">Click + Create Doc to get started</p>
             </div>
           ) : (
             <div className="grid grid-cols-3 gap-4">
