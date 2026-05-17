@@ -1,6 +1,6 @@
 "use client"
 
-import { useEditor, EditorContent } from "@tiptap/react"
+import { useEditor, EditorContent, BubbleMenu } from "@tiptap/react"
 import StarterKit from "@tiptap/starter-kit"
 import Link from "@tiptap/extension-link"
 import {
@@ -40,7 +40,7 @@ export default function Editor({ content, onChange }: EditorProps) {
     editorProps: {
       attributes: {
         class:
-          "prose prose-sm sm:prose-base max-w-none focus:outline-none min-h-[calc(100vh-200px)] px-8 py-6",
+          "prose prose-invert max-w-none focus:outline-none min-h-[60vh] text-[15px] leading-[1.75]",
       },
     },
   })
@@ -60,111 +60,116 @@ export default function Editor({ content, onChange }: EditorProps) {
   if (!editor) return null
 
   return (
-    <div className="flex flex-col h-full">
-      {/* Toolbar */}
-      <div className="flex items-center gap-1 px-4 py-2 border-b border-gray-200 bg-white flex-wrap">
-        <ToolbarButton
+    <div className="relative">
+
+      {/* Bubble menu — only appears when text is selected */}
+      <BubbleMenu
+        editor={editor}
+        tippyOptions={{ duration: 100 }}
+        className="flex items-center gap-0.5 rounded-lg border border-white/10 bg-[#2a2a2a] px-1.5 py-1 shadow-xl"
+      >
+        <BubbleButton
           onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
           active={editor.isActive("heading", { level: 1 })}
           title="Heading 1"
         >
-          <Heading1 size={16} />
-        </ToolbarButton>
-        <ToolbarButton
+          <Heading1 size={14} />
+        </BubbleButton>
+        <BubbleButton
           onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
           active={editor.isActive("heading", { level: 2 })}
           title="Heading 2"
         >
-          <Heading2 size={16} />
-        </ToolbarButton>
-        <ToolbarButton
+          <Heading2 size={14} />
+        </BubbleButton>
+        <BubbleButton
           onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
           active={editor.isActive("heading", { level: 3 })}
           title="Heading 3"
         >
-          <Heading3 size={16} />
-        </ToolbarButton>
+          <Heading3 size={14} />
+        </BubbleButton>
 
-        <div className="w-px h-5 bg-gray-300 mx-1" />
+        <div className="mx-1 h-4 w-px bg-white/10" />
 
-        <ToolbarButton
+        <BubbleButton
           onClick={() => editor.chain().focus().toggleBold().run()}
           active={editor.isActive("bold")}
           title="Bold"
         >
-          <Bold size={16} />
-        </ToolbarButton>
-        <ToolbarButton
+          <Bold size={14} />
+        </BubbleButton>
+        <BubbleButton
           onClick={() => editor.chain().focus().toggleItalic().run()}
           active={editor.isActive("italic")}
           title="Italic"
         >
-          <Italic size={16} />
-        </ToolbarButton>
-        <ToolbarButton
+          <Italic size={14} />
+        </BubbleButton>
+        <BubbleButton
           onClick={() => editor.chain().focus().toggleStrike().run()}
           active={editor.isActive("strike")}
           title="Strikethrough"
         >
-          <Strikethrough size={16} />
-        </ToolbarButton>
-        <ToolbarButton
+          <Strikethrough size={14} />
+        </BubbleButton>
+        <BubbleButton
           onClick={() => editor.chain().focus().toggleCode().run()}
           active={editor.isActive("code")}
           title="Inline Code"
         >
-          <Code size={16} />
-        </ToolbarButton>
+          <Code size={14} />
+        </BubbleButton>
 
-        <div className="w-px h-5 bg-gray-300 mx-1" />
+        <div className="mx-1 h-4 w-px bg-white/10" />
 
-        <ToolbarButton
+        <BubbleButton
           onClick={() => editor.chain().focus().toggleBulletList().run()}
           active={editor.isActive("bulletList")}
           title="Bullet List"
         >
-          <List size={16} />
-        </ToolbarButton>
-        <ToolbarButton
+          <List size={14} />
+        </BubbleButton>
+        <BubbleButton
           onClick={() => editor.chain().focus().toggleOrderedList().run()}
           active={editor.isActive("orderedList")}
           title="Numbered List"
         >
-          <ListOrdered size={16} />
-        </ToolbarButton>
-        <ToolbarButton
+          <ListOrdered size={14} />
+        </BubbleButton>
+        <BubbleButton
           onClick={() => editor.chain().focus().toggleBlockquote().run()}
           active={editor.isActive("blockquote")}
           title="Quote"
         >
-          <Quote size={16} />
-        </ToolbarButton>
-        <ToolbarButton
+          <Quote size={14} />
+        </BubbleButton>
+        <BubbleButton
           onClick={() => editor.chain().focus().toggleCodeBlock().run()}
           active={editor.isActive("codeBlock")}
           title="Code Block"
         >
-          <Code2 size={16} />
-        </ToolbarButton>
+          <Code2 size={14} />
+        </BubbleButton>
 
-        <div className="w-px h-5 bg-gray-300 mx-1" />
+        <div className="mx-1 h-4 w-px bg-white/10" />
 
-        <ToolbarButton
+        <BubbleButton
           onClick={setLink}
           active={editor.isActive("link")}
           title="Link"
         >
-          <LinkIcon size={16} />
-        </ToolbarButton>
-      </div>
+          <LinkIcon size={14} />
+        </BubbleButton>
+      </BubbleMenu>
 
-      {/* Editor Content */}
-      <EditorContent editor={editor} className="flex-1 overflow-y-auto" />
+      {/* Editor content — no toolbar above it */}
+      <EditorContent editor={editor} />
     </div>
   )
 }
 
-function ToolbarButton({
+function BubbleButton({
   onClick,
   active,
   title,
@@ -179,8 +184,10 @@ function ToolbarButton({
     <button
       onClick={onClick}
       title={title}
-      className={`p-1.5 rounded hover:bg-gray-100 transition-colors ${
-        active ? "bg-gray-200 text-gray-900" : "text-gray-600"
+      className={`rounded p-1.5 transition-colors ${
+        active
+          ? "bg-white/20 text-white"
+          : "text-white/60 hover:bg-white/10 hover:text-white"
       }`}
     >
       {children}
