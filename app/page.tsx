@@ -31,6 +31,11 @@ function formatDate(dateStr: string) {
   })
 }
 
+function stripHtml(html: string) {
+  if (!html) return ""
+  return html.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim()
+}
+
 export default function HomePage() {
   const router = useRouter()
   const [notes, setNotes] = useState<Note[]>([])
@@ -66,49 +71,61 @@ export default function HomePage() {
   return (
     <div className="flex h-screen bg-[#f5f5f5] overflow-hidden">
       <Sidebar />
-      <main className="flex-1 overflow-y-auto px-10 py-8">
-        <div className="flex items-center gap-3 mb-8">
-          <button
-            onClick={handleCreateNote}
-            disabled={creating}
-            className="w-9 h-9 rounded-full bg-black text-white flex items-center justify-center hover:bg-gray-800 transition-colors shrink-0"
-            title="New Note"
-          >
-            <Plus size={20} />
-          </button>
-          <h1 className="text-2xl font-bold text-gray-900">Personal</h1>
-        </div>
 
-        {loading ? (
-          <div className="grid grid-cols-3 gap-4">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="h-44 rounded-2xl bg-gray-200 animate-pulse" />
-            ))}
+      <main className="flex-1 overflow-y-auto">
+        <div className="max-w-3xl mx-auto px-8 py-8">
+
+          {/* Header */}
+          <div className="flex items-center gap-3 mb-8">
+            <button
+              onClick={handleCreateNote}
+              disabled={creating}
+              className="w-9 h-9 rounded-full bg-black text-white flex items-center justify-center hover:bg-gray-800 transition-colors shrink-0"
+              title="New Note"
+            >
+              <Plus size={20} />
+            </button>
+            <h1 className="text-2xl font-bold text-gray-900">Personal</h1>
           </div>
-        ) : notes.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-64 text-gray-400">
-            <p className="text-lg font-medium mb-2">No notes yet</p>
-            <p className="text-sm">Click the + button to create your first note</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-3 gap-4">
-            {notes.map((note, i) => (
-              <button
-                key={note.id}
-                onClick={() => router.push(`/notes/${note.id}`)}
-                className="text-left p-5 rounded-2xl transition-transform hover:scale-[1.02] active:scale-[0.98] flex flex-col justify-between min-h-[172px]"
-                style={{ backgroundColor: CARD_COLORS[i % CARD_COLORS.length] }}
-              >
-                <p className="font-semibold text-gray-900 text-[15px] leading-snug line-clamp-3">
-                  {note.title || "Untitled"}
-                </p>
-                <p className="text-xs text-gray-500 mt-4">
-                  {formatDate(note.created_at)}
-                </p>
-              </button>
-            ))}
-          </div>
-        )}
+
+          {/* Notes Grid */}
+          {loading ? (
+            <div className="grid grid-cols-3 gap-4">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className="h-44 rounded-2xl bg-gray-200 animate-pulse" />
+              ))}
+            </div>
+          ) : notes.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-64 text-gray-400">
+              <p className="text-lg font-medium mb-2">No notes yet</p>
+              <p className="text-sm">Click the + button to create your first note</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-3 gap-4">
+              {notes.map((note, i) => (
+                <button
+                  key={note.id}
+                  onClick={() => router.push(`/notes/${note.id}`)}
+                  className="text-left p-5 rounded-2xl transition-transform hover:scale-[1.02] active:scale-[0.98] flex flex-col justify-between min-h-[172px]"
+                  style={{ backgroundColor: CARD_COLORS[i % CARD_COLORS.length] }}
+                >
+                  <div>
+                    <p className="font-semibold text-gray-900 text-[15px] leading-snug mb-2">
+                      {note.title || "Untitled"}
+                    </p>
+                    <p className="text-xs text-gray-600 leading-relaxed line-clamp-3">
+                      {stripHtml(note.content)}
+                    </p>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-4">
+                    {formatDate(note.created_at)}
+                  </p>
+                </button>
+              ))}
+            </div>
+          )}
+
+        </div>
       </main>
     </div>
   )
