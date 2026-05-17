@@ -13,7 +13,6 @@ export default function DocPage() {
   const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'unsaved'>('saved')
   const titleRef = useRef<HTMLTextAreaElement>(null)
 
-  // Auto-resize the textarea height to fit its content
   const resizeTitle = () => {
     const el = titleRef.current
     if (!el) return
@@ -36,7 +35,6 @@ export default function DocPage() {
       })
   }, [id])
 
-  // Resize once title loads in
   useEffect(() => {
     resizeTitle()
   }, [title])
@@ -71,7 +69,7 @@ export default function DocPage() {
     <div className="flex min-h-screen bg-background">
       <Sidebar onNewNote={handleNewDoc} />
       <main className="flex-1 overflow-y-auto">
-        <div className="mx-auto w-full max-w-[900px] px-16 pt-16 pb-32">
+        <div className="mx-auto w-full max-w-[780px] px-16 pt-16 pb-32">
           {/* Save status */}
           <div className="mb-6 flex justify-end h-4">
             <span className="text-xs text-muted-foreground/50 transition-opacity duration-300">
@@ -79,7 +77,7 @@ export default function DocPage() {
               {saveStatus === 'saved' && ''}
             </span>
           </div>
-          {/* Doc title — textarea so it wraps naturally to multiple lines */}
+          {/* Doc title */}
           <textarea
             ref={titleRef}
             value={title}
@@ -88,7 +86,6 @@ export default function DocPage() {
               resizeTitle()
             }}
             onKeyDown={(e) => {
-              // Press Enter to jump into the editor instead of adding a newline
               if (e.key === 'Enter') {
                 e.preventDefault()
               }
