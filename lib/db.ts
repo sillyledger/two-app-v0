@@ -9,6 +9,7 @@ export interface Doc {
   color: string
   type: string
   is_starred: boolean
+  folder_id: number | null
   created_at: string
   updated_at: string
 }
