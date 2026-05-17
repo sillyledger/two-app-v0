@@ -12,6 +12,7 @@ import {
   ChevronDown,
   ChevronRight,
   Settings,
+  BookOpen,
 } from "lucide-react"
 
 interface SidebarProps {
@@ -102,6 +103,19 @@ export default function Sidebar({ onNewNote }: SidebarProps = {}) {
         >
           <CheckSquare size={15} />
           My Tasks
+        </Link>
+
+        {/* Library */}
+        <Link
+          href="/library"
+          className={`flex items-center gap-2.5 px-3 py-1.5 rounded-md mb-0.5 transition-colors text-sm ${
+            pathname === "/library"
+              ? "bg-[#E8E8E8] text-gray-900 font-medium"
+              : "text-gray-500 hover:bg-[#E8E8E8] hover:text-gray-900"
+          }`}
+        >
+          <BookOpen size={15} />
+          Library
         </Link>
 
         {/* Divider */}
