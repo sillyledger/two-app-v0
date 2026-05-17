@@ -85,7 +85,7 @@ export default function HomePage() {
             >
               <Plus size={20} />
             </button>
-            <h1 className="text-2xl font-bold text-gray-900">Personal</h1>
+            <h1 className="text-2xl font-bold text-gray-900">Recent Notes</h1>
           </div>
 
           {/* Notes Grid */}
