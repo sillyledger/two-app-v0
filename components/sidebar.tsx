@@ -43,7 +43,6 @@ export default function Sidebar({ onNewNote }: SidebarProps = {}) {
   const [folders, setFolders] = useState<Folder[]>([])
   const [creating, setCreating] = useState(false)
 
-  // Modal state
   const [showModal, setShowModal] = useState(false)
   const [modalType, setModalType] = useState<"doc" | "folder">("doc")
   const [modalName, setModalName] = useState("")
@@ -135,8 +134,8 @@ export default function Sidebar({ onNewNote }: SidebarProps = {}) {
       href={href}
       className={`flex items-center gap-2 px-2 py-[5px] rounded-md mb-[1px] transition-colors text-[12px] font-medium ${
         pathname === href
-          ? "bg-[#E0E0E0] text-[#111111]"
-          : "text-[#3a3a3a] hover:bg-[#E0E0E0] hover:text-[#111111]"
+          ? "bg-[#2a2a2a] text-[#e8e8e8]"
+          : "text-[#888] hover:bg-[#2a2a2a] hover:text-[#e8e8e8]"
       }`}
     >
       {icon}
@@ -146,29 +145,29 @@ export default function Sidebar({ onNewNote }: SidebarProps = {}) {
 
   return (
     <>
-      <aside className="w-[210px] min-w-[210px] h-screen flex flex-col bg-[#EBEBEB] border-r border-[#D8D8D8]">
+      <aside className="w-[210px] min-w-[210px] h-screen flex flex-col bg-[#1f1f1f] border-r border-[#2a2a2a]">
 
         {/* Top — User */}
         <div className="flex items-center gap-2 px-3 pt-4 pb-2.5">
-          <div className="w-5 h-5 rounded-md bg-[#111111] flex items-center justify-center shrink-0">
-            <span className="text-white text-[10px] font-bold">T</span>
+          <div className="w-5 h-5 rounded-md bg-[#e8e8e8] flex items-center justify-center shrink-0">
+            <span className="text-[#1a1a1a] text-[10px] font-bold">T</span>
           </div>
-          <span className="font-semibold text-[13px] text-[#111111] truncate">
+          <span className="font-semibold text-[13px] text-[#e8e8e8] truncate">
             {userName || "..."}
           </span>
-          <ChevronDown size={12} className="text-[#888] ml-auto shrink-0" />
+          <ChevronDown size={12} className="text-[#555] ml-auto shrink-0" />
         </div>
 
         {/* Search */}
         <div className="px-2 mb-2">
-          <div className="flex items-center gap-2 bg-[#DCDCDC] rounded-md px-2.5 py-[6px]">
-            <Search size={12} className="text-[#888] shrink-0" />
+          <div className="flex items-center gap-2 bg-[#2a2a2a] rounded-md px-2.5 py-[6px]">
+            <Search size={12} className="text-[#555] shrink-0" />
             <input
               type="text"
               placeholder="Search..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="bg-transparent text-[12px] text-[#333] placeholder-[#999] outline-none w-full"
+              className="bg-transparent text-[12px] text-[#ccc] placeholder-[#555] outline-none w-full"
             />
           </div>
         </div>
@@ -180,24 +179,23 @@ export default function Sidebar({ onNewNote }: SidebarProps = {}) {
           {navItem("/activity", <Activity size={13} />, "Activity")}
           {navItem("/library", <BookOpen size={13} />, "Library")}
 
-          {/* Divider */}
-          <div className="my-2 border-t border-[#D4D4D4]" />
+          <div className="my-2 border-t border-[#2a2a2a]" />
 
           {/* Workspace Header */}
           <div className="flex items-center justify-between px-2 py-[4px] mb-0.5">
             <button
               onClick={() => setWorkspaceOpen(!workspaceOpen)}
-              className="flex items-center gap-1 text-[#888] hover:text-[#333] transition-colors"
+              className="flex items-center gap-1 text-[#555] hover:text-[#aaa] transition-colors"
             >
               {workspaceOpen ? <ChevronDown size={11} /> : <ChevronRight size={11} />}
-              <span className="text-[10px] font-semibold uppercase tracking-wider text-[#888]">
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-[#555]">
                 {workspaceName}
               </span>
             </button>
             <button
               onClick={() => openModal("doc")}
               disabled={creating}
-              className="text-[#888] hover:text-[#111] transition-colors"
+              className="text-[#555] hover:text-[#e8e8e8] transition-colors"
               title="New Doc or Folder"
             >
               <Plus size={13} />
@@ -206,49 +204,46 @@ export default function Sidebar({ onNewNote }: SidebarProps = {}) {
 
           {workspaceOpen && (
             <div className="space-y-[1px]">
-
-              {/* Folders */}
               {folders.map((folder) => (
                 <div
                   key={folder.id}
-                  className="flex items-center gap-2 px-2 py-[5px] rounded-md text-[12px] font-medium text-[#3a3a3a] hover:bg-[#E0E0E0] hover:text-[#111] transition-colors cursor-pointer"
+                  className="flex items-center gap-2 px-2 py-[5px] rounded-md text-[12px] font-medium text-[#888] hover:bg-[#2a2a2a] hover:text-[#e8e8e8] transition-colors cursor-pointer"
                 >
-                  <Folder size={13} className="shrink-0 text-[#888]" />
+                  <Folder size={13} className="shrink-0 text-[#555]" />
                   <span className="truncate">{folder.name}</span>
                 </div>
               ))}
 
-              {/* Loose Docs */}
               {docs.map((doc) => (
                 <Link
                   key={doc.id}
                   href={`/docs/${doc.id}`}
                   className={`flex items-center gap-2 px-2 py-[5px] rounded-md transition-colors text-[12px] font-medium ${
                     pathname === `/docs/${doc.id}`
-                      ? "bg-[#E0E0E0] text-[#111111]"
-                      : "text-[#3a3a3a] hover:bg-[#E0E0E0] hover:text-[#111111]"
+                      ? "bg-[#2a2a2a] text-[#e8e8e8]"
+                      : "text-[#888] hover:bg-[#2a2a2a] hover:text-[#e8e8e8]"
                   }`}
                 >
-                  <FileText size={13} className="shrink-0 text-[#888]" />
+                  <FileText size={13} className="shrink-0 text-[#555]" />
                   <span className="truncate">{doc.title || "Untitled"}</span>
                 </Link>
               ))}
 
               {folders.length === 0 && docs.length === 0 && (
-                <p className="text-[11px] text-[#999] px-2 py-1">No docs yet</p>
+                <p className="text-[11px] text-[#444] px-2 py-1">No docs yet</p>
               )}
             </div>
           )}
         </nav>
 
         {/* Bottom — Settings + User */}
-        <div className="border-t border-[#D4D4D4] px-2 py-2.5 space-y-[1px]">
+        <div className="border-t border-[#2a2a2a] px-2 py-2.5 space-y-[1px]">
           <Link
             href="/settings"
             className={`flex items-center gap-2 px-2 py-[5px] rounded-md transition-colors text-[12px] font-medium ${
               pathname === "/settings"
-                ? "bg-[#E0E0E0] text-[#111111]"
-                : "text-[#3a3a3a] hover:bg-[#E0E0E0] hover:text-[#111111]"
+                ? "bg-[#2a2a2a] text-[#e8e8e8]"
+                : "text-[#888] hover:bg-[#2a2a2a] hover:text-[#e8e8e8]"
             }`}
           >
             <Settings size={13} />
@@ -260,31 +255,27 @@ export default function Sidebar({ onNewNote }: SidebarProps = {}) {
               <span className="text-[10px] font-bold text-white">{initial}</span>
             </div>
             <div className="min-w-0">
-              <p className="text-[12px] font-medium text-[#111] truncate leading-tight">{userName || "..."}</p>
-              <p className="text-[11px] text-[#888] truncate leading-tight">{userEmail}</p>
+              <p className="text-[12px] font-medium text-[#e8e8e8] truncate leading-tight">{userName || "..."}</p>
+              <p className="text-[11px] text-[#555] truncate leading-tight">{userEmail}</p>
             </div>
           </div>
         </div>
-
       </aside>
 
       {/* Modal */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
-          {/* Backdrop */}
           <div
-            className="absolute inset-0 bg-black/30 backdrop-blur-[2px]"
+            className="absolute inset-0 bg-black/50 backdrop-blur-[2px]"
             onClick={() => setShowModal(false)}
           />
-
-          {/* Modal Box */}
-          <div className="relative bg-white rounded-xl shadow-2xl w-[320px] p-5 z-10">
-            <h2 className="text-[14px] font-semibold text-gray-900 mb-4">
+          <div className="relative bg-[#242424] border border-[#333] rounded-xl shadow-2xl w-[320px] p-5 z-10">
+            <h2 className="text-[14px] font-semibold text-[#e8e8e8] mb-4">
               {modalType === "doc" ? "New Doc" : "New Folder"}
             </h2>
 
             <div className="mb-1">
-              <label className="text-[11px] text-gray-500 font-medium uppercase tracking-wider mb-1 block">
+              <label className="text-[11px] text-[#666] font-medium uppercase tracking-wider mb-1 block">
                 Name
               </label>
               <input
@@ -296,16 +287,15 @@ export default function Sidebar({ onNewNote }: SidebarProps = {}) {
                   if (e.key === "Enter") handleModalConfirm()
                   if (e.key === "Escape") setShowModal(false)
                 }}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-[13px] text-gray-900 outline-none focus:border-gray-500 focus:ring-1 focus:ring-gray-300"
+                className="w-full bg-[#1a1a1a] border border-[#333] rounded-lg px-3 py-2 text-[13px] text-[#e8e8e8] outline-none focus:border-[#555] focus:ring-1 focus:ring-[#333]"
               />
             </div>
 
-            {/* Two buttons for the + action */}
             {modalType === "doc" && (
               <div className="mt-3 mb-3">
                 <button
                   onClick={() => { setModalType("folder"); setModalName("New Folder") }}
-                  className="text-[11px] text-gray-400 hover:text-gray-600 transition-colors"
+                  className="text-[11px] text-[#555] hover:text-[#aaa] transition-colors"
                 >
                   Create a folder instead →
                 </button>
@@ -315,7 +305,7 @@ export default function Sidebar({ onNewNote }: SidebarProps = {}) {
               <div className="mt-3 mb-3">
                 <button
                   onClick={() => { setModalType("doc"); setModalName("Untitled") }}
-                  className="text-[11px] text-gray-400 hover:text-gray-600 transition-colors"
+                  className="text-[11px] text-[#555] hover:text-[#aaa] transition-colors"
                 >
                   Create a doc instead →
                 </button>
@@ -325,13 +315,13 @@ export default function Sidebar({ onNewNote }: SidebarProps = {}) {
             <div className="flex justify-end gap-2 mt-2">
               <button
                 onClick={() => setShowModal(false)}
-                className="px-3 py-1.5 rounded-lg text-[12px] font-medium text-gray-600 hover:bg-gray-100 transition-colors"
+                className="px-3 py-1.5 rounded-lg text-[12px] font-medium text-[#888] hover:bg-[#2a2a2a] transition-colors"
               >
                 Cancel
               </button>
               <button
                 onClick={handleModalConfirm}
-                className="px-3 py-1.5 rounded-lg text-[12px] font-medium bg-black text-white hover:bg-gray-800 transition-colors"
+                className="px-3 py-1.5 rounded-lg text-[12px] font-medium bg-[#e8e8e8] text-[#1a1a1a] hover:bg-white transition-colors"
               >
                 Create
               </button>
