@@ -4,7 +4,6 @@ import { useParams, useRouter } from 'next/navigation'
 import Sidebar from '@/components/sidebar'
 import Editor from '@/components/editor'
 import type { Doc } from '@/lib/db'
-
 export default function DocPage() {
   const { id } = useParams()
   const router = useRouter()
@@ -12,13 +11,11 @@ export default function DocPage() {
   const [title, setTitle] = useState('')
   const [content, setContent] = useState('')
   const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'unsaved'>('saved')
-
   useEffect(() => {
     fetch('/api/auth/me').then((res) => {
       if (!res.ok) router.push('/login')
     })
   }, [])
-
   useEffect(() => {
     fetch(`/api/docs/${id}`)
       .then((res) => res.json())
@@ -28,7 +25,6 @@ export default function DocPage() {
         setContent(data.content || '')
       })
   }, [id])
-
   const handleSave = useCallback(async (latestTitle: string, latestContent: string, latestDoc: Doc | null) => {
     setSaveStatus('saving')
     await fetch(`/api/docs/${id}`, {
@@ -38,7 +34,6 @@ export default function DocPage() {
     })
     setSaveStatus('saved')
   }, [id])
-
   useEffect(() => {
     if (!doc) return
     setSaveStatus('unsaved')
@@ -47,7 +42,6 @@ export default function DocPage() {
     }, 1000)
     return () => clearTimeout(timer)
   }, [title, content])
-
   const handleNewDoc = async () => {
     const res = await fetch('/api/docs', {
       method: 'POST',
@@ -57,31 +51,26 @@ export default function DocPage() {
     const newDoc = await res.json()
     router.push(`/docs/${newDoc.id}`)
   }
-
   return (
     <div className="flex min-h-screen bg-background">
       <Sidebar onNewNote={handleNewDoc} />
-
       <main className="flex-1 overflow-y-auto">
-        <div className="mx-auto w-full max-w-[680px] px-8 pt-16 pb-32">
-
-          {/* Save status — sits above the title, right-aligned, barely visible */}
+        <div className="mx-auto w-full max-w-[900px] px-16 pt-16 pb-32">
+          {/* Save status */}
           <div className="mb-6 flex justify-end h-4">
             <span className="text-xs text-muted-foreground/50 transition-opacity duration-300">
               {saveStatus === 'saving' && 'Saving...'}
               {saveStatus === 'saved' && ''}
             </span>
           </div>
-
           {/* Doc title */}
           <input
             type="text"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="Untitled"
-            className="mb-8 w-full bg-transparent text-[2.25rem] font-bold leading-tight tracking-tight text-foreground placeholder:text-muted-foreground/40 focus:outline-none"
+            className="mb-8 block w-full bg-transparent text-[2.375rem] font-bold leading-[1.2] tracking-tight text-foreground placeholder:text-muted-foreground/40 focus:outline-none"
           />
-
           {/* Rich text editor */}
           {doc !== null && (
             <Editor
@@ -89,7 +78,6 @@ export default function DocPage() {
               onChange={(newContent) => setContent(newContent)}
             />
           )}
-
         </div>
       </main>
     </div>
