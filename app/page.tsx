@@ -4,10 +4,11 @@ import { useRouter } from "next/navigation"
 import { Plus } from "lucide-react"
 import Sidebar from "@/components/sidebar"
 
-interface Note {
+interface Doc {
   id: string
   title: string
   content: string
+  type: string
   created_at: string
 }
 
@@ -38,31 +39,31 @@ function stripHtml(html: string) {
 
 export default function HomePage() {
   const router = useRouter()
-  const [notes, setNotes] = useState<Note[]>([])
+  const [docs, setDocs] = useState<Doc[]>([])
   const [loading, setLoading] = useState(true)
   const [creating, setCreating] = useState(false)
 
   useEffect(() => {
-    fetch("/api/notes")
+    fetch("/api/docs")
       .then((r) => r.json())
       .then((data) => {
-        setNotes(Array.isArray(data) ? data.slice(0, 6) : [])
+        setDocs(Array.isArray(data) ? data.slice(0, 6) : [])
         setLoading(false)
       })
       .catch(() => setLoading(false))
   }, [])
 
-  const handleCreateNote = async () => {
+  const handleCreateDoc = async () => {
     if (creating) return
     setCreating(true)
     try {
-      const res = await fetch("/api/notes", {
+      const res = await fetch("/api/docs", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title: "Untitled", content: "", color: "yellow" }),
+        body: JSON.stringify({ title: "Untitled", content: "", color: "yellow", type: "doc" }),
       })
-      const note = await res.json()
-      router.push(`/notes/${note.id}`)
+      const doc = await res.json()
+      router.push(`/docs/${doc.id}`)
     } catch {
       setCreating(false)
     }
@@ -71,60 +72,57 @@ export default function HomePage() {
   return (
     <div className="flex h-screen bg-[#f5f5f5] overflow-hidden">
       <Sidebar />
-
       <main className="flex-1 overflow-y-auto">
         <div className="max-w-3xl mx-auto px-8 py-8">
-
           {/* Header */}
           <div className="flex items-center gap-3 mb-8">
             <button
-              onClick={handleCreateNote}
+              onClick={handleCreateDoc}
               disabled={creating}
               className="w-9 h-9 rounded-full bg-black text-white flex items-center justify-center hover:bg-gray-800 transition-colors shrink-0"
-              title="New Note"
+              title="New Doc"
             >
               <Plus size={20} />
             </button>
-            <h1 className="text-2xl font-bold text-gray-900">Recent Notes</h1>
+            <h1 className="text-2xl font-bold text-gray-900">Recent Docs</h1>
           </div>
 
-          {/* Notes Grid */}
+          {/* Docs Grid */}
           {loading ? (
             <div className="grid grid-cols-3 gap-4">
               {Array.from({ length: 6 }).map((_, i) => (
                 <div key={i} className="h-44 rounded-2xl bg-gray-200 animate-pulse" />
               ))}
             </div>
-          ) : notes.length === 0 ? (
+          ) : docs.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-64 text-gray-400">
-              <p className="text-lg font-medium mb-2">No notes yet</p>
-              <p className="text-sm">Click the + button to create your first note</p>
+              <p className="text-lg font-medium mb-2">No docs yet</p>
+              <p className="text-sm">Click the + button to create your first doc</p>
             </div>
           ) : (
             <div className="grid grid-cols-3 gap-4">
-              {notes.map((note, i) => (
+              {docs.map((doc, i) => (
                 <button
-                  key={note.id}
-                  onClick={() => router.push(`/notes/${note.id}`)}
+                  key={doc.id}
+                  onClick={() => router.push(`/docs/${doc.id}`)}
                   className="text-left p-5 rounded-2xl transition-transform hover:scale-[1.02] active:scale-[0.98] flex flex-col justify-between min-h-[172px]"
                   style={{ backgroundColor: CARD_COLORS[i % CARD_COLORS.length] }}
                 >
                   <div>
                     <p className="font-semibold text-gray-900 text-[15px] leading-snug mb-2">
-                      {note.title || "Untitled"}
+                      {doc.title || "Untitled"}
                     </p>
                     <p className="text-xs text-gray-600 leading-relaxed line-clamp-3">
-                      {stripHtml(note.content)}
+                      {stripHtml(doc.content)}
                     </p>
                   </div>
                   <p className="text-xs text-gray-500 mt-4">
-                    {formatDate(note.created_at)}
+                    {formatDate(doc.created_at)}
                   </p>
                 </button>
               ))}
             </div>
           )}
-
         </div>
       </main>
     </div>
