@@ -13,12 +13,12 @@ interface Doc {
 }
 
 const CARD_COLORS = [
-  "#FFF0C2",
-  "#FFD6D6",
-  "#D6F0D6",
-  "#E0D6FF",
-  "#FFFBD6",
-  "#D6EFFF",
+  "#2a2520",
+  "#2a1f1f",
+  "#1a2a1f",
+  "#1f1a2a",
+  "#2a2a1a",
+  "#1a2228",
 ]
 
 function formatDate(dateStr: string) {
@@ -70,7 +70,7 @@ export default function HomePage() {
   }
 
   return (
-    <div className="flex h-screen bg-[#f5f5f5] overflow-hidden">
+    <div className="flex h-screen bg-[#1a1a1a] overflow-hidden">
       <Sidebar />
       <main className="flex-1 overflow-y-auto">
         <div className="max-w-3xl mx-auto px-8 py-8">
@@ -79,23 +79,23 @@ export default function HomePage() {
             <button
               onClick={handleCreateDoc}
               disabled={creating}
-              className="w-9 h-9 rounded-full bg-black text-white flex items-center justify-center hover:bg-gray-800 transition-colors shrink-0"
+              className="w-9 h-9 rounded-full bg-[#e8e8e8] text-[#1a1a1a] flex items-center justify-center hover:bg-white transition-colors shrink-0"
               title="New Doc"
             >
               <Plus size={20} />
             </button>
-            <h1 className="text-2xl font-bold text-gray-900">Recent Docs</h1>
+            <h1 className="text-2xl font-bold text-[#e8e8e8]">Recent Docs</h1>
           </div>
 
           {/* Docs Grid */}
           {loading ? (
             <div className="grid grid-cols-3 gap-4">
               {Array.from({ length: 6 }).map((_, i) => (
-                <div key={i} className="h-44 rounded-2xl bg-gray-200 animate-pulse" />
+                <div key={i} className="h-44 rounded-2xl bg-[#2a2a2a] animate-pulse" />
               ))}
             </div>
           ) : docs.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-64 text-gray-400">
+            <div className="flex flex-col items-center justify-center h-64 text-[#666]">
               <p className="text-lg font-medium mb-2">No docs yet</p>
               <p className="text-sm">Click the + button to create your first doc</p>
             </div>
@@ -109,14 +109,14 @@ export default function HomePage() {
                   style={{ backgroundColor: CARD_COLORS[i % CARD_COLORS.length] }}
                 >
                   <div>
-                    <p className="font-semibold text-gray-900 text-[15px] leading-snug mb-2">
+                    <p className="font-semibold text-[#e8e8e8] text-[15px] leading-snug mb-2">
                       {doc.title || "Untitled"}
                     </p>
-                    <p className="text-xs text-gray-600 leading-relaxed line-clamp-3">
+                    <p className="text-xs text-[#aaa] leading-relaxed line-clamp-3">
                       {stripHtml(doc.content)}
                     </p>
                   </div>
-                  <p className="text-xs text-gray-500 mt-4">
+                  <p className="text-xs text-[#777] mt-4">
                     {formatDate(doc.created_at)}
                   </p>
                 </button>
