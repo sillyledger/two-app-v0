@@ -12,6 +12,16 @@ interface Folder {
   name: string
 }
 
+function getWordCount(content: string): number {
+  const text = content.replace(/<[^>]*>/g, ' ').trim()
+  if (!text) return 0
+  return text.split(/\s+/).filter(Boolean).length
+}
+
+function getCharCount(content: string): number {
+  return content.replace(/<[^>]*>/g, '').length
+}
+
 export default function DocPage() {
   const { id } = useParams()
   const router = useRouter()
@@ -43,7 +53,6 @@ export default function DocPage() {
         setTitle(data.title)
         setContent(data.content || '')
 
-        // If doc belongs to a folder, fetch that folder's name
         if (data.folder_id) {
           fetch(`/api/folders/${data.folder_id}`)
             .then((r) => r.json())
@@ -87,10 +96,12 @@ export default function DocPage() {
   }
 
   const handleDelete = async () => {
-    if (!confirm('Delete this doc? This cannot be undone.')) return
     await fetch(`/api/docs/${id}`, { method: 'DELETE' })
     router.push('/')
   }
+
+  const wordCount = getWordCount(content)
+  const charCount = getCharCount(content)
 
   return (
     <div className="flex min-h-screen bg-background">
@@ -106,6 +117,7 @@ export default function DocPage() {
 
         <main className="flex-1 overflow-y-auto pt-[44px]">
           <div className="mx-auto w-full max-w-[780px] px-16 pt-16 pb-32">
+
             {/* Doc title */}
             <textarea
               ref={titleRef}
@@ -129,6 +141,16 @@ export default function DocPage() {
                 onChange={(newContent) => setContent(newContent)}
               />
             )}
+
+            {/* Word count */}
+            {wordCount > 0 && (
+              <div className="mt-16 flex items-center gap-2 text-[11px] text-[#383838] select-none">
+                <span>{wordCount.toLocaleString()} words</span>
+                <span>·</span>
+                <span>{charCount.toLocaleString()} characters</span>
+              </div>
+            )}
+
           </div>
         </main>
       </div>
