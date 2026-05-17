@@ -21,7 +21,7 @@ interface Doc {
   title: string
 }
 
-interface Folder {
+interface FolderType {
   id: string
   name: string
 }
@@ -40,9 +40,14 @@ export default function Sidebar({ onNewNote }: SidebarProps = {}) {
   const [workspaceName, setWorkspaceName] = useState("My Workspace")
   const [workspaceId, setWorkspaceId] = useState<string | null>(null)
   const [docs, setDocs] = useState<Doc[]>([])
-  const [folders, setFolders] = useState<Folder[]>([])
+  const [folders, setFolders] = useState<FolderType[]>([])
   const [creating, setCreating] = useState(false)
 
+  // Picker (the + dropdown)
+  const [showPicker, setShowPicker] = useState(false)
+  const pickerRef = useRef<HTMLDivElement>(null)
+
+  // Modal
   const [showModal, setShowModal] = useState(false)
   const [modalType, setModalType] = useState<"doc" | "folder">("doc")
   const [modalName, setModalName] = useState("")
@@ -82,6 +87,17 @@ export default function Sidebar({ onNewNote }: SidebarProps = {}) {
       .catch(() => {})
   }, [])
 
+  // Close picker on outside click
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (pickerRef.current && !pickerRef.current.contains(e.target as Node)) {
+        setShowPicker(false)
+      }
+    }
+    if (showPicker) document.addEventListener("mousedown", handler)
+    return () => document.removeEventListener("mousedown", handler)
+  }, [showPicker])
+
   useEffect(() => {
     if (showModal) {
       setTimeout(() => modalInputRef.current?.focus(), 50)
@@ -91,6 +107,7 @@ export default function Sidebar({ onNewNote }: SidebarProps = {}) {
   const initial = userName ? userName.charAt(0).toUpperCase() : "?"
 
   const openModal = (type: "doc" | "folder") => {
+    setShowPicker(false)
     setModalType(type)
     setModalName(type === "doc" ? "Untitled" : "New Folder")
     setShowModal(true)
@@ -192,14 +209,37 @@ export default function Sidebar({ onNewNote }: SidebarProps = {}) {
                 {workspaceName}
               </span>
             </button>
-            <button
-              onClick={() => openModal("doc")}
-              disabled={creating}
-              className="text-[#555] hover:text-[#e8e8e8] transition-colors"
-              title="New Doc or Folder"
-            >
-              <Plus size={13} />
-            </button>
+
+            {/* + button with picker */}
+            <div className="relative" ref={pickerRef}>
+              <button
+                onClick={() => setShowPicker((v) => !v)}
+                disabled={creating}
+                className="text-[#555] hover:text-[#e8e8e8] transition-colors"
+                title="New Doc or Folder"
+              >
+                <Plus size={13} />
+              </button>
+
+              {showPicker && (
+                <div className="absolute right-0 top-5 z-50 bg-[#242424] border border-[#333] rounded-lg shadow-xl w-[140px] py-1 overflow-hidden">
+                  <button
+                    onClick={() => openModal("doc")}
+                    className="flex items-center gap-2 w-full px-3 py-2 text-[12px] text-[#ccc] hover:bg-[#2a2a2a] hover:text-[#e8e8e8] transition-colors"
+                  >
+                    <FileText size={12} className="text-[#666]" />
+                    New Doc
+                  </button>
+                  <button
+                    onClick={() => openModal("folder")}
+                    className="flex items-center gap-2 w-full px-3 py-2 text-[12px] text-[#ccc] hover:bg-[#2a2a2a] hover:text-[#e8e8e8] transition-colors"
+                  >
+                    <Folder size={12} className="text-[#666]" />
+                    New Folder
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
 
           {workspaceOpen && (
@@ -291,28 +331,7 @@ export default function Sidebar({ onNewNote }: SidebarProps = {}) {
               />
             </div>
 
-            {modalType === "doc" && (
-              <div className="mt-3 mb-3">
-                <button
-                  onClick={() => { setModalType("folder"); setModalName("New Folder") }}
-                  className="text-[11px] text-[#555] hover:text-[#aaa] transition-colors"
-                >
-                  Create a folder instead →
-                </button>
-              </div>
-            )}
-            {modalType === "folder" && (
-              <div className="mt-3 mb-3">
-                <button
-                  onClick={() => { setModalType("doc"); setModalName("Untitled") }}
-                  className="text-[11px] text-[#555] hover:text-[#aaa] transition-colors"
-                >
-                  Create a doc instead →
-                </button>
-              </div>
-            )}
-
-            <div className="flex justify-end gap-2 mt-2">
+            <div className="flex justify-end gap-2 mt-4">
               <button
                 onClick={() => setShowModal(false)}
                 className="px-3 py-1.5 rounded-lg text-[12px] font-medium text-[#888] hover:bg-[#2a2a2a] transition-colors"
