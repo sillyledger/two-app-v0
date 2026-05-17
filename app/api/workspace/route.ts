@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { getWorkspace } from '@/lib/workspaces'
+import { getOrCreateWorkspace } from '@/lib/workspaces'
 import { verifyToken } from '@/lib/auth'
 import { cookies } from 'next/headers'
 
@@ -12,7 +12,7 @@ export async function GET() {
     const payload = await verifyToken(token)
     if (!payload?.userId) return NextResponse.json(null, { status: 401 })
 
-    const workspace = await getWorkspace(payload.userId)
+    const workspace = await getOrCreateWorkspace(payload.userId)
     return NextResponse.json(workspace)
   } catch (error) {
     console.error('Workspace fetch error:', error)
