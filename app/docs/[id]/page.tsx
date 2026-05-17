@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Sidebar from '@/components/sidebar'
 import Editor from '@/components/editor'
@@ -11,6 +11,16 @@ export default function DocPage() {
   const [title, setTitle] = useState('')
   const [content, setContent] = useState('')
   const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'unsaved'>('saved')
+  const titleRef = useRef<HTMLTextAreaElement>(null)
+
+  // Auto-resize the textarea height to fit its content
+  const resizeTitle = () => {
+    const el = titleRef.current
+    if (!el) return
+    el.style.height = 'auto'
+    el.style.height = el.scrollHeight + 'px'
+  }
+
   useEffect(() => {
     fetch('/api/auth/me').then((res) => {
       if (!res.ok) router.push('/login')
@@ -25,6 +35,12 @@ export default function DocPage() {
         setContent(data.content || '')
       })
   }, [id])
+
+  // Resize once title loads in
+  useEffect(() => {
+    resizeTitle()
+  }, [title])
+
   const handleSave = useCallback(async (latestTitle: string, latestContent: string, latestDoc: Doc | null) => {
     setSaveStatus('saving')
     await fetch(`/api/docs/${id}`, {
@@ -63,13 +79,23 @@ export default function DocPage() {
               {saveStatus === 'saved' && ''}
             </span>
           </div>
-          {/* Doc title */}
-          <input
-            type="text"
+          {/* Doc title — textarea so it wraps naturally to multiple lines */}
+          <textarea
+            ref={titleRef}
             value={title}
-            onChange={(e) => setTitle(e.target.value)}
+            onChange={(e) => {
+              setTitle(e.target.value)
+              resizeTitle()
+            }}
+            onKeyDown={(e) => {
+              // Press Enter to jump into the editor instead of adding a newline
+              if (e.key === 'Enter') {
+                e.preventDefault()
+              }
+            }}
             placeholder="Untitled"
-            className="mb-8 block w-full bg-transparent text-[2.375rem] font-bold leading-[1.2] tracking-tight text-foreground placeholder:text-muted-foreground/40 focus:outline-none"
+            rows={1}
+            className="mb-8 block w-full resize-none overflow-hidden bg-transparent text-[2.375rem] font-bold leading-[1.2] tracking-tight text-foreground placeholder:text-muted-foreground/40 focus:outline-none"
           />
           {/* Rich text editor */}
           {doc !== null && (
