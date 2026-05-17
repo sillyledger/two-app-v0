@@ -8,7 +8,7 @@ import type { Doc } from '@/lib/db'
 export default function DocPage() {
   const { id } = useParams()
   const router = useRouter()
-  const [doc, setDoc] = useState<Note | null>(null)
+  const [doc, setDoc] = useState<Doc | null>(null)
   const [title, setTitle] = useState('')
   const [content, setContent] = useState('')
   const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'unsaved'>('saved')
@@ -29,7 +29,7 @@ export default function DocPage() {
       })
   }, [id])
 
-  const handleSave = useCallback(async (latestTitle: string, latestContent: string, latestDoc: Note | null) => {
+  const handleSave = useCallback(async (latestTitle: string, latestContent: string, latestDoc: Doc | null) => {
     setSaveStatus('saving')
     await fetch(`/api/docs/${id}`, {
       method: 'PUT',
@@ -61,23 +61,27 @@ export default function DocPage() {
   return (
     <div className="flex min-h-screen bg-background">
       <Sidebar onNewNote={handleNewDoc} />
-      <main className="flex-1 flex justify-center py-16 px-6">
-        <div className="w-full max-w-2xl">
-          {/* Save status */}
-          <div className="mb-4 flex justify-end h-5">
-            <span className="text-sm text-muted-foreground">
+
+      <main className="flex-1 overflow-y-auto">
+        <div className="mx-auto w-full max-w-[680px] px-8 pt-16 pb-32">
+
+          {/* Save status — sits above the title, right-aligned, barely visible */}
+          <div className="mb-6 flex justify-end h-4">
+            <span className="text-xs text-muted-foreground/50 transition-opacity duration-300">
               {saveStatus === 'saving' && 'Saving...'}
-              {saveStatus === 'saved' && 'Saved'}
+              {saveStatus === 'saved' && ''}
             </span>
           </div>
-          {/* Title */}
+
+          {/* Doc title */}
           <input
             type="text"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="Untitled"
-            className="mb-6 w-full bg-transparent text-4xl font-bold text-foreground placeholder:text-muted-foreground focus:outline-none"
+            className="mb-8 w-full bg-transparent text-[2.25rem] font-bold leading-tight tracking-tight text-foreground placeholder:text-muted-foreground/40 focus:outline-none"
           />
+
           {/* Rich text editor */}
           {doc !== null && (
             <Editor
@@ -85,6 +89,7 @@ export default function DocPage() {
               onChange={(newContent) => setContent(newContent)}
             />
           )}
+
         </div>
       </main>
     </div>
