@@ -3,7 +3,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Sidebar from '@/components/sidebar'
 import Editor from '@/components/editor'
-import type { Note } from '@/lib/db'
+import type { Doc } from '@/lib/db'
 
 export default function DocPage() {
   const { id } = useParams()
