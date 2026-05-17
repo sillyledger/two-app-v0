@@ -67,7 +67,7 @@ export default function Editor({ content, onChange }: EditorProps) {
     },
     editorProps: {
       attributes: {
-        class: "prose prose-invert max-w-none focus:outline-none min-h-[60vh] text-[17px] leading-[1.65]",
+        class: "prose prose-invert max-w-none focus:outline-none min-h-[60vh] editor-content",
       },
     },
   })
@@ -88,6 +88,22 @@ export default function Editor({ content, onChange }: EditorProps) {
 
   return (
     <div ref={containerRef} className="relative">
+      <style>{`
+        .editor-content {
+          font-size: 17px;
+          line-height: 1.5;
+        }
+        .editor-content p {
+          margin-top: 0;
+          margin-bottom: 1.25em;
+        }
+        .editor-content h1,
+        .editor-content h2,
+        .editor-content h3 {
+          margin-top: 1.5em;
+          margin-bottom: 0.4em;
+        }
+      `}</style>
 
       {/* Bubble toolbar — appears above selected text */}
       {bubbleVisible && (
