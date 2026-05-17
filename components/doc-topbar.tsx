@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { ChevronRight, Share2, MoreHorizontal } from "lucide-react"
+import { ChevronRight, Share2, MoreHorizontal, Copy, Download, Trash2 } from "lucide-react"
 import { useState, useRef, useEffect } from "react"
 
 interface Folder {
@@ -13,12 +13,53 @@ interface DocTopbarProps {
   docTitle: string
   folder?: Folder | null
   saveStatus: "saved" | "saving" | "unsaved"
+  content?: string
   onDelete?: () => void
 }
 
-export default function DocTopbar({ docTitle, folder, saveStatus, onDelete }: DocTopbarProps) {
+function htmlToMarkdown(html: string): string {
+  return html
+    .replace(/<h1[^>]*>(.*?)<\/h1>/gi, '# $1\n\n')
+    .replace(/<h2[^>]*>(.*?)<\/h2>/gi, '## $1\n\n')
+    .replace(/<h3[^>]*>(.*?)<\/h3>/gi, '### $1\n\n')
+    .replace(/<strong[^>]*>(.*?)<\/strong>/gi, '**$1**')
+    .replace(/<b[^>]*>(.*?)<\/b>/gi, '**$1**')
+    .replace(/<em[^>]*>(.*?)<\/em>/gi, '*$1*')
+    .replace(/<i[^>]*>(.*?)<\/i>/gi, '*$1*')
+    .replace(/<code[^>]*>(.*?)<\/code>/gi, '`$1`')
+    .replace(/<li[^>]*>(.*?)<\/li>/gi, '- $1\n')
+    .replace(/<ul[^>]*>/gi, '\n').replace(/<\/ul>/gi, '\n')
+    .replace(/<ol[^>]*>/gi, '\n').replace(/<\/ol>/gi, '\n')
+    .replace(/<blockquote[^>]*>(.*?)<\/blockquote>/gi, '> $1\n\n')
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<p[^>]*>(.*?)<\/p>/gi, '$1\n\n')
+    .replace(/<hr\s*\/?>/gi, '\n---\n\n')
+    .replace(/<a[^>]*href="([^"]*)"[^>]*>(.*?)<\/a>/gi, '[$2]($1)')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&nbsp;/g, ' ')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim()
+}
+
+function downloadFile(filename: string, content: string, mimeType: string) {
+  const blob = new Blob([content], { type: mimeType })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = filename
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
+export default function DocTopbar({ docTitle, folder, saveStatus, content = '', onDelete }: DocTopbarProps) {
   const [menuOpen, setMenuOpen] = useState(false)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [copyToast, setCopyToast] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -30,6 +71,22 @@ export default function DocTopbar({ docTitle, folder, saveStatus, onDelete }: Do
     if (menuOpen) document.addEventListener("mousedown", handler)
     return () => document.removeEventListener("mousedown", handler)
   }, [menuOpen])
+
+  const handleExportMarkdown = () => {
+    setMenuOpen(false)
+    const md = `# ${docTitle}\n\n${htmlToMarkdown(content)}`
+    const filename = `${docTitle.trim() || 'untitled'}.md`
+    downloadFile(filename, md, 'text/markdown')
+  }
+
+  const handleCopyDoc = () => {
+    setMenuOpen(false)
+    const md = `# ${docTitle}\n\n${htmlToMarkdown(content)}`
+    navigator.clipboard.writeText(md).then(() => {
+      setCopyToast(true)
+      setTimeout(() => setCopyToast(false), 2000)
+    })
+  }
 
   const crumbBase = "text-[#555] hover:text-[#aaa] transition-colors text-[12px] font-medium truncate"
   const crumbActive = "text-[#aaa] text-[12px] font-medium truncate max-w-[220px]"
@@ -87,20 +144,34 @@ export default function DocTopbar({ docTitle, folder, saveStatus, onDelete }: Do
             </button>
 
             {menuOpen && (
-              <div className="absolute right-0 top-9 z-50 bg-[#242424] border border-[#333] rounded-lg shadow-xl w-[160px] py-1 overflow-hidden">
+              <div className="absolute right-0 top-9 z-50 bg-[#242424] border border-[#333] rounded-lg shadow-xl w-[180px] py-1 overflow-hidden">
+
+                <button
+                  onClick={handleCopyDoc}
+                  className="flex items-center gap-2 w-full px-3 py-2 text-[12px] text-[#ccc] hover:bg-[#2a2a2a] hover:text-[#e8e8e8] transition-colors"
+                >
+                  <Copy size={12} className="text-[#555]" />
+                  Copy doc
+                </button>
+
+                <button
+                  onClick={handleExportMarkdown}
+                  className="flex items-center gap-2 w-full px-3 py-2 text-[12px] text-[#ccc] hover:bg-[#2a2a2a] hover:text-[#e8e8e8] transition-colors"
+                >
+                  <Download size={12} className="text-[#555]" />
+                  Export as Markdown
+                </button>
+
                 <button
                   disabled
-                  className="flex items-center gap-2 w-full px-3 py-2 text-[12px] text-[#666] cursor-not-allowed"
+                  className="flex items-center gap-2 w-full px-3 py-2 text-[12px] text-[#444] cursor-not-allowed"
                 >
-                  Word count
+                  <MoreHorizontal size={12} className="text-[#333]" />
+                  Move doc
                 </button>
-                <button
-                  disabled
-                  className="flex items-center gap-2 w-full px-3 py-2 text-[12px] text-[#666] cursor-not-allowed"
-                >
-                  Export
-                </button>
+
                 <div className="my-1 border-t border-[#333]" />
+
                 <button
                   onClick={() => {
                     setMenuOpen(false)
@@ -108,13 +179,22 @@ export default function DocTopbar({ docTitle, folder, saveStatus, onDelete }: Do
                   }}
                   className="flex items-center gap-2 w-full px-3 py-2 text-[12px] text-red-400 hover:bg-[#2a2a2a] transition-colors"
                 >
+                  <Trash2 size={12} />
                   Delete doc
                 </button>
+
               </div>
             )}
           </div>
         </div>
       </header>
+
+      {/* Copy toast */}
+      {copyToast && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-[#2a2a2a] border border-[#333] rounded-lg px-4 py-2 text-[12px] text-[#e8e8e8] shadow-xl">
+          Copied to clipboard
+        </div>
+      )}
 
       {/* Delete confirmation modal */}
       {showDeleteModal && (
