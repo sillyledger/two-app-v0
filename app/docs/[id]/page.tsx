@@ -5,10 +5,10 @@ import Sidebar from '@/components/sidebar'
 import Editor from '@/components/editor'
 import type { Note } from '@/lib/db'
 
-export default function NotePage() {
+export default function DocPage() {
   const { id } = useParams()
   const router = useRouter()
-  const [note, setNote] = useState<Note | null>(null)
+  const [doc, setDoc] = useState<Note | null>(null)
   const [title, setTitle] = useState('')
   const [content, setContent] = useState('')
   const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'unsaved'>('saved')
@@ -20,47 +20,47 @@ export default function NotePage() {
   }, [])
 
   useEffect(() => {
-    fetch(`/api/notes/${id}`)
+    fetch(`/api/docs/${id}`)
       .then((res) => res.json())
       .then((data) => {
-        setNote(data)
+        setDoc(data)
         setTitle(data.title)
         setContent(data.content || '')
       })
   }, [id])
 
-  const handleSave = useCallback(async (latestTitle: string, latestContent: string, latestNote: Note | null) => {
+  const handleSave = useCallback(async (latestTitle: string, latestContent: string, latestDoc: Note | null) => {
     setSaveStatus('saving')
-    await fetch(`/api/notes/${id}`, {
+    await fetch(`/api/docs/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title: latestTitle, content: latestContent, color: latestNote?.color ?? 'yellow' }),
+      body: JSON.stringify({ title: latestTitle, content: latestContent, color: latestDoc?.color ?? 'yellow' }),
     })
     setSaveStatus('saved')
   }, [id])
 
   useEffect(() => {
-    if (!note) return
+    if (!doc) return
     setSaveStatus('unsaved')
     const timer = setTimeout(() => {
-      handleSave(title, content, note)
+      handleSave(title, content, doc)
     }, 1000)
     return () => clearTimeout(timer)
   }, [title, content])
 
-  const handleNewNote = async () => {
-    const res = await fetch('/api/notes', {
+  const handleNewDoc = async () => {
+    const res = await fetch('/api/docs', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title: 'Untitled', content: '', color: 'yellow' }),
+      body: JSON.stringify({ title: 'Untitled', content: '', color: 'yellow', type: 'doc' }),
     })
-    const newNote = await res.json()
-    router.push(`/notes/${newNote.id}`)
+    const newDoc = await res.json()
+    router.push(`/docs/${newDoc.id}`)
   }
 
   return (
     <div className="flex min-h-screen bg-background">
-      <Sidebar onNewNote={handleNewNote} />
+      <Sidebar onNewNote={handleNewDoc} />
       <main className="flex-1 flex justify-center py-16 px-6">
         <div className="w-full max-w-2xl">
           {/* Save status */}
@@ -79,7 +79,7 @@ export default function NotePage() {
             className="mb-6 w-full bg-transparent text-4xl font-bold text-foreground placeholder:text-muted-foreground focus:outline-none"
           />
           {/* Rich text editor */}
-          {note !== null && (
+          {doc !== null && (
             <Editor
               content={content}
               onChange={(newContent) => setContent(newContent)}
