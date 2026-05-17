@@ -58,7 +58,7 @@ export default function Sidebar({
   const initial = userName ? userName.charAt(0).toUpperCase() : "?"
 
   return (
-    <aside className="w-[210px] min-w-[210px] h-screen flex flex-col bg-[#1a1d21] text-white">
+    <aside className="w-[210px] min-w-[210px] h-screen flex flex-col bg-[#F4F4F4] text-gray-900">
       {/* App Logo */}
       <div className="flex items-center gap-3 px-5 pt-6 pb-4">
         <div className="w-8 h-8 rounded-lg bg-[#7C3AED] flex items-center justify-center">
@@ -71,7 +71,7 @@ export default function Sidebar({
 
       {/* Search */}
       <div className="px-4 mb-4">
-        <div className="flex items-center gap-2 bg-[#2a2d33] rounded-lg px-3 py-2">
+        <div className="flex items-center gap-2 bg-[#E8E8E8] rounded-lg px-3 py-2">
           <Search size={14} className="text-gray-400 shrink-0" />
           <input
             type="text"
