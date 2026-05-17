@@ -67,7 +67,7 @@ export default function Editor({ content, onChange }: EditorProps) {
     },
     editorProps: {
       attributes: {
-        class: "prose prose-invert max-w-none focus:outline-none min-h-[60vh] text-[15px] leading-[1.75]",
+        class: "prose prose-invert max-w-none focus:outline-none min-h-[60vh] text-[16px] leading-[1.65]",
       },
     },
   })
