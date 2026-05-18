@@ -43,7 +43,6 @@ export default function DocPage() {
     el.style.height = el.scrollHeight + 'px'
   }
 
-  // Step 1: check if logged in (but don't redirect yet)
   useEffect(() => {
     fetch('/api/auth/me').then((res) => {
       setIsLoggedIn(res.ok)
@@ -51,42 +50,46 @@ export default function DocPage() {
     })
   }, [])
 
-  // Step 2: once auth is checked, load the doc
   useEffect(() => {
     if (!authChecked) return
 
-    fetch(`/api/docs/public/${id}`)
-      .then((res) => res.json())
-      .then((data: Doc) => {
-        if (data.error) {
-          // Doc not found or not public — redirect to login if not logged in
-          if (!isLoggedIn) {
+    if (isLoggedIn) {
+      // Logged in — use the authenticated route directly
+      fetch(`/api/docs/${id}`)
+        .then((res) => res.json())
+        .then((data: Doc) => {
+          if (data.error) {
+            router.push('/')
+            return
+          }
+          setDoc(data)
+          setTitle(data.title)
+          setContent(data.content || '')
+          setIsPublic(data.is_public ?? false)
+
+          if (data.folder_id) {
+            fetch(`/api/folders/${data.folder_id}`)
+              .then((r) => r.json())
+              .then((f: Folder) => setFolder(f))
+              .catch(() => {})
+          }
+        })
+    } else {
+      // Not logged in — try the public route
+      fetch(`/api/docs/public/${id}`)
+        .then((res) => res.json())
+        .then((data: Doc) => {
+          if (data.error) {
+            // Private or not found — send to login
             router.push('/login')
             return
           }
-          // Logged in but doc not found
-          router.push('/')
-          return
-        }
-
-        setDoc(data)
-        setTitle(data.title)
-        setContent(data.content || '')
-        setIsPublic(data.is_public ?? false)
-
-        // If doc is private and user is not logged in, redirect
-        if (!data.is_public && !isLoggedIn) {
-          router.push('/login')
-          return
-        }
-
-        if (data.folder_id) {
-          fetch(`/api/folders/${data.folder_id}`)
-            .then((r) => r.json())
-            .then((f: Folder) => setFolder(f))
-            .catch(() => {})
-        }
-      })
+          setDoc(data)
+          setTitle(data.title)
+          setContent(data.content || '')
+          setIsPublic(data.is_public ?? false)
+        })
+    }
   }, [id, authChecked])
 
   useEffect(() => {
