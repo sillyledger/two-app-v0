@@ -2,22 +2,22 @@ import { neon } from "@neondatabase/serverless";
 const sql = neon(process.env.DATABASE_URL!);
 
 export async function getOrCreateWorkspace(userId: string, name = "My Workspace") {
-  const rows = await sql`
-    INSERT INTO workspaces (user_id, name)
-    VALUES (${userId}, ${name})
-    ON CONFLICT DO NOTHING
-    RETURNING *
-  `;
-  if (rows[0]) return rows[0];
   const existing = await sql`
     SELECT * FROM workspaces WHERE user_id = ${userId} ORDER BY created_at ASC LIMIT 1
   `;
-  return existing[0];
+  if (existing[0]) return existing[0];
+
+  const rows = await sql`
+    INSERT INTO workspaces (user_id, name)
+    VALUES (${userId}, ${name})
+    RETURNING *
+  `;
+  return rows[0];
 }
 
 export async function getWorkspace(userId: string) {
   const rows = await sql`
-    SELECT * FROM workspaces WHERE user_id = ${userId} LIMIT 1
+    SELECT * FROM workspaces WHERE user_id = ${userId} ORDER BY created_at ASC LIMIT 1
   `;
   return rows[0] ?? null;
 }
