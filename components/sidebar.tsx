@@ -14,6 +14,9 @@ import {
   Home,
   Plus,
   Folder,
+  MoreHorizontal,
+  Pencil,
+  Trash2,
 } from "lucide-react"
 
 interface Doc {
@@ -47,6 +50,15 @@ export default function Sidebar({ onNewNote }: SidebarProps = {}) {
   const [renamingWorkspace, setRenamingWorkspace] = useState(false)
   const [workspaceRenameValue, setWorkspaceRenameValue] = useState("")
   const workspaceInputRef = useRef<HTMLInputElement>(null)
+
+  // Folder three-dot menu
+  const [folderMenuId, setFolderMenuId] = useState<string | null>(null)
+  const folderMenuRef = useRef<HTMLDivElement>(null)
+
+  // Folder rename
+  const [renamingFolderId, setRenamingFolderId] = useState<string | null>(null)
+  const [folderRenameValue, setFolderRenameValue] = useState("")
+  const folderRenameInputRef = useRef<HTMLInputElement>(null)
 
   // Picker (the + dropdown)
   const [showPicker, setShowPicker] = useState(false)
@@ -103,17 +115,28 @@ export default function Sidebar({ onNewNote }: SidebarProps = {}) {
     return () => document.removeEventListener("mousedown", handler)
   }, [showPicker])
 
+  // Close folder menu on outside click
   useEffect(() => {
-    if (showModal) {
-      setTimeout(() => modalInputRef.current?.focus(), 50)
+    const handler = (e: MouseEvent) => {
+      if (folderMenuRef.current && !folderMenuRef.current.contains(e.target as Node)) {
+        setFolderMenuId(null)
+      }
     }
+    if (folderMenuId) document.addEventListener("mousedown", handler)
+    return () => document.removeEventListener("mousedown", handler)
+  }, [folderMenuId])
+
+  useEffect(() => {
+    if (showModal) setTimeout(() => modalInputRef.current?.focus(), 50)
   }, [showModal])
 
   useEffect(() => {
-    if (renamingWorkspace) {
-      setTimeout(() => workspaceInputRef.current?.select(), 50)
-    }
+    if (renamingWorkspace) setTimeout(() => workspaceInputRef.current?.select(), 50)
   }, [renamingWorkspace])
+
+  useEffect(() => {
+    if (renamingFolderId) setTimeout(() => folderRenameInputRef.current?.select(), 50)
+  }, [renamingFolderId])
 
   const startRenamingWorkspace = () => {
     setWorkspaceRenameValue(workspaceName)
@@ -137,6 +160,34 @@ export default function Sidebar({ onNewNote }: SidebarProps = {}) {
   const cancelWorkspaceRename = () => {
     setRenamingWorkspace(false)
     setWorkspaceRenameValue("")
+  }
+
+  const startRenamingFolder = (folder: FolderType) => {
+    setFolderMenuId(null)
+    setFolderRenameValue(folder.name)
+    setRenamingFolderId(folder.id)
+  }
+
+  const commitFolderRename = async (folderId: string) => {
+    const trimmed = folderRenameValue.trim()
+    setRenamingFolderId(null)
+    if (!trimmed) return
+    setFolders((prev) => prev.map((f) => f.id === folderId ? { ...f, name: trimmed } : f))
+    try {
+      await fetch(`/api/folders/${folderId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: trimmed }),
+      })
+    } catch {}
+  }
+
+  const deleteFolder = async (folderId: string) => {
+    setFolderMenuId(null)
+    setFolders((prev) => prev.filter((f) => f.id !== folderId))
+    try {
+      await fetch(`/api/folders/${folderId}`, { method: "DELETE" })
+    } catch {}
   }
 
   const initial = userName ? userName.charAt(0).toUpperCase() : "?"
@@ -303,10 +354,66 @@ export default function Sidebar({ onNewNote }: SidebarProps = {}) {
               {folders.map((folder) => (
                 <div
                   key={folder.id}
-                  className="flex items-center gap-2 px-2 py-[5px] rounded-md text-[12px] font-medium text-[#888] hover:bg-[#2a2a2a] hover:text-[#e8e8e8] transition-colors cursor-pointer"
+                  className="group relative flex items-center gap-2 px-2 py-[5px] rounded-md text-[12px] font-medium text-[#888] hover:bg-[#2a2a2a] hover:text-[#e8e8e8] transition-colors cursor-pointer"
                 >
                   <Folder size={13} className="shrink-0 text-[#555]" />
-                  <span className="truncate">{folder.name}</span>
+
+                  {renamingFolderId === folder.id ? (
+                    <input
+                      ref={folderRenameInputRef}
+                      value={folderRenameValue}
+                      onChange={(e) => setFolderRenameValue(e.target.value)}
+                      onBlur={() => commitFolderRename(folder.id)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") commitFolderRename(folder.id)
+                        if (e.key === "Escape") setRenamingFolderId(null)
+                      }}
+                      onClick={(e) => e.stopPropagation()}
+                      className="flex-1 min-w-0 bg-[#333] border border-[#444] rounded px-1.5 py-0.5 text-[12px] text-[#e8e8e8] outline-none focus:border-[#666]"
+                    />
+                  ) : (
+                    <span className="truncate flex-1">{folder.name}</span>
+                  )}
+
+                  {/* Three-dot menu button */}
+                  {renamingFolderId !== folder.id && (
+                    <div className="relative" ref={folderMenuId === folder.id ? folderMenuRef : undefined}>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setFolderMenuId(folderMenuId === folder.id ? null : folder.id)
+                        }}
+                        className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-[#3a3a3a] text-[#666] hover:text-[#e8e8e8] transition-all"
+                      >
+                        <MoreHorizontal size={13} />
+                      </button>
+
+                      {folderMenuId === folder.id && (
+                        <div className="absolute right-0 top-6 z-50 bg-[#242424] border border-[#333] rounded-lg shadow-xl w-[140px] py-1 overflow-hidden">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              startRenamingFolder(folder)
+                            }}
+                            className="flex items-center gap-2 w-full px-3 py-2 text-[12px] text-[#ccc] hover:bg-[#2a2a2a] hover:text-[#e8e8e8] transition-colors"
+                          >
+                            <Pencil size={12} className="text-[#666]" />
+                            Rename
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              deleteFolder(folder.id)
+                            }}
+                            className="flex items-center gap-2 w-full px-3 py-2 text-[12px] text-red-400 hover:bg-[#2a2a2a] hover:text-red-300 transition-colors"
+                          >
+                            <Trash2 size={12} />
+                            Delete
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               ))}
 
