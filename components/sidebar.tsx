@@ -17,6 +17,7 @@ import {
   MoreHorizontal,
   Pencil,
   Trash2,
+  LogOut,
 } from "lucide-react"
 
 interface Doc {
@@ -188,6 +189,11 @@ export default function Sidebar({ onNewNote }: SidebarProps = {}) {
     try {
       await fetch(`/api/folders/${folderId}`, { method: "DELETE" })
     } catch {}
+  }
+
+  const handleLogout = async () => {
+    await fetch("/api/auth", { method: "DELETE" })
+    router.push("/login")
   }
 
   const initial = userName ? userName.charAt(0).toUpperCase() : "?"
@@ -384,7 +390,6 @@ export default function Sidebar({ onNewNote }: SidebarProps = {}) {
                     <span className="truncate flex-1">{folder.name}</span>
                   )}
 
-                  {/* Three-dot menu button */}
                   {renamingFolderId !== folder.id && (
                     <div
                       className="relative"
@@ -451,21 +456,20 @@ export default function Sidebar({ onNewNote }: SidebarProps = {}) {
           )}
         </nav>
 
-        {/* Bottom — Settings + User */}
+        {/* Bottom — Settings, Trash, Logout + User */}
         <div className="border-t border-[#2a2a2a] px-2 py-2.5 space-y-[1px]">
-          <Link
-            href="/settings"
-            className={`flex items-center gap-2 px-2 py-[5px] rounded-md transition-colors text-[12px] font-medium ${
-              pathname === "/settings"
-                ? "bg-[#2a2a2a] text-[#e8e8e8]"
-                : "text-[#888] hover:bg-[#2a2a2a] hover:text-[#e8e8e8]"
-            }`}
-          >
-            <Settings size={13} />
-            Settings
-          </Link>
+          {navItem("/settings", <Settings size={13} />, "Settings")}
+          {navItem("/trash", <Trash2 size={13} />, "Trash")}
 
-          <div className="flex items-center gap-2 px-2 py-[5px]">
+          <button
+            onClick={handleLogout}
+            className="flex items-center gap-2 px-2 py-[5px] rounded-md transition-colors text-[12px] font-medium w-full text-[#888] hover:bg-[#2a2a2a] hover:text-[#e8e8e8]"
+          >
+            <LogOut size={13} />
+            Log out
+          </button>
+
+          <div className="flex items-center gap-2 px-2 py-[5px] mt-1">
             <div className="w-5 h-5 rounded-full bg-[#7C3AED] flex items-center justify-center shrink-0">
               <span className="text-[10px] font-bold text-white">{initial}</span>
             </div>
