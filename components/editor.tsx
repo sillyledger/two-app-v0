@@ -17,15 +17,16 @@ import {
   Heading2,
   Heading3,
 } from "lucide-react"
-import { useCallback, useState, useRef } from "react"
+import { useCallback, useState, useRef, useEffect } from "react"
 
 interface EditorProps {
   content: string
   onChange: (content: string) => void
+  onReady?: (focusFn: () => void) => void
 }
 
 export { Editor }
-export default function Editor({ content, onChange }: EditorProps) {
+export default function Editor({ content, onChange, onReady }: EditorProps) {
   const [bubbleVisible, setBubbleVisible] = useState(false)
   const [bubblePos, setBubblePos] = useState({ top: 0, left: 0 })
   const containerRef = useRef<HTMLDivElement>(null)
@@ -71,6 +72,12 @@ export default function Editor({ content, onChange }: EditorProps) {
       },
     },
   })
+
+  useEffect(() => {
+    if (editor && onReady) {
+      onReady(() => editor.commands.focus('end'))
+    }
+  }, [editor])
 
   const setLink = useCallback(() => {
     if (!editor) return
