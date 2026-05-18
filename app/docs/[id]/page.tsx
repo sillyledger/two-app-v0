@@ -31,6 +31,7 @@ export default function DocPage() {
   const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'unsaved'>('saved')
   const [folder, setFolder] = useState<Folder | null>(null)
   const titleRef = useRef<HTMLTextAreaElement>(null)
+  const editorFocusRef = useRef<(() => void) | null>(null)
 
   const resizeTitle = () => {
     const el = titleRef.current
@@ -127,7 +128,10 @@ export default function DocPage() {
                 resizeTitle()
               }}
               onKeyDown={(e) => {
-                if (e.key === 'Enter') e.preventDefault()
+                if (e.key === 'Enter') {
+                  e.preventDefault()
+                  editorFocusRef.current?.()
+                }
               }}
               placeholder="Untitled"
               rows={1}
@@ -139,6 +143,7 @@ export default function DocPage() {
               <Editor
                 content={content}
                 onChange={(newContent) => setContent(newContent)}
+                onReady={(focusFn) => { editorFocusRef.current = focusFn }}
               />
             )}
 
