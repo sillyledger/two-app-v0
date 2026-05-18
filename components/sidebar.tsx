@@ -283,7 +283,7 @@ export default function Sidebar({ onNewNote }: SidebarProps = {}) {
 
   return (
     <>
-      <aside className="w-[210px] min-w-[210px] h-screen flex flex-col bg-[#1f1f1f] border-r border-[#2a2a2a]">
+      <aside className="w-[210px] min-w-[210px] h-screen flex flex-col sticky top-0 bg-[#1f1f1f] border-r border-[#2a2a2a]">
 
         {/* Top — User */}
         <div className="flex items-center gap-2 px-3 pt-4 pb-2.5">
