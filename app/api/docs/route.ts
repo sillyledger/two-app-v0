@@ -17,12 +17,12 @@ export async function GET(request: Request) {
     const docs = folderId
       ? await sql`
           SELECT * FROM docs
-          WHERE user_id = ${payload.userId} AND folder_id = ${folderId}
+          WHERE user_id = ${payload.userId} AND folder_id = ${folderId} AND deleted_at IS NULL
           ORDER BY created_at DESC
         `
       : await sql`
           SELECT * FROM docs
-          WHERE user_id = ${payload.userId}
+          WHERE user_id = ${payload.userId} AND deleted_at IS NULL
           ORDER BY created_at DESC
         `
     return NextResponse.json(docs)
