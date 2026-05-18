@@ -43,6 +43,11 @@ export default function Sidebar({ onNewNote }: SidebarProps = {}) {
   const [folders, setFolders] = useState<FolderType[]>([])
   const [creating, setCreating] = useState(false)
 
+  // Rename workspace
+  const [renamingWorkspace, setRenamingWorkspace] = useState(false)
+  const [workspaceRenameValue, setWorkspaceRenameValue] = useState("")
+  const workspaceInputRef = useRef<HTMLInputElement>(null)
+
   // Picker (the + dropdown)
   const [showPicker, setShowPicker] = useState(false)
   const pickerRef = useRef<HTMLDivElement>(null)
@@ -103,6 +108,36 @@ export default function Sidebar({ onNewNote }: SidebarProps = {}) {
       setTimeout(() => modalInputRef.current?.focus(), 50)
     }
   }, [showModal])
+
+  useEffect(() => {
+    if (renamingWorkspace) {
+      setTimeout(() => workspaceInputRef.current?.select(), 50)
+    }
+  }, [renamingWorkspace])
+
+  const startRenamingWorkspace = () => {
+    setWorkspaceRenameValue(workspaceName)
+    setRenamingWorkspace(true)
+  }
+
+  const commitWorkspaceRename = async () => {
+    const trimmed = workspaceRenameValue.trim()
+    setRenamingWorkspace(false)
+    if (!trimmed || trimmed === workspaceName) return
+    setWorkspaceName(trimmed)
+    try {
+      await fetch("/api/workspace", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: trimmed }),
+      })
+    } catch {}
+  }
+
+  const cancelWorkspaceRename = () => {
+    setRenamingWorkspace(false)
+    setWorkspaceRenameValue("")
+  }
 
   const initial = userName ? userName.charAt(0).toUpperCase() : "?"
 
@@ -200,18 +235,39 @@ export default function Sidebar({ onNewNote }: SidebarProps = {}) {
 
           {/* Workspace Header */}
           <div className="flex items-center justify-between px-2 py-[4px] mb-0.5">
-            <button
-              onClick={() => setWorkspaceOpen(!workspaceOpen)}
-              className="flex items-center gap-1 text-[#555] hover:text-[#aaa] transition-colors"
-            >
-              {workspaceOpen ? <ChevronDown size={11} /> : <ChevronRight size={11} />}
-              <span className="text-[10px] font-semibold uppercase tracking-wider text-[#555]">
-                {workspaceName}
-              </span>
-            </button>
+            <div className="flex items-center gap-1 flex-1 min-w-0">
+              <button
+                onClick={() => setWorkspaceOpen(!workspaceOpen)}
+                className="text-[#555] hover:text-[#aaa] transition-colors shrink-0"
+              >
+                {workspaceOpen ? <ChevronDown size={11} /> : <ChevronRight size={11} />}
+              </button>
+
+              {renamingWorkspace ? (
+                <input
+                  ref={workspaceInputRef}
+                  value={workspaceRenameValue}
+                  onChange={(e) => setWorkspaceRenameValue(e.target.value)}
+                  onBlur={commitWorkspaceRename}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") commitWorkspaceRename()
+                    if (e.key === "Escape") cancelWorkspaceRename()
+                  }}
+                  className="flex-1 min-w-0 bg-[#2a2a2a] border border-[#444] rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-[#aaa] outline-none focus:border-[#666]"
+                />
+              ) : (
+                <span
+                  onDoubleClick={startRenamingWorkspace}
+                  title="Double-click to rename"
+                  className="text-[10px] font-semibold uppercase tracking-wider text-[#555] truncate cursor-default select-none hover:text-[#777] transition-colors"
+                >
+                  {workspaceName}
+                </span>
+              )}
+            </div>
 
             {/* + button with picker */}
-            <div className="relative" ref={pickerRef}>
+            <div className="relative ml-1 shrink-0" ref={pickerRef}>
               <button
                 onClick={() => setShowPicker((v) => !v)}
                 disabled={creating}
