@@ -31,6 +31,8 @@ export default function DocPage() {
   const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'unsaved'>('saved')
   const [folder, setFolder] = useState<Folder | null>(null)
   const [isPublic, setIsPublic] = useState(false)
+  const [isLoggedIn, setIsLoggedIn] = useState(false)
+  const [authChecked, setAuthChecked] = useState(false)
   const titleRef = useRef<HTMLTextAreaElement>(null)
   const editorFocusRef = useRef<(() => void) | null>(null)
 
@@ -41,20 +43,42 @@ export default function DocPage() {
     el.style.height = el.scrollHeight + 'px'
   }
 
+  // Step 1: check if logged in (but don't redirect yet)
   useEffect(() => {
     fetch('/api/auth/me').then((res) => {
-      if (!res.ok) router.push('/login')
+      setIsLoggedIn(res.ok)
+      setAuthChecked(true)
     })
   }, [])
 
+  // Step 2: once auth is checked, load the doc
   useEffect(() => {
-    fetch(`/api/docs/${id}`)
+    if (!authChecked) return
+
+    fetch(`/api/docs/public/${id}`)
       .then((res) => res.json())
       .then((data: Doc) => {
+        if (data.error) {
+          // Doc not found or not public — redirect to login if not logged in
+          if (!isLoggedIn) {
+            router.push('/login')
+            return
+          }
+          // Logged in but doc not found
+          router.push('/')
+          return
+        }
+
         setDoc(data)
         setTitle(data.title)
         setContent(data.content || '')
         setIsPublic(data.is_public ?? false)
+
+        // If doc is private and user is not logged in, redirect
+        if (!data.is_public && !isLoggedIn) {
+          router.push('/login')
+          return
+        }
 
         if (data.folder_id) {
           fetch(`/api/folders/${data.folder_id}`)
@@ -63,13 +87,14 @@ export default function DocPage() {
             .catch(() => {})
         }
       })
-  }, [id])
+  }, [id, authChecked])
 
   useEffect(() => {
     resizeTitle()
   }, [title])
 
   const handleSave = useCallback(async (latestTitle: string, latestContent: string, latestDoc: Doc | null) => {
+    if (!isLoggedIn) return
     setSaveStatus('saving')
     await fetch(`/api/docs/${id}`, {
       method: 'PUT',
@@ -77,10 +102,11 @@ export default function DocPage() {
       body: JSON.stringify({ title: latestTitle, content: latestContent, color: latestDoc?.color ?? 'yellow' }),
     })
     setSaveStatus('saved')
-  }, [id])
+  }, [id, isLoggedIn])
 
   useEffect(() => {
     if (!doc) return
+    if (!isLoggedIn) return
     setSaveStatus('unsaved')
     const timer = setTimeout(() => {
       handleSave(title, content, doc)
@@ -106,16 +132,18 @@ export default function DocPage() {
   const wordCount = getWordCount(content)
   const charCount = getCharCount(content)
 
+  if (!authChecked || !doc) return null
+
   return (
     <div className="flex min-h-screen bg-background">
-      <Sidebar onNewNote={handleNewDoc} />
+      {isLoggedIn && <Sidebar onNewNote={handleNewDoc} />}
 
       <div className="flex-1 flex flex-col min-h-screen">
         <DocTopbar
           docTitle={title}
           folder={folder}
           saveStatus={saveStatus}
-          onDelete={handleDelete}
+          onDelete={isLoggedIn ? handleDelete : undefined}
           docId={id}
           isPublic={isPublic}
         />
@@ -123,11 +151,11 @@ export default function DocPage() {
         <main className="flex-1 overflow-y-auto pt-[44px]">
           <div className="mx-auto w-full max-w-[780px] px-16 pt-16 pb-32">
 
-            {/* Doc title */}
             <textarea
               ref={titleRef}
               value={title}
               onChange={(e) => {
+                if (!isLoggedIn) return
                 setTitle(e.target.value)
                 resizeTitle()
               }}
@@ -139,19 +167,21 @@ export default function DocPage() {
               }}
               placeholder="Untitled"
               rows={1}
+              readOnly={!isLoggedIn}
               className="mb-8 block w-full resize-none overflow-hidden bg-transparent text-[2.375rem] font-bold leading-[1.2] tracking-tight text-foreground placeholder:text-muted-foreground/40 focus:outline-none"
             />
 
-            {/* Rich text editor */}
             {doc !== null && (
               <Editor
                 content={content}
-                onChange={(newContent) => setContent(newContent)}
+                onChange={(newContent) => {
+                  if (!isLoggedIn) return
+                  setContent(newContent)
+                }}
                 onReady={(focusFn) => { editorFocusRef.current = focusFn }}
               />
             )}
 
-            {/* Word count */}
             {wordCount > 0 && (
               <div className="mt-16 flex items-center gap-2 text-[11px] text-[#383838] select-none">
                 <span>{wordCount.toLocaleString()} words</span>
