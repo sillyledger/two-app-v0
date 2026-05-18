@@ -38,7 +38,7 @@ export async function PUT(
   if (!payload) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   try {
     const { id } = await params
-    const { title, content, color, is_starred, type } = await request.json()
+    const { title, content, color, is_starred, type, folder_id } = await request.json()
     const result = await sql`
       UPDATE docs 
       SET 
@@ -47,6 +47,7 @@ export async function PUT(
         color = COALESCE(${color}, color),
         is_starred = COALESCE(${is_starred}, is_starred),
         type = COALESCE(${type}, type),
+        folder_id = CASE WHEN ${folder_id} IS NOT NULL THEN ${folder_id} ELSE folder_id END,
         updated_at = CURRENT_TIMESTAMP
       WHERE id = ${id} AND user_id = ${payload.userId}
       RETURNING *
