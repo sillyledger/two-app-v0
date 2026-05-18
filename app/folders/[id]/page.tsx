@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { useParams, useRouter, useSearchParams } from "next/navigation"
+import { useParams, useRouter, useSearchParams, usePathname } from "next/navigation"
 import { Plus, FileText, MoreHorizontal, Folder } from "lucide-react"
 import Sidebar from "@/components/sidebar"
 
@@ -37,6 +37,7 @@ function stripHtml(html: string) {
 export default function FolderPage() {
   const { id } = useParams()
   const router = useRouter()
+  const pathname = usePathname()
   const searchParams = useSearchParams()
   const folderNameFromUrl = searchParams.get('name') ?? '...'
   const [folder, setFolder] = useState<FolderType | null>(null)
@@ -52,6 +53,7 @@ export default function FolderPage() {
 
   useEffect(() => {
     if (!id) return
+    setLoading(true)
 
     fetch(`/api/folders/${id}`)
       .then((r) => r.json())
@@ -65,7 +67,7 @@ export default function FolderPage() {
         setLoading(false)
       })
       .catch(() => setLoading(false))
-  }, [id])
+  }, [id, pathname])
 
   const handleCreateDoc = async () => {
     if (creating) return
