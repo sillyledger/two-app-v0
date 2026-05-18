@@ -67,6 +67,10 @@ export default function Sidebar({ onNewNote }: SidebarProps = {}) {
   const [folderRenameValue, setFolderRenameValue] = useState("")
   const folderRenameInputRef = useRef<HTMLInputElement>(null)
 
+  // Drag and drop
+  const [draggingDocId, setDraggingDocId] = useState<string | null>(null)
+  const [dragOverFolderId, setDragOverFolderId] = useState<string | null>(null)
+
   // Picker (the + dropdown)
   const [showPicker, setShowPicker] = useState(false)
   const pickerRef = useRef<HTMLDivElement>(null)
@@ -207,6 +211,20 @@ export default function Sidebar({ onNewNote }: SidebarProps = {}) {
   const handleLogout = async () => {
     await fetch("/api/auth", { method: "DELETE" })
     router.push("/login")
+  }
+
+  const handleDrop = async (folderId: string) => {
+    if (!draggingDocId) return
+    setDragOverFolderId(null)
+    setDocs((prev) => prev.filter((d) => d.id !== draggingDocId))
+    try {
+      await fetch(`/api/docs/${draggingDocId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ folder_id: folderId }),
+      })
+    } catch {}
+    setDraggingDocId(null)
   }
 
   const initial = userName ? userName.charAt(0).toUpperCase() : "?"
@@ -390,7 +408,9 @@ export default function Sidebar({ onNewNote }: SidebarProps = {}) {
                 <div
                   key={folder.id}
                   className={`group relative flex items-center gap-2 px-2 py-[5px] rounded-md text-[12px] font-medium transition-colors cursor-pointer ${
-                    pathname === `/folders/${folder.id}`
+                    dragOverFolderId === folder.id
+                      ? "bg-[#3a3a3a] text-[#e8e8e8] ring-1 ring-[#555]"
+                      : pathname === `/folders/${folder.id}`
                       ? "bg-[#2a2a2a] text-[#e8e8e8]"
                       : "text-[#888] hover:bg-[#2a2a2a] hover:text-[#e8e8e8]"
                   }`}
@@ -398,6 +418,15 @@ export default function Sidebar({ onNewNote }: SidebarProps = {}) {
                     if (renamingFolderId !== folder.id) {
                       router.push(`/folders/${folder.id}?name=${encodeURIComponent(folder.name)}`)
                     }
+                  }}
+                  onDragOver={(e) => {
+                    e.preventDefault()
+                    setDragOverFolderId(folder.id)
+                  }}
+                  onDragLeave={() => setDragOverFolderId(null)}
+                  onDrop={(e) => {
+                    e.preventDefault()
+                    handleDrop(folder.id)
                   }}
                 >
                   <Folder size={13} className="shrink-0 text-[#555]" />
@@ -467,8 +496,16 @@ export default function Sidebar({ onNewNote }: SidebarProps = {}) {
                 <Link
                   key={doc.id}
                   href={`/docs/${doc.id}`}
+                  draggable
+                  onDragStart={() => setDraggingDocId(doc.id)}
+                  onDragEnd={() => {
+                    setDraggingDocId(null)
+                    setDragOverFolderId(null)
+                  }}
                   className={`flex items-center gap-2 px-2 py-[5px] rounded-md transition-colors text-[12px] font-medium ${
-                    pathname === `/docs/${doc.id}`
+                    draggingDocId === doc.id
+                      ? "opacity-40 cursor-grabbing"
+                      : pathname === `/docs/${doc.id}`
                       ? "bg-[#2a2a2a] text-[#e8e8e8]"
                       : "text-[#888] hover:bg-[#2a2a2a] hover:text-[#e8e8e8]"
                   }`}
