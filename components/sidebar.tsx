@@ -361,7 +361,7 @@ export default function Sidebar({ onNewNote }: SidebarProps = {}) {
                   }`}
                   onClick={() => {
                     if (renamingFolderId !== folder.id) {
-                      router.push(`/folders/${folder.id}`)
+                      router.push(`/folders/${folder.id}?name=${encodeURIComponent(folder.name)}`)
                     }
                   }}
                 >
