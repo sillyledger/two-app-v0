@@ -209,12 +209,14 @@ export default function Sidebar({ onNewNote }: SidebarProps = {}) {
     router.push("/login")
   }
 
-  const handleDrop = async (folderId: string) => {
-    if (!draggingDocId) return
-    const docId = draggingDocId
-    setDraggingDocId(null)
+  const handleDrop = async (e: React.DragEvent, folderId: string) => {
+    e.preventDefault()
+    e.stopPropagation()
+    // Read the doc ID directly from the drag event data — no stale state
+    const docId = e.dataTransfer.getData("docId")
+    if (!docId) return
     setDragOverFolderId(null)
-
+    setDraggingDocId(null)
     try {
       const res = await fetch(`/api/docs/${docId}`, {
         method: "PUT",
@@ -222,7 +224,6 @@ export default function Sidebar({ onNewNote }: SidebarProps = {}) {
         body: JSON.stringify({ folder_id: folderId }),
       })
       if (res.ok) {
-        // Re-fetch from server so sidebar matches the database exactly
         fetchDocs()
       }
     } catch {}
@@ -417,13 +418,14 @@ export default function Sidebar({ onNewNote }: SidebarProps = {}) {
                   }}
                   onDragOver={(e) => {
                     e.preventDefault()
+                    e.stopPropagation()
                     setDragOverFolderId(folder.id)
                   }}
-                  onDragLeave={() => setDragOverFolderId(null)}
-                  onDrop={(e) => {
-                    e.preventDefault()
-                    handleDrop(folder.id)
+                  onDragLeave={(e) => {
+                    e.stopPropagation()
+                    setDragOverFolderId(null)
                   }}
+                  onDrop={(e) => handleDrop(e, folder.id)}
                 >
                   <Folder size={13} className="shrink-0 text-[#555]" />
 
@@ -489,16 +491,21 @@ export default function Sidebar({ onNewNote }: SidebarProps = {}) {
               ))}
 
               {docs.map((doc) => (
-                <Link
+                <div
                   key={doc.id}
-                  href={`/docs/${doc.id}`}
                   draggable
-                  onDragStart={() => setDraggingDocId(doc.id)}
+                  onDragStart={(e) => {
+                    // Store the doc ID in the drag event itself — 100% reliable
+                    e.dataTransfer.setData("docId", String(doc.id))
+                    e.dataTransfer.effectAllowed = "move"
+                    setDraggingDocId(doc.id)
+                  }}
                   onDragEnd={() => {
                     setDraggingDocId(null)
                     setDragOverFolderId(null)
                   }}
-                  className={`flex items-center gap-2 px-2 py-[5px] rounded-md transition-colors text-[12px] font-medium ${
+                  onClick={() => router.push(`/docs/${doc.id}`)}
+                  className={`flex items-center gap-2 px-2 py-[5px] rounded-md transition-colors text-[12px] font-medium cursor-pointer ${
                     draggingDocId === doc.id
                       ? "opacity-40 cursor-grabbing"
                       : pathname === `/docs/${doc.id}`
@@ -508,7 +515,7 @@ export default function Sidebar({ onNewNote }: SidebarProps = {}) {
                 >
                   <FileText size={13} className="shrink-0 text-[#555]" />
                   <span className="truncate">{doc.title || "Untitled"}</span>
-                </Link>
+                </div>
               ))}
 
               {folders.length === 0 && docs.length === 0 && (
