@@ -12,7 +12,7 @@ export async function GET(request: Request, { params }: { params: { id: string }
     if (!payload?.userId) return NextResponse.json(null, { status: 401 })
 
     const result = await sql`
-      SELECT * FROM folders WHERE id = ${params.id} AND user_id = ${String(payload.userId)}
+      SELECT * FROM folders WHERE id = ${params.id}
     `
     if (!result[0]) return NextResponse.json(null, { status: 404 })
     return NextResponse.json(result[0])
