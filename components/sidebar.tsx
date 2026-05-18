@@ -30,6 +30,11 @@ interface FolderType {
   name: string
 }
 
+interface Workspace {
+  id: string
+  name: string
+}
+
 interface SidebarProps {
   onNewNote?: () => void
 }
@@ -43,6 +48,7 @@ export default function Sidebar({ onNewNote }: SidebarProps = {}) {
   const [userEmail, setUserEmail] = useState("")
   const [workspaceName, setWorkspaceName] = useState("My Workspace")
   const [workspaceId, setWorkspaceId] = useState<string | null>(null)
+  const [workspaces, setWorkspaces] = useState<Workspace[]>([])
   const [docs, setDocs] = useState<Doc[]>([])
   const [folders, setFolders] = useState<FolderType[]>([])
   const [creating, setCreating] = useState(false)
@@ -67,7 +73,7 @@ export default function Sidebar({ onNewNote }: SidebarProps = {}) {
 
   // Modal
   const [showModal, setShowModal] = useState(false)
-  const [modalType, setModalType] = useState<"doc" | "folder">("doc")
+  const [modalType, setModalType] = useState<"doc" | "folder" | "workspace">("doc")
   const [modalName, setModalName] = useState("")
   const modalInputRef = useRef<HTMLInputElement>(null)
 
@@ -87,6 +93,13 @@ export default function Sidebar({ onNewNote }: SidebarProps = {}) {
       .then((data) => {
         if (data?.name) setWorkspaceName(data.name)
         if (data?.id) setWorkspaceId(data.id)
+      })
+      .catch(() => {})
+
+    fetch("/api/workspaces")
+      .then((r) => r.json())
+      .then((data) => {
+        setWorkspaces(Array.isArray(data) ? data : [])
       })
       .catch(() => {})
 
@@ -198,10 +211,14 @@ export default function Sidebar({ onNewNote }: SidebarProps = {}) {
 
   const initial = userName ? userName.charAt(0).toUpperCase() : "?"
 
-  const openModal = (type: "doc" | "folder") => {
+  const openModal = (type: "doc" | "folder" | "workspace") => {
     setShowPicker(false)
     setModalType(type)
-    setModalName(type === "doc" ? "Untitled" : "New Folder")
+    setModalName(
+      type === "doc" ? "Untitled" :
+      type === "folder" ? "New Folder" :
+      "New Workspace"
+    )
     setShowModal(true)
   }
 
@@ -234,6 +251,18 @@ export default function Sidebar({ onNewNote }: SidebarProps = {}) {
         })
         const folder = await res.json()
         setFolders((prev) => [...prev, folder])
+      } catch {}
+    }
+
+    if (modalType === "workspace") {
+      try {
+        const res = await fetch("/api/workspaces", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name: modalName }),
+        })
+        const workspace = await res.json()
+        setWorkspaces((prev) => [...prev, workspace])
       } catch {}
     }
   }
@@ -454,12 +483,32 @@ export default function Sidebar({ onNewNote }: SidebarProps = {}) {
               )}
             </div>
           )}
+
+          {/* Other workspaces */}
+          {workspaces.filter(w => w.id !== workspaceId).map((ws) => (
+            <div key={ws.id} className="mt-2">
+              <div className="flex items-center justify-between px-2 py-[4px] mb-0.5">
+                <span className="text-[10px] font-semibold uppercase tracking-wider text-[#555] truncate">
+                  {ws.name}
+                </span>
+              </div>
+            </div>
+          ))}
+
         </nav>
 
-        {/* Bottom — Settings, Trash, Logout + User */}
+        {/* Bottom — Settings, Trash, + Workspace, Logout + User */}
         <div className="border-t border-[#2a2a2a] px-2 py-2.5 space-y-[1px]">
           {navItem("/settings", <Settings size={13} />, "Settings")}
           {navItem("/trash", <Trash2 size={13} />, "Trash")}
+
+          <button
+            onClick={() => openModal("workspace")}
+            className="flex items-center gap-2 px-2 py-[5px] rounded-md transition-colors text-[12px] font-medium w-full text-[#555] hover:bg-[#2a2a2a] hover:text-[#e8e8e8]"
+          >
+            <Plus size={13} />
+            Add Workspace
+          </button>
 
           <button
             onClick={handleLogout}
@@ -490,7 +539,7 @@ export default function Sidebar({ onNewNote }: SidebarProps = {}) {
           />
           <div className="relative bg-[#242424] border border-[#333] rounded-xl shadow-2xl w-[320px] p-5 z-10">
             <h2 className="text-[14px] font-semibold text-[#e8e8e8] mb-4">
-              {modalType === "doc" ? "New Doc" : "New Folder"}
+              {modalType === "doc" ? "New Doc" : modalType === "folder" ? "New Folder" : "New Workspace"}
             </h2>
 
             <div className="mb-1">
