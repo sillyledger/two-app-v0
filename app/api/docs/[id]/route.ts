@@ -12,7 +12,6 @@ export async function GET(
   if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   const payload = await verifyToken(token.value)
   if (!payload) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-
   try {
     const { id } = await params
     const result = await sql`
@@ -37,7 +36,6 @@ export async function PUT(
   if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   const payload = await verifyToken(token.value)
   if (!payload) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-
   try {
     const { id } = await params
     const { title, content, color, is_starred, type } = await request.json()
@@ -72,11 +70,12 @@ export async function DELETE(
   if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   const payload = await verifyToken(token.value)
   if (!payload) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-
   try {
     const { id } = await params
     const result = await sql`
-      DELETE FROM docs WHERE id = ${id} AND user_id = ${payload.userId}
+      UPDATE docs
+      SET deleted_at = CURRENT_TIMESTAMP
+      WHERE id = ${id} AND user_id = ${payload.userId}
       RETURNING *
     `
     if (result.length === 0) {
