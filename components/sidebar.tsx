@@ -53,33 +53,36 @@ export default function Sidebar({ onNewNote }: SidebarProps = {}) {
   const [folders, setFolders] = useState<FolderType[]>([])
   const [creating, setCreating] = useState(false)
 
-  // Rename workspace
   const [renamingWorkspace, setRenamingWorkspace] = useState(false)
   const [workspaceRenameValue, setWorkspaceRenameValue] = useState("")
   const workspaceInputRef = useRef<HTMLInputElement>(null)
 
-  // Folder three-dot menu
   const [folderMenuId, setFolderMenuId] = useState<string | null>(null)
   const folderMenuRef = useRef<HTMLDivElement>(null)
 
-  // Folder rename
   const [renamingFolderId, setRenamingFolderId] = useState<string | null>(null)
   const [folderRenameValue, setFolderRenameValue] = useState("")
   const folderRenameInputRef = useRef<HTMLInputElement>(null)
 
-  // Drag and drop
   const [draggingDocId, setDraggingDocId] = useState<string | null>(null)
   const [dragOverFolderId, setDragOverFolderId] = useState<string | null>(null)
 
-  // Picker (the + dropdown)
   const [showPicker, setShowPicker] = useState(false)
   const pickerRef = useRef<HTMLDivElement>(null)
 
-  // Modal
   const [showModal, setShowModal] = useState(false)
   const [modalType, setModalType] = useState<"doc" | "folder" | "workspace">("doc")
   const [modalName, setModalName] = useState("")
   const modalInputRef = useRef<HTMLInputElement>(null)
+
+  const fetchDocs = () => {
+    fetch("/api/docs")
+      .then((r) => r.json())
+      .then((data) => {
+        setDocs(Array.isArray(data) ? data.slice(0, 8) : [])
+      })
+      .catch(() => {})
+  }
 
   useEffect(() => {
     fetch("/api/auth/me")
@@ -107,12 +110,7 @@ export default function Sidebar({ onNewNote }: SidebarProps = {}) {
       })
       .catch(() => {})
 
-    fetch("/api/docs")
-      .then((r) => r.json())
-      .then((data) => {
-        setDocs(Array.isArray(data) ? data.slice(0, 8) : [])
-      })
-      .catch(() => {})
+    fetchDocs()
 
     fetch("/api/folders")
       .then((r) => r.json())
@@ -122,7 +120,6 @@ export default function Sidebar({ onNewNote }: SidebarProps = {}) {
       .catch(() => {})
   }, [])
 
-  // Close picker on outside click
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (pickerRef.current && !pickerRef.current.contains(e.target as Node)) {
@@ -133,7 +130,6 @@ export default function Sidebar({ onNewNote }: SidebarProps = {}) {
     return () => document.removeEventListener("mousedown", handler)
   }, [showPicker])
 
-  // Close folder menu on outside click
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (folderMenuRef.current && !folderMenuRef.current.contains(e.target as Node)) {
@@ -215,16 +211,21 @@ export default function Sidebar({ onNewNote }: SidebarProps = {}) {
 
   const handleDrop = async (folderId: string) => {
     if (!draggingDocId) return
+    const docId = draggingDocId
+    setDraggingDocId(null)
     setDragOverFolderId(null)
-    setDocs((prev) => prev.filter((d) => d.id !== draggingDocId))
+
     try {
-      await fetch(`/api/docs/${draggingDocId}`, {
+      const res = await fetch(`/api/docs/${docId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ folder_id: folderId }),
       })
+      if (res.ok) {
+        // Re-fetch from server so sidebar matches the database exactly
+        fetchDocs()
+      }
     } catch {}
-    setDraggingDocId(null)
   }
 
   const initial = userName ? userName.charAt(0).toUpperCase() : "?"
@@ -253,7 +254,7 @@ export default function Sidebar({ onNewNote }: SidebarProps = {}) {
           body: JSON.stringify({ title: modalName, content: "", color: "yellow", type: "doc" }),
         })
         const doc = await res.json()
-        setDocs((prev) => [doc, ...prev])
+        fetchDocs()
         router.push(`/docs/${doc.id}`)
       } finally {
         setCreating(false)
@@ -303,7 +304,6 @@ export default function Sidebar({ onNewNote }: SidebarProps = {}) {
     <>
       <aside className="w-[210px] min-w-[210px] h-screen flex flex-col sticky top-0 bg-[#1f1f1f] border-r border-[#2a2a2a]">
 
-        {/* Top — User */}
         <div className="flex items-center gap-2 px-3 pt-4 pb-2.5">
           <div className="w-5 h-5 rounded-md bg-[#e8e8e8] flex items-center justify-center shrink-0">
             <span className="text-[#1a1a1a] text-[10px] font-bold">T</span>
@@ -314,7 +314,6 @@ export default function Sidebar({ onNewNote }: SidebarProps = {}) {
           <ChevronDown size={12} className="text-[#555] ml-auto shrink-0" />
         </div>
 
-        {/* Search */}
         <div className="px-2 mb-2">
           <div className="flex items-center gap-2 bg-[#2a2a2a] rounded-md px-2.5 py-[6px]">
             <Search size={12} className="text-[#555] shrink-0" />
@@ -328,7 +327,6 @@ export default function Sidebar({ onNewNote }: SidebarProps = {}) {
           </div>
         </div>
 
-        {/* Main Nav */}
         <nav className="flex-1 px-2 overflow-y-auto mt-0.5">
 
           {navItem("/", <Home size={13} />, "Home")}
@@ -337,7 +335,6 @@ export default function Sidebar({ onNewNote }: SidebarProps = {}) {
 
           <div className="my-2 border-t border-[#2a2a2a]" />
 
-          {/* Workspace Header */}
           <div className="flex items-center justify-between px-2 py-[4px] mb-0.5">
             <div className="flex items-center gap-1 flex-1 min-w-0">
               <button
@@ -370,7 +367,6 @@ export default function Sidebar({ onNewNote }: SidebarProps = {}) {
               )}
             </div>
 
-            {/* + button with picker */}
             <div className="relative ml-1 shrink-0" ref={pickerRef}>
               <button
                 onClick={() => setShowPicker((v) => !v)}
@@ -521,7 +517,6 @@ export default function Sidebar({ onNewNote }: SidebarProps = {}) {
             </div>
           )}
 
-          {/* Other workspaces */}
           {workspaces.filter(w => w.id !== workspaceId).map((ws) => (
             <div key={ws.id} className="mt-2">
               <div className="flex items-center justify-between px-2 py-[4px] mb-0.5">
@@ -534,7 +529,6 @@ export default function Sidebar({ onNewNote }: SidebarProps = {}) {
 
         </nav>
 
-        {/* Bottom — Settings, Trash, + Workspace, Logout + User */}
         <div className="border-t border-[#2a2a2a] px-2 py-2.5 space-y-[1px]">
           {navItem("/settings", <Settings size={13} />, "Settings")}
           {navItem("/trash", <Trash2 size={13} />, "Trash")}
@@ -567,7 +561,6 @@ export default function Sidebar({ onNewNote }: SidebarProps = {}) {
         </div>
       </aside>
 
-      {/* Modal */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div
