@@ -40,8 +40,6 @@ export async function PUT(
     const { id } = await params
     const body = await request.json()
     const { title, content, color, is_starred, type, folder_id } = body
-
-    // If folder_id is being set, run a separate focused update
     if (folder_id !== undefined) {
       const result = await sql`
         UPDATE docs
@@ -55,8 +53,6 @@ export async function PUT(
       }
       return NextResponse.json(result[0])
     }
-
-    // Otherwise do the normal content update
     const result = await sql`
       UPDATE docs 
       SET 
@@ -66,6 +62,35 @@ export async function PUT(
         is_starred = COALESCE(${is_starred ?? null}, is_starred),
         type = COALESCE(${type ?? null}, type),
         updated_at = CURRENT_TIMESTAMP
+      WHERE id = ${id} AND user_id = ${payload.userId}
+      RETURNING *
+    `
+    if (result.length === 0) {
+      return NextResponse.json({ error: 'Doc not found' }, { status: 404 })
+    }
+    return NextResponse.json(result[0])
+  } catch (error) {
+    console.error('Failed to update doc:', error)
+    return NextResponse.json({ error: 'Failed to update doc' }, { status: 500 })
+  }
+}
+
+export async function PATCH(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const cookieStore = await cookies()
+  const token = cookieStore.get('auth-token')
+  if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const payload = await verifyToken(token.value)
+  if (!payload) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  try {
+    const { id } = await params
+    const { is_public } = await request.json()
+    const result = await sql`
+      UPDATE docs
+      SET is_public = ${is_public},
+          updated_at = CURRENT_TIMESTAMP
       WHERE id = ${id} AND user_id = ${payload.userId}
       RETURNING *
     `
