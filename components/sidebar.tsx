@@ -354,7 +354,16 @@ export default function Sidebar({ onNewNote }: SidebarProps = {}) {
               {folders.map((folder) => (
                 <div
                   key={folder.id}
-                  className="group relative flex items-center gap-2 px-2 py-[5px] rounded-md text-[12px] font-medium text-[#888] hover:bg-[#2a2a2a] hover:text-[#e8e8e8] transition-colors cursor-pointer"
+                  className={`group relative flex items-center gap-2 px-2 py-[5px] rounded-md text-[12px] font-medium transition-colors cursor-pointer ${
+                    pathname === `/folders/${folder.id}`
+                      ? "bg-[#2a2a2a] text-[#e8e8e8]"
+                      : "text-[#888] hover:bg-[#2a2a2a] hover:text-[#e8e8e8]"
+                  }`}
+                  onClick={() => {
+                    if (renamingFolderId !== folder.id) {
+                      router.push(`/folders/${folder.id}`)
+                    }
+                  }}
                 >
                   <Folder size={13} className="shrink-0 text-[#555]" />
 
@@ -377,7 +386,10 @@ export default function Sidebar({ onNewNote }: SidebarProps = {}) {
 
                   {/* Three-dot menu button */}
                   {renamingFolderId !== folder.id && (
-                    <div className="relative" ref={folderMenuId === folder.id ? folderMenuRef : undefined}>
+                    <div
+                      className="relative"
+                      ref={folderMenuId === folder.id ? folderMenuRef : undefined}
+                    >
                       <button
                         onClick={(e) => {
                           e.stopPropagation()
