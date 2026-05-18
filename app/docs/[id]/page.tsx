@@ -30,6 +30,7 @@ export default function DocPage() {
   const [content, setContent] = useState('')
   const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'unsaved'>('saved')
   const [folder, setFolder] = useState<Folder | null>(null)
+  const [isPublic, setIsPublic] = useState(false)
   const titleRef = useRef<HTMLTextAreaElement>(null)
   const editorFocusRef = useRef<(() => void) | null>(null)
 
@@ -53,6 +54,7 @@ export default function DocPage() {
         setDoc(data)
         setTitle(data.title)
         setContent(data.content || '')
+        setIsPublic(data.is_public ?? false)
 
         if (data.folder_id) {
           fetch(`/api/folders/${data.folder_id}`)
@@ -114,6 +116,8 @@ export default function DocPage() {
           folder={folder}
           saveStatus={saveStatus}
           onDelete={handleDelete}
+          docId={id}
+          isPublic={isPublic}
         />
 
         <main className="flex-1 overflow-y-auto pt-[44px]">
