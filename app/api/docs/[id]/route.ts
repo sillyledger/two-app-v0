@@ -38,16 +38,33 @@ export async function PUT(
   if (!payload) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   try {
     const { id } = await params
-    const { title, content, color, is_starred, type, folder_id } = await request.json()
+    const body = await request.json()
+    const { title, content, color, is_starred, type, folder_id } = body
+
+    // If folder_id is being set, run a separate focused update
+    if (folder_id !== undefined) {
+      const result = await sql`
+        UPDATE docs
+        SET folder_id = ${folder_id},
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = ${id} AND user_id = ${payload.userId}
+        RETURNING *
+      `
+      if (result.length === 0) {
+        return NextResponse.json({ error: 'Doc not found' }, { status: 404 })
+      }
+      return NextResponse.json(result[0])
+    }
+
+    // Otherwise do the normal content update
     const result = await sql`
       UPDATE docs 
       SET 
-        title = COALESCE(${title}, title),
-        content = COALESCE(${content}, content),
-        color = COALESCE(${color}, color),
-        is_starred = COALESCE(${is_starred}, is_starred),
-        type = COALESCE(${type}, type),
-        folder_id = CASE WHEN ${folder_id} IS NOT NULL THEN ${folder_id} ELSE folder_id END,
+        title = COALESCE(${title ?? null}, title),
+        content = COALESCE(${content ?? null}, content),
+        color = COALESCE(${color ?? null}, color),
+        is_starred = COALESCE(${is_starred ?? null}, is_starred),
+        type = COALESCE(${type ?? null}, type),
         updated_at = CURRENT_TIMESTAMP
       WHERE id = ${id} AND user_id = ${payload.userId}
       RETURNING *
