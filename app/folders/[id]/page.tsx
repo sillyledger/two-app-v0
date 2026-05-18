@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { useParams, useRouter } from "next/navigation"
+import { useParams, useRouter, useSearchParams } from "next/navigation"
 import { Plus, FileText, MoreHorizontal, Folder } from "lucide-react"
 import Sidebar from "@/components/sidebar"
 
@@ -37,6 +37,8 @@ function stripHtml(html: string) {
 export default function FolderPage() {
   const { id } = useParams()
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const folderNameFromUrl = searchParams.get('name') ?? '...'
   const [folder, setFolder] = useState<FolderType | null>(null)
   const [docs, setDocs] = useState<Doc[]>([])
   const [loading, setLoading] = useState(true)
@@ -53,7 +55,7 @@ export default function FolderPage() {
 
     fetch(`/api/folders/${id}`)
       .then((r) => r.json())
-      .then((data: FolderType) => setFolder(data))
+      .then((data: FolderType) => { if (data?.name) setFolder(data) })
       .catch(() => {})
 
     fetch(`/api/docs?folder_id=${id}`)
@@ -99,7 +101,7 @@ export default function FolderPage() {
             <div className="flex items-center gap-3">
               <Folder size={22} className="text-[#555]" />
               <h1 className="text-2xl font-bold text-[#e8e8e8]">
-                {folder?.name ?? "..."}
+                {folder?.name ?? folderNameFromUrl}
               </h1>
             </div>
             <button
@@ -127,7 +129,6 @@ export default function FolderPage() {
             </div>
           ) : (
             <div className="border border-[#2a2a2a] rounded-xl overflow-hidden">
-              {/* Table header */}
               <div className="grid grid-cols-[1fr_140px_140px_36px] items-center px-4 py-2 border-b border-[#2a2a2a] bg-[#1f1f1f]">
                 <span className="text-[11px] font-semibold uppercase tracking-wider text-[#444]">Name</span>
                 <span className="text-[11px] font-semibold uppercase tracking-wider text-[#444]">Created</span>
@@ -135,7 +136,6 @@ export default function FolderPage() {
                 <span />
               </div>
 
-              {/* Doc rows */}
               {docs.map((doc, i) => (
                 <div
                   key={doc.id}
@@ -144,7 +144,6 @@ export default function FolderPage() {
                     i !== docs.length - 1 ? "border-b border-[#222]" : ""
                   }`}
                 >
-                  {/* Name + preview */}
                   <div className="flex items-center gap-3 min-w-0">
                     <FileText size={14} className="text-[#444] shrink-0" />
                     <div className="min-w-0">
@@ -156,18 +155,8 @@ export default function FolderPage() {
                       </p>
                     </div>
                   </div>
-
-                  {/* Created */}
-                  <span className="text-[12px] text-[#555]">
-                    {formatDate(doc.created_at)}
-                  </span>
-
-                  {/* Updated */}
-                  <span className="text-[12px] text-[#555]">
-                    {formatDate(doc.updated_at)}
-                  </span>
-
-                  {/* More button */}
+                  <span className="text-[12px] text-[#555]">{formatDate(doc.created_at)}</span>
+                  <span className="text-[12px] text-[#555]">{formatDate(doc.updated_at)}</span>
                   <button
                     onClick={(e) => e.stopPropagation()}
                     className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-[#2a2a2a] text-[#555] hover:text-[#e8e8e8] transition-all"
