@@ -12,7 +12,7 @@ export async function GET(request: Request, { params }: { params: { id: string }
     if (!payload?.userId) return NextResponse.json(null, { status: 401 })
 
     const result = await sql`
-      SELECT * FROM folders WHERE id = ${params.id} AND user_id = ${payload.userId}
+      SELECT * FROM folders WHERE id = ${params.id}::integer AND user_id = ${String(payload.userId)}
     `
     if (!result[0]) return NextResponse.json(null, { status: 404 })
     return NextResponse.json(result[0])
@@ -36,7 +36,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
     const result = await sql`
       UPDATE folders
       SET name = ${name.trim()}
-      WHERE id = ${params.id}
+      WHERE id = ${params.id}::integer
       RETURNING *
     `
     return NextResponse.json(result[0])
@@ -54,7 +54,7 @@ export async function DELETE(request: Request, { params }: { params: { id: strin
     const payload = await verifyToken(token)
     if (!payload?.userId) return NextResponse.json(null, { status: 401 })
 
-    await sql`DELETE FROM folders WHERE id = ${params.id}`
+    await sql`DELETE FROM folders WHERE id = ${params.id}::integer`
     return NextResponse.json({ success: true })
   } catch (error) {
     console.error('Folder delete error:', error)
