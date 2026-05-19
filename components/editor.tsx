@@ -31,6 +31,11 @@ export default function Editor({ content, onChange, onReady }: EditorProps) {
   const [bubblePos, setBubblePos] = useState({ top: 0, left: 0 })
   const containerRef = useRef<HTMLDivElement>(null)
 
+  // Custom link modal state
+  const [linkModalOpen, setLinkModalOpen] = useState(false)
+  const [linkUrl, setLinkUrl] = useState("")
+  const linkInputRef = useRef<HTMLInputElement>(null)
+
   const editor = useEditor({
     extensions: [
       StarterKit,
@@ -73,14 +78,7 @@ export default function Editor({ content, onChange, onReady }: EditorProps) {
       handleKeyDown: (view, event) => {
         if ((event.metaKey || event.ctrlKey) && event.key === 'k') {
           event.preventDefault()
-          const previousUrl = editor?.getAttributes('link').href
-          const url = window.prompt('URL', previousUrl)
-          if (url === null) return true
-          if (url === '') {
-            editor?.chain().focus().extendMarkRange('link').unsetLink().run()
-            return true
-          }
-          editor?.chain().focus().extendMarkRange('link').setLink({ href: url }).run()
+          openLinkModal()
           return true
         }
         return false
@@ -94,16 +92,35 @@ export default function Editor({ content, onChange, onReady }: EditorProps) {
     }
   }, [editor])
 
-  const setLink = useCallback(() => {
-    if (!editor) return
-    const previousUrl = editor.getAttributes("link").href
-    const url = window.prompt("URL", previousUrl)
-    if (url === null) return
-    if (url === "") {
-      editor.chain().focus().extendMarkRange("link").unsetLink().run()
-      return
+  // Focus the input when modal opens
+  useEffect(() => {
+    if (linkModalOpen) {
+      setTimeout(() => linkInputRef.current?.focus(), 50)
     }
-    editor.chain().focus().extendMarkRange("link").setLink({ href: url }).run()
+  }, [linkModalOpen])
+
+  const openLinkModal = useCallback(() => {
+    if (!editor) return
+    const previousUrl = editor.getAttributes("link").href || ""
+    setLinkUrl(previousUrl)
+    setLinkModalOpen(true)
+  }, [editor])
+
+  const confirmLink = useCallback(() => {
+    if (!editor) return
+    if (linkUrl === "") {
+      editor.chain().focus().extendMarkRange("link").unsetLink().run()
+    } else {
+      editor.chain().focus().extendMarkRange("link").setLink({ href: linkUrl }).run()
+    }
+    setLinkModalOpen(false)
+    setLinkUrl("")
+  }, [editor, linkUrl])
+
+  const cancelLink = useCallback(() => {
+    setLinkModalOpen(false)
+    setLinkUrl("")
+    editor?.commands.focus()
   }, [editor])
 
   if (!editor) return null
@@ -128,6 +145,45 @@ export default function Editor({ content, onChange, onReady }: EditorProps) {
         }
       `}</style>
 
+      {/* Custom dark link modal */}
+      {linkModalOpen && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center"
+          style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
+          onMouseDown={(e) => { if (e.target === e.currentTarget) cancelLink() }}
+        >
+          <div className="w-full max-w-sm rounded-xl border border-white/10 bg-[#1e1e1e] p-5 shadow-2xl">
+            <p className="mb-3 text-sm font-medium text-white/70">Insert link</p>
+            <input
+              ref={linkInputRef}
+              type="url"
+              value={linkUrl}
+              onChange={(e) => setLinkUrl(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") confirmLink()
+                if (e.key === "Escape") cancelLink()
+              }}
+              placeholder="https://"
+              className="w-full rounded-lg border border-white/10 bg-[#2a2a2a] px-3 py-2 text-sm text-white placeholder-white/30 outline-none focus:border-white/30"
+            />
+            <div className="mt-4 flex justify-end gap-2">
+              <button
+                onMouseDown={(e) => { e.preventDefault(); cancelLink() }}
+                className="rounded-lg px-4 py-1.5 text-sm text-white/50 hover:text-white/80 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onMouseDown={(e) => { e.preventDefault(); confirmLink() }}
+                className="rounded-lg bg-white/10 px-4 py-1.5 text-sm text-white hover:bg-white/20 transition-colors"
+              >
+                Apply
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Bubble toolbar — appears above selected text */}
       {bubbleVisible && (
         <div
@@ -149,7 +205,7 @@ export default function Editor({ content, onChange, onReady }: EditorProps) {
           <BubbleButton onClick={() => editor.chain().focus().toggleBlockquote().run()} active={editor.isActive("blockquote")} title="Quote"><Quote size={14} /></BubbleButton>
           <BubbleButton onClick={() => editor.chain().focus().toggleCodeBlock().run()} active={editor.isActive("codeBlock")} title="Code Block"><Code2 size={14} /></BubbleButton>
           <div className="mx-1 h-4 w-px bg-white/10" />
-          <BubbleButton onClick={setLink} active={editor.isActive("link")} title="Link"><LinkIcon size={14} /></BubbleButton>
+          <BubbleButton onClick={openLinkModal} active={editor.isActive("link")} title="Link"><LinkIcon size={14} /></BubbleButton>
         </div>
       )}
 
