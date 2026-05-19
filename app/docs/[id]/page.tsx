@@ -183,7 +183,7 @@ export default function DocPage() {
         />
 
         <main className="flex-1 overflow-y-auto pt-[44px]">
-          <div className="mx-auto w-full max-w-[780px] px-16 pt-16 pb-32">
+          <div className="mx-auto w-full max-w-[800px] px-16 pt-16 pb-32">
 
             {/* Title */}
             <textarea
