@@ -22,6 +22,7 @@ import {
 
 interface Doc {
   id: string
+  uuid: string
   title: string
 }
 
@@ -212,7 +213,6 @@ export default function Sidebar({ onNewNote }: SidebarProps = {}) {
   const handleDrop = async (e: React.DragEvent, folderId: string) => {
     e.preventDefault()
     e.stopPropagation()
-    // Read the doc ID directly from the drag event data — no stale state
     const docId = e.dataTransfer.getData("docId")
     if (!docId) return
     setDragOverFolderId(null)
@@ -256,7 +256,7 @@ export default function Sidebar({ onNewNote }: SidebarProps = {}) {
         })
         const doc = await res.json()
         fetchDocs()
-        router.push(`/docs/${doc.id}`)
+        router.push(`/docs/${doc.uuid}`)
       } finally {
         setCreating(false)
       }
@@ -492,23 +492,22 @@ export default function Sidebar({ onNewNote }: SidebarProps = {}) {
 
               {docs.map((doc) => (
                 <div
-                  key={doc.id}
+                  key={doc.uuid}
                   draggable
                   onDragStart={(e) => {
-                    // Store the doc ID in the drag event itself — 100% reliable
-                    e.dataTransfer.setData("docId", String(doc.id))
+                    e.dataTransfer.setData("docId", String(doc.uuid))
                     e.dataTransfer.effectAllowed = "move"
-                    setDraggingDocId(doc.id)
+                    setDraggingDocId(doc.uuid)
                   }}
                   onDragEnd={() => {
                     setDraggingDocId(null)
                     setDragOverFolderId(null)
                   }}
-                  onClick={() => router.push(`/docs/${doc.id}`)}
+                  onClick={() => router.push(`/docs/${doc.uuid}`)}
                   className={`flex items-center gap-2 px-2 py-[5px] rounded-md transition-colors text-[12px] font-medium cursor-pointer ${
-                    draggingDocId === doc.id
+                    draggingDocId === doc.uuid
                       ? "opacity-40 cursor-grabbing"
-                      : pathname === `/docs/${doc.id}`
+                      : pathname === `/docs/${doc.uuid}`
                       ? "bg-[#2a2a2a] text-[#e8e8e8]"
                       : "text-[#888] hover:bg-[#2a2a2a] hover:text-[#e8e8e8]"
                   }`}
