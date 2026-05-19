@@ -3,6 +3,7 @@
 import { useEditor, EditorContent } from "@tiptap/react"
 import StarterKit from "@tiptap/starter-kit"
 import Link from "@tiptap/extension-link"
+import Typography from "@tiptap/extension-typography"
 import {
   Bold,
   Italic,
@@ -31,15 +32,24 @@ export default function Editor({ content, onChange, onReady }: EditorProps) {
   const [bubblePos, setBubblePos] = useState({ top: 0, left: 0 })
   const containerRef = useRef<HTMLDivElement>(null)
 
-  // Custom link modal state
   const [linkModalOpen, setLinkModalOpen] = useState(false)
   const [linkUrl, setLinkUrl] = useState("")
   const linkInputRef = useRef<HTMLInputElement>(null)
 
   const editor = useEditor({
     extensions: [
-      StarterKit,
+      StarterKit.configure({
+        heading: {
+          levels: [1, 2, 3],
+        },
+        bulletList: {},
+        orderedList: {},
+        blockquote: {},
+        codeBlock: {},
+        horizontalRule: {},
+      }),
       Link.configure({ openOnClick: false }),
+      Typography,
     ],
     content,
     onUpdate: ({ editor }) => {
@@ -92,7 +102,6 @@ export default function Editor({ content, onChange, onReady }: EditorProps) {
     }
   }, [editor])
 
-  // Focus the input when modal opens
   useEffect(() => {
     if (linkModalOpen) {
       setTimeout(() => linkInputRef.current?.focus(), 50)
@@ -184,7 +193,7 @@ export default function Editor({ content, onChange, onReady }: EditorProps) {
         </div>
       )}
 
-      {/* Bubble toolbar — appears above selected text */}
+      {/* Bubble toolbar */}
       {bubbleVisible && (
         <div
           className="absolute z-50 flex items-center gap-0.5 rounded-lg border border-white/10 bg-[#2a2a2a] px-1.5 py-1 shadow-xl"
