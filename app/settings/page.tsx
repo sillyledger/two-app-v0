@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { Sun, Moon } from 'lucide-react'
 import Sidebar from '@/components/sidebar'
 
 export default function SettingsPage() {
@@ -13,6 +14,21 @@ export default function SettingsPage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
+  const [theme, setTheme] = useState<'dark' | 'light'>('dark')
+
+  useEffect(() => {
+    const saved = localStorage.getItem('theme')
+    if (saved === 'light') setTheme('light')
+    else setTheme('dark')
+  }, [])
+
+  const toggleTheme = () => {
+    const next = theme === 'dark' ? 'light' : 'dark'
+    setTheme(next)
+    localStorage.setItem('theme', next)
+    document.documentElement.classList.remove('dark', 'light')
+    document.documentElement.classList.add(next)
+  }
 
   useEffect(() => {
     fetch('/api/auth/me')
@@ -98,7 +114,7 @@ export default function SettingsPage() {
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="Your name"
-                  className="w-full px-4 py-2.5 rounded-lg border border-white/10 bg-[#2a2a2a] text-white text-sm placeholder-neutral-600 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  className="w-full px-4 py-2.5 rounded-lg border border-white/10 bg-[#2a2a2a] text-white text-sm placeholder-neutral-600 focus:outline-none focus:ring-2 focus:ring-white/20"
                 />
               </div>
               <div>
@@ -108,9 +124,29 @@ export default function SettingsPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="your@email.com"
-                  className="w-full px-4 py-2.5 rounded-lg border border-white/10 bg-[#2a2a2a] text-white text-sm placeholder-neutral-600 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  className="w-full px-4 py-2.5 rounded-lg border border-white/10 bg-[#2a2a2a] text-white text-sm placeholder-neutral-600 focus:outline-none focus:ring-2 focus:ring-white/20"
                 />
               </div>
+            </div>
+          </div>
+
+          {/* Appearance Section */}
+          <div className="bg-[#1e1e1e] rounded-2xl p-6 mb-4 border border-white/5">
+            <h2 className="text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-4">Appearance</h2>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-neutral-300">Theme</p>
+                <p className="text-xs text-neutral-500 mt-0.5">
+                  {theme === 'dark' ? 'Currently using dark mode' : 'Currently using light mode'}
+                </p>
+              </div>
+              <button
+                onClick={toggleTheme}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[#2a2a2a] border border-white/10 text-sm text-neutral-300 hover:bg-[#333] transition-colors"
+              >
+                {theme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}
+                {theme === 'dark' ? 'Light mode' : 'Dark mode'}
+              </button>
             </div>
           </div>
 
@@ -125,7 +161,7 @@ export default function SettingsPage() {
                   value={currentPassword}
                   onChange={(e) => setCurrentPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full px-4 py-2.5 rounded-lg border border-white/10 bg-[#2a2a2a] text-white text-sm placeholder-neutral-600 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  className="w-full px-4 py-2.5 rounded-lg border border-white/10 bg-[#2a2a2a] text-white text-sm placeholder-neutral-600 focus:outline-none focus:ring-2 focus:ring-white/20"
                 />
               </div>
               <div>
@@ -135,7 +171,7 @@ export default function SettingsPage() {
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full px-4 py-2.5 rounded-lg border border-white/10 bg-[#2a2a2a] text-white text-sm placeholder-neutral-600 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  className="w-full px-4 py-2.5 rounded-lg border border-white/10 bg-[#2a2a2a] text-white text-sm placeholder-neutral-600 focus:outline-none focus:ring-2 focus:ring-white/20"
                 />
               </div>
               <div>
@@ -145,7 +181,7 @@ export default function SettingsPage() {
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full px-4 py-2.5 rounded-lg border border-white/10 bg-[#2a2a2a] text-white text-sm placeholder-neutral-600 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  className="w-full px-4 py-2.5 rounded-lg border border-white/10 bg-[#2a2a2a] text-white text-sm placeholder-neutral-600 focus:outline-none focus:ring-2 focus:ring-white/20"
                 />
               </div>
             </div>
