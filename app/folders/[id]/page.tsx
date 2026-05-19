@@ -7,6 +7,7 @@ import Sidebar from "@/components/sidebar"
 
 interface Doc {
   id: string
+  uuid: string
   title: string
   content: string
   created_at: string
@@ -85,7 +86,7 @@ export default function FolderPage() {
         }),
       })
       const doc = await res.json()
-      router.push(`/docs/${doc.id}`)
+      router.push(`/docs/${doc.uuid}`)
     } catch {
       setCreating(false)
     }
@@ -140,8 +141,8 @@ export default function FolderPage() {
 
               {docs.map((doc, i) => (
                 <div
-                  key={doc.id}
-                  onClick={() => router.push(`/docs/${doc.id}`)}
+                  key={doc.uuid}
+                  onClick={() => router.push(`/docs/${doc.uuid}`)}
                   className={`group grid grid-cols-[1fr_140px_140px_36px] items-center px-4 py-3 cursor-pointer transition-colors hover:bg-[#232323] ${
                     i !== docs.length - 1 ? "border-b border-[#222]" : ""
                   }`}
