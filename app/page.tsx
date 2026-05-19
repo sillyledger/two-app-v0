@@ -3,13 +3,16 @@ import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { Plus } from "lucide-react"
 import Sidebar from "@/components/sidebar"
+
 interface Doc {
   id: string
+  uuid: string
   title: string
   content: string
   type: string
   created_at: string
 }
+
 const CARD_COLORS = [
   "#2a2520",
   "#2a1f1f",
@@ -18,6 +21,7 @@ const CARD_COLORS = [
   "#2a2a1a",
   "#1a2228",
 ]
+
 function formatDate(dateStr: string) {
   if (!dateStr) return ""
   const date = new Date(dateStr)
@@ -28,15 +32,18 @@ function formatDate(dateStr: string) {
     year: "numeric",
   })
 }
+
 function stripHtml(html: string) {
   if (!html) return ""
   return html.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim()
 }
+
 export default function HomePage() {
   const router = useRouter()
   const [docs, setDocs] = useState<Doc[]>([])
   const [loading, setLoading] = useState(true)
   const [creating, setCreating] = useState(false)
+
   useEffect(() => {
     fetch("/api/docs")
       .then((r) => r.json())
@@ -46,6 +53,7 @@ export default function HomePage() {
       })
       .catch(() => setLoading(false))
   }, [])
+
   const handleCreateDoc = async () => {
     if (creating) return
     setCreating(true)
@@ -56,11 +64,12 @@ export default function HomePage() {
         body: JSON.stringify({ title: "Untitled", content: "", color: "yellow", type: "doc" }),
       })
       const doc = await res.json()
-      router.push(`/docs/${doc.id}`)
+      router.push(`/docs/${doc.uuid}`)
     } catch {
       setCreating(false)
     }
   }
+
   return (
     <div className="flex h-screen bg-[#1a1a1a] overflow-hidden">
       <Sidebar />
@@ -78,6 +87,7 @@ export default function HomePage() {
               {creating ? "Creating..." : "Create Doc"}
             </button>
           </div>
+
           {/* Docs Grid */}
           {loading ? (
             <div className="grid grid-cols-3 gap-4">
@@ -94,8 +104,8 @@ export default function HomePage() {
             <div className="grid grid-cols-3 gap-4">
               {docs.map((doc, i) => (
                 <button
-                  key={doc.id}
-                  onClick={() => router.push(`/docs/${doc.id}`)}
+                  key={doc.uuid}
+                  onClick={() => router.push(`/docs/${doc.uuid}`)}
                   className="text-left p-5 rounded-2xl transition-transform hover:scale-[1.02] active:scale-[0.98] flex flex-col justify-between min-h-[172px]"
                   style={{ backgroundColor: CARD_COLORS[i % CARD_COLORS.length] }}
                 >
