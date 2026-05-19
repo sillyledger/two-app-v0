@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation'
 import Sidebar from '@/components/sidebar'
 import Editor from '@/components/editor'
 import DocTopbar from '@/components/doc-topbar'
+import { CalendarDays } from 'lucide-react'
 import type { Doc } from '@/lib/db'
 
 interface Folder {
@@ -33,7 +34,7 @@ function formatDate(dateStr: string) {
   const date = new Date(dateStr)
   if (isNaN(date.getTime())) return ''
   return date.toLocaleDateString('en-US', {
-    month: 'long',
+    month: 'short',
     day: 'numeric',
     year: 'numeric',
   })
@@ -202,36 +203,35 @@ export default function DocPage() {
               placeholder="Untitled"
               rows={1}
               readOnly={!isLoggedIn}
-              className="mb-6 block w-full resize-none overflow-hidden bg-transparent text-[2.375rem] font-bold leading-[1.2] tracking-tight text-foreground placeholder:text-muted-foreground/40 focus:outline-none"
+              className="mb-5 block w-full resize-none overflow-hidden bg-transparent text-[2.375rem] font-bold leading-[1.2] tracking-tight text-foreground placeholder:text-muted-foreground/40 focus:outline-none"
             />
 
-            {/* Properties row */}
-            <div className="mb-8 flex flex-col gap-1.5">
+            {/* Properties bar — horizontal, Linear-style */}
+            <div className="mb-8 flex items-center gap-2 flex-wrap">
 
-              {/* Created */}
-              <div className="flex items-center gap-3 group">
-                <span className="w-24 text-xs text-[#555] select-none">Created</span>
-                <span className="text-xs text-[#888]">
-                  {formatDate(doc.created_at)}
-                </span>
+              {/* Created chip */}
+              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-white/5 border border-white/8 text-xs text-[#888]">
+                <CalendarDays size={12} className="text-[#666]" />
+                <span>{formatDate(doc.created_at)}</span>
               </div>
 
-              {/* Author */}
-              <div className="flex items-center gap-3">
-                <span className="w-24 text-xs text-[#555] select-none">Author</span>
-                {currentUser ? (
-                  <div className="flex items-center gap-2">
-                    <div className="w-5 h-5 rounded-full bg-[#3a3a3a] border border-white/10 flex items-center justify-center text-[10px] font-medium text-[#ccc] select-none">
-                      {getInitials(currentUser.name, currentUser.email)}
-                    </div>
-                    <span className="text-xs text-[#888]">
-                      {currentUser.name || currentUser.email}
-                    </span>
+              {/* Divider */}
+              <span className="text-[#444] select-none">·</span>
+
+              {/* Author chip */}
+              {currentUser ? (
+                <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-white/5 border border-white/8 text-xs text-[#888]">
+                  <div className="w-4 h-4 rounded-full bg-[#3a3a3a] border border-white/10 flex items-center justify-center text-[9px] font-medium text-[#ccc] select-none">
+                    {getInitials(currentUser.name, currentUser.email)}
                   </div>
-                ) : (
-                  <span className="text-xs text-[#555]">—</span>
-                )}
-              </div>
+                  <span>{currentUser.name || currentUser.email}</span>
+                </div>
+              ) : (
+                <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-white/5 border border-white/8 text-xs text-[#555]">
+                  <div className="w-4 h-4 rounded-full bg-[#2a2a2a] border border-white/10" />
+                  <span>Unknown</span>
+                </div>
+              )}
 
             </div>
 
