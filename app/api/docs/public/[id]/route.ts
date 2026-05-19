@@ -9,14 +9,13 @@ export async function GET(
     const { id } = await params
     const result = await sql`
       SELECT * FROM docs
-      WHERE id = ${id}
+      WHERE uuid = ${id}
         AND deleted_at IS NULL
     `
     if (result.length === 0) {
       return NextResponse.json({ error: 'Doc not found' }, { status: 404 })
     }
     const doc = result[0]
-    // If the doc is private, only return minimal info so the page can redirect
     if (!doc.is_public) {
       return NextResponse.json({ error: 'Private' }, { status: 403 })
     }
