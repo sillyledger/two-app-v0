@@ -1,15 +1,44 @@
 @import "tailwindcss";
 @source "../components";
 @source "../app";
+
+/* ── Theme variables ── */
+:root {
+  --bg: #1a1a1a;
+  --bg-secondary: #222222;
+  --bg-tertiary: #2a2a2a;
+  --border: rgba(255,255,255,0.08);
+  --text-primary: #e8e8e8;
+  --text-secondary: #9ca3af;
+  --text-muted: #6b7280;
+  --code-bg: #2a2a2a;
+  --pre-bg: #111111;
+  --blockquote-border: #3a3a3a;
+}
+
+html.light {
+  --bg: #ffffff;
+  --bg-secondary: #f5f5f5;
+  --bg-tertiary: #eeeeee;
+  --border: rgba(0,0,0,0.08);
+  --text-primary: #1a1a1a;
+  --text-secondary: #4b5563;
+  --text-muted: #9ca3af;
+  --code-bg: #f0f0f0;
+  --pre-bg: #1a1a1a;
+  --blockquote-border: #d1d5db;
+}
+
 /* ── App base ── */
 html,
 body {
   height: 100%;
   margin: 0;
   padding: 0;
-  background-color: #1a1a1a;
-  color: #e8e8e8;
+  background-color: var(--bg);
+  color: var(--text-primary);
 }
+
 /* ── Line clamp utility (fallback) ── */
 .line-clamp-3 {
   display: -webkit-box;
@@ -17,6 +46,7 @@ body {
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
+
 /* ── ProseMirror Editor Styles ── */
 .ProseMirror {
   outline: none;
@@ -56,21 +86,21 @@ body {
   margin: 0.25em 0;
 }
 .ProseMirror blockquote {
-  border-left: 4px solid #3a3a3a;
+  border-left: 4px solid var(--blockquote-border);
   padding-left: 1em;
   margin: 1em 0;
-  color: #9ca3af;
+  color: var(--text-secondary);
   font-style: italic;
 }
 .ProseMirror code {
-  background-color: #2a2a2a;
+  background-color: var(--code-bg);
   border-radius: 0.25em;
   padding: 0.1em 0.3em;
   font-family: ui-monospace, monospace;
   font-size: 0.875em;
 }
 .ProseMirror pre {
-  background-color: #111111;
+  background-color: var(--pre-bg);
   color: #f9fafb;
   border-radius: 0.5em;
   padding: 1em;
@@ -100,7 +130,7 @@ body {
 .ProseMirror p.is-editor-empty:first-child::before {
   content: attr(data-placeholder);
   float: left;
-  color: #6b7280;
+  color: var(--text-muted);
   pointer-events: none;
   height: 0;
 }
