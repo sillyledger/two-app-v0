@@ -9,10 +9,8 @@ export async function GET(request: Request) {
   if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   const payload = await verifyToken(token.value)
   if (!payload) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-
   const { searchParams } = new URL(request.url)
   const folderId = searchParams.get('folder_id')
-
   try {
     const docs = folderId
       ? await sql`
@@ -42,12 +40,19 @@ export async function POST(request: Request) {
   if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   const payload = await verifyToken(token.value)
   if (!payload) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-
   try {
     const { title, content, color, type = 'doc', folder_id = null } = await request.json()
     const result = await sql`
-      INSERT INTO docs (title, content, color, type, user_id, folder_id)
-      VALUES (${title}, ${content}, ${color}, ${type}, ${payload.userId}, ${folder_id})
+      INSERT INTO docs (title, content, color, type, user_id, folder_id, uuid)
+      VALUES (
+        ${title},
+        ${content},
+        ${color},
+        ${type},
+        ${payload.userId},
+        ${folder_id},
+        gen_random_uuid()::TEXT
+      )
       RETURNING *
     `
     return NextResponse.json(result[0], { status: 201 })
