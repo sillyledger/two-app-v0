@@ -154,7 +154,7 @@ export default function HomePage() {
               className="flex items-center gap-1.5 px-4 py-2 rounded-lg border border-white/20 text-[#e8e8e8] text-sm font-medium hover:bg-white/10 transition-colors"
             >
               <Plus size={15} />
-              {creating ? "Creating..." : "Create Doc"}
+              {creating ? "Creating..." : "New Doc"}
             </button>
           </div>
 
@@ -168,7 +168,7 @@ export default function HomePage() {
           ) : docs.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-64 text-[#666]">
               <p className="text-lg font-medium mb-2">No docs yet</p>
-              <p className="text-sm">Click + Create Doc to get started</p>
+              <p className="text-sm">Click + New Doc to get started</p>
             </div>
           ) : (
             <div className="grid grid-cols-3 gap-4">
