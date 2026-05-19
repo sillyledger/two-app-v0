@@ -39,7 +39,7 @@ export async function PUT(
   try {
     const { id } = await params
     const body = await request.json()
-    const { title, content, color, is_starred, type, folder_id } = body
+    const { title, content, color, is_starred, type, folder_id, priority } = body
     if (folder_id !== undefined) {
       const result = await sql`
         UPDATE docs
@@ -61,6 +61,7 @@ export async function PUT(
         color = COALESCE(${color ?? null}, color),
         is_starred = COALESCE(${is_starred ?? null}, is_starred),
         type = COALESCE(${type ?? null}, type),
+        priority = COALESCE(${priority ?? null}, priority),
         updated_at = CURRENT_TIMESTAMP
       WHERE uuid = ${id} AND user_id = ${payload.userId}
       RETURNING *
@@ -127,6 +128,6 @@ export async function DELETE(
     return NextResponse.json({ success: true })
   } catch (error) {
     console.error('Failed to delete doc:', error)
-    return NextResponse.json({ error: 'Failed to delete doc' }, { status: 500 })
+    return NextResponse.json({ error: 'Failed to update doc' }, { status: 500 })
   }
 }
