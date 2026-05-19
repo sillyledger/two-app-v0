@@ -12,7 +12,7 @@ export async function GET() {
   if (!payload) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const result = await sql`
-    SELECT id, email, name FROM users WHERE id = ${payload.userId}
+    SELECT id, email, name, avatar_url FROM users WHERE id = ${payload.userId}
   `
   if (result.length === 0) return NextResponse.json({ error: 'User not found' }, { status: 404 })
 
