@@ -47,6 +47,7 @@ export default function Sidebar({ onNewNote }: SidebarProps = {}) {
   const [searchQuery, setSearchQuery] = useState("")
   const [userName, setUserName] = useState("")
   const [userEmail, setUserEmail] = useState("")
+  const [userAvatar, setUserAvatar] = useState<string | null>(null)
   const [workspaceName, setWorkspaceName] = useState("My Workspace")
   const [workspaceId, setWorkspaceId] = useState<string | null>(null)
   const [workspaces, setWorkspaces] = useState<Workspace[]>([])
@@ -92,6 +93,7 @@ export default function Sidebar({ onNewNote }: SidebarProps = {}) {
         if (data.user) {
           setUserName(data.user.name || data.user.email.split("@")[0])
           setUserEmail(data.user.email)
+          setUserAvatar(data.user.avatar_url || null)
         }
       })
       .catch(() => {})
@@ -223,9 +225,7 @@ export default function Sidebar({ onNewNote }: SidebarProps = {}) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ folder_id: folderId }),
       })
-      if (res.ok) {
-        fetchDocs()
-      }
+      if (res.ok) fetchDocs()
     } catch {}
   }
 
@@ -555,9 +555,20 @@ export default function Sidebar({ onNewNote }: SidebarProps = {}) {
             Log out
           </button>
 
+          {/* User avatar at bottom */}
           <div className="flex items-center gap-2 px-2 py-[5px] mt-1">
-            <div className="w-5 h-5 rounded-full bg-[#7C3AED] flex items-center justify-center shrink-0">
-              <span className="text-[10px] font-bold text-white">{initial}</span>
+            <div className="w-5 h-5 rounded-full overflow-hidden shrink-0">
+              {userAvatar ? (
+                <img
+                  src={userAvatar}
+                  alt="Avatar"
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-full h-full rounded-full bg-[#7C3AED] flex items-center justify-center">
+                  <span className="text-[10px] font-bold text-white">{initial}</span>
+                </div>
+              )}
             </div>
             <div className="min-w-0">
               <p className="text-[12px] font-medium text-[#e8e8e8] truncate leading-tight">{userName || "..."}</p>
