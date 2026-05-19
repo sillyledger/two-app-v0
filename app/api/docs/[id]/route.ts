@@ -15,7 +15,7 @@ export async function GET(
   try {
     const { id } = await params
     const result = await sql`
-      SELECT * FROM docs WHERE id = ${id} AND user_id = ${payload.userId}
+      SELECT * FROM docs WHERE uuid = ${id} AND user_id = ${payload.userId} AND deleted_at IS NULL
     `
     if (result.length === 0) {
       return NextResponse.json({ error: 'Doc not found' }, { status: 404 })
@@ -45,7 +45,7 @@ export async function PUT(
         UPDATE docs
         SET folder_id = ${folder_id},
             updated_at = CURRENT_TIMESTAMP
-        WHERE id = ${id} AND user_id = ${payload.userId}
+        WHERE uuid = ${id} AND user_id = ${payload.userId}
         RETURNING *
       `
       if (result.length === 0) {
@@ -62,7 +62,7 @@ export async function PUT(
         is_starred = COALESCE(${is_starred ?? null}, is_starred),
         type = COALESCE(${type ?? null}, type),
         updated_at = CURRENT_TIMESTAMP
-      WHERE id = ${id} AND user_id = ${payload.userId}
+      WHERE uuid = ${id} AND user_id = ${payload.userId}
       RETURNING *
     `
     if (result.length === 0) {
@@ -91,7 +91,7 @@ export async function PATCH(
       UPDATE docs
       SET is_public = ${is_public},
           updated_at = CURRENT_TIMESTAMP
-      WHERE id = ${id} AND user_id = ${payload.userId}
+      WHERE uuid = ${id} AND user_id = ${payload.userId}
       RETURNING *
     `
     if (result.length === 0) {
@@ -118,7 +118,7 @@ export async function DELETE(
     const result = await sql`
       UPDATE docs
       SET deleted_at = CURRENT_TIMESTAMP
-      WHERE id = ${id} AND user_id = ${payload.userId}
+      WHERE uuid = ${id} AND user_id = ${payload.userId}
       RETURNING *
     `
     if (result.length === 0) {
