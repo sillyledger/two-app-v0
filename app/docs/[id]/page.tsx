@@ -12,6 +12,12 @@ interface Folder {
   name: string
 }
 
+interface User {
+  id: number
+  email: string
+  name: string
+}
+
 function getWordCount(content: string): number {
   const text = content.replace(/<[^>]*>/g, ' ').trim()
   if (!text) return 0
@@ -20,6 +26,26 @@ function getWordCount(content: string): number {
 
 function getCharCount(content: string): number {
   return content.replace(/<[^>]*>/g, '').length
+}
+
+function formatDate(dateStr: string) {
+  if (!dateStr) return ''
+  const date = new Date(dateStr)
+  if (isNaN(date.getTime())) return ''
+  return date.toLocaleDateString('en-US', {
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric',
+  })
+}
+
+function getInitials(name: string, email: string): string {
+  if (name && name.trim()) {
+    const parts = name.trim().split(' ')
+    if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase()
+    return parts[0][0].toUpperCase()
+  }
+  return email?.[0]?.toUpperCase() ?? '?'
 }
 
 export default function DocPage() {
@@ -33,6 +59,7 @@ export default function DocPage() {
   const [isPublic, setIsPublic] = useState(false)
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [authChecked, setAuthChecked] = useState(false)
+  const [currentUser, setCurrentUser] = useState<User | null>(null)
   const titleRef = useRef<HTMLTextAreaElement>(null)
   const editorFocusRef = useRef<(() => void) | null>(null)
 
@@ -44,8 +71,14 @@ export default function DocPage() {
   }
 
   useEffect(() => {
-    fetch('/api/auth/me').then((res) => {
-      setIsLoggedIn(res.ok)
+    fetch('/api/auth/me').then(async (res) => {
+      if (res.ok) {
+        const data = await res.json()
+        setIsLoggedIn(true)
+        setCurrentUser(data.user)
+      } else {
+        setIsLoggedIn(false)
+      }
       setAuthChecked(true)
     })
   }, [])
@@ -54,7 +87,6 @@ export default function DocPage() {
     if (!authChecked) return
 
     if (isLoggedIn) {
-      // Logged in — use the authenticated route directly
       fetch(`/api/docs/${id}`)
         .then((res) => res.json())
         .then((data: Doc) => {
@@ -75,12 +107,10 @@ export default function DocPage() {
           }
         })
     } else {
-      // Not logged in — try the public route
       fetch(`/api/docs/public/${id}`)
         .then((res) => res.json())
         .then((data: Doc) => {
           if (data.error) {
-            // Private or not found — send to login
             router.push('/login')
             return
           }
@@ -154,6 +184,7 @@ export default function DocPage() {
         <main className="flex-1 overflow-y-auto pt-[44px]">
           <div className="mx-auto w-full max-w-[780px] px-16 pt-16 pb-32">
 
+            {/* Title */}
             <textarea
               ref={titleRef}
               value={title}
@@ -171,9 +202,40 @@ export default function DocPage() {
               placeholder="Untitled"
               rows={1}
               readOnly={!isLoggedIn}
-              className="mb-8 block w-full resize-none overflow-hidden bg-transparent text-[2.375rem] font-bold leading-[1.2] tracking-tight text-foreground placeholder:text-muted-foreground/40 focus:outline-none"
+              className="mb-6 block w-full resize-none overflow-hidden bg-transparent text-[2.375rem] font-bold leading-[1.2] tracking-tight text-foreground placeholder:text-muted-foreground/40 focus:outline-none"
             />
 
+            {/* Properties row */}
+            <div className="mb-8 flex flex-col gap-1.5">
+
+              {/* Created */}
+              <div className="flex items-center gap-3 group">
+                <span className="w-24 text-xs text-[#555] select-none">Created</span>
+                <span className="text-xs text-[#888]">
+                  {formatDate(doc.created_at)}
+                </span>
+              </div>
+
+              {/* Author */}
+              <div className="flex items-center gap-3">
+                <span className="w-24 text-xs text-[#555] select-none">Author</span>
+                {currentUser ? (
+                  <div className="flex items-center gap-2">
+                    <div className="w-5 h-5 rounded-full bg-[#3a3a3a] border border-white/10 flex items-center justify-center text-[10px] font-medium text-[#ccc] select-none">
+                      {getInitials(currentUser.name, currentUser.email)}
+                    </div>
+                    <span className="text-xs text-[#888]">
+                      {currentUser.name || currentUser.email}
+                    </span>
+                  </div>
+                ) : (
+                  <span className="text-xs text-[#555]">—</span>
+                )}
+              </div>
+
+            </div>
+
+            {/* Editor */}
             {doc !== null && (
               <Editor
                 content={content}
@@ -185,6 +247,7 @@ export default function DocPage() {
               />
             )}
 
+            {/* Word / char count */}
             {wordCount > 0 && (
               <div className="mt-16 flex items-center gap-2 text-[11px] text-[#383838] select-none">
                 <span>{wordCount.toLocaleString()} words</span>
