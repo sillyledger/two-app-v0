@@ -85,6 +85,9 @@ body {
 .ProseMirror li {
   margin: 0.25em 0;
 }
+.ProseMirror li p {
+  margin: 0;
+}
 .ProseMirror blockquote {
   border-left: 4px solid var(--blockquote-border);
   padding-left: 1em;
