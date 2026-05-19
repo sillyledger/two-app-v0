@@ -70,6 +70,21 @@ export default function Editor({ content, onChange, onReady }: EditorProps) {
       attributes: {
         class: "prose prose-invert max-w-none focus:outline-none min-h-[60vh] editor-content",
       },
+      handleKeyDown: (view, event) => {
+        if ((event.metaKey || event.ctrlKey) && event.key === 'k') {
+          event.preventDefault()
+          const previousUrl = editor?.getAttributes('link').href
+          const url = window.prompt('URL', previousUrl)
+          if (url === null) return true
+          if (url === '') {
+            editor?.chain().focus().extendMarkRange('link').unsetLink().run()
+            return true
+          }
+          editor?.chain().focus().extendMarkRange('link').setLink({ href: url }).run()
+          return true
+        }
+        return false
+      },
     },
   })
 
@@ -97,10 +112,10 @@ export default function Editor({ content, onChange, onReady }: EditorProps) {
     <div ref={containerRef} className="relative">
       <style>{`
         .editor-content {
-  font-size: 17px;
-  line-height: 1.5;
-  text-underline-offset: 3px;
-}
+          font-size: 17px;
+          line-height: 1.5;
+          text-underline-offset: 3px;
+        }
         .editor-content p {
           margin-top: 0;
           margin-bottom: 1.25em;
