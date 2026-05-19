@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation'
 import Sidebar from '@/components/sidebar'
 import Editor from '@/components/editor'
 import DocTopbar from '@/components/doc-topbar'
-import { CalendarDays } from 'lucide-react'
+import { CalendarDays, SignalLow, SignalMedium, SignalHigh, Minus } from 'lucide-react'
 import type { Doc } from '@/lib/db'
 
 interface Folder {
@@ -18,6 +18,15 @@ interface User {
   email: string
   name: string
 }
+
+type Priority = 'low' | 'medium' | 'high' | null
+
+const PRIORITIES: { value: Priority; label: string; icon: React.ReactNode; color: string }[] = [
+  { value: null,     label: 'No priority', icon: <Minus size={12} />,        color: 'text-[#555]' },
+  { value: 'low',    label: 'Low',         icon: <SignalLow size={12} />,    color: 'text-[#888]' },
+  { value: 'medium', label: 'Medium',      icon: <SignalMedium size={12} />, color: 'text-[#f5a623]' },
+  { value: 'high',   label: 'High',        icon: <SignalHigh size={12} />,   color: 'text-[#e05252]' },
+]
 
 function getWordCount(content: string): number {
   const text = content.replace(/<[^>]*>/g, ' ').trim()
@@ -61,6 +70,9 @@ export default function DocPage() {
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [authChecked, setAuthChecked] = useState(false)
   const [currentUser, setCurrentUser] = useState<User | null>(null)
+  const [priority, setPriority] = useState<Priority>(null)
+  const [priorityOpen, setPriorityOpen] = useState(false)
+  const priorityRef = useRef<HTMLDivElement>(null)
   const titleRef = useRef<HTMLTextAreaElement>(null)
   const editorFocusRef = useRef<(() => void) | null>(null)
 
@@ -70,6 +82,17 @@ export default function DocPage() {
     el.style.height = 'auto'
     el.style.height = el.scrollHeight + 'px'
   }
+
+  // Close priority dropdown when clicking outside
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (priorityRef.current && !priorityRef.current.contains(e.target as Node)) {
+        setPriorityOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
 
   useEffect(() => {
     fetch('/api/auth/me').then(async (res) => {
@@ -99,6 +122,7 @@ export default function DocPage() {
           setTitle(data.title)
           setContent(data.content || '')
           setIsPublic(data.is_public ?? false)
+          setPriority((data.priority as Priority) ?? null)
 
           if (data.folder_id) {
             fetch(`/api/folders/${data.folder_id}`)
@@ -119,6 +143,7 @@ export default function DocPage() {
           setTitle(data.title)
           setContent(data.content || '')
           setIsPublic(data.is_public ?? false)
+          setPriority((data.priority as Priority) ?? null)
         })
     }
   }, [id, authChecked])
@@ -148,6 +173,16 @@ export default function DocPage() {
     return () => clearTimeout(timer)
   }, [title, content])
 
+  const handlePriorityChange = async (value: Priority) => {
+    setPriority(value)
+    setPriorityOpen(false)
+    await fetch(`/api/docs/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ priority: value }),
+    })
+  }
+
   const handleNewDoc = async () => {
     const res = await fetch('/api/docs', {
       method: 'POST',
@@ -165,6 +200,8 @@ export default function DocPage() {
 
   const wordCount = getWordCount(content)
   const charCount = getCharCount(content)
+
+  const activePriority = PRIORITIES.find(p => p.value === priority) ?? PRIORITIES[0]
 
   if (!authChecked || !doc) return null
 
@@ -230,6 +267,42 @@ export default function DocPage() {
                 <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-white/5 border border-white/8 text-xs text-[#555]">
                   <div className="w-4 h-4 rounded-full bg-[#2a2a2a] border border-white/10" />
                   <span>Unknown</span>
+                </div>
+              )}
+
+              {/* Divider */}
+              <span className="text-[#444] select-none">·</span>
+
+              {/* Priority chip + dropdown */}
+              {isLoggedIn && (
+                <div className="relative" ref={priorityRef}>
+                  <button
+                    onClick={() => setPriorityOpen((v) => !v)}
+                    className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-white/5 border border-white/8 text-xs text-[#888] hover:bg-white/10 hover:text-[#aaa] transition-colors"
+                  >
+                    <span className={activePriority.color}>{activePriority.icon}</span>
+                    <span>{activePriority.label}</span>
+                  </button>
+
+                  {priorityOpen && (
+                    <div className="absolute top-full mt-1.5 left-0 z-50 w-44 rounded-lg border border-white/10 bg-[#1e1e1e] shadow-xl py-1">
+                      {PRIORITIES.map((p) => (
+                        <button
+                          key={String(p.value)}
+                          onClick={() => handlePriorityChange(p.value)}
+                          className={`w-full flex items-center gap-2.5 px-3 py-1.5 text-xs hover:bg-white/5 transition-colors ${
+                            priority === p.value ? 'text-white' : 'text-[#888]'
+                          }`}
+                        >
+                          <span className={p.color}>{p.icon}</span>
+                          <span>{p.label}</span>
+                          {priority === p.value && (
+                            <span className="ml-auto text-[#555]">✓</span>
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
 
