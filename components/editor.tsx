@@ -97,9 +97,10 @@ export default function Editor({ content, onChange, onReady }: EditorProps) {
     <div ref={containerRef} className="relative">
       <style>{`
         .editor-content {
-          font-size: 17px;
-          line-height: 1.5;
-        }
+  font-size: 17px;
+  line-height: 1.5;
+  text-underline-offset: 3px;
+}
         .editor-content p {
           margin-top: 0;
           margin-bottom: 1.25em;
