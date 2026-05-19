@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { ChevronRight, Share2, MoreHorizontal, Copy, Download, Trash2, Globe, Lock } from "lucide-react"
+import { ChevronRight, Share2, MoreHorizontal, Copy, Download, Trash2, Globe, Lock, FolderInput } from "lucide-react"
 import { useState, useRef, useEffect } from "react"
 
 interface Folder {
@@ -65,10 +65,15 @@ export default function DocTopbar({ docTitle, folder, saveStatus, content = '', 
   const [copyToast, setCopyToast] = useState(false)
   const [publicEnabled, setPublicEnabled] = useState(isPublic)
   const [linkCopied, setLinkCopied] = useState(false)
+
+  // Move modal state
+  const [showMoveModal, setShowMoveModal] = useState(false)
+  const [folders, setFolders] = useState<Folder[]>([])
+  const [moveToast, setMoveToast] = useState(false)
+
   const menuRef = useRef<HTMLDivElement>(null)
   const shareRef = useRef<HTMLDivElement>(null)
 
-  // Keep publicEnabled in sync if parent re-renders with new isPublic value
   useEffect(() => {
     setPublicEnabled(isPublic)
   }, [isPublic])
@@ -118,6 +123,25 @@ export default function DocTopbar({ docTitle, folder, saveStatus, content = '', 
       setLinkCopied(true)
       setTimeout(() => setLinkCopied(false), 2000)
     })
+  }
+
+  const openMoveModal = async () => {
+    setMenuOpen(false)
+    const res = await fetch("/api/folders")
+    const data = await res.json()
+    setFolders(Array.isArray(data) ? data : [])
+    setShowMoveModal(true)
+  }
+
+  const handleMove = async (folderId: string) => {
+    await fetch(`/api/docs/${docId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ folder_id: folderId }),
+    })
+    setShowMoveModal(false)
+    setMoveToast(true)
+    setTimeout(() => setMoveToast(false), 2000)
   }
 
   const crumbBase = "text-[#555] hover:text-[#aaa] transition-colors text-[12px] font-medium truncate"
@@ -172,12 +196,9 @@ export default function DocTopbar({ docTitle, folder, saveStatus, content = '', 
 
             {shareOpen && (
               <div className="absolute right-0 top-[42px] z-50 bg-[#1e1e1e] border border-[#2e2e2e] rounded-xl shadow-2xl w-[300px] p-4">
-
-                {/* Header */}
                 <p className="text-[13px] font-semibold text-[#e8e8e8] mb-1">Share this doc</p>
                 <p className="text-[11px] text-[#555] mb-4">Anyone with the link can view this doc when enabled.</p>
 
-                {/* Toggle row */}
                 <div className="flex items-center justify-between bg-[#242424] rounded-lg px-3 py-2.5 mb-3">
                   <div className="flex items-center gap-2">
                     {publicEnabled
@@ -194,7 +215,6 @@ export default function DocTopbar({ docTitle, folder, saveStatus, content = '', 
                     </div>
                   </div>
 
-                  {/* Toggle switch */}
                   <button
                     onClick={handleTogglePublic}
                     className={`relative w-9 h-5 rounded-full transition-colors duration-200 shrink-0 ${
@@ -207,7 +227,6 @@ export default function DocTopbar({ docTitle, folder, saveStatus, content = '', 
                   </button>
                 </div>
 
-                {/* Copy link button */}
                 <button
                   onClick={handleCopyLink}
                   disabled={!publicEnabled}
@@ -220,7 +239,6 @@ export default function DocTopbar({ docTitle, folder, saveStatus, content = '', 
                   <Copy size={12} />
                   {linkCopied ? "Copied!" : "Copy link"}
                 </button>
-
               </div>
             )}
           </div>
@@ -254,10 +272,10 @@ export default function DocTopbar({ docTitle, folder, saveStatus, content = '', 
                 </button>
 
                 <button
-                  disabled
-                  className="flex items-center gap-2 w-full px-3 py-2 text-[12px] text-[#444] cursor-not-allowed"
+                  onClick={openMoveModal}
+                  className="flex items-center gap-2 w-full px-3 py-2 text-[12px] text-[#ccc] hover:bg-[#2a2a2a] hover:text-[#e8e8e8] transition-colors"
                 >
-                  <MoreHorizontal size={12} className="text-[#333]" />
+                  <FolderInput size={12} className="text-[#555]" />
                   Move doc
                 </button>
 
@@ -284,6 +302,45 @@ export default function DocTopbar({ docTitle, folder, saveStatus, content = '', 
       {copyToast && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-[#2a2a2a] border border-[#333] rounded-lg px-4 py-2 text-[12px] text-[#e8e8e8] shadow-xl">
           Copied to clipboard
+        </div>
+      )}
+
+      {/* Move toast */}
+      {moveToast && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-[#2a2a2a] border border-[#333] rounded-lg px-4 py-2 text-[12px] text-[#e8e8e8] shadow-xl">
+          Doc moved
+        </div>
+      )}
+
+      {/* Move modal */}
+      {showMoveModal && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+          <div className="bg-[#2c2c2c] rounded-2xl p-6 w-80 border border-white/10 shadow-2xl">
+            <h2 className="text-[#e8e8e8] font-semibold text-base mb-4">Move to folder</h2>
+            {folders.length === 0 ? (
+              <p className="text-sm text-[#777] mb-4">No folders yet. Create a folder in the sidebar first.</p>
+            ) : (
+              <div className="flex flex-col gap-1 mb-4 max-h-48 overflow-y-auto">
+                {folders.map((f) => (
+                  <button
+                    key={f.id}
+                    onClick={() => handleMove(f.id)}
+                    className="text-left px-3 py-2 rounded-lg text-sm text-[#e8e8e8] hover:bg-white/10 transition-colors"
+                  >
+                    📁 {f.name}
+                  </button>
+                ))}
+              </div>
+            )}
+            <div className="flex justify-end">
+              <button
+                onClick={() => setShowMoveModal(false)}
+                className="px-4 py-2 text-sm text-[#aaa] hover:text-[#e8e8e8] transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
