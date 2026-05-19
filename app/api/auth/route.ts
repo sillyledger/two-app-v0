@@ -3,6 +3,7 @@ import { sql } from '@/lib/db'
 import { createToken } from '@/lib/auth'
 import { cookies } from 'next/headers'
 import { getOrCreateWorkspace } from '@/lib/workspaces'
+import bcrypt from 'bcryptjs'
 
 export async function POST(request: Request) {
   try {
@@ -16,9 +17,11 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: 'Email already exists' }, { status: 400 })
       }
 
+      const hashedPassword = await bcrypt.hash(password, 10)
+
       const result = await sql`
         INSERT INTO users (email, password)
-        VALUES (${email}, ${password})
+        VALUES (${email}, ${hashedPassword})
         RETURNING *
       `
       const user = result[0]
@@ -31,12 +34,18 @@ export async function POST(request: Request) {
 
     if (action === 'login') {
       const result = await sql`
-        SELECT * FROM users WHERE email = ${email} AND password = ${password}
+        SELECT * FROM users WHERE email = ${email}
       `
       if (result.length === 0) {
         return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 })
       }
+
       const user = result[0]
+      const passwordMatch = await bcrypt.compare(password, user.password)
+      if (!passwordMatch) {
+        return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 })
+      }
+
       const token = await createToken(user.id, user.email)
       const cookieStore = await cookies()
       cookieStore.set('auth-token', token, { httpOnly: true, maxAge: 604800 })
