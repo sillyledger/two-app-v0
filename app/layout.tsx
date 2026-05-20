@@ -38,6 +38,15 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark bg-background">
       <body className="font-sans antialiased bg-background">
+        <script dangerouslySetInnerHTML={{ __html: `
+          (function(){
+            function send(payload){
+              try{ navigator.sendBeacon && navigator.sendBeacon('/api/client-error', JSON.stringify(payload)) || fetch('/api/client-error',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)}).catch(()=>{}) }catch(e){}
+            }
+            window.addEventListener('error', function(ev){ send({type:'error', message: ev.message, filename: ev.filename, lineno: ev.lineno, colno: ev.colno, stack: (ev.error && ev.error.stack) || null}) })
+            window.addEventListener('unhandledrejection', function(ev){ var reason = ev.reason; send({type:'unhandledrejection', reason: typeof reason === 'string' ? reason : (reason && reason.message) || String(reason), stack: reason && reason.stack}) })
+          })();
+        ` }} />
         <ClientErrorListener />
         {children}
         {process.env.NODE_ENV === 'production' && <Analytics />}
