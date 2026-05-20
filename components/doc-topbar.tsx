@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { ChevronRight, Share2, MoreHorizontal, Copy, Download, Trash2, Globe, Lock, FolderInput } from "lucide-react"
+import { ChevronRight, Share2, MoreHorizontal, Copy, Download, Trash2, Globe, Lock, FolderInput, AlignCenter, AlignJustify } from "lucide-react"
 import { useState, useRef, useEffect } from "react"
 
 interface Folder {
@@ -18,6 +18,8 @@ interface DocTopbarProps {
   docId?: string | string[]
   isPublic?: boolean
   sidebarWidth?: string
+  wideMode?: boolean
+  onToggleWide?: () => void
 }
 
 function htmlToMarkdown(html: string): string {
@@ -68,6 +70,8 @@ export default function DocTopbar({
   docId,
   isPublic = false,
   sidebarWidth = '0px',
+  wideMode = false,
+  onToggleWide,
 }: DocTopbarProps) {
   const [menuOpen, setMenuOpen] = useState(false)
   const [shareOpen, setShareOpen] = useState(false)
@@ -76,7 +80,6 @@ export default function DocTopbar({
   const [publicEnabled, setPublicEnabled] = useState(isPublic)
   const [linkCopied, setLinkCopied] = useState(false)
 
-  // Move modal state
   const [showMoveModal, setShowMoveModal] = useState(false)
   const [folders, setFolders] = useState<Folder[]>([])
   const [moveToast, setMoveToast] = useState(false)
@@ -160,8 +163,10 @@ export default function DocTopbar({
 
   return (
     <>
-     <header className="fixed top-0 right-0 z-40 h-[44px] flex items-center px-4 bg-[#1a1a1a] transition-all duration-200" style={{ left: sidebarWidth }}>
-
+      <header
+        className="fixed top-0 right-0 z-40 h-[44px] flex items-center px-4 bg-[#1a1a1a] transition-all duration-200"
+        style={{ left: sidebarWidth }}
+      >
         {/* Left — Breadcrumbs */}
         <div className="flex items-center gap-0.5 min-w-0 flex-1">
           <Link href="/" className={crumbBase}>Home</Link>
@@ -175,7 +180,7 @@ export default function DocTopbar({
           <span className={crumbActive}>{docTitle || "Untitled"}</span>
         </div>
 
-        {/* Right — Save status + Share + ··· */}
+        {/* Right */}
         <div className="flex items-center gap-2 shrink-0 ml-4">
 
           {/* Autosave indicator */}
@@ -193,6 +198,21 @@ export default function DocTopbar({
               </>
             )}
           </div>
+
+          {/* Wide/Narrow toggle */}
+          {onToggleWide && (
+            <button
+              onClick={onToggleWide}
+              title={wideMode ? "Narrow view" : "Wide view"}
+              className={`flex items-center justify-center w-7 h-7 rounded-md transition-colors ${
+                wideMode
+                  ? "text-[#e8e8e8] bg-[#2a2a2a]"
+                  : "text-[#555] hover:bg-[#2a2a2a] hover:text-[#e8e8e8]"
+              }`}
+            >
+              {wideMode ? <AlignCenter size={14} /> : <AlignJustify size={14} />}
+            </button>
+          )}
 
           {/* Share button + popup */}
           <div className="relative" ref={shareRef}>
@@ -264,7 +284,6 @@ export default function DocTopbar({
 
             {menuOpen && (
               <div className="absolute right-0 top-9 z-50 bg-[#242424] border border-[#333] rounded-lg shadow-xl w-[180px] py-1 overflow-hidden">
-
                 <button
                   onClick={handleCopyDoc}
                   className="flex items-center gap-2 w-full px-3 py-2 text-[12px] text-[#ccc] hover:bg-[#2a2a2a] hover:text-[#e8e8e8] transition-colors"
@@ -272,7 +291,6 @@ export default function DocTopbar({
                   <Copy size={12} className="text-[#555]" />
                   Copy doc
                 </button>
-
                 <button
                   onClick={handleExportMarkdown}
                   className="flex items-center gap-2 w-full px-3 py-2 text-[12px] text-[#ccc] hover:bg-[#2a2a2a] hover:text-[#e8e8e8] transition-colors"
@@ -280,7 +298,6 @@ export default function DocTopbar({
                   <Download size={12} className="text-[#555]" />
                   Export as Markdown
                 </button>
-
                 <button
                   onClick={openMoveModal}
                   className="flex items-center gap-2 w-full px-3 py-2 text-[12px] text-[#ccc] hover:bg-[#2a2a2a] hover:text-[#e8e8e8] transition-colors"
@@ -288,9 +305,7 @@ export default function DocTopbar({
                   <FolderInput size={12} className="text-[#555]" />
                   Move doc
                 </button>
-
                 <div className="my-1 border-t border-[#333]" />
-
                 <button
                   onClick={() => {
                     setMenuOpen(false)
@@ -301,28 +316,24 @@ export default function DocTopbar({
                   <Trash2 size={12} />
                   Delete doc
                 </button>
-
               </div>
             )}
           </div>
         </div>
       </header>
 
-      {/* Copy toast */}
       {copyToast && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-[#2a2a2a] border border-[#333] rounded-lg px-4 py-2 text-[12px] text-[#e8e8e8] shadow-xl">
           Copied to clipboard
         </div>
       )}
 
-      {/* Move toast */}
       {moveToast && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-[#2a2a2a] border border-[#333] rounded-lg px-4 py-2 text-[12px] text-[#e8e8e8] shadow-xl">
           Doc moved
         </div>
       )}
 
-      {/* Move modal */}
       {showMoveModal && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
           <div className="bg-[#2c2c2c] rounded-2xl p-6 w-80 border border-white/10 shadow-2xl">
@@ -332,21 +343,14 @@ export default function DocTopbar({
             ) : (
               <div className="flex flex-col gap-1 mb-4 max-h-48 overflow-y-auto">
                 {folders.map((f) => (
-                  <button
-                    key={f.id}
-                    onClick={() => handleMove(f.id)}
-                    className="text-left px-3 py-2 rounded-lg text-sm text-[#e8e8e8] hover:bg-white/10 transition-colors"
-                  >
+                  <button key={f.id} onClick={() => handleMove(f.id)} className="text-left px-3 py-2 rounded-lg text-sm text-[#e8e8e8] hover:bg-white/10 transition-colors">
                     📁 {f.name}
                   </button>
                 ))}
               </div>
             )}
             <div className="flex justify-end">
-              <button
-                onClick={() => setShowMoveModal(false)}
-                className="px-4 py-2 text-sm text-[#aaa] hover:text-[#e8e8e8] transition-colors"
-              >
+              <button onClick={() => setShowMoveModal(false)} className="px-4 py-2 text-sm text-[#aaa] hover:text-[#e8e8e8] transition-colors">
                 Cancel
               </button>
             </div>
@@ -354,30 +358,18 @@ export default function DocTopbar({
         </div>
       )}
 
-      {/* Delete confirmation modal */}
       {showDeleteModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div
-            className="absolute inset-0 bg-black/50 backdrop-blur-[2px]"
-            onClick={() => setShowDeleteModal(false)}
-          />
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-[2px]" onClick={() => setShowDeleteModal(false)} />
           <div className="relative bg-[#242424] border border-[#333] rounded-xl shadow-2xl w-[320px] p-5 z-10">
             <h2 className="text-[14px] font-semibold text-[#e8e8e8] mb-1">Delete doc</h2>
-            <p className="text-[12px] text-[#666] mb-5">
-              This doc will be permanently deleted. This cannot be undone.
-            </p>
+            <p className="text-[12px] text-[#666] mb-5">This doc will be permanently deleted. This cannot be undone.</p>
             <div className="flex justify-end gap-2">
-              <button
-                onClick={() => setShowDeleteModal(false)}
-                className="px-3 py-1.5 rounded-lg text-[12px] font-medium text-[#888] hover:bg-[#2a2a2a] transition-colors"
-              >
+              <button onClick={() => setShowDeleteModal(false)} className="px-3 py-1.5 rounded-lg text-[12px] font-medium text-[#888] hover:bg-[#2a2a2a] transition-colors">
                 Cancel
               </button>
               <button
-                onClick={() => {
-                  setShowDeleteModal(false)
-                  onDelete?.()
-                }}
+                onClick={() => { setShowDeleteModal(false); onDelete?.() }}
                 className="px-3 py-1.5 rounded-lg text-[12px] font-medium bg-red-500/90 text-white hover:bg-red-500 transition-colors"
               >
                 Delete
