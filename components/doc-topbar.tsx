@@ -17,6 +17,7 @@ interface DocTopbarProps {
   onDelete?: () => void
   docId?: string | string[]
   isPublic?: boolean
+  sidebarWidth?: string
 }
 
 function htmlToMarkdown(html: string): string {
