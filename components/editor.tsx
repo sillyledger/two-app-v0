@@ -24,10 +24,11 @@ interface EditorProps {
   content: string
   onChange: (content: string) => void
   onReady?: (focusFn: () => void) => void
+  editable?: boolean
 }
 
 export { Editor }
-export default function Editor({ content, onChange, onReady }: EditorProps) {
+export default function Editor({ content, onChange, onReady, editable = true }: EditorProps) {
   const [bubbleVisible, setBubbleVisible] = useState(false)
   const [bubblePos, setBubblePos] = useState({ top: 0, left: 0 })
   const containerRef = useRef<HTMLDivElement>(null)
@@ -39,23 +40,26 @@ export default function Editor({ content, onChange, onReady }: EditorProps) {
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
-        heading: {
-          levels: [1, 2, 3],
-        },
+        heading: { levels: [1, 2, 3] },
         bulletList: {},
         orderedList: {},
         blockquote: {},
         codeBlock: {},
         horizontalRule: {},
       }),
-      Link.configure({ openOnClick: false }),
+      Link.configure({ openOnClick: !editable }),
       Typography,
     ],
     content,
+    editable,
     onUpdate: ({ editor }) => {
-      onChange(editor.getHTML())
+      if (editable) onChange(editor.getHTML())
     },
     onSelectionUpdate: ({ editor }) => {
+      if (!editable) {
+        setBubbleVisible(false)
+        return
+      }
       const { from, to } = editor.state.selection
       const hasSelection = from !== to
 
@@ -83,9 +87,12 @@ export default function Editor({ content, onChange, onReady }: EditorProps) {
     },
     editorProps: {
       attributes: {
-        class: "prose prose-invert max-w-none focus:outline-none min-h-[60vh] editor-content",
+        class: `prose prose-invert max-w-none focus:outline-none min-h-[60vh] editor-content ${
+          !editable ? "cursor-default select-text" : ""
+        }`,
       },
       handleKeyDown: (view, event) => {
+        if (!editable) return false
         if ((event.metaKey || event.ctrlKey) && event.key === 'k') {
           event.preventDefault()
           openLinkModal()
@@ -103,17 +110,23 @@ export default function Editor({ content, onChange, onReady }: EditorProps) {
   }, [editor])
 
   useEffect(() => {
+    if (editor) {
+      editor.setEditable(editable)
+    }
+  }, [editor, editable])
+
+  useEffect(() => {
     if (linkModalOpen) {
       setTimeout(() => linkInputRef.current?.focus(), 50)
     }
   }, [linkModalOpen])
 
   const openLinkModal = useCallback(() => {
-    if (!editor) return
+    if (!editor || !editable) return
     const previousUrl = editor.getAttributes("link").href || ""
     setLinkUrl(previousUrl)
     setLinkModalOpen(true)
-  }, [editor])
+  }, [editor, editable])
 
   const confirmLink = useCallback(() => {
     if (!editor) return
@@ -154,8 +167,8 @@ export default function Editor({ content, onChange, onReady }: EditorProps) {
         }
       `}</style>
 
-      {/* Custom dark link modal */}
-      {linkModalOpen && (
+      {/* Link modal — only shown when editable */}
+      {linkModalOpen && editable && (
         <div
           className="fixed inset-0 z-[100] flex items-center justify-center"
           style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
@@ -193,8 +206,8 @@ export default function Editor({ content, onChange, onReady }: EditorProps) {
         </div>
       )}
 
-      {/* Bubble toolbar */}
-      {bubbleVisible && (
+      {/* Bubble toolbar — only shown when editable */}
+      {bubbleVisible && editable && (
         <div
           className="absolute z-50 flex items-center gap-0.5 rounded-lg border border-white/10 bg-[#2a2a2a] px-1.5 py-1 shadow-xl"
           style={{ top: bubblePos.top, left: bubblePos.left }}
