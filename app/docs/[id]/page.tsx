@@ -62,6 +62,11 @@ export default function DocPage() {
   const { id } = useParams()
   const router = useRouter()
   const [collapsed, setCollapsed] = useState(false)
+
+useEffect(() => {
+  const saved = localStorage.getItem("sidebar-collapsed")
+  if (saved === "true") setCollapsed(true)
+}, [])
   const [wideMode, setWideMode] = useState(false)
   const [doc, setDoc] = useState<Doc | null>(null)
   const [title, setTitle] = useState('')
