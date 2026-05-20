@@ -330,13 +330,14 @@ useEffect(() => {
 
             {doc !== null && (
               <Editor
-                content={content}
-                onChange={(newContent) => {
-                  if (!isLoggedIn) return
-                  setContent(newContent)
-                }}
-                onReady={(focusFn) => { editorFocusRef.current = focusFn }}
-              />
+  content={content}
+  editable={isLoggedIn}
+  onChange={(newContent) => {
+    if (!isLoggedIn) return
+    setContent(newContent)
+  }}
+  onReady={(focusFn) => { editorFocusRef.current = focusFn }}
+/>
             )}
 
             {wordCount > 0 && (
