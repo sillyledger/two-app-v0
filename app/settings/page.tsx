@@ -61,15 +61,28 @@ export default function SettingsPage() {
     setMessage(null)
 
     try {
-      const formData = new FormData()
-      formData.append('avatar', file)
-
-      const res = await fetch('/api/avatar', {
-        method: 'POST',
-        body: formData,
+      const params = new URLSearchParams({
+        filename: file.name,
+        contentType: file.type,
+        size: String(file.size),
       })
 
-      const data = await res.json()
+      const res = await fetch(`/api/avatar?${params.toString()}`, {
+        method: 'POST',
+        headers: { 'Content-Type': file.type },
+        body: file,
+      })
+
+      const text = await res.text()
+      const data = text
+        ? (() => {
+            try {
+              return JSON.parse(text)
+            } catch {
+              return {}
+            }
+          })()
+        : {}
 
       if (!res.ok) {
         setMessage({ type: 'error', text: data.error || 'Upload failed.' })
