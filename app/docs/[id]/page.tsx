@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation'
 import Sidebar from '@/components/sidebar'
 import Editor from '@/components/editor'
 import DocTopbar from '@/components/doc-topbar'
-import { CalendarDays, SignalLow, SignalMedium, SignalHigh, Minus } from 'lucide-react'
+import { CalendarDays, SignalLow, SignalMedium, SignalHigh, Minus, AlignCenter, AlignJustify } from 'lucide-react'
 import type { Doc } from '@/lib/db'
 
 interface Folder {
@@ -62,6 +62,7 @@ export default function DocPage() {
   const { id } = useParams()
   const router = useRouter()
   const [collapsed, setCollapsed] = useState(false)
+  const [wideMode, setWideMode] = useState(false)
   const [doc, setDoc] = useState<Doc | null>(null)
   const [title, setTitle] = useState('')
   const [content, setContent] = useState('')
@@ -76,6 +77,19 @@ export default function DocPage() {
   const priorityRef = useRef<HTMLDivElement>(null)
   const titleRef = useRef<HTMLTextAreaElement>(null)
   const editorFocusRef = useRef<(() => void) | null>(null)
+
+  // Load wide mode preference from localStorage
+  useEffect(() => {
+    const saved = localStorage.getItem('doc-wide-mode')
+    if (saved === 'true') setWideMode(true)
+  }, [])
+
+  const toggleWideMode = () => {
+    setWideMode((v) => {
+      localStorage.setItem('doc-wide-mode', String(!v))
+      return !v
+    })
+  }
 
   const resizeTitle = () => {
     const el = titleRef.current
@@ -224,11 +238,16 @@ export default function DocPage() {
           docId={id}
           isPublic={isPublic}
           sidebarWidth={sidebarWidth}
+          wideMode={wideMode}
+          onToggleWide={toggleWideMode}
         />
 
         <main className="flex-1 overflow-y-auto pt-[44px]">
-          <div className="mx-auto w-full max-w-[800px] px-16 pt-16 pb-32">
-
+          <div
+            className={`mx-auto w-full px-16 pt-16 pb-32 transition-all duration-200 ${
+              wideMode ? 'max-w-[1200px]' : 'max-w-[800px]'
+            }`}
+          >
             <textarea
               ref={titleRef}
               value={title}
