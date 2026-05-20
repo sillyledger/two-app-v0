@@ -46,6 +46,11 @@ function stripHtml(html: string) {
 export default function HomePage() {
   const router = useRouter()
   const [collapsed, setCollapsed] = useState(false)
+
+useEffect(() => {
+  const saved = localStorage.getItem("sidebar-collapsed")
+  if (saved === "true") setCollapsed(true)
+}, [])
   const [docs, setDocs] = useState<Doc[]>([])
   const [loading, setLoading] = useState(true)
   const [creating, setCreating] = useState(false)
