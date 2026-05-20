@@ -39,26 +39,10 @@ function stripHtml(html: string) {
 }
 
 function PriorityBadge({ priority }: { priority?: string | null }) {
-  if (!priority) return (
-    <span className="flex items-center gap-1 text-[11px] text-[#444]">
-      <Minus size={11} /> <span>None</span>
-    </span>
-  )
-  if (priority === "low") return (
-    <span className="flex items-center gap-1 text-[11px] text-[#888]">
-      <SignalLow size={11} /> <span>Low</span>
-    </span>
-  )
-  if (priority === "medium") return (
-    <span className="flex items-center gap-1 text-[11px] text-[#f5a623]">
-      <SignalMedium size={11} /> <span>Medium</span>
-    </span>
-  )
-  if (priority === "high") return (
-    <span className="flex items-center gap-1 text-[11px] text-[#e05252]">
-      <SignalHigh size={11} /> <span>High</span>
-    </span>
-  )
+  if (!priority) return <span className="flex items-center gap-1 text-[11px] text-[#444]"><Minus size={11} /> None</span>
+  if (priority === "low") return <span className="flex items-center gap-1 text-[11px] text-[#888]"><SignalLow size={11} /> Low</span>
+  if (priority === "medium") return <span className="flex items-center gap-1 text-[11px] text-[#f5a623]"><SignalMedium size={11} /> Medium</span>
+  if (priority === "high") return <span className="flex items-center gap-1 text-[11px] text-[#e05252]"><SignalHigh size={11} /> High</span>
   return null
 }
 
@@ -74,19 +58,15 @@ export default function FolderPage() {
   const [creating, setCreating] = useState(false)
   const [collapsed, setCollapsed] = useState(false)
 
-  // Three-dot menu
   const [openMenuId, setOpenMenuId] = useState<string | null>(null)
   const menuRef = useRef<HTMLDivElement>(null)
 
-  // Rename modal
   const [renamingDoc, setRenamingDoc] = useState<Doc | null>(null)
   const [renameValue, setRenameValue] = useState("")
 
-  // Move modal
   const [movingDoc, setMovingDoc] = useState<Doc | null>(null)
   const [folders, setFolders] = useState<FolderType[]>([])
 
-  // Delete modal
   const [deletingDoc, setDeletingDoc] = useState<Doc | null>(null)
 
   useEffect(() => {
@@ -130,13 +110,7 @@ export default function FolderPage() {
       const res = await fetch("/api/docs", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          title: "Untitled",
-          content: "",
-          color: "yellow",
-          type: "doc",
-          folder_id: id,
-        }),
+        body: JSON.stringify({ title: "Untitled", content: "", color: "yellow", type: "doc", folder_id: id }),
       })
       const doc = await res.json()
       router.push(`/docs/${doc.uuid}`)
@@ -192,11 +166,11 @@ export default function FolderPage() {
           {/* Header */}
           <div className="flex items-center justify-between mb-8">
             <div className="flex items-center gap-3">
-              <Folder size={20} className="text-[#555]" />
+              <Folder size={18} className="text-[#555]" />
               <h1 className="text-xl font-semibold text-[#e8e8e8]">
                 {folder?.name ?? folderNameFromUrl}
               </h1>
-              <span className="text-[12px] text-[#444] ml-1">{docs.length} docs</span>
+              <span className="text-[12px] text-[#444]">{docs.length} docs</span>
             </div>
             <button
               onClick={handleCreateDoc}
@@ -222,27 +196,25 @@ export default function FolderPage() {
               <p className="text-[13px] text-[#444]">Click New Doc to get started</p>
             </div>
           ) : (
-            <div className="border border-[#2a2a2a] rounded-xl overflow-hidden">
-
+            <div>
               {/* Column headers */}
-              <div className="grid grid-cols-[1fr_120px_120px_100px_80px_36px] items-center px-4 py-2.5 border-b border-[#2a2a2a] bg-[#1f1f1f]">
-                <span className="text-[11px] font-semibold uppercase tracking-wider text-[#444]">Name</span>
-                <span className="text-[11px] font-semibold uppercase tracking-wider text-[#444]">Created</span>
-                <span className="text-[11px] font-semibold uppercase tracking-wider text-[#444]">Last Edited</span>
-                <span className="text-[11px] font-semibold uppercase tracking-wider text-[#444]">Author</span>
-                <span className="text-[11px] font-semibold uppercase tracking-wider text-[#444]">Priority</span>
+              <div className="grid grid-cols-[1fr_120px_120px_100px_80px_36px] items-center px-3 py-2 mb-1">
+                <span className="text-[11px] font-semibold uppercase tracking-wider text-[#3a3a3a]">Name</span>
+                <span className="text-[11px] font-semibold uppercase tracking-wider text-[#3a3a3a]">Created</span>
+                <span className="text-[11px] font-semibold uppercase tracking-wider text-[#3a3a3a]">Last Edited</span>
+                <span className="text-[11px] font-semibold uppercase tracking-wider text-[#3a3a3a]">Author</span>
+                <span className="text-[11px] font-semibold uppercase tracking-wider text-[#3a3a3a]">Priority</span>
                 <span />
               </div>
 
-              {docs.map((doc, i) => (
+              {/* Rows */}
+              {docs.map((doc) => (
                 <div
                   key={doc.uuid}
                   onClick={() => router.push(`/docs/${doc.uuid}`)}
-                  className={`group grid grid-cols-[1fr_120px_120px_100px_80px_36px] items-center px-4 py-3 cursor-pointer transition-colors hover:bg-[#232323] ${
-                    i !== docs.length - 1 ? "border-b border-[#222]" : ""
-                  }`}
+                  className="group grid grid-cols-[1fr_120px_120px_100px_80px_36px] items-center px-3 py-2.5 rounded-lg cursor-pointer transition-colors hover:bg-[#222] mb-[1px]"
                 >
-                  {/* Name + preview */}
+                  {/* Name */}
                   <div className="flex items-center gap-3 min-w-0">
                     <FileText size={13} className="text-[#444] shrink-0" />
                     <div className="min-w-0">
@@ -263,7 +235,7 @@ export default function FolderPage() {
 
                   {/* Author */}
                   <div className="flex items-center gap-1.5 min-w-0">
-                    <div className="w-4 h-4 rounded-full bg-[#3a3a3a] border border-white/10 flex items-center justify-center text-[9px] font-medium text-[#ccc] shrink-0">
+                    <div className="w-4 h-4 rounded-full bg-[#2a2a2a] border border-white/10 flex items-center justify-center text-[9px] font-medium text-[#888] shrink-0">
                       {(doc.author_name || doc.author_email || "?")[0].toUpperCase()}
                     </div>
                     <span className="text-[12px] text-[#555] truncate">
@@ -290,11 +262,7 @@ export default function FolderPage() {
                     {openMenuId === doc.uuid && (
                       <div className="absolute right-0 top-7 w-44 bg-[#2c2c2c] border border-white/10 rounded-xl shadow-xl z-50 overflow-hidden py-1">
                         <button
-                          onClick={() => {
-                            setRenamingDoc(doc)
-                            setRenameValue(doc.title || "")
-                            setOpenMenuId(null)
-                          }}
+                          onClick={() => { setRenamingDoc(doc); setRenameValue(doc.title || ""); setOpenMenuId(null) }}
                           className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-[#e8e8e8] hover:bg-white/10 transition-colors"
                         >
                           <Pencil size={13} className="text-[#aaa]" /> Rename
@@ -307,10 +275,7 @@ export default function FolderPage() {
                         </button>
                         <div className="border-t border-white/10 my-1" />
                         <button
-                          onClick={() => {
-                            setDeletingDoc(doc)
-                            setOpenMenuId(null)
-                          }}
+                          onClick={() => { setDeletingDoc(doc); setOpenMenuId(null) }}
                           className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-red-400 hover:bg-white/10 transition-colors"
                         >
                           <Trash2 size={13} /> Delete
