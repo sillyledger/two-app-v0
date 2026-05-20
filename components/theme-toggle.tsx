@@ -1,5 +1,4 @@
 "use client"
-
 import { useEffect, useState } from "react"
 import { Sun, Moon } from "lucide-react"
 
@@ -8,8 +7,11 @@ export default function ThemeToggle() {
 
   useEffect(() => {
     const saved = localStorage.getItem("theme")
-    if (saved === "light") setTheme("light")
-    else setTheme("dark")
+    const initial = saved === "light" ? "light" : "dark"
+    setTheme(initial)
+    const html = document.documentElement
+    html.classList.remove("dark", "light")
+    html.classList.add(initial)
   }, [])
 
   const toggle = () => {
