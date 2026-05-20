@@ -9,7 +9,6 @@ const _geistMono = Geist_Mono({ subsets: ["latin"] });
 export const metadata: Metadata = {
   title: 'TWO - Notes',
   description: 'A beautiful note-taking app',
-  generator: 'v0.app',
   icons: {
     icon: [
       {
@@ -42,6 +41,7 @@ export default function RootLayout({
             __html: `
               (function() {
                 try {
+                  // Apply theme
                   var theme = localStorage.getItem('theme');
                   if (theme === 'light') {
                     document.documentElement.classList.remove('dark');
@@ -49,6 +49,15 @@ export default function RootLayout({
                   } else {
                     document.documentElement.classList.remove('light');
                     document.documentElement.classList.add('dark');
+                  }
+                  // Apply font size
+                  var fontSize = localStorage.getItem('font-size');
+                  if (fontSize === 'small') {
+                    document.documentElement.style.fontSize = '13px';
+                  } else if (fontSize === 'large') {
+                    document.documentElement.style.fontSize = '17px';
+                  } else {
+                    document.documentElement.style.fontSize = '';
                   }
                 } catch(e) {}
               })();
