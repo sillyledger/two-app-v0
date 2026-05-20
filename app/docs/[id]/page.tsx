@@ -61,6 +61,7 @@ function getInitials(name: string, email: string): string {
 export default function DocPage() {
   const { id } = useParams()
   const router = useRouter()
+  const [collapsed, setCollapsed] = useState(false)
   const [doc, setDoc] = useState<Doc | null>(null)
   const [title, setTitle] = useState('')
   const [content, setContent] = useState('')
@@ -83,7 +84,6 @@ export default function DocPage() {
     el.style.height = el.scrollHeight + 'px'
   }
 
-  // Close priority dropdown when clicking outside
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
       if (priorityRef.current && !priorityRef.current.contains(e.target as Node)) {
@@ -198,16 +198,22 @@ export default function DocPage() {
     router.push('/')
   }
 
+  const sidebarWidth = collapsed ? '52px' : '210px'
   const wordCount = getWordCount(content)
   const charCount = getCharCount(content)
-
   const activePriority = PRIORITIES.find(p => p.value === priority) ?? PRIORITIES[0]
 
   if (!authChecked || !doc) return null
 
   return (
     <div className="flex min-h-screen bg-background">
-      {isLoggedIn && <Sidebar onNewNote={handleNewDoc} />}
+      {isLoggedIn && (
+        <Sidebar
+          onNewNote={handleNewDoc}
+          collapsed={collapsed}
+          onToggle={() => setCollapsed((v) => !v)}
+        />
+      )}
 
       <div className="flex-1 flex flex-col min-h-screen">
         <DocTopbar
@@ -217,12 +223,12 @@ export default function DocPage() {
           onDelete={isLoggedIn ? handleDelete : undefined}
           docId={id}
           isPublic={isPublic}
+          sidebarWidth={sidebarWidth}
         />
 
         <main className="flex-1 overflow-y-auto pt-[44px]">
           <div className="mx-auto w-full max-w-[800px] px-16 pt-16 pb-32">
 
-            {/* Title */}
             <textarea
               ref={titleRef}
               value={title}
@@ -243,19 +249,14 @@ export default function DocPage() {
               className="mb-5 block w-full resize-none overflow-hidden bg-transparent text-[2.375rem] font-bold leading-[1.2] tracking-tight text-foreground placeholder:text-muted-foreground/40 focus:outline-none"
             />
 
-            {/* Properties bar — horizontal, Linear-style */}
             <div className="mb-8 flex items-center gap-2 flex-wrap">
-
-              {/* Created chip */}
               <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-white/5 border border-white/8 text-xs text-[#888]">
                 <CalendarDays size={12} className="text-[#666]" />
                 <span>{formatDate(doc.created_at)}</span>
               </div>
 
-              {/* Divider */}
               <span className="text-[#444] select-none">·</span>
 
-              {/* Author chip */}
               {currentUser ? (
                 <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-white/5 border border-white/8 text-xs text-[#888]">
                   <div className="w-4 h-4 rounded-full bg-[#3a3a3a] border border-white/10 flex items-center justify-center text-[9px] font-medium text-[#ccc] select-none">
@@ -270,10 +271,8 @@ export default function DocPage() {
                 </div>
               )}
 
-              {/* Divider */}
               <span className="text-[#444] select-none">·</span>
 
-              {/* Priority chip + dropdown */}
               {isLoggedIn && (
                 <div className="relative" ref={priorityRef}>
                   <button
@@ -296,19 +295,15 @@ export default function DocPage() {
                         >
                           <span className={p.color}>{p.icon}</span>
                           <span>{p.label}</span>
-                          {priority === p.value && (
-                            <span className="ml-auto text-[#555]">✓</span>
-                          )}
+                          {priority === p.value && <span className="ml-auto text-[#555]">✓</span>}
                         </button>
                       ))}
                     </div>
                   )}
                 </div>
               )}
-
             </div>
 
-            {/* Editor */}
             {doc !== null && (
               <Editor
                 content={content}
@@ -320,7 +315,6 @@ export default function DocPage() {
               />
             )}
 
-            {/* Word / char count */}
             {wordCount > 0 && (
               <div className="mt-16 flex items-center gap-2 text-[11px] text-[#383838] select-none">
                 <span>{wordCount.toLocaleString()} words</span>
@@ -328,7 +322,6 @@ export default function DocPage() {
                 <span>{charCount.toLocaleString()} characters</span>
               </div>
             )}
-
           </div>
         </main>
       </div>
