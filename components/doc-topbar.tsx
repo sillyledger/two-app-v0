@@ -151,7 +151,7 @@ export default function DocTopbar({ docTitle, folder, saveStatus, content = '', 
 
   return (
     <>
-     <header className="fixed top-0 left-[210px] right-0 z-40 h-[44px] flex items-center px-4 bg-[#1a1a1a]">
+     <header className="fixed top-0 right-0 z-40 h-[44px] flex items-center px-4 bg-[#1a1a1a] transition-all duration-200" style={{ left: sidebarWidth }}>
 
         {/* Left — Breadcrumbs */}
         <div className="flex items-center gap-0.5 min-w-0 flex-1">
