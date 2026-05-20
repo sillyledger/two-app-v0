@@ -67,7 +67,6 @@ export default function DocTopbar({ docTitle, folder, saveStatus, content = '', 
   const [linkCopied, setLinkCopied] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
   const shareRef = useRef<HTMLDivElement>(null)
-  const [collapsed, setCollapsed] = useState(false)
 
   // Keep publicEnabled in sync if parent re-renders with new isPublic value
   useEffect(() => {
@@ -87,18 +86,7 @@ export default function DocTopbar({ docTitle, folder, saveStatus, content = '', 
     return () => document.removeEventListener("mousedown", handler)
   }, [menuOpen, shareOpen])
 
-  // Read shared sidebar state cookie so the topbar aligns with the sidebar width.
-  useEffect(() => {
-    try {
-      const match = document.cookie.split('; ').find((c) => c.startsWith('sidebar_state='))
-      if (match) {
-        const val = match.split('=')[1]
-        setCollapsed(val === 'false')
-      }
-    } catch (e) {
-      // ignore
-    }
-  }, [])
+  
 
   const handleExportMarkdown = () => {
     setMenuOpen(false)
@@ -140,10 +128,7 @@ export default function DocTopbar({ docTitle, folder, saveStatus, content = '', 
 
   return (
     <>
-      <header
-        className="fixed top-0 right-0 z-40 h-[44px] flex items-center px-4 bg-[#181818] border-b border-[#2a2a2a]"
-        style={{ left: collapsed ? '3rem' : '210px' }}
-      >
+      <header className="fixed top-0 left-[210px] right-0 z-40 h-[44px] flex items-center px-4 bg-[#181818] border-b border-[#2a2a2a]">
 
         {/* Left — Breadcrumbs */}
         <div className="flex items-center gap-0.5 min-w-0 flex-1">

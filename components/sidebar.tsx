@@ -52,7 +52,6 @@ export default function Sidebar({ onNewNote }: SidebarProps = {}) {
   const [docs, setDocs] = useState<Doc[]>([])
   const [folders, setFolders] = useState<FolderType[]>([])
   const [creating, setCreating] = useState(false)
-  const [collapsed, setCollapsed] = useState(false)
 
   const [renamingWorkspace, setRenamingWorkspace] = useState(false)
   const [workspaceRenameValue, setWorkspaceRenameValue] = useState("")
@@ -121,20 +120,7 @@ export default function Sidebar({ onNewNote }: SidebarProps = {}) {
       .catch(() => {})
   }, [])
 
-  // Read the shared sidebar cookie so this custom sidebar can match
-  // the collapsed/expanded state set by the new UI sidebar provider.
-  useEffect(() => {
-    try {
-      const match = document.cookie.split('; ').find((c) => c.startsWith('sidebar_state='))
-      if (match) {
-        const val = match.split('=')[1]
-        // UI provider stores boolean true/false for open state.
-        setCollapsed(val === 'false')
-      }
-    } catch (e) {
-      // ignore
-    }
-  }, [])
+  
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -319,7 +305,7 @@ export default function Sidebar({ onNewNote }: SidebarProps = {}) {
 
   return (
     <>
-      <aside className={`${collapsed ? 'w-[48px] min-w-[48px]' : 'w-[210px] min-w-[210px]'} h-screen flex flex-col sticky top-0 bg-[#1f1f1f] border-r border-[#2a2a2a]`}>
+      <aside className="w-[210px] min-w-[210px] h-screen flex flex-col sticky top-0 bg-[#1f1f1f] border-r border-[#2a2a2a]">
 
         <div className="flex items-center gap-2 px-3 pt-4 pb-2.5">
           <div className="w-5 h-5 rounded-md bg-[#e8e8e8] flex items-center justify-center shrink-0">
