@@ -306,6 +306,18 @@ export default function Sidebar({ onNewNote, collapsed = false, onToggle }: Side
     </Link>
   )
 
+  const AvatarBubble = ({ size = 5 }: { size?: number }) => (
+    <div className={`w-${size} h-${size} rounded-full overflow-hidden shrink-0`}>
+      {userAvatar ? (
+        <img src={userAvatar} alt="Avatar" className="w-full h-full object-cover" />
+      ) : (
+        <div className="w-full h-full rounded-full bg-[#7C3AED] flex items-center justify-center">
+          <span className="text-[9px] font-bold text-white">{initial}</span>
+        </div>
+      )}
+    </div>
+  )
+
   return (
     <>
       <aside
@@ -313,47 +325,32 @@ export default function Sidebar({ onNewNote, collapsed = false, onToggle }: Side
         style={{ width: collapsed ? "52px" : "210px", minWidth: collapsed ? "52px" : "210px" }}
       >
         {/* Top: avatar + name + toggle */}
-        <div className={`flex items-center px-3 pt-4 pb-2.5 ${collapsed ? "justify-center" : "gap-2"}`}>
-          {!collapsed && (
-            <>
-              {/* Avatar */}
-              <div className="w-5 h-5 rounded-full overflow-hidden shrink-0">
-                {userAvatar ? (
-                  <img src={userAvatar} alt="Avatar" className="w-full h-full object-cover" />
-                ) : (
-                  <div className="w-full h-full rounded-full bg-[#7C3AED] flex items-center justify-center">
-                    <span className="text-[9px] font-bold text-white">{initial}</span>
-                  </div>
-                )}
-              </div>
-              <span className="font-semibold text-[13px] text-[#e8e8e8] truncate flex-1">
-                {userName || "..."}
-              </span>
-            </>
-          )}
-          {collapsed && (
-            <div className="w-5 h-5 rounded-full overflow-hidden shrink-0 mb-1">
-              {userAvatar ? (
-                <img src={userAvatar} alt="Avatar" className="w-full h-full object-cover" />
-              ) : (
-                <div className="w-full h-full rounded-full bg-[#7C3AED] flex items-center justify-center">
-                  <span className="text-[9px] font-bold text-white">{initial}</span>
-                </div>
-              )}
-            </div>
-          )}
-          <button
-            onClick={() => {
-              const next = !collapsed
-              localStorage.setItem("sidebar-collapsed", String(next))
-              onToggle?.()
-            }}
-            title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-            className="text-[#555] hover:text-[#e8e8e8] transition-colors shrink-0"
-          >
-            {collapsed ? <PanelLeftOpen size={14} /> : <PanelLeftClose size={14} />}
-          </button>
-        </div>
+        {collapsed ? (
+          <div className="flex flex-col items-center px-3 pt-4 pb-2.5 gap-2.5">
+            <AvatarBubble />
+            <button
+              onClick={() => { localStorage.setItem("sidebar-collapsed", "false"); onToggle?.() }}
+              title="Expand sidebar"
+              className="text-[#555] hover:text-[#e8e8e8] transition-colors"
+            >
+              <PanelLeftOpen size={14} />
+            </button>
+          </div>
+        ) : (
+          <div className="flex items-center gap-2 px-3 pt-4 pb-2.5">
+            <AvatarBubble />
+            <span className="font-semibold text-[13px] text-[#e8e8e8] truncate flex-1">
+              {userName || "..."}
+            </span>
+            <button
+              onClick={() => { localStorage.setItem("sidebar-collapsed", "true"); onToggle?.() }}
+              title="Collapse sidebar"
+              className="text-[#555] hover:text-[#e8e8e8] transition-colors shrink-0"
+            >
+              <PanelLeftClose size={14} />
+            </button>
+          </div>
+        )}
 
         {/* Search — hidden when collapsed */}
         {!collapsed && (
@@ -556,7 +553,7 @@ export default function Sidebar({ onNewNote, collapsed = false, onToggle }: Side
           )}
         </nav>
 
-        {/* Bottom: Settings, Trash, Add Workspace, Log out — clean, no user info */}
+        {/* Bottom: Settings, Trash, Add Workspace, Log out */}
         <div className={`border-t border-[#2a2a2a] px-2 py-2.5 space-y-[1px] ${collapsed ? "flex flex-col items-center" : ""}`}>
           {navItem("/settings", <Settings size={13} />, "Settings")}
           {!collapsed && navItem("/trash", <Trash2 size={13} />, "Trash")}
