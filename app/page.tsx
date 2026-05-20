@@ -45,23 +45,20 @@ function stripHtml(html: string) {
 
 export default function HomePage() {
   const router = useRouter()
+  const [collapsed, setCollapsed] = useState(false)
   const [docs, setDocs] = useState<Doc[]>([])
   const [loading, setLoading] = useState(true)
   const [creating, setCreating] = useState(false)
 
-  // Three-dot menu state
   const [openMenuId, setOpenMenuId] = useState<string | null>(null)
   const menuRef = useRef<HTMLDivElement>(null)
 
-  // Rename modal state
   const [renamingDoc, setRenamingDoc] = useState<Doc | null>(null)
   const [renameValue, setRenameValue] = useState("")
 
-  // Move modal state
   const [movingDoc, setMovingDoc] = useState<Doc | null>(null)
   const [folders, setFolders] = useState<Folder[]>([])
 
-  // Delete confirm state
   const [deletingDoc, setDeletingDoc] = useState<Doc | null>(null)
 
   useEffect(() => {
@@ -74,7 +71,6 @@ export default function HomePage() {
       .catch(() => setLoading(false))
   }, [])
 
-  // Close menu when clicking outside
   useEffect(() => {
     function handleClick(e: MouseEvent) {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
@@ -142,10 +138,9 @@ export default function HomePage() {
 
   return (
     <div className="flex h-screen bg-[#1a1a1a] overflow-hidden">
-      <Sidebar />
-      <main className="flex-1 overflow-y-auto">
+      <Sidebar collapsed={collapsed} onToggle={() => setCollapsed((v) => !v)} />
+      <main className="flex-1 overflow-y-auto transition-all duration-200">
         <div className="max-w-3xl mx-auto px-8 py-8">
-          {/* Header */}
           <div className="flex items-center justify-between mb-8">
             <h1 className="text-2xl font-bold text-[#e8e8e8]">Recent Docs</h1>
             <button
@@ -158,7 +153,6 @@ export default function HomePage() {
             </button>
           </div>
 
-          {/* Docs Grid */}
           {loading ? (
             <div className="grid grid-cols-3 gap-4">
               {Array.from({ length: 9 }).map((_, i) => (
@@ -178,7 +172,6 @@ export default function HomePage() {
                   className="relative group rounded-2xl flex flex-col justify-between min-h-[172px]"
                   style={{ backgroundColor: CARD_COLORS[i % CARD_COLORS.length] }}
                 >
-                  {/* Clickable area */}
                   <button
                     onClick={() => router.push(`/docs/${doc.uuid}`)}
                     className="text-left p-5 flex flex-col justify-between w-full h-full min-h-[172px]"
@@ -196,7 +189,6 @@ export default function HomePage() {
                     </p>
                   </button>
 
-                  {/* Three-dot button — appears on hover */}
                   <div className="absolute top-3 right-3" ref={openMenuId === doc.uuid ? menuRef : null}>
                     <button
                       onClick={(e) => {
@@ -208,7 +200,6 @@ export default function HomePage() {
                       <MoreHorizontal size={15} />
                     </button>
 
-                    {/* Dropdown menu */}
                     {openMenuId === doc.uuid && (
                       <div className="absolute right-0 top-8 w-44 bg-[#2c2c2c] border border-white/10 rounded-xl shadow-xl z-50 overflow-hidden py-1">
                         <button
@@ -268,12 +259,8 @@ export default function HomePage() {
               className="w-full bg-[#1a1a1a] border border-white/10 rounded-lg px-3 py-2 text-[#e8e8e8] text-sm outline-none focus:border-white/30 mb-4"
             />
             <div className="flex gap-2 justify-end">
-              <button onClick={() => setRenamingDoc(null)} className="px-4 py-2 text-sm text-[#aaa] hover:text-[#e8e8e8] transition-colors">
-                Cancel
-              </button>
-              <button onClick={handleRename} className="px-4 py-2 text-sm bg-white/10 hover:bg-white/20 text-[#e8e8e8] rounded-lg transition-colors">
-                Rename
-              </button>
+              <button onClick={() => setRenamingDoc(null)} className="px-4 py-2 text-sm text-[#aaa] hover:text-[#e8e8e8] transition-colors">Cancel</button>
+              <button onClick={handleRename} className="px-4 py-2 text-sm bg-white/10 hover:bg-white/20 text-[#e8e8e8] rounded-lg transition-colors">Rename</button>
             </div>
           </div>
         </div>
@@ -300,15 +287,13 @@ export default function HomePage() {
               </div>
             )}
             <div className="flex justify-end">
-              <button onClick={() => setMovingDoc(null)} className="px-4 py-2 text-sm text-[#aaa] hover:text-[#e8e8e8] transition-colors">
-                Cancel
-              </button>
+              <button onClick={() => setMovingDoc(null)} className="px-4 py-2 text-sm text-[#aaa] hover:text-[#e8e8e8] transition-colors">Cancel</button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Delete confirm modal */}
+      {/* Delete modal */}
       {deletingDoc && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
           <div className="bg-[#2c2c2c] rounded-2xl p-6 w-80 border border-white/10 shadow-2xl">
@@ -317,12 +302,8 @@ export default function HomePage() {
               &ldquo;{deletingDoc.title || "Untitled"}&rdquo; will be deleted. This cannot be undone.
             </p>
             <div className="flex gap-2 justify-end">
-              <button onClick={() => setDeletingDoc(null)} className="px-4 py-2 text-sm text-[#aaa] hover:text-[#e8e8e8] transition-colors">
-                Cancel
-              </button>
-              <button onClick={handleDelete} className="px-4 py-2 text-sm bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-lg transition-colors">
-                Delete
-              </button>
+              <button onClick={() => setDeletingDoc(null)} className="px-4 py-2 text-sm text-[#aaa] hover:text-[#e8e8e8] transition-colors">Cancel</button>
+              <button onClick={handleDelete} className="px-4 py-2 text-sm bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-lg transition-colors">Delete</button>
             </div>
           </div>
         </div>
