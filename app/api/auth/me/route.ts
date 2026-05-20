@@ -16,5 +16,11 @@ export async function GET() {
   `
   if (result.length === 0) return NextResponse.json({ error: 'User not found' }, { status: 404 })
 
-  return NextResponse.json({ user: result[0] })
+  const user = result[0]
+  return NextResponse.json({
+    user: {
+      ...user,
+      avatar_url: user.avatar_url ? '/api/avatar' : null,
+    },
+  })
 }

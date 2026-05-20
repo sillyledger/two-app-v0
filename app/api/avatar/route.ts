@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { verifyToken } from '@/lib/auth'
 import { sql } from '@/lib/db'
-import { put } from '@vercel/blob'
+import { get as getBlob, put } from '@vercel/blob'
 
 export const runtime = 'nodejs'
 
@@ -51,7 +51,7 @@ export async function POST(request: Request) {
   let blob: Awaited<ReturnType<typeof put>>
   try {
     blob = await put(getAvatarPath(payload.userId, filename, contentType), request.body, {
-      access: 'public',
+      access: 'private',
       addRandomSuffix: true,
       contentType,
     })
@@ -72,5 +72,32 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Avatar uploaded, but profile update failed.' }, { status: 500 })
   }
 
-  return NextResponse.json({ url: blob.url })
+  return NextResponse.json({ url: `/api/avatar?ts=${Date.now()}` })
+}
+
+export async function GET() {
+  const cookieStore = await cookies()
+  const token = cookieStore.get('auth-token')
+  if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  const payload = await verifyToken(token.value)
+  if (!payload) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  const result = await sql`
+    SELECT avatar_url FROM users WHERE id = ${payload.userId}
+  `
+  const avatarUrl = result[0]?.avatar_url
+  if (!avatarUrl) return NextResponse.json({ error: 'Avatar not found' }, { status: 404 })
+
+  const avatar = await getBlob(avatarUrl, { access: 'private' })
+  if (!avatar || avatar.statusCode !== 200 || !avatar.stream) {
+    return NextResponse.json({ error: 'Avatar not found' }, { status: 404 })
+  }
+
+  return new Response(avatar.stream, {
+    headers: {
+      'Content-Type': avatar.blob.contentType,
+      'Cache-Control': 'private, max-age=300',
+    },
+  })
 }
