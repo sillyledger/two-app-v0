@@ -1,6 +1,6 @@
-'use client'
+"use client"
 
-import { useEffect, useState, useCallback, useRef } from 'react'
+import React, { useEffect, useState, useCallback, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Sidebar from '@/components/sidebar'
 import Editor from '@/components/editor'
@@ -22,7 +22,33 @@ function getCharCount(content: string): number {
   return content.replace(/<[^>]*>/g, '').length
 }
 
-export default function DocPage() {
+// Error boundary to capture runtime errors and show details in the UI.
+class ErrorBoundary extends React.Component<{}, { error: Error | null; info: string | null }> {
+  constructor(props: {}) {
+    super(props)
+    this.state = { error: null, info: null }
+  }
+
+  componentDidCatch(error: Error, info: React.ErrorInfo) {
+    console.error('DocPage render error', error, info)
+    this.setState({ error, info: info.componentStack })
+  }
+
+  render() {
+    if (this.state.error) {
+      return (
+        <div className="p-6">
+          <h2 className="text-lg font-bold text-red-600">Error rendering document</h2>
+          <pre className="mt-4 whitespace-pre-wrap text-sm text-[#222] bg-[#f8d7da] p-4 rounded">{String(this.state.error)}
+{this.state.info}</pre>
+        </div>
+      )
+    }
+    return this.props.children
+  }
+}
+
+function DocPageContent() {
   const { id } = useParams()
   const router = useRouter()
   const [doc, setDoc] = useState<Doc | null>(null)
@@ -54,43 +80,40 @@ export default function DocPage() {
     if (!authChecked) return
 
     if (isLoggedIn) {
-      // Logged in — use the authenticated route directly
       fetch(`/api/docs/${id}`)
         .then((res) => res.json())
         .then((data: Doc) => {
-          if (data.error) {
+          if ((data as any).error) {
             router.push('/')
             return
           }
           setDoc(data)
           setTitle(data.title)
           setContent(data.content || '')
-          setIsPublic(data.is_public ?? false)
+          setIsPublic((data as any).is_public ?? false)
 
-          if (data.folder_id) {
-            fetch(`/api/folders/${data.folder_id}`)
+          if ((data as any).folder_id) {
+            fetch(`/api/folders/${(data as any).folder_id}`)
               .then((r) => r.json())
               .then((f: Folder) => setFolder(f))
               .catch(() => {})
           }
         })
     } else {
-      // Not logged in — try the public route
       fetch(`/api/docs/public/${id}`)
         .then((res) => res.json())
         .then((data: Doc) => {
-          if (data.error) {
-            // Private or not found — send to login
+          if ((data as any).error) {
             router.push('/login')
             return
           }
           setDoc(data)
           setTitle(data.title)
           setContent(data.content || '')
-          setIsPublic(data.is_public ?? false)
+          setIsPublic((data as any).is_public ?? false)
         })
     }
-  }, [id, authChecked])
+  }, [id, authChecked, isLoggedIn, router])
 
   useEffect(() => {
     resizeTitle()
@@ -102,7 +125,7 @@ export default function DocPage() {
     await fetch(`/api/docs/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title: latestTitle, content: latestContent, color: latestDoc?.color ?? 'yellow' }),
+      body: JSON.stringify({ title: latestTitle, content: latestContent, color: (latestDoc as any)?.color ?? 'yellow' }),
     })
     setSaveStatus('saved')
   }, [id, isLoggedIn])
@@ -115,7 +138,7 @@ export default function DocPage() {
       handleSave(title, content, doc)
     }, 1000)
     return () => clearTimeout(timer)
-  }, [title, content])
+  }, [title, content, doc, isLoggedIn, handleSave])
 
   const handleNewDoc = async () => {
     const res = await fetch('/api/docs', {
@@ -124,7 +147,7 @@ export default function DocPage() {
       body: JSON.stringify({ title: 'Untitled', content: '', color: 'yellow', type: 'doc' }),
     })
     const newDoc = await res.json()
-    router.push(`/docs/${newDoc.id}`)
+    router.push(`/docs/${(newDoc as any).id}`)
   }
 
   const handleDelete = async () => {
@@ -197,5 +220,13 @@ export default function DocPage() {
         </main>
       </div>
     </div>
+  )
+}
+
+export default function DocPage() {
+  return (
+    <ErrorBoundary>
+      <DocPageContent />
+    </ErrorBoundary>
   )
 }
