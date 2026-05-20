@@ -58,6 +58,11 @@ export default function FolderPage() {
   const [creating, setCreating] = useState(false)
   const [collapsed, setCollapsed] = useState(false)
 
+useEffect(() => {
+  const saved = localStorage.getItem("sidebar-collapsed")
+  if (saved === "true") setCollapsed(true)
+}, [])
+
   const [openMenuId, setOpenMenuId] = useState<string | null>(null)
   const menuRef = useRef<HTMLDivElement>(null)
 
