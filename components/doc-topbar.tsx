@@ -150,7 +150,7 @@ export default function DocTopbar({ docTitle, folder, saveStatus, content = '', 
 
   return (
     <>
-      <header className="fixed top-0 left-[210px] right-0 z-40 h-[44px] flex items-center px-4 bg-[#181818] border-b border-[#2a2a2a]">
+     <header className="fixed top-0 left-[210px] right-0 z-40 h-[44px] flex items-center px-4 bg-[#1f1f1f]">
 
         {/* Left — Breadcrumbs */}
         <div className="flex items-center gap-0.5 min-w-0 flex-1">
