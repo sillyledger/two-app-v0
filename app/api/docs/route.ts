@@ -9,23 +9,29 @@ export async function GET(request: Request) {
   if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   const payload = await verifyToken(token.value)
   if (!payload) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
   const { searchParams } = new URL(request.url)
   const folderId = searchParams.get('folder_id')
+
   try {
     const docs = folderId
       ? await sql`
-          SELECT * FROM docs
-          WHERE user_id = ${payload.userId}
-            AND folder_id = ${folderId}
-            AND deleted_at IS NULL
-          ORDER BY created_at DESC
+          SELECT docs.*, users.name AS author_name, users.email AS author_email
+          FROM docs
+          LEFT JOIN users ON docs.user_id = users.id
+          WHERE docs.user_id = ${payload.userId}
+            AND docs.folder_id = ${folderId}
+            AND docs.deleted_at IS NULL
+          ORDER BY docs.created_at DESC
         `
       : await sql`
-          SELECT * FROM docs
-          WHERE user_id = ${payload.userId}
-            AND folder_id IS NULL
-            AND deleted_at IS NULL
-          ORDER BY created_at DESC
+          SELECT docs.*, users.name AS author_name, users.email AS author_email
+          FROM docs
+          LEFT JOIN users ON docs.user_id = users.id
+          WHERE docs.user_id = ${payload.userId}
+            AND docs.folder_id IS NULL
+            AND docs.deleted_at IS NULL
+          ORDER BY docs.created_at DESC
         `
     return NextResponse.json(docs)
   } catch (error) {
@@ -40,6 +46,7 @@ export async function POST(request: Request) {
   if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   const payload = await verifyToken(token.value)
   if (!payload) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
   try {
     const { title, content, color, type = 'doc', folder_id = null } = await request.json()
     const result = await sql`
