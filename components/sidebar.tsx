@@ -50,7 +50,6 @@ export default function Sidebar({ onNewNote, collapsed = false, onToggle }: Side
   const [workspaceOpen, setWorkspaceOpen] = useState(true)
   const [searchQuery, setSearchQuery] = useState("")
   const [userName, setUserName] = useState("")
-  const [userEmail, setUserEmail] = useState("")
   const [userAvatar, setUserAvatar] = useState<string | null>(null)
   const [workspaceName, setWorkspaceName] = useState("My Workspace")
   const [workspaceId, setWorkspaceId] = useState<string | null>(null)
@@ -96,7 +95,6 @@ export default function Sidebar({ onNewNote, collapsed = false, onToggle }: Side
       .then((data) => {
         if (data.user) {
           setUserName(data.user.name || data.user.email.split("@")[0])
-          setUserEmail(data.user.email)
           setUserAvatar(data.user.avatar_url || null)
         }
       })
@@ -314,20 +312,42 @@ export default function Sidebar({ onNewNote, collapsed = false, onToggle }: Side
         className="h-screen flex flex-col sticky top-0 bg-[#1f1f1f] border-r border-[#2a2a2a] transition-all duration-200 ease-in-out overflow-hidden"
         style={{ width: collapsed ? "52px" : "210px", minWidth: collapsed ? "52px" : "210px" }}
       >
-        {/* Top: logo + toggle */}
+        {/* Top: avatar + name + toggle */}
         <div className={`flex items-center px-3 pt-4 pb-2.5 ${collapsed ? "justify-center" : "gap-2"}`}>
           {!collapsed && (
             <>
-              <div className="w-5 h-5 rounded-md bg-[#e8e8e8] flex items-center justify-center shrink-0">
-                <span className="text-[#1a1a1a] text-[10px] font-bold">T</span>
+              {/* Avatar */}
+              <div className="w-5 h-5 rounded-full overflow-hidden shrink-0">
+                {userAvatar ? (
+                  <img src={userAvatar} alt="Avatar" className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full rounded-full bg-[#7C3AED] flex items-center justify-center">
+                    <span className="text-[9px] font-bold text-white">{initial}</span>
+                  </div>
+                )}
               </div>
               <span className="font-semibold text-[13px] text-[#e8e8e8] truncate flex-1">
                 {userName || "..."}
               </span>
             </>
           )}
+          {collapsed && (
+            <div className="w-5 h-5 rounded-full overflow-hidden shrink-0 mb-1">
+              {userAvatar ? (
+                <img src={userAvatar} alt="Avatar" className="w-full h-full object-cover" />
+              ) : (
+                <div className="w-full h-full rounded-full bg-[#7C3AED] flex items-center justify-center">
+                  <span className="text-[9px] font-bold text-white">{initial}</span>
+                </div>
+              )}
+            </div>
+          )}
           <button
-            onClick={onToggle}
+            onClick={() => {
+              const next = !collapsed
+              localStorage.setItem("sidebar-collapsed", String(next))
+              onToggle?.()
+            }}
             title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
             className="text-[#555] hover:text-[#e8e8e8] transition-colors shrink-0"
           >
@@ -356,7 +376,6 @@ export default function Sidebar({ onNewNote, collapsed = false, onToggle }: Side
           {navItem("/activity", <Activity size={13} />, "Activity")}
           {navItem("/library", <BookOpen size={13} />, "Library")}
 
-          {/* Only show full content when expanded */}
           {!collapsed && (
             <>
               <div className="my-2 border-t border-[#2a2a2a]" />
@@ -441,15 +460,8 @@ export default function Sidebar({ onNewNote, collapsed = false, onToggle }: Side
                           router.push(`/folders/${folder.id}?name=${encodeURIComponent(folder.name)}`)
                         }
                       }}
-                      onDragOver={(e) => {
-                        e.preventDefault()
-                        e.stopPropagation()
-                        setDragOverFolderId(folder.id)
-                      }}
-                      onDragLeave={(e) => {
-                        e.stopPropagation()
-                        setDragOverFolderId(null)
-                      }}
+                      onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setDragOverFolderId(folder.id) }}
+                      onDragLeave={(e) => { e.stopPropagation(); setDragOverFolderId(null) }}
                       onDrop={(e) => handleDrop(e, folder.id)}
                     >
                       <Folder size={13} className="shrink-0 text-[#555]" />
@@ -472,15 +484,9 @@ export default function Sidebar({ onNewNote, collapsed = false, onToggle }: Side
                       )}
 
                       {renamingFolderId !== folder.id && (
-                        <div
-                          className="relative"
-                          ref={folderMenuId === folder.id ? folderMenuRef : undefined}
-                        >
+                        <div className="relative" ref={folderMenuId === folder.id ? folderMenuRef : undefined}>
                           <button
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              setFolderMenuId(folderMenuId === folder.id ? null : folder.id)
-                            }}
+                            onClick={(e) => { e.stopPropagation(); setFolderMenuId(folderMenuId === folder.id ? null : folder.id) }}
                             className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-[#3a3a3a] text-[#666] hover:text-[#e8e8e8] transition-all"
                           >
                             <MoreHorizontal size={13} />
@@ -489,24 +495,16 @@ export default function Sidebar({ onNewNote, collapsed = false, onToggle }: Side
                           {folderMenuId === folder.id && (
                             <div className="absolute right-0 top-6 z-50 bg-[#242424] border border-[#333] rounded-lg shadow-xl w-[140px] py-1 overflow-hidden">
                               <button
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  startRenamingFolder(folder)
-                                }}
+                                onClick={(e) => { e.stopPropagation(); startRenamingFolder(folder) }}
                                 className="flex items-center gap-2 w-full px-3 py-2 text-[12px] text-[#ccc] hover:bg-[#2a2a2a] hover:text-[#e8e8e8] transition-colors"
                               >
-                                <Pencil size={12} className="text-[#666]" />
-                                Rename
+                                <Pencil size={12} className="text-[#666]" /> Rename
                               </button>
                               <button
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  deleteFolder(folder.id)
-                                }}
+                                onClick={(e) => { e.stopPropagation(); deleteFolder(folder.id) }}
                                 className="flex items-center gap-2 w-full px-3 py-2 text-[12px] text-red-400 hover:bg-[#2a2a2a] hover:text-red-300 transition-colors"
                               >
-                                <Trash2 size={12} />
-                                Delete
+                                <Trash2 size={12} /> Delete
                               </button>
                             </div>
                           )}
@@ -524,10 +522,7 @@ export default function Sidebar({ onNewNote, collapsed = false, onToggle }: Side
                         e.dataTransfer.effectAllowed = "move"
                         setDraggingDocId(doc.uuid)
                       }}
-                      onDragEnd={() => {
-                        setDraggingDocId(null)
-                        setDragOverFolderId(null)
-                      }}
+                      onDragEnd={() => { setDraggingDocId(null); setDragOverFolderId(null) }}
                       onClick={() => router.push(`/docs/${doc.uuid}`)}
                       className={`flex items-center gap-2 px-2 py-[5px] rounded-md transition-colors text-[12px] font-medium cursor-pointer ${
                         draggingDocId === doc.uuid
@@ -561,10 +556,10 @@ export default function Sidebar({ onNewNote, collapsed = false, onToggle }: Side
           )}
         </nav>
 
+        {/* Bottom: Settings, Trash, Add Workspace, Log out — clean, no user info */}
         <div className={`border-t border-[#2a2a2a] px-2 py-2.5 space-y-[1px] ${collapsed ? "flex flex-col items-center" : ""}`}>
           {navItem("/settings", <Settings size={13} />, "Settings")}
           {!collapsed && navItem("/trash", <Trash2 size={13} />, "Trash")}
-
           {!collapsed && (
             <button
               onClick={() => openModal("workspace")}
@@ -574,8 +569,7 @@ export default function Sidebar({ onNewNote, collapsed = false, onToggle }: Side
               Add Workspace
             </button>
           )}
-
-          {!collapsed && (
+          {!collapsed ? (
             <button
               onClick={handleLogout}
               className="flex items-center gap-2 px-2 py-[5px] rounded-md transition-colors text-[12px] font-medium w-full text-[#888] hover:bg-[#2a2a2a] hover:text-[#e8e8e8]"
@@ -583,24 +577,14 @@ export default function Sidebar({ onNewNote, collapsed = false, onToggle }: Side
               <LogOut size={13} />
               Log out
             </button>
-          )}
-
-          {!collapsed && (
-            <div className="flex items-center gap-2 px-2 py-[5px] mt-1">
-              <div className="w-5 h-5 rounded-full overflow-hidden shrink-0">
-                {userAvatar ? (
-                  <img src={userAvatar} alt="Avatar" className="w-full h-full object-cover" />
-                ) : (
-                  <div className="w-full h-full rounded-full bg-[#7C3AED] flex items-center justify-center">
-                    <span className="text-[10px] font-bold text-white">{initial}</span>
-                  </div>
-                )}
-              </div>
-              <div className="min-w-0">
-                <p className="text-[12px] font-medium text-[#e8e8e8] truncate leading-tight">{userName || "..."}</p>
-                <p className="text-[11px] text-[#555] truncate leading-tight">{userEmail}</p>
-              </div>
-            </div>
+          ) : (
+            <button
+              onClick={handleLogout}
+              title="Log out"
+              className="flex items-center justify-center p-1.5 rounded-md transition-colors text-[#555] hover:bg-[#2a2a2a] hover:text-[#e8e8e8]"
+            >
+              <LogOut size={13} />
+            </button>
           )}
         </div>
       </aside>
