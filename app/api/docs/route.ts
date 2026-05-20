@@ -29,7 +29,6 @@ export async function GET(request: Request) {
           FROM docs
           LEFT JOIN users ON docs.user_id = users.id
           WHERE docs.user_id = ${payload.userId}
-            AND docs.folder_id IS NULL
             AND docs.deleted_at IS NULL
           ORDER BY docs.created_at DESC
         `
