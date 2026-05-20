@@ -17,14 +17,14 @@
 }
 
 html.light {
-  --bg: #ffffff;
-  --bg-secondary: #f5f5f5;
-  --bg-tertiary: #eeeeee;
+  --bg: #fafaf9;
+  --bg-secondary: #f0efed;
+  --bg-tertiary: #e8e7e4;
   --border: rgba(0,0,0,0.08);
   --text-primary: #1a1a1a;
   --text-secondary: #4b5563;
   --text-muted: #9ca3af;
-  --code-bg: #f0f0f0;
+  --code-bg: #eeede9;
   --pre-bg: #1a1a1a;
   --blockquote-border: #d1d5db;
 }
