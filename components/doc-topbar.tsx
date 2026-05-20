@@ -59,7 +59,16 @@ function downloadFile(filename: string, content: string, mimeType: string) {
   URL.revokeObjectURL(url)
 }
 
-export default function DocTopbar({ docTitle, folder, saveStatus, content = '', onDelete, docId, isPublic = false }: DocTopbarProps) {
+export default function DocTopbar({
+  docTitle,
+  folder,
+  saveStatus,
+  content = '',
+  onDelete,
+  docId,
+  isPublic = false,
+  sidebarWidth = '0px',
+}: DocTopbarProps) {
   const [menuOpen, setMenuOpen] = useState(false)
   const [shareOpen, setShareOpen] = useState(false)
   const [showDeleteModal, setShowDeleteModal] = useState(false)

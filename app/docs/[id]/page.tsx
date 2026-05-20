@@ -190,7 +190,7 @@ export default function DocPage() {
       body: JSON.stringify({ title: 'Untitled', content: '', color: 'yellow', type: 'doc' }),
     })
     const newDoc = await res.json()
-    router.push(`/docs/${newDoc.id}`)
+    router.push(`/docs/${newDoc.uuid}`)
   }
 
   const handleDelete = async () => {

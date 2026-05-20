@@ -6,6 +6,7 @@ import Sidebar from "@/components/sidebar"
 
 interface Doc {
   id: string
+  uuid: string
   title: string
   content: string
   type: string
@@ -55,7 +56,7 @@ export default function LibraryPage() {
         body: JSON.stringify({ title: "Untitled", content: "", color: "yellow", type: "doc" }),
       })
       const doc = await res.json()
-      router.push(`/docs/${doc.id}`)
+      router.push(`/docs/${doc.uuid}`)
     } catch {
       setCreating(false)
     }
@@ -106,7 +107,7 @@ export default function LibraryPage() {
                 {docs.map((doc) => (
                   <button
                     key={doc.id}
-                    onClick={() => router.push(`/docs/${doc.id}`)}
+                    onClick={() => router.push(`/docs/${doc.uuid}`)}
                     className="w-full grid grid-cols-[1fr_120px_120px] gap-4 px-3 py-3 hover:bg-white/5 transition-colors text-left items-center"
                   >
                     <div className="flex items-center gap-2.5 min-w-0">
