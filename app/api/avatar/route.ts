@@ -8,6 +8,11 @@ export const runtime = 'nodejs'
 
 const MAX_AVATAR_SIZE = 2 * 1024 * 1024
 
+function getErrorMessage(error: unknown) {
+  if (error instanceof Error && error.message) return `${error.name}: ${error.message}`
+  return 'Unknown Blob upload error'
+}
+
 function getAvatarPath(userId: string, filename: string, contentType: string) {
   const extension = filename.split('.').pop()?.toLowerCase().replace(/[^a-z0-9]/g, '')
   const safeExtension = extension || contentType.split('/')[1] || 'jpg'
@@ -52,7 +57,10 @@ export async function POST(request: Request) {
     })
   } catch (error) {
     console.error('Avatar blob upload failed:', error)
-    return NextResponse.json({ error: 'Avatar storage upload failed.' }, { status: 500 })
+    return NextResponse.json(
+      { error: `Avatar storage upload failed: ${getErrorMessage(error)}` },
+      { status: 500 }
+    )
   }
 
   try {
