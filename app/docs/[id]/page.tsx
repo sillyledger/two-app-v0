@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation'
 import Sidebar from '@/components/sidebar'
 import Editor from '@/components/editor'
 import DocTopbar from '@/components/doc-topbar'
-import { CalendarDays, SignalLow, SignalMedium, SignalHigh, Minus, AlignCenter, AlignJustify } from 'lucide-react'
+import { CalendarDays, SignalLow, SignalMedium, SignalHigh, Minus, PanelRight, X, FileText, User, Clock } from 'lucide-react'
 import type { Doc } from '@/lib/db'
 
 interface Folder {
@@ -63,11 +63,13 @@ export default function DocPage() {
   const router = useRouter()
   const [collapsed, setCollapsed] = useState(false)
 
-useEffect(() => {
-  const saved = localStorage.getItem("sidebar-collapsed")
-  if (saved === "true") setCollapsed(true)
-}, [])
+  useEffect(() => {
+    const saved = localStorage.getItem("sidebar-collapsed")
+    if (saved === "true") setCollapsed(true)
+  }, [])
+
   const [wideMode, setWideMode] = useState(false)
+  const [detailOpen, setDetailOpen] = useState(false)
   const [doc, setDoc] = useState<Doc | null>(null)
   const [title, setTitle] = useState('')
   const [content, setContent] = useState('')
@@ -83,7 +85,15 @@ useEffect(() => {
   const titleRef = useRef<HTMLTextAreaElement>(null)
   const editorFocusRef = useRef<(() => void) | null>(null)
 
-  // Load wide mode preference from localStorage
+  // Escape key closes detail panel
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && detailOpen) setDetailOpen(false)
+    }
+    document.addEventListener('keydown', handler)
+    return () => document.removeEventListener('keydown', handler)
+  }, [detailOpen])
+
   useEffect(() => {
     const saved = localStorage.getItem('doc-wide-mode')
     if (saved === 'true') setWideMode(true)
@@ -225,7 +235,7 @@ useEffect(() => {
   if (!authChecked || !doc) return null
 
   return (
-    <div className="flex min-h-screen bg-background">
+    <div className="flex min-h-screen bg-background overflow-hidden">
       {isLoggedIn && (
         <Sidebar
           onNewNote={handleNewDoc}
@@ -234,7 +244,11 @@ useEffect(() => {
         />
       )}
 
-      <div className="flex-1 flex flex-col min-h-screen">
+      {/* Main content — shrinks when detail panel is open */}
+      <div
+        className="flex-1 flex flex-col min-h-screen transition-all duration-300 ease-in-out min-w-0"
+        style={{ marginRight: detailOpen ? '280px' : '0' }}
+      >
         <DocTopbar
           docTitle={title}
           folder={folder}
@@ -246,6 +260,19 @@ useEffect(() => {
           wideMode={wideMode}
           onToggleWide={toggleWideMode}
         />
+
+        {/* Detail panel toggle button — top right corner */}
+        <button
+          onClick={() => setDetailOpen((v) => !v)}
+          title={detailOpen ? 'Close details' : 'Open details'}
+          className={`fixed top-[10px] right-4 z-40 flex items-center justify-center w-7 h-7 rounded-md transition-colors ${
+            detailOpen
+              ? 'bg-white/10 text-white'
+              : 'text-white/30 hover:text-white/60 hover:bg-white/5'
+          }`}
+        >
+          <PanelRight size={15} />
+        </button>
 
         <main className="flex-1 overflow-y-auto pt-[44px]">
           <div
@@ -330,14 +357,14 @@ useEffect(() => {
 
             {doc !== null && (
               <Editor
-  content={content}
-  editable={isLoggedIn}
-  onChange={(newContent) => {
-    if (!isLoggedIn) return
-    setContent(newContent)
-  }}
-  onReady={(focusFn) => { editorFocusRef.current = focusFn }}
-/>
+                content={content}
+                editable={isLoggedIn}
+                onChange={(newContent) => {
+                  if (!isLoggedIn) return
+                  setContent(newContent)
+                }}
+                onReady={(focusFn) => { editorFocusRef.current = focusFn }}
+              />
             )}
 
             {wordCount > 0 && (
@@ -350,6 +377,130 @@ useEffect(() => {
           </div>
         </main>
       </div>
+
+      {/* ── Detail panel ── */}
+      <div
+        className={`fixed top-0 right-0 h-full w-[280px] border-l border-white/6 bg-[#141414] flex flex-col z-30 transition-transform duration-300 ease-in-out ${
+          detailOpen ? 'translate-x-0' : 'translate-x-full'
+        }`}
+      >
+        {/* Panel header */}
+        <div className="flex items-center justify-between px-4 h-[44px] border-b border-white/6 shrink-0">
+          <span className="text-xs font-medium text-white/40 uppercase tracking-wider">Details</span>
+          <button
+            onClick={() => setDetailOpen(false)}
+            className="flex items-center justify-center w-6 h-6 rounded-md text-white/20 hover:text-white/50 hover:bg-white/5 transition-colors"
+          >
+            <X size={13} />
+          </button>
+        </div>
+
+        {/* Panel body */}
+        <div className="flex-1 overflow-y-auto px-4 py-5 flex flex-col gap-1">
+
+          {/* Section: Document */}
+          <p className="text-[10px] font-medium text-white/20 uppercase tracking-wider mb-2">Document</p>
+
+          <DetailRow label="Created" icon={<CalendarDays size={12} />}>
+            <span className="text-white/50">{formatDate(doc.created_at)}</span>
+          </DetailRow>
+
+          <DetailRow label="Author" icon={<User size={12} />}>
+            {currentUser ? (
+              <div className="flex items-center gap-1.5">
+                <div className="w-4 h-4 rounded-full bg-[#3a3a3a] border border-white/10 flex items-center justify-center text-[8px] font-medium text-[#ccc]">
+                  {getInitials(currentUser.name, currentUser.email)}
+                </div>
+                <span className="text-white/50 truncate">{currentUser.name || currentUser.email}</span>
+              </div>
+            ) : (
+              <span className="text-white/25">Unknown</span>
+            )}
+          </DetailRow>
+
+          <DetailRow label="Words" icon={<FileText size={12} />}>
+            <span className="text-white/50">{wordCount.toLocaleString()}</span>
+          </DetailRow>
+
+          <DetailRow label="Characters" icon={<Clock size={12} />}>
+            <span className="text-white/50">{charCount.toLocaleString()}</span>
+          </DetailRow>
+
+          {/* Divider */}
+          <div className="my-3 border-t border-white/5" />
+
+          {/* Section: Properties */}
+          <p className="text-[10px] font-medium text-white/20 uppercase tracking-wider mb-2">Properties</p>
+
+          {/* Priority — interactive */}
+          <div className="flex items-center justify-between py-1.5 group">
+            <span className="text-xs text-white/30 flex items-center gap-2">
+              <span className="text-white/20">
+                {activePriority.icon}
+              </span>
+              Priority
+            </span>
+            {isLoggedIn ? (
+              <div className="relative" ref={undefined}>
+                <button
+                  onClick={() => setPriorityOpen((v) => !v)}
+                  className="flex items-center gap-1.5 px-2 py-1 rounded-md text-xs text-white/40 hover:bg-white/5 hover:text-white/60 transition-colors"
+                >
+                  <span className={activePriority.color}>{activePriority.icon}</span>
+                  <span>{activePriority.label}</span>
+                </button>
+                {priorityOpen && (
+                  <div className="absolute bottom-full right-0 mb-1 z-50 w-44 rounded-lg border border-white/10 bg-[#1e1e1e] shadow-xl py-1">
+                    {PRIORITIES.map((p) => (
+                      <button
+                        key={String(p.value)}
+                        onClick={() => handlePriorityChange(p.value)}
+                        className={`w-full flex items-center gap-2.5 px-3 py-1.5 text-xs hover:bg-white/5 transition-colors ${
+                          priority === p.value ? 'text-white' : 'text-[#888]'
+                        }`}
+                      >
+                        <span className={p.color}>{p.icon}</span>
+                        <span>{p.label}</span>
+                        {priority === p.value && <span className="ml-auto text-[#555]">✓</span>}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <span className={`text-xs px-2 py-1 ${activePriority.color}`}>{activePriority.label}</span>
+            )}
+          </div>
+
+          <div className="flex items-center justify-between py-1.5">
+            <span className="text-xs text-white/30">Visibility</span>
+            <span className="text-xs text-white/40 px-2 py-1">
+              {isPublic ? 'Public' : 'Private'}
+            </span>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function DetailRow({
+  label,
+  icon,
+  children,
+}: {
+  label: string
+  icon: React.ReactNode
+  children: React.ReactNode
+}) {
+  return (
+    <div className="flex items-center justify-between py-1.5">
+      <span className="text-xs text-white/30 flex items-center gap-2">
+        <span className="text-white/20">{icon}</span>
+        {label}
+      </span>
+      <div className="text-xs">{children}</div>
     </div>
   )
 }
