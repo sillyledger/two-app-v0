@@ -45,7 +45,6 @@ export default function Editor({ content, onChange, onReady, editable = true }: 
   const [linkUrl, setLinkUrl] = useState("")
   const linkInputRef = useRef<HTMLInputElement>(null)
 
-  // Link popup state
   const [linkPopup, setLinkPopup] = useState<{ url: string; top: number; left: number } | null>(null)
   const linkPopupRef = useRef<HTMLDivElement>(null)
 
@@ -63,7 +62,10 @@ export default function Editor({ content, onChange, onReady, editable = true }: 
         lowlight,
         defaultLanguage: "plaintext",
       }),
-      Link.configure({ openOnClick: false }),
+      Link.configure({
+        openOnClick: false,
+        inclusive: false,
+      }),
       Typography,
       Placeholder.configure({
         placeholder: "Start writing, or press / for commands…",
@@ -85,14 +87,42 @@ export default function Editor({ content, onChange, onReady, editable = true }: 
       const { from, to } = editor.state.selection
       const hasSelection = from !== to
 
-      // Check if cursor is inside a link (no selection needed)
-      const isLink = editor.isActive("link")
-      if (isLink && !hasSelection) {
-        const url = editor.getAttributes("link").href || ""
+      if (hasSelection) {
+        setLinkPopup(null)
         const domSelection = window.getSelection()
-        if (domSelection && domSelection.rangeCount > 0) {
-          const range = domSelection.getRangeAt(0)
-          const rect = range.getBoundingClientRect()
+        if (!domSelection || domSelection.rangeCount === 0) {
+          setBubbleVisible(false)
+          return
+        }
+        const range = domSelection.getRangeAt(0)
+        const rect = range.getBoundingClientRect()
+        const containerRect = containerRef.current?.getBoundingClientRect()
+        if (!containerRect) return
+        setBubblePos({
+          top: rect.top - containerRect.top - 48,
+          left: Math.max(0, rect.left - containerRect.left + rect.width / 2 - 160),
+        })
+        setBubbleVisible(true)
+        return
+      }
+
+      setBubbleVisible(false)
+
+      // Show link popup when cursor is inside a link
+      if (editor.isActive("link")) {
+        const url = editor.getAttributes("link").href || ""
+        // Find the link DOM element
+        const { view } = editor
+        const { state } = view
+        const pos = state.selection.from
+        const domNode = view.domAtPos(pos)
+        let el = domNode.node as HTMLElement
+        // Walk up to find the <a> tag
+        while (el && el.tagName !== "A" && el !== view.dom) {
+          el = el.parentElement as HTMLElement
+        }
+        if (el && el.tagName === "A") {
+          const rect = el.getBoundingClientRect()
           const containerRect = containerRef.current?.getBoundingClientRect()
           if (containerRect) {
             setLinkPopup({
@@ -100,35 +130,12 @@ export default function Editor({ content, onChange, onReady, editable = true }: 
               top: rect.bottom - containerRect.top + 6,
               left: Math.max(0, rect.left - containerRect.left),
             })
+            return
           }
         }
-        setBubbleVisible(false)
-        return
       }
 
       setLinkPopup(null)
-
-      if (!hasSelection) {
-        setBubbleVisible(false)
-        return
-      }
-
-      const domSelection = window.getSelection()
-      if (!domSelection || domSelection.rangeCount === 0) {
-        setBubbleVisible(false)
-        return
-      }
-
-      const range = domSelection.getRangeAt(0)
-      const rect = range.getBoundingClientRect()
-      const containerRect = containerRef.current?.getBoundingClientRect()
-      if (!containerRect) return
-
-      setBubblePos({
-        top: rect.top - containerRect.top - 48,
-        left: Math.max(0, rect.left - containerRect.left + rect.width / 2 - 160),
-      })
-      setBubbleVisible(true)
     },
     editorProps: {
       attributes: {
@@ -166,7 +173,6 @@ export default function Editor({ content, onChange, onReady, editable = true }: 
     }
   }, [linkModalOpen])
 
-  // Close link popup when clicking outside
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {
       if (linkPopupRef.current && !linkPopupRef.current.contains(e.target as Node)) {
@@ -328,7 +334,6 @@ export default function Editor({ content, onChange, onReady, editable = true }: 
               setLinkPopup(null)
             }}
             className="flex items-center gap-1 rounded px-1.5 py-0.5 text-xs text-white/60 hover:bg-white/10 hover:text-white transition-colors"
-            title="Open link"
           >
             <ExternalLink size={11} />
             Open
@@ -341,7 +346,6 @@ export default function Editor({ content, onChange, onReady, editable = true }: 
                 openLinkModal()
               }}
               className="flex items-center gap-1 rounded px-1.5 py-0.5 text-xs text-white/60 hover:bg-white/10 hover:text-white transition-colors"
-              title="Edit link"
             >
               <Pencil size={11} />
               Edit
