@@ -362,14 +362,27 @@ export default function Editor({ content, onChange, onReady, editable = true }: 
           margin-bottom: 0.4em;
         }
 
-        /* ── Table wrapper — horizontal scroll when fit-width is off ── */
+        /* ── Table wrapper — horizontal scroll by default ── */
         .tableWrapper {
           overflow-x: auto;
           margin: 1.25em 0;
           -webkit-overflow-scrolling: touch;
         }
+        /* Fit-width: bust out of the narrow editor column */
         .tableWrapper.fit-width {
           overflow-x: visible;
+          width: 100vw;
+          position: relative;
+          left: 50%;
+          right: 50%;
+          margin-left: -50vw;
+          margin-right: -50vw;
+          padding: 0 2rem;
+          box-sizing: border-box;
+        }
+        .tableWrapper.fit-width table {
+          width: 100%;
+          min-width: 0;
         }
 
         /* ── Table styles ── */
@@ -383,11 +396,7 @@ export default function Editor({ content, onChange, onReady, editable = true }: 
           display: table;
           min-width: 400px;
         }
-        .tableWrapper.fit-width .editor-content table,
-        .fit-width table {
-          min-width: 100%;
-          width: 100%;
-        }
+
         .editor-content td,
         .editor-content th {
           border: 1px solid var(--border);
