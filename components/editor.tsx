@@ -63,10 +63,17 @@ export default function Editor({ content, onChange, onReady, editable = true }: 
         lowlight,
         defaultLanguage: "plaintext",
       }),
-      Link.configure({
-        openOnClick: false,
-        inclusive: false,
-      }),
+     Link.configure({
+  openOnClick: false,
+  inclusive: false,
+  autolink: true,
+  linkOnPaste: true,
+  protocols: ["http", "https"],
+  HTMLAttributes: {
+    rel: "noopener noreferrer",
+    target: null,
+  },
+}),
       Typography,
       Placeholder.configure({
         placeholder: "Start writing, or press / for commands…",
