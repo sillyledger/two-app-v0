@@ -21,6 +21,8 @@ import {
   Heading1,
   Heading2,
   Heading3,
+  ExternalLink,
+  Pencil,
 } from "lucide-react"
 import { useCallback, useState, useRef, useEffect } from "react"
 
@@ -43,6 +45,10 @@ export default function Editor({ content, onChange, onReady, editable = true }: 
   const [linkUrl, setLinkUrl] = useState("")
   const linkInputRef = useRef<HTMLInputElement>(null)
 
+  // Link popup state
+  const [linkPopup, setLinkPopup] = useState<{ url: string; top: number; left: number } | null>(null)
+  const linkPopupRef = useRef<HTMLDivElement>(null)
+
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
@@ -57,7 +63,7 @@ export default function Editor({ content, onChange, onReady, editable = true }: 
         lowlight,
         defaultLanguage: "plaintext",
       }),
-      Link.configure({ openOnClick: !editable }),
+      Link.configure({ openOnClick: false }),
       Typography,
       Placeholder.configure({
         placeholder: "Start writing, or press / for commands…",
@@ -72,10 +78,35 @@ export default function Editor({ content, onChange, onReady, editable = true }: 
     onSelectionUpdate: ({ editor }) => {
       if (!editable) {
         setBubbleVisible(false)
+        setLinkPopup(null)
         return
       }
+
       const { from, to } = editor.state.selection
       const hasSelection = from !== to
+
+      // Check if cursor is inside a link (no selection needed)
+      const isLink = editor.isActive("link")
+      if (isLink && !hasSelection) {
+        const url = editor.getAttributes("link").href || ""
+        const domSelection = window.getSelection()
+        if (domSelection && domSelection.rangeCount > 0) {
+          const range = domSelection.getRangeAt(0)
+          const rect = range.getBoundingClientRect()
+          const containerRect = containerRef.current?.getBoundingClientRect()
+          if (containerRect) {
+            setLinkPopup({
+              url,
+              top: rect.bottom - containerRect.top + 6,
+              left: Math.max(0, rect.left - containerRect.left),
+            })
+          }
+        }
+        setBubbleVisible(false)
+        return
+      }
+
+      setLinkPopup(null)
 
       if (!hasSelection) {
         setBubbleVisible(false)
@@ -107,7 +138,7 @@ export default function Editor({ content, onChange, onReady, editable = true }: 
       },
       handleKeyDown: (view, event) => {
         if (!editable) return false
-        if ((event.metaKey || event.ctrlKey) && event.key === 'k') {
+        if ((event.metaKey || event.ctrlKey) && event.key === "k") {
           event.preventDefault()
           openLinkModal()
           return true
@@ -119,7 +150,7 @@ export default function Editor({ content, onChange, onReady, editable = true }: 
 
   useEffect(() => {
     if (editor && onReady) {
-      onReady(() => editor.commands.focus('end'))
+      onReady(() => editor.commands.focus("end"))
     }
   }, [editor])
 
@@ -134,6 +165,17 @@ export default function Editor({ content, onChange, onReady, editable = true }: 
       setTimeout(() => linkInputRef.current?.focus(), 50)
     }
   }, [linkModalOpen])
+
+  // Close link popup when clicking outside
+  useEffect(() => {
+    const handleClick = (e: MouseEvent) => {
+      if (linkPopupRef.current && !linkPopupRef.current.contains(e.target as Node)) {
+        setLinkPopup(null)
+      }
+    }
+    document.addEventListener("mousedown", handleClick)
+    return () => document.removeEventListener("mousedown", handleClick)
+  }, [])
 
   const openLinkModal = useCallback(() => {
     if (!editor || !editable) return
@@ -266,6 +308,47 @@ export default function Editor({ content, onChange, onReady, editable = true }: 
         .hljs-emphasis { font-style: italic; }
         .hljs-strong { font-weight: bold; }
       `}</style>
+
+      {/* Link hover popup */}
+      {linkPopup && (
+        <div
+          ref={linkPopupRef}
+          className="absolute z-50 flex items-center gap-1 rounded-lg border border-white/10 bg-[#2a2a2a] px-2 py-1.5 shadow-xl"
+          style={{ top: linkPopup.top, left: linkPopup.left }}
+          onMouseDown={(e) => e.preventDefault()}
+        >
+          <span className="max-w-[200px] truncate text-xs text-white/60">
+            {linkPopup.url}
+          </span>
+          <div className="mx-1 h-3 w-px bg-white/10" />
+          <button
+            onMouseDown={(e) => {
+              e.preventDefault()
+              window.open(linkPopup.url, "_blank", "noopener,noreferrer")
+              setLinkPopup(null)
+            }}
+            className="flex items-center gap-1 rounded px-1.5 py-0.5 text-xs text-white/60 hover:bg-white/10 hover:text-white transition-colors"
+            title="Open link"
+          >
+            <ExternalLink size={11} />
+            Open
+          </button>
+          {editable && (
+            <button
+              onMouseDown={(e) => {
+                e.preventDefault()
+                setLinkPopup(null)
+                openLinkModal()
+              }}
+              className="flex items-center gap-1 rounded px-1.5 py-0.5 text-xs text-white/60 hover:bg-white/10 hover:text-white transition-colors"
+              title="Edit link"
+            >
+              <Pencil size={11} />
+              Edit
+            </button>
+          )}
+        </div>
+      )}
 
       {/* Link modal — only shown when editable */}
       {linkModalOpen && editable && (
