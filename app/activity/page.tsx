@@ -1,10 +1,7 @@
 import { sql } from '@/lib/db'
 import Link from 'next/link'
-import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
-import { jwtVerify } from 'jose'
-
-const SECRET = new TextEncoder().encode(process.env.JWT_SECRET || 'your-secret-key')
+import { getSession } from '@/lib/auth'
 
 function timeAgo(dateStr: string): string {
   const date = new Date(dateStr)
@@ -34,15 +31,8 @@ function groupByDay(docs: any[]) {
 }
 
 export default async function ActivityPage() {
-  const cookieStore = await cookies()
-  const token = cookieStore.get('auth-token')?.value
-  if (!token) redirect('/login')
-
-  try {
-    await jwtVerify(token, SECRET)
-  } catch {
-    redirect('/login')
-  }
+  const session = await getSession()
+  if (!session) redirect('/login')
 
   const thirtyDaysAgo = new Date()
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
