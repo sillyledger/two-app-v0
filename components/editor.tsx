@@ -178,13 +178,16 @@ export default function Editor({ content, onChange, onReady, editable = true }: 
           margin-bottom: 0.4em;
         }
 
-  /* ── Placeholder ── */
+ /* ── Placeholder ── */
 .editor-content p.is-editor-empty:first-child::before {
   content: attr(data-placeholder);
   float: left;
   color: rgba(0, 0, 0, 0.25);
   pointer-events: none;
   height: 0;
+}
+.dark .editor-content p.is-editor-empty:first-child::before {
+  color: rgba(255, 255, 255, 0.2);
 }
 @media (prefers-color-scheme: dark) {
   .editor-content p.is-editor-empty:first-child::before {
