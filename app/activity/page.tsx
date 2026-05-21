@@ -35,7 +35,7 @@ function groupByDay(docs: any[]) {
 
 export default async function ActivityPage() {
   const cookieStore = await cookies()
-  const token = cookieStore.get('token')?.value
+  const token = cookieStore.get('auth-token')?.value
   if (!token) redirect('/login')
 
   try {
