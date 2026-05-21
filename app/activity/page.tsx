@@ -7,7 +7,6 @@ function timeAgo(dateStr: string): string {
   const date = new Date(dateStr)
   const now = new Date()
   const seconds = Math.floor((now.getTime() - date.getTime()) / 1000)
-
   if (seconds < 60) return 'just now'
   const minutes = Math.floor(seconds / 60)
   if (minutes < 60) return `${minutes}m ago`
@@ -41,6 +40,8 @@ export default async function ActivityPage() {
     SELECT id, uuid, title, content, updated_at, created_at
     FROM docs
     WHERE updated_at >= ${thirtyDaysAgo.toISOString()}
+      AND user_id = ${session.userId}
+      AND deleted_at IS NULL
     ORDER BY updated_at DESC
   `
 
