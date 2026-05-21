@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation'
 import Sidebar from '@/components/sidebar'
 import Editor from '@/components/editor'
 import DocTopbar from '@/components/doc-topbar'
-import { CalendarDays, SignalLow, SignalMedium, SignalHigh, Minus, PanelRight, X, FileText, User, Clock, Tag, Plus, Check } from 'lucide-react'
+import { CalendarDays, SignalLow, SignalMedium, SignalHigh, Minus, PanelRight, X, FileText, User, Clock, Plus, Check } from 'lucide-react'
 import type { Doc } from '@/lib/db'
 
 interface Folder {
@@ -96,7 +96,6 @@ export default function DocPage() {
   const titleRef = useRef<HTMLTextAreaElement>(null)
   const editorFocusRef = useRef<(() => void) | null>(null)
 
-  // Labels state
   const [docLabels, setDocLabels] = useState<Label[]>([])
   const [allLabels, setAllLabels] = useState<Label[]>([])
   const [labelPickerOpen, setLabelPickerOpen] = useState(false)
@@ -105,7 +104,6 @@ export default function DocPage() {
   const [creatingLabel, setCreatingLabel] = useState(false)
   const labelPickerRef = useRef<HTMLDivElement>(null)
 
-  // Close label picker on outside click
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
       if (labelPickerRef.current && !labelPickerRef.current.contains(e.target as Node)) {
@@ -118,7 +116,6 @@ export default function DocPage() {
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
-  // Escape key closes detail panel
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && detailOpen) setDetailOpen(false)
@@ -169,9 +166,7 @@ export default function DocPage() {
     })
   }, [])
 
-  // Fetch doc labels and all labels once logged in
   useEffect(() => {
-    useEffect(() => {
     if (!isLoggedIn) return
     fetch('/api/labels')
       .then(r => r.json())
@@ -183,7 +178,6 @@ export default function DocPage() {
 
   useEffect(() => {
     if (!authChecked) return
-
     if (isLoggedIn) {
       fetch(`/api/docs/${id}`)
         .then((res) => res.json())
@@ -197,7 +191,6 @@ export default function DocPage() {
           setContent(data.content || '')
           setIsPublic(data.is_public ?? false)
           setPriority((data.priority as Priority) ?? null)
-
           if (data.folder_id) {
             fetch(`/api/folders/${data.folder_id}`)
               .then((r) => r.json())
@@ -285,7 +278,6 @@ export default function DocPage() {
     })
     const created = await res.json()
     setAllLabels(prev => [...prev, created])
-    // Auto-assign to this doc
     await fetch(`/api/docs/${id}/labels`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -437,7 +429,6 @@ export default function DocPage() {
                 </div>
               )}
 
-              {/* Label pills below title */}
               {docLabels.length > 0 && (
                 <>
                   <span className="text-[#444] select-none">·</span>
@@ -526,7 +517,6 @@ export default function DocPage() {
 
           <p className="text-[10px] font-medium text-white/20 uppercase tracking-wider mb-2">Properties</p>
 
-          {/* Priority */}
           <div className="flex items-center justify-between py-1.5 group">
             <span className="text-xs text-white/30 flex items-center gap-2">
               <span className="text-white/20">{activePriority.icon}</span>
@@ -571,13 +561,11 @@ export default function DocPage() {
             </span>
           </div>
 
-          {/* Labels */}
           {isLoggedIn && (
             <>
               <div className="my-3 border-t border-white/5" />
               <p className="text-[10px] font-medium text-white/20 uppercase tracking-wider mb-2">Labels</p>
 
-              {/* Current doc labels */}
               <div className="flex flex-wrap gap-1.5 mb-2">
                 {docLabels.map(label => (
                   <button
@@ -592,7 +580,6 @@ export default function DocPage() {
                 ))}
               </div>
 
-              {/* Label picker */}
               <div className="relative" ref={labelPickerRef}>
                 <button
                   onClick={() => { setLabelPickerOpen(v => !v); setCreatingLabel(false) }}
