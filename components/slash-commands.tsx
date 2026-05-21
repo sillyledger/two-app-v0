@@ -16,6 +16,7 @@ import {
   Code,
   Code2,
   Minus,
+  Table,
 } from "lucide-react"
 import {
   forwardRef,
@@ -92,6 +93,13 @@ const COMMANDS = [
     description: "Multi-line code block",
     icon: Code2,
     command: (editor: any) => editor.chain().focus().toggleCodeBlock().run(),
+  },
+  {
+    title: "Table",
+    description: "Insert a table",
+    icon: Table,
+    command: (editor: any) =>
+      editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run(),
   },
   {
     title: "Divider",
