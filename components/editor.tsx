@@ -377,7 +377,7 @@ export default function Editor({ content, onChange, onReady, editable = true }: 
           right: 50%;
           margin-left: -50vw;
           margin-right: -50vw;
-          padding: 0 2rem;
+          padding: 0 4rem;
           box-sizing: border-box;
         }
         .tableWrapper.fit-width table {
