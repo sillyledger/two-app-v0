@@ -50,6 +50,13 @@ export default function Editor({ content, onChange, onReady, editable = true }: 
   const hidePopupTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [editorReady, setEditorReady] = useState(false)
 
+  // Read font size from localStorage and apply the CSS variable on mount
+  useEffect(() => {
+    const saved = localStorage.getItem("font-size-px")
+    const size = saved ? Number(saved) : 17
+    document.documentElement.style.setProperty("--editor-font-size", `${size}px`)
+  }, [])
+
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
@@ -135,7 +142,7 @@ export default function Editor({ content, onChange, onReady, editable = true }: 
     onCreate: () => setEditorReady(true),
   })
 
- // ── Hover-based link popup — runs after editor is ready ──────────────────
+  // ── Hover-based link popup — runs after editor is ready ──────────────────
   useEffect(() => {
     if (!editorReady) return
     const container = containerRef.current
@@ -166,10 +173,8 @@ export default function Editor({ content, onChange, onReady, editable = true }: 
       })
     }
 
-    // Attach to all existing links
     container.querySelectorAll("a").forEach((a) => attachToLink(a as HTMLAnchorElement))
 
-    // Watch for new links added as user types
     const observer = new MutationObserver(() => {
       container.querySelectorAll("a").forEach((a) => attachToLink(a as HTMLAnchorElement))
     })
@@ -236,7 +241,7 @@ export default function Editor({ content, onChange, onReady, editable = true }: 
     <div ref={containerRef} className="relative">
       <style>{`
         .editor-content {
-          font-size: 17px;
+          font-size: var(--editor-font-size, 17px);
           line-height: 1.5;
           text-underline-offset: 3px;
         }
@@ -363,7 +368,7 @@ export default function Editor({ content, onChange, onReady, editable = true }: 
             <ExternalLink size={11} />
             Open
           </button>
-        {editable && (
+          {editable && (
             <button
               onMouseDown={(e) => {
                 e.preventDefault()
