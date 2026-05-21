@@ -4,6 +4,8 @@ import { useEditor, EditorContent } from "@tiptap/react"
 import StarterKit from "@tiptap/starter-kit"
 import Link from "@tiptap/extension-link"
 import Typography from "@tiptap/extension-typography"
+import CodeBlockLowlight from "@tiptap/extension-code-block-lowlight"
+import { common, createLowlight } from "lowlight"
 import {
   Bold,
   Italic,
@@ -19,6 +21,8 @@ import {
   Heading3,
 } from "lucide-react"
 import { useCallback, useState, useRef, useEffect } from "react"
+
+const lowlight = createLowlight(common)
 
 interface EditorProps {
   content: string
@@ -44,8 +48,12 @@ export default function Editor({ content, onChange, onReady, editable = true }: 
         bulletList: {},
         orderedList: {},
         blockquote: {},
-        codeBlock: {},
+        codeBlock: false,
         horizontalRule: {},
+      }),
+      CodeBlockLowlight.configure({
+        lowlight,
+        defaultLanguage: "plaintext",
       }),
       Link.configure({ openOnClick: !editable }),
       Typography,
@@ -165,6 +173,38 @@ export default function Editor({ content, onChange, onReady, editable = true }: 
           margin-top: 1.5em;
           margin-bottom: 0.4em;
         }
+
+        /* ── Syntax highlighting ── */
+        .editor-content pre {
+          background: #1e1e1e;
+          border-radius: 8px;
+          padding: 1em 1.25em;
+          overflow-x: auto;
+          margin: 1em 0;
+        }
+        .editor-content pre code {
+          background: none;
+          padding: 0;
+          font-size: 0.875em;
+          font-family: ui-monospace, 'Cascadia Code', 'Source Code Pro', Menlo, monospace;
+          color: #d4d4d4;
+        }
+        .hljs-comment, .hljs-quote { color: #6a9955; }
+        .hljs-keyword, .hljs-selector-tag, .hljs-built_in { color: #569cd6; }
+        .hljs-string, .hljs-attr { color: #ce9178; }
+        .hljs-number, .hljs-literal { color: #b5cea8; }
+        .hljs-title, .hljs-section { color: #dcdcaa; }
+        .hljs-type, .hljs-class { color: #4ec9b0; }
+        .hljs-variable, .hljs-template-variable { color: #9cdcfe; }
+        .hljs-tag { color: #569cd6; }
+        .hljs-name { color: #4ec9b0; }
+        .hljs-attribute { color: #9cdcfe; }
+        .hljs-symbol, .hljs-bullet { color: #b5cea8; }
+        .hljs-meta { color: #9b9b9b; }
+        .hljs-deletion { color: #f44747; }
+        .hljs-addition { color: #b5cea8; }
+        .hljs-emphasis { font-style: italic; }
+        .hljs-strong { font-weight: bold; }
       `}</style>
 
       {/* Link modal — only shown when editable */}
