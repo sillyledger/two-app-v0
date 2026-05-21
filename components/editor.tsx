@@ -23,6 +23,7 @@ import {
   Heading3,
   ExternalLink,
   Pencil,
+  FileText,
 } from "lucide-react"
 import { useCallback, useState, useRef, useEffect } from "react"
 
@@ -35,6 +36,11 @@ interface EditorProps {
   editable?: boolean
 }
 
+interface Doc {
+  uuid: string
+  title: string
+}
+
 export { Editor }
 export default function Editor({ content, onChange, onReady, editable = true }: EditorProps) {
   const [bubbleVisible, setBubbleVisible] = useState(false)
@@ -43,6 +49,9 @@ export default function Editor({ content, onChange, onReady, editable = true }: 
 
   const [linkModalOpen, setLinkModalOpen] = useState(false)
   const [linkUrl, setLinkUrl] = useState("")
+  const [allDocs, setAllDocs] = useState<Doc[]>([])
+  const [docResults, setDocResults] = useState<Doc[]>([])
+  const [selectedIndex, setSelectedIndex] = useState(0)
   const linkInputRef = useRef<HTMLInputElement>(null)
 
   const [linkPopup, setLinkPopup] = useState<{ url: string; top: number; left: number } | null>(null)
@@ -50,12 +59,33 @@ export default function Editor({ content, onChange, onReady, editable = true }: 
   const hidePopupTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [editorReady, setEditorReady] = useState(false)
 
-  // Read font size from localStorage and apply the CSS variable on mount
   useEffect(() => {
     const saved = localStorage.getItem("font-size-px")
     const size = saved ? Number(saved) : 17
     document.documentElement.style.setProperty("--editor-font-size", `${size}px`)
   }, [])
+
+  // Fetch all docs when the link modal opens
+  useEffect(() => {
+    if (!linkModalOpen) return
+    fetch("/api/docs")
+      .then((r) => r.json())
+      .then((data) => setAllDocs(Array.isArray(data) ? data : []))
+      .catch(() => {})
+  }, [linkModalOpen])
+
+  // Filter docs as user types — only when input doesn't look like a URL
+  useEffect(() => {
+    const isUrl = linkUrl.startsWith("http://") || linkUrl.startsWith("https://") || linkUrl.startsWith("www.")
+    if (isUrl || linkUrl === "") {
+      setDocResults([])
+      setSelectedIndex(0)
+      return
+    }
+    const q = linkUrl.toLowerCase()
+    setDocResults(allDocs.filter((d) => (d.title || "Untitled").toLowerCase().includes(q)).slice(0, 6))
+    setSelectedIndex(0)
+  }, [linkUrl, allDocs])
 
   const editor = useEditor({
     extensions: [
@@ -142,7 +172,7 @@ export default function Editor({ content, onChange, onReady, editable = true }: 
     onCreate: () => setEditorReady(true),
   })
 
-  // ── Hover-based link popup — runs after editor is ready ──────────────────
+  // Hover-based link popup
   useEffect(() => {
     if (!editorReady) return
     const container = containerRef.current
@@ -218,22 +248,50 @@ export default function Editor({ content, onChange, onReady, editable = true }: 
     setLinkModalOpen(true)
   }, [editor, editable])
 
-  const confirmLink = useCallback(() => {
+  const confirmLink = useCallback((url?: string) => {
     if (!editor) return
-    if (linkUrl === "") {
+    const href = url ?? linkUrl
+    if (href === "") {
       editor.chain().focus().extendMarkRange("link").unsetLink().run()
     } else {
-      editor.chain().focus().extendMarkRange("link").setLink({ href: linkUrl }).run()
+      editor.chain().focus().extendMarkRange("link").setLink({ href }).run()
     }
     setLinkModalOpen(false)
     setLinkUrl("")
+    setDocResults([])
   }, [editor, linkUrl])
 
   const cancelLink = useCallback(() => {
     setLinkModalOpen(false)
     setLinkUrl("")
+    setDocResults([])
     editor?.commands.focus()
   }, [editor])
+
+  const pickDoc = useCallback((doc: Doc) => {
+    confirmLink(`/docs/${doc.uuid}`)
+  }, [confirmLink])
+
+  // Keyboard navigation for doc results
+  const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (docResults.length === 0) {
+      if (e.key === "Enter") confirmLink()
+      if (e.key === "Escape") cancelLink()
+      return
+    }
+    if (e.key === "ArrowDown") {
+      e.preventDefault()
+      setSelectedIndex((i) => Math.min(i + 1, docResults.length - 1))
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault()
+      setSelectedIndex((i) => Math.max(i - 1, 0))
+    } else if (e.key === "Enter") {
+      e.preventDefault()
+      pickDoc(docResults[selectedIndex])
+    } else if (e.key === "Escape") {
+      cancelLink()
+    }
+  }
 
   if (!editor) return null
 
@@ -255,8 +313,6 @@ export default function Editor({ content, onChange, onReady, editable = true }: 
           margin-top: 1.5em;
           margin-bottom: 0.4em;
         }
-
-        /* ── Slash command menu ── */
         .slash-menu {
           background: var(--bg-tertiary);
           border: 1px solid var(--border);
@@ -309,8 +365,6 @@ export default function Editor({ content, onChange, onReady, editable = true }: 
           font-size: 11px;
           color: var(--text-muted);
         }
-
-        /* ── Syntax highlighting ── */
         .editor-content pre {
           background: #1e1e1e;
           border-radius: 8px;
@@ -386,7 +440,7 @@ export default function Editor({ content, onChange, onReady, editable = true }: 
         </div>
       )}
 
-      {/* Link modal — only shown when editable */}
+      {/* Link modal */}
       {linkModalOpen && editable && (
         <div
           className="fixed inset-0 z-[100] flex items-center justify-center"
@@ -395,18 +449,44 @@ export default function Editor({ content, onChange, onReady, editable = true }: 
         >
           <div className="w-full max-w-sm rounded-xl border border-white/10 bg-[#1e1e1e] p-5 shadow-2xl">
             <p className="mb-3 text-sm font-medium text-white/70">Insert link</p>
+
             <input
               ref={linkInputRef}
-              type="url"
+              type="text"
               value={linkUrl}
               onChange={(e) => setLinkUrl(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") confirmLink()
-                if (e.key === "Escape") cancelLink()
-              }}
-              placeholder="https://"
+              onKeyDown={handleInputKeyDown}
+              placeholder="Paste a URL or search your docs…"
               className="w-full rounded-lg border border-white/10 bg-[#2a2a2a] px-3 py-2 text-sm text-white placeholder-white/30 outline-none focus:border-white/30"
             />
+
+            {/* Doc search results */}
+            {docResults.length > 0 && (
+              <div className="mt-2 rounded-lg border border-white/10 bg-[#2a2a2a] overflow-hidden">
+                {docResults.map((doc, i) => (
+                  <button
+                    key={doc.uuid}
+                    onMouseDown={(e) => { e.preventDefault(); pickDoc(doc) }}
+                    className="w-full flex items-center gap-2.5 px-3 py-2.5 text-left text-sm transition-colors"
+                    style={{
+                      backgroundColor: i === selectedIndex ? "rgba(255,255,255,0.08)" : "transparent",
+                      color: "rgba(255,255,255,0.8)",
+                    }}
+                    onMouseEnter={() => setSelectedIndex(i)}
+                  >
+                    <FileText size={13} style={{ color: "rgba(255,255,255,0.35)", flexShrink: 0 }} />
+                    <span className="truncate">{doc.title || "Untitled"}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {/* Show hint when typing non-URL and no results */}
+            {linkUrl.length > 0 && docResults.length === 0 &&
+              !linkUrl.startsWith("http") && !linkUrl.startsWith("www.") && (
+              <p className="mt-2 text-xs text-white/30">No docs match "{linkUrl}"</p>
+            )}
+
             <div className="mt-4 flex justify-end gap-2">
               <button
                 onMouseDown={(e) => { e.preventDefault(); cancelLink() }}
@@ -425,7 +505,7 @@ export default function Editor({ content, onChange, onReady, editable = true }: 
         </div>
       )}
 
-      {/* Bubble toolbar — only shown when editable */}
+      {/* Bubble toolbar */}
       {bubbleVisible && editable && (
         <div
           className="absolute z-50 flex items-center gap-0.5 rounded-lg border border-white/10 bg-[#2a2a2a] px-1.5 py-1 shadow-xl"
