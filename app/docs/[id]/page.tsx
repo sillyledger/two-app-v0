@@ -171,9 +171,14 @@ export default function DocPage() {
 
   // Fetch doc labels and all labels once logged in
   useEffect(() => {
+    useEffect(() => {
     if (!isLoggedIn) return
-    fetch('/api/labels').then(r => r.json()).then(setAllLabels)
-    fetch(`/api/docs/${id}/labels`).then(r => r.json()).then(setDocLabels)
+    fetch('/api/labels')
+      .then(r => r.json())
+      .then(data => { if (Array.isArray(data)) setAllLabels(data) })
+    fetch(`/api/docs/${id}/labels`)
+      .then(r => r.json())
+      .then(data => { if (Array.isArray(data)) setDocLabels(data) })
   }, [isLoggedIn, id])
 
   useEffect(() => {
