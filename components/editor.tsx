@@ -47,6 +47,7 @@ export default function Editor({ content, onChange, onReady, editable = true }: 
 
   const [linkPopup, setLinkPopup] = useState<{ url: string; top: number; left: number } | null>(null)
   const linkPopupRef = useRef<HTMLDivElement>(null)
+  const hidePopupTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const editor = useEditor({
     extensions: [
@@ -80,62 +81,32 @@ export default function Editor({ content, onChange, onReady, editable = true }: 
     onSelectionUpdate: ({ editor }) => {
       if (!editable) {
         setBubbleVisible(false)
-        setLinkPopup(null)
         return
       }
-
       const { from, to } = editor.state.selection
       const hasSelection = from !== to
 
-      if (hasSelection) {
-        setLinkPopup(null)
-        const domSelection = window.getSelection()
-        if (!domSelection || domSelection.rangeCount === 0) {
-          setBubbleVisible(false)
-          return
-        }
-        const range = domSelection.getRangeAt(0)
-        const rect = range.getBoundingClientRect()
-        const containerRect = containerRef.current?.getBoundingClientRect()
-        if (!containerRect) return
-        setBubblePos({
-          top: rect.top - containerRect.top - 48,
-          left: Math.max(0, rect.left - containerRect.left + rect.width / 2 - 160),
-        })
-        setBubbleVisible(true)
+      if (!hasSelection) {
+        setBubbleVisible(false)
         return
       }
 
-      setBubbleVisible(false)
-
-      // Show link popup when cursor is inside a link
-      if (editor.isActive("link")) {
-        const url = editor.getAttributes("link").href || ""
-        // Find the link DOM element
-        const { view } = editor
-        const { state } = view
-        const pos = state.selection.from
-        const domNode = view.domAtPos(pos)
-        let el = domNode.node as HTMLElement
-        // Walk up to find the <a> tag
-        while (el && el.tagName !== "A" && el !== view.dom) {
-          el = el.parentElement as HTMLElement
-        }
-        if (el && el.tagName === "A") {
-          const rect = el.getBoundingClientRect()
-          const containerRect = containerRef.current?.getBoundingClientRect()
-          if (containerRect) {
-            setLinkPopup({
-              url,
-              top: rect.bottom - containerRect.top + 6,
-              left: Math.max(0, rect.left - containerRect.left),
-            })
-            return
-          }
-        }
+      const domSelection = window.getSelection()
+      if (!domSelection || domSelection.rangeCount === 0) {
+        setBubbleVisible(false)
+        return
       }
 
-      setLinkPopup(null)
+      const range = domSelection.getRangeAt(0)
+      const rect = range.getBoundingClientRect()
+      const containerRect = containerRef.current?.getBoundingClientRect()
+      if (!containerRect) return
+
+      setBubblePos({
+        top: rect.top - containerRect.top - 48,
+        left: Math.max(0, rect.left - containerRect.left + rect.width / 2 - 160),
+      })
+      setBubbleVisible(true)
     },
     editorProps: {
       attributes: {
@@ -155,6 +126,51 @@ export default function Editor({ content, onChange, onReady, editable = true }: 
     },
   })
 
+  // ── Hover-based link popup ───────────────────────────────────────────────
+  useEffect(() => {
+    const container = containerRef.current
+    if (!container) return
+
+    const handleMouseOver = (e: MouseEvent) => {
+      const target = (e.target as HTMLElement).closest("a")
+      if (!target) return
+
+      if (hidePopupTimer.current) clearTimeout(hidePopupTimer.current)
+
+      const href = target.getAttribute("href") || ""
+      const rect = target.getBoundingClientRect()
+      const containerRect = container.getBoundingClientRect()
+
+      setLinkPopup({
+        url: href,
+        top: rect.bottom - containerRect.top + 6,
+        left: Math.max(0, rect.left - containerRect.left),
+      })
+    }
+
+    const handleMouseOut = (e: MouseEvent) => {
+      const related = e.relatedTarget as HTMLElement | null
+      // Don't hide if moving into the popup itself
+      if (linkPopupRef.current && related && linkPopupRef.current.contains(related)) return
+      hidePopupTimer.current = setTimeout(() => setLinkPopup(null), 300)
+    }
+
+    container.addEventListener("mouseover", handleMouseOver)
+    container.addEventListener("mouseout", handleMouseOut)
+    return () => {
+      container.removeEventListener("mouseover", handleMouseOver)
+      container.removeEventListener("mouseout", handleMouseOut)
+    }
+  }, [])
+
+  // Keep popup alive when mouse moves into it
+  const handlePopupMouseEnter = () => {
+    if (hidePopupTimer.current) clearTimeout(hidePopupTimer.current)
+  }
+  const handlePopupMouseLeave = () => {
+    hidePopupTimer.current = setTimeout(() => setLinkPopup(null), 300)
+  }
+
   useEffect(() => {
     if (editor && onReady) {
       onReady(() => editor.commands.focus("end"))
@@ -172,16 +188,6 @@ export default function Editor({ content, onChange, onReady, editable = true }: 
       setTimeout(() => linkInputRef.current?.focus(), 50)
     }
   }, [linkModalOpen])
-
-  useEffect(() => {
-    const handleClick = (e: MouseEvent) => {
-      if (linkPopupRef.current && !linkPopupRef.current.contains(e.target as Node)) {
-        setLinkPopup(null)
-      }
-    }
-    document.addEventListener("mousedown", handleClick)
-    return () => document.removeEventListener("mousedown", handleClick)
-  }, [])
 
   const openLinkModal = useCallback(() => {
     if (!editor || !editable) return
@@ -321,6 +327,8 @@ export default function Editor({ content, onChange, onReady, editable = true }: 
           ref={linkPopupRef}
           className="absolute z-50 flex items-center gap-1 rounded-lg border border-white/10 bg-[#2a2a2a] px-2 py-1.5 shadow-xl"
           style={{ top: linkPopup.top, left: linkPopup.left }}
+          onMouseEnter={handlePopupMouseEnter}
+          onMouseLeave={handlePopupMouseLeave}
           onMouseDown={(e) => e.preventDefault()}
         >
           <span className="max-w-[200px] truncate text-xs text-white/60">
