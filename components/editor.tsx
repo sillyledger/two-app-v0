@@ -28,6 +28,11 @@ import {
   ExternalLink,
   Pencil,
   FileText,
+  Plus,
+  Trash2,
+  ArrowLeftRight,
+  Rows,
+  Columns,
 } from "lucide-react"
 import { useCallback, useState, useRef, useEffect } from "react"
 
@@ -62,6 +67,11 @@ export default function Editor({ content, onChange, onReady, editable = true }: 
   const linkPopupRef = useRef<HTMLDivElement>(null)
   const hidePopupTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [editorReady, setEditorReady] = useState(false)
+
+  // Table toolbar state
+  const [tableToolbar, setTableToolbar] = useState<{ top: number; left: number } | null>(null)
+  const [tableFitWidth, setTableFitWidth] = useState(false)
+  const tableToolbarRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     const saved = localStorage.getItem("font-size-px")
@@ -134,8 +144,40 @@ export default function Editor({ content, onChange, onReady, editable = true }: 
     onSelectionUpdate: ({ editor }) => {
       if (!editable) {
         setBubbleVisible(false)
+        setTableToolbar(null)
         return
       }
+
+      // Check if cursor is inside a table
+      const isInTable = editor.isActive("table") || editor.isActive("tableCell") || editor.isActive("tableHeader")
+
+      if (isInTable) {
+        setBubbleVisible(false)
+        // Position table toolbar above the table
+        const { from } = editor.state.selection
+        const domNode = editor.view.nodeDOM(from) as HTMLElement | null
+        if (domNode) {
+          // Walk up to find the table element
+          let el: HTMLElement | null = domNode
+          while (el && el.tagName !== "TABLE") {
+            el = el.parentElement
+          }
+          if (el && containerRef.current) {
+            const tableRect = el.getBoundingClientRect()
+            const containerRect = containerRef.current.getBoundingClientRect()
+            setTableToolbar({
+              top: tableRect.top - containerRect.top - 44,
+              left: tableRect.left - containerRect.left,
+            })
+            return
+          }
+        }
+        setTableToolbar({ top: -44, left: 0 })
+        return
+      }
+
+      setTableToolbar(null)
+
       const { from, to } = editor.state.selection
       const hasSelection = from !== to
 
@@ -320,21 +362,37 @@ export default function Editor({ content, onChange, onReady, editable = true }: 
           margin-bottom: 0.4em;
         }
 
+        /* ── Table wrapper — horizontal scroll when fit-width is off ── */
+        .tableWrapper {
+          overflow-x: auto;
+          margin: 1.25em 0;
+          -webkit-overflow-scrolling: touch;
+        }
+        .tableWrapper.fit-width {
+          overflow-x: visible;
+        }
+
         /* ── Table styles ── */
         .editor-content table {
           border-collapse: collapse;
           width: 100%;
-          margin: 1.25em 0;
+          margin: 0;
           overflow: hidden;
           border-radius: 8px;
           border: 1px solid var(--border);
           display: table;
+          min-width: 400px;
+        }
+        .tableWrapper.fit-width .editor-content table,
+        .fit-width table {
+          min-width: 100%;
+          width: 100%;
         }
         .editor-content td,
         .editor-content th {
           border: 1px solid var(--border);
           padding: 8px 12px;
-          min-width: 100px;
+          min-width: 120px;
           vertical-align: top;
           font-size: 0.9em;
           position: relative;
@@ -375,10 +433,6 @@ export default function Editor({ content, onChange, onReady, editable = true }: 
         .editor-content td:hover .column-resize-handle,
         .editor-content th:hover .column-resize-handle {
           opacity: 1;
-        }
-        .tableWrapper {
-          overflow-x: auto;
-          margin: 1.25em 0;
         }
 
         /* ── Slash command menu ── */
@@ -467,6 +521,94 @@ export default function Editor({ content, onChange, onReady, editable = true }: 
         .hljs-emphasis { font-style: italic; }
         .hljs-strong { font-weight: bold; }
       `}</style>
+
+      {/* ── Table toolbar ── */}
+      {tableToolbar && editable && (
+        <div
+          ref={tableToolbarRef}
+          className="absolute z-50 flex items-center gap-0.5 rounded-lg border border-white/10 bg-[#2a2a2a] px-1.5 py-1 shadow-xl"
+          style={{ top: tableToolbar.top, left: tableToolbar.left }}
+          onMouseDown={(e) => e.preventDefault()}
+        >
+          {/* Add row below */}
+          <TableButton
+            onClick={() => editor.chain().focus().addRowAfter().run()}
+            title="Add row below"
+          >
+            <Rows size={13} />
+            <Plus size={9} className="-ml-0.5 -mt-1" />
+          </TableButton>
+
+          {/* Add column right */}
+          <TableButton
+            onClick={() => editor.chain().focus().addColumnAfter().run()}
+            title="Add column right"
+          >
+            <Columns size={13} />
+            <Plus size={9} className="-ml-0.5 -mt-1" />
+          </TableButton>
+
+          <div className="mx-1 h-4 w-px bg-white/10" />
+
+          {/* Delete row */}
+          <TableButton
+            onClick={() => editor.chain().focus().deleteRow().run()}
+            title="Delete row"
+          >
+            <Rows size={13} className="opacity-60" />
+            <Trash2 size={9} className="-ml-0.5 -mt-1 text-red-400" />
+          </TableButton>
+
+          {/* Delete column */}
+          <TableButton
+            onClick={() => editor.chain().focus().deleteColumn().run()}
+            title="Delete column"
+          >
+            <Columns size={13} className="opacity-60" />
+            <Trash2 size={9} className="-ml-0.5 -mt-1 text-red-400" />
+          </TableButton>
+
+          <div className="mx-1 h-4 w-px bg-white/10" />
+
+          {/* Fit to width toggle */}
+          <button
+            onMouseDown={(e) => {
+              e.preventDefault()
+              setTableFitWidth((v) => !v)
+              // Toggle class on the nearest tableWrapper
+              if (containerRef.current) {
+                const wrapper = containerRef.current.querySelector(".tableWrapper")
+                if (wrapper) wrapper.classList.toggle("fit-width")
+              }
+            }}
+            title={tableFitWidth ? "Unset full width" : "Fit to width"}
+            className={`flex items-center gap-1 rounded px-2 py-1 text-xs transition-colors ${
+              tableFitWidth
+                ? "bg-white/20 text-white"
+                : "text-white/60 hover:bg-white/10 hover:text-white"
+            }`}
+          >
+            <ArrowLeftRight size={13} />
+            <span className="text-[11px]">Fit width</span>
+          </button>
+
+          <div className="mx-1 h-4 w-px bg-white/10" />
+
+          {/* Delete whole table */}
+          <button
+            onMouseDown={(e) => {
+              e.preventDefault()
+              editor.chain().focus().deleteTable().run()
+              setTableToolbar(null)
+            }}
+            title="Delete table"
+            className="flex items-center gap-1 rounded px-2 py-1 text-xs text-red-400/70 hover:bg-red-500/10 hover:text-red-400 transition-colors"
+          >
+            <Trash2 size={13} />
+            <span className="text-[11px]">Delete</span>
+          </button>
+        </div>
+      )}
 
       {/* Link hover popup */}
       {linkPopup && (
@@ -570,7 +712,7 @@ export default function Editor({ content, onChange, onReady, editable = true }: 
         </div>
       )}
 
-      {/* Bubble toolbar */}
+      {/* Bubble toolbar — only when NOT in table */}
       {bubbleVisible && editable && (
         <div
           className="absolute z-50 flex items-center gap-0.5 rounded-lg border border-white/10 bg-[#2a2a2a] px-1.5 py-1 shadow-xl"
@@ -618,6 +760,26 @@ function BubbleButton({
       className={`rounded p-1.5 transition-colors ${
         active ? "bg-white/20 text-white" : "text-white/60 hover:bg-white/10 hover:text-white"
       }`}
+    >
+      {children}
+    </button>
+  )
+}
+
+function TableButton({
+  onClick,
+  title,
+  children,
+}: {
+  onClick: () => void
+  title: string
+  children: React.ReactNode
+}) {
+  return (
+    <button
+      onMouseDown={(e) => { e.preventDefault(); onClick() }}
+      title={title}
+      className="relative flex items-end rounded p-1.5 text-white/60 hover:bg-white/10 hover:text-white transition-colors"
     >
       {children}
     </button>
