@@ -6,6 +6,7 @@ import Link from "@tiptap/extension-link"
 import Typography from "@tiptap/extension-typography"
 import CodeBlockLowlight from "@tiptap/extension-code-block-lowlight"
 import Placeholder from "@tiptap/extension-placeholder"
+import { SlashCommands } from "./slash-commands"
 import { common, createLowlight } from "lowlight"
 import {
   Bold,
@@ -61,6 +62,7 @@ export default function Editor({ content, onChange, onReady, editable = true }: 
       Placeholder.configure({
         placeholder: "Start writing, or press / for commands…",
       }),
+      SlashCommands,
     ],
     content,
     editable,
@@ -177,7 +179,61 @@ export default function Editor({ content, onChange, onReady, editable = true }: 
           margin-top: 1.5em;
           margin-bottom: 0.4em;
         }
-        
+
+        /* ── Slash command menu ── */
+        .slash-menu {
+          background: var(--bg-tertiary);
+          border: 1px solid var(--border);
+          border-radius: 10px;
+          padding: 4px;
+          min-width: 220px;
+          max-height: 320px;
+          overflow-y: auto;
+          box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+        }
+        .slash-menu-item {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          width: 100%;
+          padding: 7px 10px;
+          border-radius: 7px;
+          border: none;
+          background: transparent;
+          cursor: pointer;
+          text-align: left;
+          transition: background 0.1s;
+        }
+        .slash-menu-item:hover,
+        .slash-menu-item.active {
+          background: var(--border);
+        }
+        .slash-menu-icon {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 28px;
+          height: 28px;
+          border-radius: 6px;
+          background: var(--bg-secondary);
+          color: var(--text-primary);
+          flex-shrink: 0;
+        }
+        .slash-menu-text {
+          display: flex;
+          flex-direction: column;
+          gap: 1px;
+        }
+        .slash-menu-title {
+          font-size: 13px;
+          font-weight: 500;
+          color: var(--text-primary);
+        }
+        .slash-menu-desc {
+          font-size: 11px;
+          color: var(--text-muted);
+        }
+
         /* ── Syntax highlighting ── */
         .editor-content pre {
           background: #1e1e1e;
