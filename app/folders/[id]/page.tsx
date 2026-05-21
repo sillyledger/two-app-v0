@@ -39,8 +39,8 @@ function stripHtml(html: string) {
 }
 
 function PriorityBadge({ priority }: { priority?: string | null }) {
-  if (!priority) return <span className="flex items-center gap-1 text-[11px] text-[#444]"><Minus size={11} /> None</span>
-  if (priority === "low") return <span className="flex items-center gap-1 text-[11px] text-[#888]"><SignalLow size={11} /> Low</span>
+  if (!priority) return <span className="flex items-center gap-1 text-[11px]" style={{ color: "var(--text-muted)" }}><Minus size={11} /> None</span>
+  if (priority === "low") return <span className="flex items-center gap-1 text-[11px]" style={{ color: "var(--text-secondary)" }}><SignalLow size={11} /> Low</span>
   if (priority === "medium") return <span className="flex items-center gap-1 text-[11px] text-[#f5a623]"><SignalMedium size={11} /> Medium</span>
   if (priority === "high") return <span className="flex items-center gap-1 text-[11px] text-[#e05252]"><SignalHigh size={11} /> High</span>
   return null
@@ -58,10 +58,10 @@ export default function FolderPage() {
   const [creating, setCreating] = useState(false)
   const [collapsed, setCollapsed] = useState(false)
 
-useEffect(() => {
-  const saved = localStorage.getItem("sidebar-collapsed")
-  if (saved === "true") setCollapsed(true)
-}, [])
+  useEffect(() => {
+    const saved = localStorage.getItem("sidebar-collapsed")
+    if (saved === "true") setCollapsed(true)
+  }, [])
 
   const [openMenuId, setOpenMenuId] = useState<string | null>(null)
   const menuRef = useRef<HTMLDivElement>(null)
@@ -162,7 +162,7 @@ useEffect(() => {
   }
 
   return (
-    <div className="flex h-screen bg-[#1a1a1a] overflow-hidden">
+    <div className="flex h-screen overflow-hidden" style={{ backgroundColor: "var(--bg)" }}>
       <Sidebar collapsed={collapsed} onToggle={() => setCollapsed((v) => !v)} />
 
       <main className="flex-1 overflow-y-auto">
@@ -171,16 +171,22 @@ useEffect(() => {
           {/* Header */}
           <div className="flex items-center justify-between mb-8">
             <div className="flex items-center gap-3">
-              <Folder size={18} className="text-[#555]" />
-              <h1 className="text-xl font-semibold text-[#e8e8e8]">
+              <Folder size={18} style={{ color: "var(--text-muted)" }} />
+              <h1 className="text-xl font-semibold" style={{ color: "var(--text-primary)" }}>
                 {folder?.name ?? folderNameFromUrl}
               </h1>
-              <span className="text-[12px] text-[#444]">{docs.length} docs</span>
+              <span className="text-[12px]" style={{ color: "var(--text-muted)" }}>{docs.length} docs</span>
             </div>
             <button
               onClick={handleCreateDoc}
               disabled={creating}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-lg border border-white/20 text-[#e8e8e8] text-sm font-medium hover:bg-white/10 transition-colors"
+              className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+              style={{
+                border: "1px solid var(--border)",
+                color: "var(--text-primary)",
+              }}
+              onMouseEnter={e => (e.currentTarget.style.backgroundColor = "var(--bg-tertiary)")}
+              onMouseLeave={e => (e.currentTarget.style.backgroundColor = "transparent")}
             >
               <Plus size={15} />
               {creating ? "Creating..." : "New Doc"}
@@ -191,24 +197,24 @@ useEffect(() => {
           {loading ? (
             <div className="space-y-1">
               {Array.from({ length: 5 }).map((_, i) => (
-                <div key={i} className="h-12 rounded-lg bg-[#2a2a2a] animate-pulse" />
+                <div key={i} className="h-12 rounded-lg animate-pulse" style={{ backgroundColor: "var(--bg-tertiary)" }} />
               ))}
             </div>
           ) : docs.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-64 text-[#444]">
-              <Folder size={36} className="mb-3 text-[#333]" />
-              <p className="text-[15px] font-medium text-[#666] mb-1">No docs in this folder</p>
-              <p className="text-[13px] text-[#444]">Click New Doc to get started</p>
+            <div className="flex flex-col items-center justify-center h-64" style={{ color: "var(--text-muted)" }}>
+              <Folder size={36} className="mb-3" style={{ color: "var(--text-muted)" }} />
+              <p className="text-[15px] font-medium mb-1" style={{ color: "var(--text-secondary)" }}>No docs in this folder</p>
+              <p className="text-[13px]" style={{ color: "var(--text-muted)" }}>Click New Doc to get started</p>
             </div>
           ) : (
             <div>
               {/* Column headers */}
               <div className="grid grid-cols-[1fr_120px_120px_100px_80px_36px] items-center px-3 py-2 mb-1">
-                <span className="text-[11px] font-semibold uppercase tracking-wider text-[#3a3a3a]">Name</span>
-                <span className="text-[11px] font-semibold uppercase tracking-wider text-[#3a3a3a]">Created</span>
-                <span className="text-[11px] font-semibold uppercase tracking-wider text-[#3a3a3a]">Last Edited</span>
-                <span className="text-[11px] font-semibold uppercase tracking-wider text-[#3a3a3a]">Author</span>
-                <span className="text-[11px] font-semibold uppercase tracking-wider text-[#3a3a3a]">Priority</span>
+                <span className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>Name</span>
+                <span className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>Created</span>
+                <span className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>Last Edited</span>
+                <span className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>Author</span>
+                <span className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>Priority</span>
                 <span />
               </div>
 
@@ -217,33 +223,42 @@ useEffect(() => {
                 <div
                   key={doc.uuid}
                   onClick={() => router.push(`/docs/${doc.uuid}`)}
-                  className="group grid grid-cols-[1fr_120px_120px_100px_80px_36px] items-center px-3 py-2.5 rounded-lg cursor-pointer transition-colors hover:bg-[#222] mb-[1px]"
+                  className="group grid grid-cols-[1fr_120px_120px_100px_80px_36px] items-center px-3 py-2.5 rounded-lg cursor-pointer transition-colors mb-[1px]"
+                  onMouseEnter={e => (e.currentTarget.style.backgroundColor = "var(--bg-secondary)")}
+                  onMouseLeave={e => (e.currentTarget.style.backgroundColor = "transparent")}
                 >
                   {/* Name */}
                   <div className="flex items-center gap-3 min-w-0">
-                    <FileText size={13} className="text-[#444] shrink-0" />
+                    <FileText size={13} className="shrink-0" style={{ color: "var(--text-muted)" }} />
                     <div className="min-w-0">
-                      <p className="text-[13px] font-medium text-[#e8e8e8] truncate leading-snug">
+                      <p className="text-[14px] font-medium truncate leading-snug" style={{ color: "var(--text-primary)" }}>
                         {doc.title || "Untitled"}
                       </p>
-                      <p className="text-[11px] text-[#555] truncate leading-snug mt-0.5">
+                      <p className="text-[11px] truncate leading-snug mt-0.5" style={{ color: "var(--text-muted)" }}>
                         {stripHtml(doc.content).slice(0, 80) || "No content"}
                       </p>
                     </div>
                   </div>
 
                   {/* Created */}
-                  <span className="text-[12px] text-[#555]">{formatDate(doc.created_at)}</span>
+                  <span className="text-[12px]" style={{ color: "var(--text-muted)" }}>{formatDate(doc.created_at)}</span>
 
                   {/* Last Edited */}
-                  <span className="text-[12px] text-[#555]">{formatDate(doc.updated_at)}</span>
+                  <span className="text-[12px]" style={{ color: "var(--text-muted)" }}>{formatDate(doc.updated_at)}</span>
 
                   {/* Author */}
                   <div className="flex items-center gap-1.5 min-w-0">
-                    <div className="w-4 h-4 rounded-full bg-[#2a2a2a] border border-white/10 flex items-center justify-center text-[9px] font-medium text-[#888] shrink-0">
+                    <div
+                      className="w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-medium shrink-0"
+                      style={{
+                        backgroundColor: "var(--bg-tertiary)",
+                        border: "1px solid var(--border)",
+                        color: "var(--text-secondary)",
+                      }}
+                    >
                       {(doc.author_name || doc.author_email || "?")[0].toUpperCase()}
                     </div>
-                    <span className="text-[12px] text-[#555] truncate">
+                    <span className="text-[12px] truncate" style={{ color: "var(--text-muted)" }}>
                       {doc.author_name || doc.author_email?.split("@")[0] || "—"}
                     </span>
                   </div>
@@ -259,29 +274,49 @@ useEffect(() => {
                   >
                     <button
                       onClick={() => setOpenMenuId(openMenuId === doc.uuid ? null : doc.uuid)}
-                      className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-[#2a2a2a] text-[#555] hover:text-[#e8e8e8] transition-all"
+                      className="opacity-0 group-hover:opacity-100 p-1 rounded transition-all"
+                      style={{ color: "var(--text-muted)" }}
+                      onMouseEnter={e => {
+                        e.currentTarget.style.backgroundColor = "var(--bg-tertiary)"
+                        e.currentTarget.style.color = "var(--text-primary)"
+                      }}
+                      onMouseLeave={e => {
+                        e.currentTarget.style.backgroundColor = "transparent"
+                        e.currentTarget.style.color = "var(--text-muted)"
+                      }}
                     >
                       <MoreHorizontal size={14} />
                     </button>
 
                     {openMenuId === doc.uuid && (
-                      <div className="absolute right-0 top-7 w-44 bg-[#2c2c2c] border border-white/10 rounded-xl shadow-xl z-50 overflow-hidden py-1">
+                      <div
+                        className="absolute right-0 top-7 w-44 rounded-xl shadow-xl z-50 overflow-hidden py-1"
+                        style={{ backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border)" }}
+                      >
                         <button
                           onClick={() => { setRenamingDoc(doc); setRenameValue(doc.title || ""); setOpenMenuId(null) }}
-                          className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-[#e8e8e8] hover:bg-white/10 transition-colors"
+                          className="w-full flex items-center gap-2.5 px-3 py-2 text-sm transition-colors"
+                          style={{ color: "var(--text-secondary)" }}
+                          onMouseEnter={e => (e.currentTarget.style.backgroundColor = "var(--bg-tertiary)")}
+                          onMouseLeave={e => (e.currentTarget.style.backgroundColor = "transparent")}
                         >
-                          <Pencil size={13} className="text-[#aaa]" /> Rename
+                          <Pencil size={13} style={{ color: "var(--text-muted)" }} /> Rename
                         </button>
                         <button
                           onClick={() => openMoveModal(doc)}
-                          className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-[#e8e8e8] hover:bg-white/10 transition-colors"
+                          className="w-full flex items-center gap-2.5 px-3 py-2 text-sm transition-colors"
+                          style={{ color: "var(--text-secondary)" }}
+                          onMouseEnter={e => (e.currentTarget.style.backgroundColor = "var(--bg-tertiary)")}
+                          onMouseLeave={e => (e.currentTarget.style.backgroundColor = "transparent")}
                         >
-                          <FolderInput size={13} className="text-[#aaa]" /> Move
+                          <FolderInput size={13} style={{ color: "var(--text-muted)" }} /> Move
                         </button>
-                        <div className="border-t border-white/10 my-1" />
+                        <div className="my-1 border-t" style={{ borderColor: "var(--border)" }} />
                         <button
                           onClick={() => { setDeletingDoc(doc); setOpenMenuId(null) }}
-                          className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-red-400 hover:bg-white/10 transition-colors"
+                          className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-red-400 hover:text-red-300 transition-colors"
+                          onMouseEnter={e => (e.currentTarget.style.backgroundColor = "var(--bg-tertiary)")}
+                          onMouseLeave={e => (e.currentTarget.style.backgroundColor = "transparent")}
                         >
                           <Trash2 size={13} /> Delete
                         </button>
@@ -298,18 +333,42 @@ useEffect(() => {
       {/* Rename modal */}
       {renamingDoc && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-          <div className="bg-[#2c2c2c] rounded-2xl p-6 w-80 border border-white/10 shadow-2xl">
-            <h2 className="text-[#e8e8e8] font-semibold text-base mb-4">Rename doc</h2>
+          <div
+            className="rounded-2xl p-6 w-80 shadow-2xl"
+            style={{ backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border)" }}
+          >
+            <h2 className="font-semibold text-base mb-4" style={{ color: "var(--text-primary)" }}>Rename doc</h2>
             <input
               autoFocus
               value={renameValue}
               onChange={(e) => setRenameValue(e.target.value)}
               onKeyDown={(e) => { if (e.key === "Enter") handleRename(); if (e.key === "Escape") setRenamingDoc(null) }}
-              className="w-full bg-[#1a1a1a] border border-white/10 rounded-lg px-3 py-2 text-[#e8e8e8] text-sm outline-none focus:border-white/30 mb-4"
+              className="w-full rounded-lg px-3 py-2 text-sm outline-none mb-4"
+              style={{
+                backgroundColor: "var(--bg-tertiary)",
+                border: "1px solid var(--border)",
+                color: "var(--text-primary)",
+              }}
             />
             <div className="flex gap-2 justify-end">
-              <button onClick={() => setRenamingDoc(null)} className="px-4 py-2 text-sm text-[#aaa] hover:text-[#e8e8e8] transition-colors">Cancel</button>
-              <button onClick={handleRename} className="px-4 py-2 text-sm bg-white/10 hover:bg-white/20 text-[#e8e8e8] rounded-lg transition-colors">Rename</button>
+              <button
+                onClick={() => setRenamingDoc(null)}
+                className="px-4 py-2 text-sm transition-colors"
+                style={{ color: "var(--text-muted)" }}
+                onMouseEnter={e => (e.currentTarget.style.color = "var(--text-primary)")}
+                onMouseLeave={e => (e.currentTarget.style.color = "var(--text-muted)")}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleRename}
+                className="px-4 py-2 text-sm rounded-lg transition-colors"
+                style={{ backgroundColor: "var(--bg-tertiary)", color: "var(--text-primary)" }}
+                onMouseEnter={e => (e.currentTarget.style.backgroundColor = "var(--border)")}
+                onMouseLeave={e => (e.currentTarget.style.backgroundColor = "var(--bg-tertiary)")}
+              >
+                Rename
+              </button>
             </div>
           </div>
         </div>
@@ -318,21 +377,39 @@ useEffect(() => {
       {/* Move modal */}
       {movingDoc && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-          <div className="bg-[#2c2c2c] rounded-2xl p-6 w-80 border border-white/10 shadow-2xl">
-            <h2 className="text-[#e8e8e8] font-semibold text-base mb-4">Move to folder</h2>
+          <div
+            className="rounded-2xl p-6 w-80 shadow-2xl"
+            style={{ backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border)" }}
+          >
+            <h2 className="font-semibold text-base mb-4" style={{ color: "var(--text-primary)" }}>Move to folder</h2>
             {folders.length === 0 ? (
-              <p className="text-sm text-[#777] mb-4">No folders yet.</p>
+              <p className="text-sm mb-4" style={{ color: "var(--text-muted)" }}>No folders yet.</p>
             ) : (
               <div className="flex flex-col gap-1 mb-4 max-h-48 overflow-y-auto">
                 {folders.filter(f => f.id !== String(id)).map((f) => (
-                  <button key={f.id} onClick={() => handleMove(f.id)} className="text-left px-3 py-2 rounded-lg text-sm text-[#e8e8e8] hover:bg-white/10 transition-colors">
+                  <button
+                    key={f.id}
+                    onClick={() => handleMove(f.id)}
+                    className="text-left px-3 py-2 rounded-lg text-sm transition-colors"
+                    style={{ color: "var(--text-secondary)" }}
+                    onMouseEnter={e => (e.currentTarget.style.backgroundColor = "var(--bg-tertiary)")}
+                    onMouseLeave={e => (e.currentTarget.style.backgroundColor = "transparent")}
+                  >
                     📁 {f.name}
                   </button>
                 ))}
               </div>
             )}
             <div className="flex justify-end">
-              <button onClick={() => setMovingDoc(null)} className="px-4 py-2 text-sm text-[#aaa] hover:text-[#e8e8e8] transition-colors">Cancel</button>
+              <button
+                onClick={() => setMovingDoc(null)}
+                className="px-4 py-2 text-sm transition-colors"
+                style={{ color: "var(--text-muted)" }}
+                onMouseEnter={e => (e.currentTarget.style.color = "var(--text-primary)")}
+                onMouseLeave={e => (e.currentTarget.style.color = "var(--text-muted)")}
+              >
+                Cancel
+              </button>
             </div>
           </div>
         </div>
@@ -341,12 +418,30 @@ useEffect(() => {
       {/* Delete modal */}
       {deletingDoc && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-          <div className="bg-[#2c2c2c] rounded-2xl p-6 w-80 border border-white/10 shadow-2xl">
-            <h2 className="text-[#e8e8e8] font-semibold text-base mb-2">Delete doc?</h2>
-            <p className="text-sm text-[#aaa] mb-6">&ldquo;{deletingDoc.title || "Untitled"}&rdquo; will be permanently deleted.</p>
+          <div
+            className="rounded-2xl p-6 w-80 shadow-2xl"
+            style={{ backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border)" }}
+          >
+            <h2 className="font-semibold text-base mb-2" style={{ color: "var(--text-primary)" }}>Delete doc?</h2>
+            <p className="text-sm mb-6" style={{ color: "var(--text-muted)" }}>
+              &ldquo;{deletingDoc.title || "Untitled"}&rdquo; will be permanently deleted.
+            </p>
             <div className="flex gap-2 justify-end">
-              <button onClick={() => setDeletingDoc(null)} className="px-4 py-2 text-sm text-[#aaa] hover:text-[#e8e8e8] transition-colors">Cancel</button>
-              <button onClick={handleDelete} className="px-4 py-2 text-sm bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-lg transition-colors">Delete</button>
+              <button
+                onClick={() => setDeletingDoc(null)}
+                className="px-4 py-2 text-sm transition-colors"
+                style={{ color: "var(--text-muted)" }}
+                onMouseEnter={e => (e.currentTarget.style.color = "var(--text-primary)")}
+                onMouseLeave={e => (e.currentTarget.style.color = "var(--text-muted)")}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDelete}
+                className="px-4 py-2 text-sm rounded-lg transition-colors bg-red-500/20 hover:bg-red-500/30 text-red-400"
+              >
+                Delete
+              </button>
             </div>
           </div>
         </div>
