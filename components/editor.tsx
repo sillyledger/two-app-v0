@@ -5,6 +5,7 @@ import StarterKit from "@tiptap/starter-kit"
 import Link from "@tiptap/extension-link"
 import Typography from "@tiptap/extension-typography"
 import CodeBlockLowlight from "@tiptap/extension-code-block-lowlight"
+import Placeholder from "@tiptap/extension-placeholder"
 import { common, createLowlight } from "lowlight"
 import {
   Bold,
@@ -57,6 +58,9 @@ export default function Editor({ content, onChange, onReady, editable = true }: 
       }),
       Link.configure({ openOnClick: !editable }),
       Typography,
+      Placeholder.configure({
+        placeholder: "Start writing, or press / for commands…",
+      }),
     ],
     content,
     editable,
@@ -172,6 +176,15 @@ export default function Editor({ content, onChange, onReady, editable = true }: 
         .editor-content h3 {
           margin-top: 1.5em;
           margin-bottom: 0.4em;
+        }
+
+        /* ── Placeholder ── */
+        .editor-content p.is-editor-empty:first-child::before {
+          content: attr(data-placeholder);
+          float: left;
+          color: rgba(255, 255, 255, 0.2);
+          pointer-events: none;
+          height: 0;
         }
 
         /* ── Syntax highlighting ── */
