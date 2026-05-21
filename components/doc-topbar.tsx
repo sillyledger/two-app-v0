@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { ChevronRight, Share2, MoreHorizontal, Copy, Download, Trash2, Globe, Lock, FolderInput, AlignCenter, AlignJustify } from "lucide-react"
+import { Share2, MoreHorizontal, Copy, Download, Trash2, Globe, Lock, FolderInput, AlignCenter, AlignJustify } from "lucide-react"
 import { useState, useRef, useEffect } from "react"
 
 interface Folder {
@@ -175,7 +175,7 @@ export default function DocTopbar({
           >
             Home
           </Link>
-          <ChevronRight size={11} className="shrink-0 mx-0.5" style={{ color: "var(--text-muted)" }} />
+          <span className="mx-1 text-[12px]" style={{ color: "var(--text-muted)" }}>/</span>
           {folder && (
             <>
               <span
