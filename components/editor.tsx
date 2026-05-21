@@ -48,6 +48,7 @@ export default function Editor({ content, onChange, onReady, editable = true }: 
   const [linkPopup, setLinkPopup] = useState<{ url: string; top: number; left: number } | null>(null)
   const linkPopupRef = useRef<HTMLDivElement>(null)
   const hidePopupTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const [editorReady, setEditorReady] = useState(false)
 
   const editor = useEditor({
     extensions: [
@@ -63,17 +64,17 @@ export default function Editor({ content, onChange, onReady, editable = true }: 
         lowlight,
         defaultLanguage: "plaintext",
       }),
-     Link.configure({
-  openOnClick: false,
-  inclusive: false,
-  autolink: true,
-  linkOnPaste: true,
-  protocols: ["http", "https"],
-  HTMLAttributes: {
-    rel: "noopener noreferrer",
-    target: null,
-  },
-}),
+      Link.configure({
+        openOnClick: false,
+        inclusive: false,
+        autolink: true,
+        linkOnPaste: true,
+        protocols: ["http", "https"],
+        HTMLAttributes: {
+          rel: "noopener noreferrer",
+          target: null,
+        },
+      }),
       Typography,
       Placeholder.configure({
         placeholder: "Start writing, or press / for commands…",
@@ -131,23 +132,22 @@ export default function Editor({ content, onChange, onReady, editable = true }: 
         return false
       },
     },
+    onCreate: () => setEditorReady(true),
   })
 
-  // ── Hover-based link popup ───────────────────────────────────────────────
+  // ── Hover-based link popup — runs after editor is ready ──────────────────
   useEffect(() => {
+    if (!editorReady) return
     const container = containerRef.current
     if (!container) return
 
     const handleMouseOver = (e: MouseEvent) => {
       const target = (e.target as HTMLElement).closest("a")
       if (!target) return
-
       if (hidePopupTimer.current) clearTimeout(hidePopupTimer.current)
-
       const href = target.getAttribute("href") || ""
       const rect = target.getBoundingClientRect()
       const containerRect = container.getBoundingClientRect()
-
       setLinkPopup({
         url: href,
         top: rect.bottom - containerRect.top + 6,
@@ -157,7 +157,6 @@ export default function Editor({ content, onChange, onReady, editable = true }: 
 
     const handleMouseOut = (e: MouseEvent) => {
       const related = e.relatedTarget as HTMLElement | null
-      // Don't hide if moving into the popup itself
       if (linkPopupRef.current && related && linkPopupRef.current.contains(related)) return
       hidePopupTimer.current = setTimeout(() => setLinkPopup(null), 300)
     }
@@ -168,9 +167,8 @@ export default function Editor({ content, onChange, onReady, editable = true }: 
       container.removeEventListener("mouseover", handleMouseOver)
       container.removeEventListener("mouseout", handleMouseOut)
     }
-  }, [])
+  }, [editorReady])
 
-  // Keep popup alive when mouse moves into it
   const handlePopupMouseEnter = () => {
     if (hidePopupTimer.current) clearTimeout(hidePopupTimer.current)
   }
