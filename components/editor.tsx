@@ -6,6 +6,10 @@ import Link from "@tiptap/extension-link"
 import Typography from "@tiptap/extension-typography"
 import CodeBlockLowlight from "@tiptap/extension-code-block-lowlight"
 import Placeholder from "@tiptap/extension-placeholder"
+import TableExtension from "@tiptap/extension-table"
+import TableRow from "@tiptap/extension-table-row"
+import TableHeader from "@tiptap/extension-table-header"
+import TableCell from "@tiptap/extension-table-cell"
 import { SlashCommands } from "./slash-commands"
 import { common, createLowlight } from "lowlight"
 import {
@@ -65,7 +69,6 @@ export default function Editor({ content, onChange, onReady, editable = true }: 
     document.documentElement.style.setProperty("--editor-font-size", `${size}px`)
   }, [])
 
-  // Fetch all docs when the link modal opens
   useEffect(() => {
     if (!linkModalOpen) return
     fetch("/api/docs")
@@ -74,7 +77,6 @@ export default function Editor({ content, onChange, onReady, editable = true }: 
       .catch(() => {})
   }, [linkModalOpen])
 
-  // Filter docs as user types — only when input doesn't look like a URL
   useEffect(() => {
     const isUrl = linkUrl.startsWith("http://") || linkUrl.startsWith("https://") || linkUrl.startsWith("www.")
     if (isUrl || linkUrl === "") {
@@ -112,6 +114,12 @@ export default function Editor({ content, onChange, onReady, editable = true }: 
           target: null,
         },
       }),
+      TableExtension.configure({
+        resizable: true,
+      }),
+      TableRow,
+      TableHeader,
+      TableCell,
       Typography,
       Placeholder.configure({
         placeholder: "Start writing, or press / for commands…",
@@ -172,7 +180,6 @@ export default function Editor({ content, onChange, onReady, editable = true }: 
     onCreate: () => setEditorReady(true),
   })
 
-  // Hover-based link popup
   useEffect(() => {
     if (!editorReady) return
     const container = containerRef.current
@@ -272,7 +279,6 @@ export default function Editor({ content, onChange, onReady, editable = true }: 
     confirmLink(`/docs/${doc.uuid}`)
   }, [confirmLink])
 
-  // Keyboard navigation for doc results
   const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (docResults.length === 0) {
       if (e.key === "Enter") confirmLink()
@@ -313,6 +319,69 @@ export default function Editor({ content, onChange, onReady, editable = true }: 
           margin-top: 1.5em;
           margin-bottom: 0.4em;
         }
+
+        /* ── Table styles ── */
+        .editor-content table {
+          border-collapse: collapse;
+          width: 100%;
+          margin: 1.25em 0;
+          overflow: hidden;
+          border-radius: 8px;
+          border: 1px solid var(--border);
+          display: table;
+        }
+        .editor-content td,
+        .editor-content th {
+          border: 1px solid var(--border);
+          padding: 8px 12px;
+          min-width: 100px;
+          vertical-align: top;
+          font-size: 0.9em;
+          position: relative;
+          box-sizing: border-box;
+        }
+        .editor-content th {
+          background: var(--bg-tertiary);
+          font-weight: 600;
+          color: var(--text-primary);
+          text-align: left;
+        }
+        .editor-content td {
+          color: var(--text-secondary);
+          background: var(--bg-secondary);
+        }
+        .editor-content tr:hover td {
+          background: var(--bg-tertiary);
+        }
+        .editor-content .selectedCell:after {
+          content: "";
+          position: absolute;
+          inset: 0;
+          background: rgba(99, 102, 241, 0.15);
+          pointer-events: none;
+        }
+        .editor-content .column-resize-handle {
+          position: absolute;
+          right: -2px;
+          top: 0;
+          bottom: 0;
+          width: 4px;
+          background: #6366f1;
+          cursor: col-resize;
+          z-index: 20;
+          opacity: 0;
+          transition: opacity 0.15s;
+        }
+        .editor-content td:hover .column-resize-handle,
+        .editor-content th:hover .column-resize-handle {
+          opacity: 1;
+        }
+        .tableWrapper {
+          overflow-x: auto;
+          margin: 1.25em 0;
+        }
+
+        /* ── Slash command menu ── */
         .slash-menu {
           background: var(--bg-tertiary);
           border: 1px solid var(--border);
@@ -365,6 +434,8 @@ export default function Editor({ content, onChange, onReady, editable = true }: 
           font-size: 11px;
           color: var(--text-muted);
         }
+
+        /* ── Syntax highlighting ── */
         .editor-content pre {
           background: #1e1e1e;
           border-radius: 8px;
@@ -449,7 +520,6 @@ export default function Editor({ content, onChange, onReady, editable = true }: 
         >
           <div className="w-full max-w-sm rounded-xl border border-white/10 bg-[#1e1e1e] p-5 shadow-2xl">
             <p className="mb-3 text-sm font-medium text-white/70">Insert link</p>
-
             <input
               ref={linkInputRef}
               type="text"
@@ -459,8 +529,6 @@ export default function Editor({ content, onChange, onReady, editable = true }: 
               placeholder="Paste a URL or search your docs…"
               className="w-full rounded-lg border border-white/10 bg-[#2a2a2a] px-3 py-2 text-sm text-white placeholder-white/30 outline-none focus:border-white/30"
             />
-
-            {/* Doc search results */}
             {docResults.length > 0 && (
               <div className="mt-2 rounded-lg border border-white/10 bg-[#2a2a2a] overflow-hidden">
                 {docResults.map((doc, i) => (
@@ -480,13 +548,10 @@ export default function Editor({ content, onChange, onReady, editable = true }: 
                 ))}
               </div>
             )}
-
-            {/* Show hint when typing non-URL and no results */}
             {linkUrl.length > 0 && docResults.length === 0 &&
               !linkUrl.startsWith("http") && !linkUrl.startsWith("www.") && (
               <p className="mt-2 text-xs text-white/30">No docs match "{linkUrl}"</p>
             )}
-
             <div className="mt-4 flex justify-end gap-2">
               <button
                 onMouseDown={(e) => { e.preventDefault(); cancelLink() }}
