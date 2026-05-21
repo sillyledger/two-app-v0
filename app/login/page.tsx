@@ -1,19 +1,35 @@
 'use client'
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useEffect, Suspense } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 
-export default function LoginPage() {
+function LoginContent() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
+  const [success, setSuccess] = useState('')
   const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    if (searchParams.get('verified') === 'true') {
+      setSuccess('Email verified! You can now log in.')
+    }
+    if (searchParams.get('verified') === 'already') {
+      setSuccess('Email already verified. Log in below.')
+    }
+    if (searchParams.get('error') === 'invalid-token') {
+      setError('Invalid or expired verification link.')
+    }
+  }, [searchParams])
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
     setError('')
+    setSuccess('')
+
     const res = await fetch('/api/auth', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -33,11 +49,18 @@ export default function LoginPage() {
       <div className="w-full max-w-md rounded-2xl bg-white p-8 shadow-sm">
         <h1 className="mb-2 text-2xl font-bold">Welcome back</h1>
         <p className="mb-6 text-sm text-gray-500">Log in to your TWO account</p>
+
+        {success && (
+          <p className="mb-4 rounded-lg bg-green-50 p-3 text-sm text-green-600">
+            {success}
+          </p>
+        )}
         {error && (
           <p className="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-600">
             {error}
           </p>
         )}
+
         <form onSubmit={handleLogin} className="space-y-4">
           <div>
             <label className="mb-1 block text-sm font-medium">Email</label>
@@ -74,6 +97,7 @@ export default function LoginPage() {
             {loading ? 'Logging in...' : 'Log in'}
           </button>
         </form>
+
         <p className="mt-4 text-center text-sm text-gray-500">
           Don't have an account?{' '}
           <a href="/signup" className="font-medium text-black underline">
@@ -82,5 +106,13 @@ export default function LoginPage() {
         </p>
       </div>
     </div>
+  )
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense>
+      <LoginContent />
+    </Suspense>
   )
 }
