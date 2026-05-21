@@ -25,168 +25,142 @@ import {
   useCallback,
 } from "react"
 import tippy from "tippy.js"
-import type { Editor } from "@tiptap/core"
 
 const COMMANDS = [
   {
     title: "Heading 1",
     description: "Large section heading",
     icon: Heading1,
-    command: (editor: Editor) =>
-      editor.chain().focus().toggleHeading({ level: 1 }).run(),
+    command: (editor: any) => editor.chain().focus().toggleHeading({ level: 1 }).run(),
   },
   {
     title: "Heading 2",
     description: "Medium section heading",
     icon: Heading2,
-    command: (editor: Editor) =>
-      editor.chain().focus().toggleHeading({ level: 2 }).run(),
+    command: (editor: any) => editor.chain().focus().toggleHeading({ level: 2 }).run(),
   },
   {
     title: "Heading 3",
     description: "Small section heading",
     icon: Heading3,
-    command: (editor: Editor) =>
-      editor.chain().focus().toggleHeading({ level: 3 }).run(),
+    command: (editor: any) => editor.chain().focus().toggleHeading({ level: 3 }).run(),
   },
   {
     title: "Bold",
     description: "Make text bold",
     icon: Bold,
-    command: (editor: Editor) => editor.chain().focus().toggleBold().run(),
+    command: (editor: any) => editor.chain().focus().toggleBold().run(),
   },
   {
     title: "Italic",
     description: "Make text italic",
     icon: Italic,
-    command: (editor: Editor) => editor.chain().focus().toggleItalic().run(),
+    command: (editor: any) => editor.chain().focus().toggleItalic().run(),
   },
   {
     title: "Strikethrough",
     description: "Strike through text",
     icon: Strikethrough,
-    command: (editor: Editor) => editor.chain().focus().toggleStrike().run(),
+    command: (editor: any) => editor.chain().focus().toggleStrike().run(),
   },
   {
     title: "Bullet List",
     description: "Unordered list",
     icon: List,
-    command: (editor: Editor) =>
-      editor.chain().focus().toggleBulletList().run(),
+    command: (editor: any) => editor.chain().focus().toggleBulletList().run(),
   },
   {
     title: "Numbered List",
     description: "Ordered list",
     icon: ListOrdered,
-    command: (editor: Editor) =>
-      editor.chain().focus().toggleOrderedList().run(),
+    command: (editor: any) => editor.chain().focus().toggleOrderedList().run(),
   },
   {
     title: "Blockquote",
     description: "Indented quote block",
     icon: Quote,
-    command: (editor: Editor) =>
-      editor.chain().focus().toggleBlockquote().run(),
+    command: (editor: any) => editor.chain().focus().toggleBlockquote().run(),
   },
   {
     title: "Code",
     description: "Inline code snippet",
     icon: Code,
-    command: (editor: Editor) => editor.chain().focus().toggleCode().run(),
+    command: (editor: any) => editor.chain().focus().toggleCode().run(),
   },
   {
     title: "Code Block",
     description: "Multi-line code block",
     icon: Code2,
-    command: (editor: Editor) =>
-      editor.chain().focus().toggleCodeBlock().run(),
+    command: (editor: any) => editor.chain().focus().toggleCodeBlock().run(),
   },
   {
     title: "Divider",
     description: "Horizontal rule",
     icon: Minus,
-    command: (editor: Editor) =>
-      editor.chain().focus().setHorizontalRule().run(),
+    command: (editor: any) => editor.chain().focus().setHorizontalRule().run(),
   },
 ]
 
-type CommandItem = (typeof COMMANDS)[number]
+export const CommandList = forwardRef((props: any, ref: any) => {
+  const [selectedIndex, setSelectedIndex] = useState(0)
 
-interface CommandListProps {
-  items: CommandItem[]
-  command: (item: CommandItem) => void
-}
+  const selectItem = useCallback(
+    (index: number) => {
+      const item = props.items[index]
+      if (item) props.command(item)
+    },
+    [props]
+  )
 
-interface CommandListHandle {
-  onKeyDown: (args: { event: KeyboardEvent }) => boolean
-}
+  useEffect(() => setSelectedIndex(0), [props.items])
 
-export const CommandList = forwardRef<CommandListHandle, CommandListProps>(
-  (props, ref) => {
-    const [selectedIndex, setSelectedIndex] = useState(0)
+  useImperativeHandle(ref, () => ({
+    onKeyDown({ event }: { event: KeyboardEvent }) {
+      if (event.key === "ArrowUp") {
+        setSelectedIndex((i) => (i === 0 ? props.items.length - 1 : i - 1))
+        return true
+      }
+      if (event.key === "ArrowDown") {
+        setSelectedIndex((i) => (i === props.items.length - 1 ? 0 : i + 1))
+        return true
+      }
+      if (event.key === "Enter") {
+        selectItem(selectedIndex)
+        return true
+      }
+      return false
+    },
+  }))
 
-    const selectItem = useCallback(
-      (index: number) => {
-        const item = props.items[index]
-        if (item) props.command(item)
-      },
-      [props]
-    )
+  if (!props.items.length) return null
 
-    useEffect(() => setSelectedIndex(0), [props.items])
-
-    useImperativeHandle(ref, () => ({
-      onKeyDown({ event }: { event: KeyboardEvent }) {
-        if (event.key === "ArrowUp") {
-          setSelectedIndex((i) =>
-            i === 0 ? props.items.length - 1 : i - 1
-          )
-          return true
-        }
-        if (event.key === "ArrowDown") {
-          setSelectedIndex((i) =>
-            i === props.items.length - 1 ? 0 : i + 1
-          )
-          return true
-        }
-        if (event.key === "Enter") {
-          selectItem(selectedIndex)
-          return true
-        }
-        return false
-      },
-    }))
-
-    if (!props.items.length) return null
-
-    return (
-      <div className="slash-menu">
-        {props.items.map((item, index) => {
-          const Icon = item.icon
-          return (
-            <button
-              key={item.title}
-              className={`slash-menu-item ${index === selectedIndex ? "active" : ""}`}
-              onMouseEnter={() => setSelectedIndex(index)}
-              onMouseDown={(e) => {
-                e.preventDefault()
-                selectItem(index)
-              }}
-            >
-              <span className="slash-menu-icon">
-                <Icon size={15} />
-              </span>
-              <span className="slash-menu-text">
-                <span className="slash-menu-title">{item.title}</span>
-                <span className="slash-menu-desc">{item.description}</span>
-              </span>
-            </button>
-          )
-        })}
-      </div>
-    )
-  }
-)
+  return (
+    <div className="slash-menu">
+      {props.items.map((item: any, index: number) => {
+        const Icon = item.icon
+        return (
+          <button
+            key={item.title}
+            className={`slash-menu-item ${index === selectedIndex ? "active" : ""}`}
+            onMouseEnter={() => setSelectedIndex(index)}
+            onMouseDown={(e) => {
+              e.preventDefault()
+              selectItem(index)
+            }}
+          >
+            <span className="slash-menu-icon">
+              <Icon size={15} />
+            </span>
+            <span className="slash-menu-text">
+              <span className="slash-menu-title">{item.title}</span>
+              <span className="slash-menu-desc">{item.description}</span>
+            </span>
+          </button>
+        )
+      })}
+    </div>
+  )
+})
 
 CommandList.displayName = "CommandList"
 
@@ -197,15 +171,7 @@ export const SlashCommands = Extension.create({
     return {
       suggestion: {
         char: "/",
-        command: ({
-          editor,
-          range,
-          props,
-        }: {
-          editor: Editor
-          range: { from: number; to: number }
-          props: CommandItem
-        }) => {
+        command: ({ editor, range, props }: any) => {
           editor.chain().focus().deleteRange(range).run()
           props.command(editor)
         },
@@ -218,20 +184,20 @@ export const SlashCommands = Extension.create({
           )
         },
         render: () => {
-          let component: ReactRenderer
-          let popup: ReturnType<typeof tippy>
+          let component: any
+          let popup: any
 
           return {
-            onStart(props: Record<string, unknown>) {
+            onStart(props: any) {
               component = new ReactRenderer(CommandList, {
                 props,
-                editor: props.editor as Editor,
+                editor: props.editor,
               })
 
               if (!props.clientRect) return
 
               popup = tippy("body", {
-                getReferenceClientRect: props.clientRect as () => DOMRect,
+                getReferenceClientRect: props.clientRect,
                 appendTo: () => document.body,
                 content: component.element,
                 showOnCreate: true,
@@ -243,21 +209,20 @@ export const SlashCommands = Extension.create({
               })
             },
 
-            onUpdate(props: Record<string, unknown>) {
+            onUpdate(props: any) {
               component.updateProps(props)
               if (!props.clientRect) return
               popup[0].setProps({
-                getReferenceClientRect: props.clientRect as () => DOMRect,
+                getReferenceClientRect: props.clientRect,
               })
             },
 
-            onKeyDown(props: { event: KeyboardEvent }) {
+            onKeyDown(props: any) {
               if (props.event.key === "Escape") {
                 popup[0].hide()
                 return true
               }
-              const ref = component.ref as CommandListHandle | null
-              return ref?.onKeyDown(props) ?? false
+              return component.ref?.onKeyDown(props) ?? false
             },
 
             onExit() {
