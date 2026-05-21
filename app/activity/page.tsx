@@ -48,7 +48,7 @@ export default async function ActivityPage() {
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
 
   const docs = await sql`
-    SELECT id, title, content, updated_at, created_at
+    SELECT id, uuid, title, content, updated_at, created_at
     FROM docs
     WHERE updated_at >= ${thirtyDaysAgo.toISOString()}
     ORDER BY updated_at DESC
@@ -77,12 +77,12 @@ export default async function ActivityPage() {
                     Math.abs(new Date(doc.updated_at).getTime() - new Date(doc.created_at).getTime()) < 5000
                   return (
                     <Link
-                      key={doc.id}
-                      href={`/notes/${doc.id}`}
+                      key={doc.uuid}
+                      href={`/docs/${doc.uuid}`}
                       className="flex items-center justify-between px-4 py-3 rounded-lg hover:bg-neutral-800 transition-colors group"
                     >
                       <div className="flex items-center gap-3 min-w-0">
-                        <span className="text-neutral-600 text-xs w-14 shrink-0">
+                        <span className="text-xs w-14 shrink-0">
                           {isNew ? (
                             <span className="text-emerald-500 font-medium">created</span>
                           ) : (
