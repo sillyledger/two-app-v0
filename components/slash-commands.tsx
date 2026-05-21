@@ -27,8 +27,6 @@ import {
 import tippy from "tippy.js"
 import type { Editor } from "@tiptap/core"
 
-// ── Command definitions ──────────────────────────────────────────────────────
-
 const COMMANDS = [
   {
     title: "Heading 1",
@@ -112,8 +110,6 @@ const COMMANDS = [
   },
 ]
 
-// ── Menu component ───────────────────────────────────────────────────────────
-
 type CommandItem = (typeof COMMANDS)[number]
 
 interface CommandListProps {
@@ -121,77 +117,78 @@ interface CommandListProps {
   command: (item: CommandItem) => void
 }
 
-export const CommandList = forwardRef
-  { onKeyDown: (args: { event: KeyboardEvent }) => boolean },
-  CommandListProps
->((props, ref) => {
-  const [selectedIndex, setSelectedIndex] = useState(0)
+interface CommandListHandle {
+  onKeyDown: (args: { event: KeyboardEvent }) => boolean
+}
 
-  const selectItem = useCallback(
-    (index: number) => {
-      const item = props.items[index]
-      if (item) props.command(item)
-    },
-    [props]
-  )
+export const CommandList = forwardRef<CommandListHandle, CommandListProps>(
+  (props, ref) => {
+    const [selectedIndex, setSelectedIndex] = useState(0)
 
-  useEffect(() => setSelectedIndex(0), [props.items])
+    const selectItem = useCallback(
+      (index: number) => {
+        const item = props.items[index]
+        if (item) props.command(item)
+      },
+      [props]
+    )
 
-  useImperativeHandle(ref, () => ({
-    onKeyDown({ event }: { event: KeyboardEvent }) {
-      if (event.key === "ArrowUp") {
-        setSelectedIndex((i) =>
-          i === 0 ? props.items.length - 1 : i - 1
-        )
-        return true
-      }
-      if (event.key === "ArrowDown") {
-        setSelectedIndex((i) =>
-          i === props.items.length - 1 ? 0 : i + 1
-        )
-        return true
-      }
-      if (event.key === "Enter") {
-        selectItem(selectedIndex)
-        return true
-      }
-      return false
-    },
-  }))
+    useEffect(() => setSelectedIndex(0), [props.items])
 
-  if (!props.items.length) return null
+    useImperativeHandle(ref, () => ({
+      onKeyDown({ event }: { event: KeyboardEvent }) {
+        if (event.key === "ArrowUp") {
+          setSelectedIndex((i) =>
+            i === 0 ? props.items.length - 1 : i - 1
+          )
+          return true
+        }
+        if (event.key === "ArrowDown") {
+          setSelectedIndex((i) =>
+            i === props.items.length - 1 ? 0 : i + 1
+          )
+          return true
+        }
+        if (event.key === "Enter") {
+          selectItem(selectedIndex)
+          return true
+        }
+        return false
+      },
+    }))
 
-  return (
-    <div className="slash-menu">
-      {props.items.map((item, index) => {
-        const Icon = item.icon
-        return (
-          <button
-            key={item.title}
-            className={`slash-menu-item ${index === selectedIndex ? "active" : ""}`}
-            onMouseEnter={() => setSelectedIndex(index)}
-            onMouseDown={(e) => {
-              e.preventDefault()
-              selectItem(index)
-            }}
-          >
-            <span className="slash-menu-icon">
-              <Icon size={15} />
-            </span>
-            <span className="slash-menu-text">
-              <span className="slash-menu-title">{item.title}</span>
-              <span className="slash-menu-desc">{item.description}</span>
-            </span>
-          </button>
-        )
-      })}
-    </div>
-  )
-})
+    if (!props.items.length) return null
+
+    return (
+      <div className="slash-menu">
+        {props.items.map((item, index) => {
+          const Icon = item.icon
+          return (
+            <button
+              key={item.title}
+              className={`slash-menu-item ${index === selectedIndex ? "active" : ""}`}
+              onMouseEnter={() => setSelectedIndex(index)}
+              onMouseDown={(e) => {
+                e.preventDefault()
+                selectItem(index)
+              }}
+            >
+              <span className="slash-menu-icon">
+                <Icon size={15} />
+              </span>
+              <span className="slash-menu-text">
+                <span className="slash-menu-title">{item.title}</span>
+                <span className="slash-menu-desc">{item.description}</span>
+              </span>
+            </button>
+          )
+        })}
+      </div>
+    )
+  }
+)
 
 CommandList.displayName = "CommandList"
-
-// ── Tiptap extension ─────────────────────────────────────────────────────────
 
 export const SlashCommands = Extension.create({
   name: "slashCommands",
@@ -222,16 +219,13 @@ export const SlashCommands = Extension.create({
         },
         render: () => {
           let component: ReactRenderer
-            { onKeyDown: (args: { event: KeyboardEvent }) => boolean },
-            CommandListProps
-          >
           let popup: ReturnType<typeof tippy>
 
           return {
-            onStart(props: Parameters<NonNullable<typeof Suggestion>>[0] & { clientRect?: () => DOMRect | null }) {
+            onStart(props: Record<string, unknown>) {
               component = new ReactRenderer(CommandList, {
                 props,
-                editor: props.editor,
+                editor: props.editor as Editor,
               })
 
               if (!props.clientRect) return
@@ -249,7 +243,7 @@ export const SlashCommands = Extension.create({
               })
             },
 
-            onUpdate(props: Parameters<NonNullable<typeof Suggestion>>[0] & { clientRect?: () => DOMRect | null }) {
+            onUpdate(props: Record<string, unknown>) {
               component.updateProps(props)
               if (!props.clientRect) return
               popup[0].setProps({
@@ -262,7 +256,8 @@ export const SlashCommands = Extension.create({
                 popup[0].hide()
                 return true
               }
-              return component.ref?.onKeyDown(props) ?? false
+              const ref = component.ref as CommandListHandle | null
+              return ref?.onKeyDown(props) ?? false
             },
 
             onExit() {
