@@ -158,7 +158,7 @@ export default function Editor({ content, onChange, onReady, editable = true }: 
     const handleMouseOut = (e: MouseEvent) => {
       const related = e.relatedTarget as HTMLElement | null
       if (linkPopupRef.current && related && linkPopupRef.current.contains(related)) return
-      hidePopupTimer.current = setTimeout(() => setLinkPopup(null), 300)
+      hidePopupTimer.current = setTimeout(() => setLinkPopup(null), 800)
     }
 
     container.addEventListener("mouseover", handleMouseOver)
