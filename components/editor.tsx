@@ -363,12 +363,14 @@ export default function Editor({ content, onChange, onReady, editable = true }: 
             <ExternalLink size={11} />
             Open
           </button>
-          {editable && (
+        {editable && (
             <button
               onMouseDown={(e) => {
                 e.preventDefault()
+                const url = linkPopup.url
                 setLinkPopup(null)
-                openLinkModal()
+                setLinkUrl(url)
+                setLinkModalOpen(true)
               }}
               className="flex items-center gap-1 rounded px-1.5 py-0.5 text-xs text-white/60 hover:bg-white/10 hover:text-white transition-colors"
             >
