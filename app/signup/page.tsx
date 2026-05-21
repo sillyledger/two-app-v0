@@ -1,5 +1,4 @@
 'use client'
-
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 
@@ -20,11 +19,10 @@ export default function SignupPage() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password, action: 'signup' }),
     })
-
     const data = await res.json()
 
     if (res.ok) {
-      router.push('/')
+      router.push(`/verify-email?email=${encodeURIComponent(email)}`)
     } else {
       setError(data.error || 'Signup failed')
     }
