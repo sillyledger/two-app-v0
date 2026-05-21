@@ -135,37 +135,49 @@ export default function Editor({ content, onChange, onReady, editable = true }: 
     onCreate: () => setEditorReady(true),
   })
 
-  // ── Hover-based link popup — runs after editor is ready ──────────────────
+ // ── Hover-based link popup — runs after editor is ready ──────────────────
   useEffect(() => {
     if (!editorReady) return
     const container = containerRef.current
     if (!container) return
 
-    const handleMouseOver = (e: MouseEvent) => {
-      const target = (e.target as HTMLElement).closest("a")
-      if (!target) return
-      if (hidePopupTimer.current) clearTimeout(hidePopupTimer.current)
-      const href = target.getAttribute("href") || ""
-      const rect = target.getBoundingClientRect()
-      const containerRect = container.getBoundingClientRect()
-      setLinkPopup({
-        url: href,
-        top: rect.bottom - containerRect.top + 6,
-        left: Math.max(0, rect.left - containerRect.left),
+    const attachedLinks = new Set<HTMLAnchorElement>()
+
+    const attachToLink = (a: HTMLAnchorElement) => {
+      if (attachedLinks.has(a)) return
+      attachedLinks.add(a)
+
+      a.addEventListener("mouseenter", () => {
+        if (hidePopupTimer.current) clearTimeout(hidePopupTimer.current)
+        const href = a.getAttribute("href") || ""
+        const rect = a.getBoundingClientRect()
+        const containerRect = container.getBoundingClientRect()
+        setLinkPopup({
+          url: href,
+          top: rect.bottom - containerRect.top + 6,
+          left: Math.max(0, rect.left - containerRect.left),
+        })
+      })
+
+      a.addEventListener("mouseleave", (e) => {
+        const related = e.relatedTarget as HTMLElement | null
+        if (linkPopupRef.current && related && linkPopupRef.current.contains(related)) return
+        hidePopupTimer.current = setTimeout(() => setLinkPopup(null), 600)
       })
     }
 
-    const handleMouseOut = (e: MouseEvent) => {
-      const related = e.relatedTarget as HTMLElement | null
-      if (linkPopupRef.current && related && linkPopupRef.current.contains(related)) return
-      hidePopupTimer.current = setTimeout(() => setLinkPopup(null), 800)
-    }
+    // Attach to all existing links
+    container.querySelectorAll("a").forEach((a) => attachToLink(a as HTMLAnchorElement))
 
-    container.addEventListener("mouseover", handleMouseOver)
-    container.addEventListener("mouseout", handleMouseOut)
+    // Watch for new links added as user types
+    const observer = new MutationObserver(() => {
+      container.querySelectorAll("a").forEach((a) => attachToLink(a as HTMLAnchorElement))
+    })
+    observer.observe(container, { childList: true, subtree: true })
+
     return () => {
-      container.removeEventListener("mouseover", handleMouseOver)
-      container.removeEventListener("mouseout", handleMouseOut)
+      observer.disconnect()
+      attachedLinks.clear()
     }
   }, [editorReady])
 
