@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation'
 import Sidebar from '@/components/sidebar'
 import Editor from '@/components/editor'
 import DocTopbar from '@/components/doc-topbar'
-import { CalendarDays, SignalLow, SignalMedium, SignalHigh, Minus, PanelRight, X, FileText, User, Clock, Plus, Check } from 'lucide-react'
+import { CalendarDays, SignalLow, SignalMedium, SignalHigh, Minus, PanelRight, X, FileText, User, Clock, Plus, Check, Send, Trash2 } from 'lucide-react'
 import type { Doc } from '@/lib/db'
 
 interface Folder {
@@ -29,6 +29,14 @@ interface ActivityEntry {
   type: 'created' | 'edited'
   timestamp: string
   label: string
+}
+
+interface Comment {
+  id: number
+  user_id: string
+  user_name: string
+  body: string
+  created_at: string
 }
 
 type Priority = 'low' | 'medium' | 'high' | null
@@ -140,6 +148,11 @@ export default function DocPage() {
   const [creatingLabel, setCreatingLabel] = useState(false)
   const labelPickerRef = useRef<HTMLDivElement>(null)
 
+  const [comments, setComments] = useState<Comment[]>([])
+  const [commentBody, setCommentBody] = useState('')
+  const [postingComment, setPostingComment] = useState(false)
+  const commentInputRef = useRef<HTMLTextAreaElement>(null)
+
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
       if (labelPickerRef.current && !labelPickerRef.current.contains(e.target as Node)) {
@@ -210,6 +223,9 @@ export default function DocPage() {
     fetch(`/api/docs/${id}/labels`)
       .then(r => r.json())
       .then(data => { if (Array.isArray(data)) setDocLabels(data) })
+    fetch(`/api/comments?docId=${id}`)
+      .then(r => r.json())
+      .then(data => { if (Array.isArray(data)) setComments(data) })
   }, [isLoggedIn, id])
 
   useEffect(() => {
@@ -328,6 +344,33 @@ export default function DocPage() {
     setCreatingLabel(false)
   }
 
+  const handlePostComment = async () => {
+    if (!commentBody.trim() || postingComment) return
+    setPostingComment(true)
+    const res = await fetch('/api/comments', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        docId: doc?.id,
+        body: commentBody.trim(),
+        userName: currentUser?.name || currentUser?.email || 'Anonymous',
+      }),
+    })
+    const created = await res.json()
+    setComments(prev => [...prev, created])
+    setCommentBody('')
+    setPostingComment(false)
+  }
+
+  const handleDeleteComment = async (commentId: number) => {
+    await fetch('/api/comments', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ commentId }),
+    })
+    setComments(prev => prev.filter(c => c.id !== commentId))
+  }
+
   const handleNewDoc = async () => {
     const res = await fetch('/api/docs', {
       method: 'POST',
@@ -348,14 +391,12 @@ export default function DocPage() {
   const charCount = getCharCount(content)
   const activePriority = PRIORITIES.find(p => p.value === priority) ?? PRIORITIES[0]
 
-  // Build activity entries from doc timestamps
   const activityEntries: ActivityEntry[] = []
   if (doc) {
     const createdAt = doc.created_at
     const editedAt = lastSaved ?? doc.updated_at
     const isEdited = editedAt && createdAt &&
       Math.abs(new Date(editedAt).getTime() - new Date(createdAt).getTime()) > 5000
-
     if (isEdited) {
       activityEntries.push({ type: 'edited', timestamp: editedAt!, label: 'Last edited' })
     }
@@ -435,9 +476,7 @@ export default function DocPage() {
                 <CalendarDays size={12} className="text-[#666]" />
                 <span>{formatDate(doc.created_at)}</span>
               </div>
-
               <span className="text-[#444] select-none">·</span>
-
               {currentUser ? (
                 <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-white/5 border border-white/8 text-xs text-[#888]">
                   <div className="w-4 h-4 rounded-full bg-[#3a3a3a] border border-white/10 flex items-center justify-center text-[9px] font-medium text-[#ccc] select-none">
@@ -451,9 +490,7 @@ export default function DocPage() {
                   <span>Unknown</span>
                 </div>
               )}
-
               <span className="text-[#444] select-none">·</span>
-
               {isLoggedIn && (
                 <div className="relative" ref={priorityRef}>
                   <button
@@ -463,7 +500,6 @@ export default function DocPage() {
                     <span className={activePriority.color}>{activePriority.icon}</span>
                     <span>{activePriority.label}</span>
                   </button>
-
                   {priorityOpen && (
                     <div className="absolute top-full mt-1.5 left-0 z-50 w-44 rounded-lg border border-white/10 bg-[#1e1e1e] shadow-xl py-1">
                       {PRIORITIES.map((p) => (
@@ -483,7 +519,6 @@ export default function DocPage() {
                   )}
                 </div>
               )}
-
               {docLabels.length > 0 && (
                 <>
                   <span className="text-[#444] select-none">·</span>
@@ -546,7 +581,6 @@ export default function DocPage() {
           <DetailRow label="Created" icon={<CalendarDays size={12} />}>
             <span className="text-white/50">{formatDate(doc.created_at)}</span>
           </DetailRow>
-
           <DetailRow label="Author" icon={<User size={12} />}>
             {currentUser ? (
               <div className="flex items-center gap-1.5">
@@ -559,17 +593,14 @@ export default function DocPage() {
               <span className="text-white/25">Unknown</span>
             )}
           </DetailRow>
-
           <DetailRow label="Words" icon={<FileText size={12} />}>
             <span className="text-white/50">{wordCount.toLocaleString()}</span>
           </DetailRow>
-
           <DetailRow label="Characters" icon={<Clock size={12} />}>
             <span className="text-white/50">{charCount.toLocaleString()}</span>
           </DetailRow>
 
           <div className="my-3 border-t border-white/5" />
-
           <p className="text-[10px] font-medium text-white/20 uppercase tracking-wider mb-2">Properties</p>
 
           <div className="flex items-center justify-between py-1.5 group">
@@ -620,7 +651,6 @@ export default function DocPage() {
             <>
               <div className="my-3 border-t border-white/5" />
               <p className="text-[10px] font-medium text-white/20 uppercase tracking-wider mb-2">Labels</p>
-
               <div className="flex flex-wrap gap-1.5 mb-2">
                 {docLabels.map(label => (
                   <button
@@ -634,7 +664,6 @@ export default function DocPage() {
                   </button>
                 ))}
               </div>
-
               <div className="relative" ref={labelPickerRef}>
                 <button
                   onClick={() => { setLabelPickerOpen(v => !v); setCreatingLabel(false) }}
@@ -643,7 +672,6 @@ export default function DocPage() {
                   <Plus size={11} />
                   <span>Add label</span>
                 </button>
-
                 {labelPickerOpen && (
                   <div className="absolute bottom-full right-0 mb-1 z-50 w-52 rounded-lg border border-white/10 bg-[#1a1a1a] shadow-xl py-1">
                     {!creatingLabel ? (
@@ -723,18 +751,15 @@ export default function DocPage() {
             <>
               <div className="my-3 border-t border-white/5" />
               <p className="text-[10px] font-medium text-white/20 uppercase tracking-wider mb-3">Activity</p>
-
               <div className="flex flex-col gap-3">
                 {activityEntries.map((entry, i) => (
                   <div key={i} className="flex items-start gap-2.5">
-                    {/* Timeline dot */}
                     <div className="flex flex-col items-center mt-0.5 shrink-0">
                       <div className={`w-1.5 h-1.5 rounded-full ${entry.type === 'created' ? 'bg-emerald-500/60' : 'bg-white/20'}`} />
                       {i < activityEntries.length - 1 && (
                         <div className="w-px h-5 bg-white/5 mt-1" />
                       )}
                     </div>
-                    {/* Entry text */}
                     <div className="flex flex-col gap-0.5 min-w-0">
                       <div className="flex items-center gap-1.5">
                         {currentUser && (
@@ -742,9 +767,7 @@ export default function DocPage() {
                             {getInitials(currentUser.name, currentUser.email)}
                           </div>
                         )}
-                        <span className="text-[11px] text-white/40">
-                          {currentUser?.name || currentUser?.email || 'You'}
-                        </span>
+                        <span className="text-[11px] text-white/40">{currentUser?.name || currentUser?.email || 'You'}</span>
                         <span className="text-[11px] text-white/20">{entry.label.toLowerCase()}</span>
                       </div>
                       <div className="flex items-center gap-1.5 ml-5">
@@ -755,6 +778,74 @@ export default function DocPage() {
                     </div>
                   </div>
                 ))}
+              </div>
+            </>
+          )}
+
+          {/* Comments section */}
+          {isLoggedIn && (
+            <>
+              <div className="my-3 border-t border-white/5" />
+              <p className="text-[10px] font-medium text-white/20 uppercase tracking-wider mb-3">
+                Comments {comments.length > 0 && <span className="text-white/15">· {comments.length}</span>}
+              </p>
+
+              {/* Existing comments */}
+              <div className="flex flex-col gap-3 mb-3">
+                {comments.length === 0 && (
+                  <p className="text-[11px] text-white/20">No comments yet.</p>
+                )}
+                {comments.map(comment => (
+                  <div key={comment.id} className="flex items-start gap-2 group">
+                    <div className="w-5 h-5 rounded-full bg-[#3a3a3a] border border-white/10 flex items-center justify-center text-[8px] font-medium text-[#ccc] shrink-0 mt-0.5">
+                      {comment.user_name?.[0]?.toUpperCase() ?? '?'}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between gap-1">
+                        <span className="text-[11px] text-white/50 font-medium truncate">{comment.user_name}</span>
+                        <div className="flex items-center gap-1 shrink-0">
+                          <span className="text-[10px] text-white/20">{timeAgo(comment.created_at)}</span>
+                          {comment.user_id === String(currentUser?.id) && (
+                            <button
+                              onClick={() => handleDeleteComment(comment.id)}
+                              className="opacity-0 group-hover:opacity-100 transition-opacity text-white/20 hover:text-red-400 ml-1"
+                            >
+                              <Trash2 size={10} />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                      <p className="text-[12px] text-white/50 mt-0.5 leading-relaxed break-words">{comment.body}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* New comment input */}
+              <div className="flex flex-col gap-2">
+                <textarea
+                  ref={commentInputRef}
+                  value={commentBody}
+                  onChange={e => setCommentBody(e.target.value)}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault()
+                      handlePostComment()
+                    }
+                  }}
+                  placeholder="Add a comment..."
+                  rows={2}
+                  className="w-full bg-white/5 border border-white/8 rounded-lg px-3 py-2 text-[12px] text-white/60 placeholder:text-white/20 focus:outline-none focus:border-white/15 resize-none"
+                />
+                <button
+                  onClick={handlePostComment}
+                  disabled={!commentBody.trim() || postingComment}
+                  className="self-end flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium transition-colors disabled:opacity-30"
+                  style={{ backgroundColor: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.6)' }}
+                >
+                  <Send size={11} />
+                  {postingComment ? 'Posting...' : 'Post'}
+                </button>
               </div>
             </>
           )}
