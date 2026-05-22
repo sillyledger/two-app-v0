@@ -468,7 +468,7 @@ export default function DocPage() {
       {/* Detail panel — Linear style, no header bar */}
       <div
         className={`fixed top-0 right-0 h-full w-[280px] flex flex-col z-30 transition-transform duration-300 ease-in-out ${detailOpen ? 'translate-x-0' : 'translate-x-full'}`}
-        style={{ backgroundColor: 'var(--bg-secondary)', borderLeft: '1px solid var(--border)' }}
+        style={{ backgroundColor: 'var(--bg)', borderLeft: '1px solid var(--border)' }}
       >
         <div
           className="flex-1 overflow-y-auto flex flex-col gap-1"
