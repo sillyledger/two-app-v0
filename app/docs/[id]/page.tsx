@@ -692,9 +692,8 @@ export default function DocPage() {
 
           <div className="flex items-center justify-between py-1.5">
             <span className="text-xs flex items-center gap-2" style={{ color: 'var(--text-secondary)' }}>
-              <span style={{ color: 'var(--text-muted)' }}>{activePriority.icon}</span>
-              Priority
-            </span>
+  Priority
+</span>
             {isLoggedIn ? (
               <div className="relative" ref={priorityRef}>
                 <button
