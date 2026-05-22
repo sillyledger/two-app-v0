@@ -405,7 +405,7 @@ export default function DocPage() {
   if (!authChecked || !doc) return null
 
   return (
-    <div className="flex min-h-screen bg-background overflow-hidden">
+    <div className="flex h-screen bg-background overflow-hidden">
       {isLoggedIn && (
         <Sidebar onNewNote={handleNewDoc} collapsed={collapsed} onToggle={() => setCollapsed((v) => !v)} />
       )}
