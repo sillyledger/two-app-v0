@@ -67,25 +67,15 @@ function formatDate(dateStr: string) {
   if (!dateStr) return ''
   const date = new Date(dateStr)
   if (isNaN(date.getTime())) return ''
-  return date.toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  })
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
 }
 
 function formatDateTime(dateStr: string) {
   if (!dateStr) return ''
   const date = new Date(dateStr)
   if (isNaN(date.getTime())) return ''
-  return date.toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  }) + ' · ' + date.toLocaleTimeString('en-US', {
-    hour: 'numeric',
-    minute: '2-digit',
-  })
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) +
+    ' · ' + date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
 }
 
 function timeAgo(dateStr: string): string {
@@ -134,17 +124,13 @@ export default function DocPage() {
   const [authChecked, setAuthChecked] = useState(false)
   const [currentUser, setCurrentUser] = useState<User | null>(null)
   const [priority, setPriority] = useState<Priority>(null)
-
   const [priorityOpen, setPriorityOpen] = useState(false)
   const priorityRef = useRef<HTMLDivElement>(null)
-
   const [headerPriorityOpen, setHeaderPriorityOpen] = useState(false)
   const headerPriorityRef = useRef<HTMLDivElement>(null)
-
   const titleRef = useRef<HTMLTextAreaElement>(null)
   const editorFocusRef = useRef<(() => void) | null>(null)
   const [lastSaved, setLastSaved] = useState<string | null>(null)
-
   const [docLabels, setDocLabels] = useState<Label[]>([])
   const [allLabels, setAllLabels] = useState<Label[]>([])
   const [labelPickerOpen, setLabelPickerOpen] = useState(false)
@@ -152,7 +138,6 @@ export default function DocPage() {
   const [newLabelColor, setNewLabelColor] = useState('#888888')
   const [creatingLabel, setCreatingLabel] = useState(false)
   const labelPickerRef = useRef<HTMLDivElement>(null)
-
   const [comments, setComments] = useState<Comment[]>([])
   const [commentBody, setCommentBody] = useState('')
   const [postingComment, setPostingComment] = useState(false)
@@ -199,12 +184,8 @@ export default function DocPage() {
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
-      if (priorityRef.current && !priorityRef.current.contains(e.target as Node)) {
-        setPriorityOpen(false)
-      }
-      if (headerPriorityRef.current && !headerPriorityRef.current.contains(e.target as Node)) {
-        setHeaderPriorityOpen(false)
-      }
+      if (priorityRef.current && !priorityRef.current.contains(e.target as Node)) setPriorityOpen(false)
+      if (headerPriorityRef.current && !headerPriorityRef.current.contains(e.target as Node)) setHeaderPriorityOpen(false)
     }
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
@@ -225,61 +206,40 @@ export default function DocPage() {
 
   useEffect(() => {
     if (!isLoggedIn) return
-    fetch('/api/labels')
-      .then(r => r.json())
-      .then(data => { if (Array.isArray(data)) setAllLabels(data) })
-    fetch(`/api/docs/${id}/labels`)
-      .then(r => r.json())
-      .then(data => { if (Array.isArray(data)) setDocLabels(data) })
-    fetch(`/api/comments?docId=${id}`)
-      .then(r => r.json())
-      .then(data => { if (Array.isArray(data)) setComments(data) })
+    fetch('/api/labels').then(r => r.json()).then(data => { if (Array.isArray(data)) setAllLabels(data) })
+    fetch(`/api/docs/${id}/labels`).then(r => r.json()).then(data => { if (Array.isArray(data)) setDocLabels(data) })
+    fetch(`/api/comments?docId=${id}`).then(r => r.json()).then(data => { if (Array.isArray(data)) setComments(data) })
   }, [isLoggedIn, id])
 
   useEffect(() => {
     if (!authChecked) return
     if (isLoggedIn) {
-      fetch(`/api/docs/${id}`)
-        .then((res) => res.json())
-        .then((data: Doc) => {
-          if (data.error) {
-            router.push('/')
-            return
-          }
-          setDoc(data)
-          setTitle(data.title)
-          setContent(data.content || '')
-          setIsPublic(data.is_public ?? false)
-          setPriority((data.priority as Priority) ?? null)
-          setLastSaved(data.updated_at ?? null)
-          if (data.folder_id) {
-            fetch(`/api/folders/${data.folder_id}`)
-              .then((r) => r.json())
-              .then((f: Folder) => setFolder(f))
-              .catch(() => {})
-          }
-        })
+      fetch(`/api/docs/${id}`).then((res) => res.json()).then((data: Doc) => {
+        if (data.error) { router.push('/'); return }
+        setDoc(data)
+        setTitle(data.title)
+        setContent(data.content || '')
+        setIsPublic(data.is_public ?? false)
+        setPriority((data.priority as Priority) ?? null)
+        setLastSaved(data.updated_at ?? null)
+        if (data.folder_id) {
+          fetch(`/api/folders/${data.folder_id}`).then((r) => r.json()).then((f: Folder) => setFolder(f)).catch(() => {})
+        }
+      })
     } else {
-      fetch(`/api/docs/public/${id}`)
-        .then((res) => res.json())
-        .then((data: Doc) => {
-          if (data.error) {
-            router.push('/login')
-            return
-          }
-          setDoc(data)
-          setTitle(data.title)
-          setContent(data.content || '')
-          setIsPublic(data.is_public ?? false)
-          setPriority((data.priority as Priority) ?? null)
-          setLastSaved(data.updated_at ?? null)
-        })
+      fetch(`/api/docs/public/${id}`).then((res) => res.json()).then((data: Doc) => {
+        if (data.error) { router.push('/login'); return }
+        setDoc(data)
+        setTitle(data.title)
+        setContent(data.content || '')
+        setIsPublic(data.is_public ?? false)
+        setPriority((data.priority as Priority) ?? null)
+        setLastSaved(data.updated_at ?? null)
+      })
     }
   }, [id, authChecked])
 
-  useEffect(() => {
-    resizeTitle()
-  }, [title])
+  useEffect(() => { resizeTitle() }, [title])
 
   const handleSave = useCallback(async (latestTitle: string, latestContent: string, latestDoc: Doc | null) => {
     if (!isLoggedIn) return
@@ -294,12 +254,9 @@ export default function DocPage() {
   }, [id, isLoggedIn])
 
   useEffect(() => {
-    if (!doc) return
-    if (!isLoggedIn) return
+    if (!doc || !isLoggedIn) return
     setSaveStatus('unsaved')
-    const timer = setTimeout(() => {
-      handleSave(title, content, doc)
-    }, 1000)
+    const timer = setTimeout(() => { handleSave(title, content, doc) }, 1000)
     return () => clearTimeout(timer)
   }, [title, content])
 
@@ -317,36 +274,20 @@ export default function DocPage() {
   const handleToggleLabel = async (label: Label) => {
     const isOn = docLabels.some(l => l.id === label.id)
     if (isOn) {
-      await fetch(`/api/docs/${id}/labels`, {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ labelId: label.id }),
-      })
+      await fetch(`/api/docs/${id}/labels`, { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ labelId: label.id }) })
       setDocLabels(prev => prev.filter(l => l.id !== label.id))
     } else {
-      await fetch(`/api/docs/${id}/labels`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ labelId: label.id }),
-      })
+      await fetch(`/api/docs/${id}/labels`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ labelId: label.id }) })
       setDocLabels(prev => [...prev, label])
     }
   }
 
   const handleCreateLabel = async () => {
     if (!newLabelName.trim()) return
-    const res = await fetch('/api/labels', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: newLabelName.trim(), color: newLabelColor }),
-    })
+    const res = await fetch('/api/labels', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: newLabelName.trim(), color: newLabelColor }) })
     const created = await res.json()
     setAllLabels(prev => [...prev, created])
-    await fetch(`/api/docs/${id}/labels`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ labelId: created.id }),
-    })
+    await fetch(`/api/docs/${id}/labels`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ labelId: created.id }) })
     setDocLabels(prev => [...prev, created])
     setNewLabelName('')
     setNewLabelColor('#888888')
@@ -359,11 +300,7 @@ export default function DocPage() {
     const res = await fetch('/api/comments', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        docId: id,
-        body: commentBody.trim(),
-        userName: currentUser?.name || currentUser?.email || 'Anonymous',
-      }),
+      body: JSON.stringify({ docId: id, body: commentBody.trim(), userName: currentUser?.name || currentUser?.email || 'Anonymous' }),
     })
     const created = await res.json()
     setComments(prev => [...prev, created])
@@ -372,20 +309,12 @@ export default function DocPage() {
   }
 
   const handleDeleteComment = async (commentId: number) => {
-    await fetch('/api/comments', {
-      method: 'DELETE',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ commentId }),
-    })
+    await fetch('/api/comments', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ commentId }) })
     setComments(prev => prev.filter(c => c.id !== commentId))
   }
 
   const handleNewDoc = async () => {
-    const res = await fetch('/api/docs', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title: 'Untitled', content: '', color: 'yellow', type: 'doc' }),
-    })
+    const res = await fetch('/api/docs', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title: 'Untitled', content: '', color: 'yellow', type: 'doc' }) })
     const newDoc = await res.json()
     router.push(`/docs/${newDoc.uuid}`)
   }
@@ -404,14 +333,9 @@ export default function DocPage() {
   if (doc) {
     const createdAt = doc.created_at
     const editedAt = lastSaved ?? doc.updated_at
-    const isEdited = editedAt && createdAt &&
-      Math.abs(new Date(editedAt).getTime() - new Date(createdAt).getTime()) > 5000
-    if (isEdited) {
-      activityEntries.push({ type: 'edited', timestamp: editedAt!, label: 'Last edited' })
-    }
-    if (createdAt) {
-      activityEntries.push({ type: 'created', timestamp: createdAt, label: 'Created' })
-    }
+    const isEdited = editedAt && createdAt && Math.abs(new Date(editedAt).getTime() - new Date(createdAt).getTime()) > 5000
+    if (isEdited) activityEntries.push({ type: 'edited', timestamp: editedAt!, label: 'Last edited' })
+    if (createdAt) activityEntries.push({ type: 'created', timestamp: createdAt, label: 'Created' })
   }
 
   if (!authChecked || !doc) return null
@@ -419,11 +343,7 @@ export default function DocPage() {
   return (
     <div className="flex min-h-screen bg-background overflow-hidden">
       {isLoggedIn && (
-        <Sidebar
-          onNewNote={handleNewDoc}
-          collapsed={collapsed}
-          onToggle={() => setCollapsed((v) => !v)}
-        />
+        <Sidebar onNewNote={handleNewDoc} collapsed={collapsed} onToggle={() => setCollapsed((v) => !v)} />
       )}
 
       <div
@@ -450,38 +370,19 @@ export default function DocPage() {
             color: detailOpen ? 'var(--text-primary)' : 'var(--text-muted)',
             backgroundColor: detailOpen ? 'var(--bg-tertiary)' : 'transparent',
           }}
-          onMouseEnter={e => {
-            e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)'
-            e.currentTarget.style.color = 'var(--text-primary)'
-          }}
-          onMouseLeave={e => {
-            e.currentTarget.style.backgroundColor = detailOpen ? 'var(--bg-tertiary)' : 'transparent'
-            e.currentTarget.style.color = detailOpen ? 'var(--text-primary)' : 'var(--text-muted)'
-          }}
+          onMouseEnter={e => { e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)'; e.currentTarget.style.color = 'var(--text-primary)' }}
+          onMouseLeave={e => { e.currentTarget.style.backgroundColor = detailOpen ? 'var(--bg-tertiary)' : 'transparent'; e.currentTarget.style.color = detailOpen ? 'var(--text-primary)' : 'var(--text-muted)' }}
         >
           <PanelRight size={15} />
         </button>
 
         <main className="flex-1 overflow-y-auto pt-[44px]">
-          <div
-            className={`mx-auto w-full px-16 pt-16 pb-32 transition-all duration-200 ${
-              wideMode ? 'max-w-[1200px]' : 'max-w-[800px]'
-            }`}
-          >
+          <div className={`mx-auto w-full px-16 pt-16 pb-32 transition-all duration-200 ${wideMode ? 'max-w-[1200px]' : 'max-w-[800px]'}`}>
             <textarea
               ref={titleRef}
               value={title}
-              onChange={(e) => {
-                if (!isLoggedIn) return
-                setTitle(e.target.value)
-                resizeTitle()
-              }}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  e.preventDefault()
-                  editorFocusRef.current?.()
-                }
-              }}
+              onChange={(e) => { if (!isLoggedIn) return; setTitle(e.target.value); resizeTitle() }}
+              onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); editorFocusRef.current?.() } }}
               placeholder="Untitled"
               rows={1}
               readOnly={!isLoggedIn}
@@ -520,13 +421,8 @@ export default function DocPage() {
                   {headerPriorityOpen && (
                     <div className="absolute top-full mt-1.5 left-0 z-50 w-44 rounded-lg border border-[var(--border)] bg-[var(--bg-tertiary)] shadow-xl py-1">
                       {PRIORITIES.map((p) => (
-                        <button
-                          key={String(p.value)}
-                          onClick={() => handlePriorityChange(p.value)}
-                          className={`w-full flex items-center gap-2.5 px-3 py-1.5 text-xs hover:bg-white/5 transition-colors ${
-                            priority === p.value ? 'text-white' : 'text-[#888]'
-                          }`}
-                        >
+                        <button key={String(p.value)} onClick={() => handlePriorityChange(p.value)}
+                          className={`w-full flex items-center gap-2.5 px-3 py-1.5 text-xs hover:bg-white/5 transition-colors ${priority === p.value ? 'text-white' : 'text-[#888]'}`}>
                           <span className={p.color}>{p.icon}</span>
                           <span>{p.label}</span>
                           {priority === p.value && <span className="ml-auto text-[#555]">✓</span>}
@@ -540,10 +436,7 @@ export default function DocPage() {
                 <>
                   <span className="text-[#444] select-none">·</span>
                   {docLabels.map(label => (
-                    <div
-                      key={label.id}
-                      className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-white/5 border border-[var(--border)] text-xs text-[#888]"
-                    >
+                    <div key={label.id} className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-white/5 border border-[var(--border)] text-xs text-[#888]">
                       <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: label.color }} />
                       <span>{label.name}</span>
                     </div>
@@ -556,10 +449,7 @@ export default function DocPage() {
               <Editor
                 content={content}
                 editable={isLoggedIn}
-                onChange={(newContent) => {
-                  if (!isLoggedIn) return
-                  setContent(newContent)
-                }}
+                onChange={(newContent) => { if (!isLoggedIn) return; setContent(newContent) }}
                 onReady={(focusFn) => { editorFocusRef.current = focusFn }}
               />
             )}
@@ -575,48 +465,15 @@ export default function DocPage() {
         </main>
       </div>
 
-      {/* Detail panel */}
+      {/* Detail panel — Linear style, no header bar */}
       <div
-        className={`fixed top-0 right-0 h-full w-[280px] flex flex-col z-30 transition-transform duration-300 ease-in-out ${
-          detailOpen ? 'translate-x-0' : 'translate-x-full'
-        }`}
+        className={`fixed top-0 right-0 h-full w-[280px] flex flex-col z-30 transition-transform duration-300 ease-in-out ${detailOpen ? 'translate-x-0' : 'translate-x-full'}`}
         style={{ backgroundColor: 'var(--bg-secondary)', borderLeft: '1px solid var(--border)' }}
       >
-        {/* Panel topbar — matches main topbar height exactly */}
         <div
-          className="flex items-center justify-between px-4 shrink-0"
-          style={{
-            height: '44px',
-            backgroundColor: 'var(--bg-secondary)',
-          borderBottom: '1px solid var(--border)',
-          boxShadow: 'inset 0 -1px 0 0 var(--border)',
-          }}
+          className="flex-1 overflow-y-auto flex flex-col gap-1"
+          style={{ padding: '56px 16px 20px' }}
         >
-          <span
-            className="text-xs font-medium uppercase tracking-wider"
-            style={{ color: 'var(--text-muted)' }}
-          >
-            Details
-          </span>
-          <button
-            onClick={() => setDetailOpen(false)}
-            className="flex items-center justify-center w-6 h-6 rounded-md transition-colors"
-            style={{ color: 'var(--text-muted)' }}
-            onMouseEnter={e => {
-              e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)'
-              e.currentTarget.style.color = 'var(--text-primary)'
-            }}
-            onMouseLeave={e => {
-              e.currentTarget.style.backgroundColor = 'transparent'
-              e.currentTarget.style.color = 'var(--text-muted)'
-            }}
-          >
-            <X size={13} />
-          </button>
-        </div>
-
-        <div className="flex-1 overflow-y-auto px-4 py-5 flex flex-col gap-1">
-
           <p className="text-[10px] font-medium uppercase tracking-wider mb-2" style={{ color: 'var(--text-muted)' }}>Document</p>
 
           <DetailRow label="Created" icon={<CalendarDays size={12} />}>
@@ -644,7 +501,7 @@ export default function DocPage() {
           <div className="my-3 border-t" style={{ borderColor: 'var(--border)' }} />
           <p className="text-[10px] font-medium uppercase tracking-wider mb-2" style={{ color: 'var(--text-muted)' }}>Properties</p>
 
-          <div className="flex items-center justify-between py-1.5 group">
+          <div className="flex items-center justify-between py-1.5">
             <span className="text-xs flex items-center gap-2" style={{ color: 'var(--text-secondary)' }}>
               <span style={{ color: 'var(--text-muted)' }}>{activePriority.icon}</span>
               Priority
@@ -664,9 +521,7 @@ export default function DocPage() {
                 {priorityOpen && (
                   <div className="absolute bottom-full right-0 mb-1 z-50 w-44 rounded-lg shadow-xl py-1" style={{ backgroundColor: 'var(--bg-tertiary)', border: '1px solid var(--border)' }}>
                     {PRIORITIES.map((p) => (
-                      <button
-                        key={String(p.value)}
-                        onClick={() => handlePriorityChange(p.value)}
+                      <button key={String(p.value)} onClick={() => handlePriorityChange(p.value)}
                         className="w-full flex items-center gap-2.5 px-3 py-1.5 text-xs transition-colors"
                         style={{ color: priority === p.value ? 'var(--text-primary)' : 'var(--text-muted)' }}
                         onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--border)')}
@@ -687,9 +542,7 @@ export default function DocPage() {
 
           <div className="flex items-center justify-between py-1.5">
             <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>Visibility</span>
-            <span className="text-xs px-2 py-1" style={{ color: 'var(--text-secondary)' }}>
-              {isPublic ? 'Public' : 'Private'}
-            </span>
+            <span className="text-xs px-2 py-1" style={{ color: 'var(--text-secondary)' }}>{isPublic ? 'Public' : 'Private'}</span>
           </div>
 
           {isLoggedIn && (
@@ -698,9 +551,7 @@ export default function DocPage() {
               <p className="text-[10px] font-medium uppercase tracking-wider mb-2" style={{ color: 'var(--text-muted)' }}>Labels</p>
               <div className="flex flex-wrap gap-1.5 mb-2">
                 {docLabels.map(label => (
-                  <button
-                    key={label.id}
-                    onClick={() => handleToggleLabel(label)}
+                  <button key={label.id} onClick={() => handleToggleLabel(label)}
                     className="flex items-center gap-1.5 px-2 py-1 rounded-md text-xs transition-colors group"
                     style={{ backgroundColor: 'var(--bg-tertiary)', border: '1px solid var(--border)', color: 'var(--text-secondary)' }}
                     onMouseEnter={e => (e.currentTarget.style.color = 'var(--text-primary)')}
@@ -717,14 +568,8 @@ export default function DocPage() {
                   onClick={() => { setLabelPickerOpen(v => !v); setCreatingLabel(false) }}
                   className="flex items-center gap-1.5 px-2 py-1 rounded-md text-xs transition-colors"
                   style={{ color: 'var(--text-muted)' }}
-                  onMouseEnter={e => {
-                    e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)'
-                    e.currentTarget.style.color = 'var(--text-secondary)'
-                  }}
-                  onMouseLeave={e => {
-                    e.currentTarget.style.backgroundColor = 'transparent'
-                    e.currentTarget.style.color = 'var(--text-muted)'
-                  }}
+                  onMouseEnter={e => { e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)'; e.currentTarget.style.color = 'var(--text-secondary)' }}
+                  onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = 'var(--text-muted)' }}
                 >
                   <Plus size={11} />
                   <span>Add label</span>
@@ -733,15 +578,11 @@ export default function DocPage() {
                   <div className="absolute bottom-full right-0 mb-1 z-50 w-52 rounded-lg shadow-xl py-1" style={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border)' }}>
                     {!creatingLabel ? (
                       <>
-                        {allLabels.length === 0 && (
-                          <p className="px-3 py-2 text-xs" style={{ color: 'var(--text-muted)' }}>No labels yet</p>
-                        )}
+                        {allLabels.length === 0 && <p className="px-3 py-2 text-xs" style={{ color: 'var(--text-muted)' }}>No labels yet</p>}
                         {allLabels.map(label => {
                           const isOn = docLabels.some(l => l.id === label.id)
                           return (
-                            <button
-                              key={label.id}
-                              onClick={() => handleToggleLabel(label)}
+                            <button key={label.id} onClick={() => handleToggleLabel(label)}
                               className="w-full flex items-center gap-2.5 px-3 py-1.5 text-xs transition-colors"
                               style={{ color: 'var(--text-secondary)' }}
                               onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)')}
@@ -754,8 +595,7 @@ export default function DocPage() {
                           )
                         })}
                         <div className="mt-1 pt-1" style={{ borderTop: '1px solid var(--border)' }}>
-                          <button
-                            onClick={() => setCreatingLabel(true)}
+                          <button onClick={() => setCreatingLabel(true)}
                             className="w-full flex items-center gap-2.5 px-3 py-1.5 text-xs transition-colors"
                             style={{ color: 'var(--text-muted)' }}
                             onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)')}
@@ -769,10 +609,7 @@ export default function DocPage() {
                     ) : (
                       <div className="px-3 py-2 flex flex-col gap-2">
                         <p className="text-[10px] uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>New label</p>
-                        <input
-                          autoFocus
-                          value={newLabelName}
-                          onChange={e => setNewLabelName(e.target.value)}
+                        <input autoFocus value={newLabelName} onChange={e => setNewLabelName(e.target.value)}
                           onKeyDown={e => { if (e.key === 'Enter') handleCreateLabel() }}
                           placeholder="Label name..."
                           className="w-full rounded-md px-2 py-1.5 text-xs focus:outline-none"
@@ -780,33 +617,25 @@ export default function DocPage() {
                         />
                         <div className="flex flex-wrap gap-1.5">
                           {LABEL_COLORS.map(c => (
-                            <button
-                              key={c}
-                              onClick={() => setNewLabelColor(c)}
+                            <button key={c} onClick={() => setNewLabelColor(c)}
                               className={`w-5 h-5 rounded-full transition-transform hover:scale-110 ${newLabelColor === c ? 'ring-2 ring-offset-1' : ''}`}
                               style={{ backgroundColor: c }}
                             />
                           ))}
                         </div>
                         <div className="flex gap-2 mt-1">
-                          <button
-                            onClick={handleCreateLabel}
+                          <button onClick={handleCreateLabel}
                             className="flex-1 px-2 py-1.5 rounded-md text-xs transition-colors"
                             style={{ backgroundColor: 'var(--bg-tertiary)', color: 'var(--text-secondary)' }}
                             onMouseEnter={e => (e.currentTarget.style.color = 'var(--text-primary)')}
                             onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-secondary)')}
-                          >
-                            Create
-                          </button>
-                          <button
-                            onClick={() => { setCreatingLabel(false); setNewLabelName('') }}
+                          >Create</button>
+                          <button onClick={() => { setCreatingLabel(false); setNewLabelName('') }}
                             className="px-2 py-1.5 rounded-md text-xs transition-colors"
                             style={{ color: 'var(--text-muted)' }}
                             onMouseEnter={e => (e.currentTarget.style.color = 'var(--text-secondary)')}
                             onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-muted)')}
-                          >
-                            Cancel
-                          </button>
+                          >Cancel</button>
                         </div>
                       </div>
                     )}
@@ -824,10 +653,8 @@ export default function DocPage() {
                 {activityEntries.map((entry, i) => (
                   <div key={i} className="flex items-start gap-2.5">
                     <div className="flex flex-col items-center mt-0.5 shrink-0">
-                      <div className={`w-1.5 h-1.5 rounded-full ${entry.type === 'created' ? 'bg-emerald-500/60' : ''}`} style={entry.type !== 'created' ? { backgroundColor: 'var(--bg-tertiary)' } : {}} />
-                      {i < activityEntries.length - 1 && (
-                        <div className="w-px h-5 mt-1" style={{ backgroundColor: 'var(--border)' }} />
-                      )}
+                      <div className={`w-1.5 h-1.5 rounded-full`} style={{ backgroundColor: entry.type === 'created' ? 'rgba(16,185,129,0.6)' : 'var(--bg-tertiary)' }} />
+                      {i < activityEntries.length - 1 && <div className="w-px h-5 mt-1" style={{ backgroundColor: 'var(--border)' }} />}
                     </div>
                     <div className="flex flex-col gap-0.5 min-w-0">
                       <div className="flex items-center gap-1.5">
@@ -839,11 +666,7 @@ export default function DocPage() {
                         <span className="text-[11px]" style={{ color: 'var(--text-secondary)' }}>{currentUser?.name || currentUser?.email || 'You'}</span>
                         <span className="text-[11px]" style={{ color: 'var(--text-muted)' }}>{entry.label.toLowerCase()}</span>
                       </div>
-                      <div className="flex items-center gap-1.5 ml-5">
-                        <span className="text-[10px]" style={{ color: 'var(--text-muted)' }} title={formatDateTime(entry.timestamp)}>
-                          {timeAgo(entry.timestamp)}
-                        </span>
-                      </div>
+                      <span className="text-[10px] ml-5" style={{ color: 'var(--text-muted)' }} title={formatDateTime(entry.timestamp)}>{timeAgo(entry.timestamp)}</span>
                     </div>
                   </div>
                 ))}
@@ -855,13 +678,10 @@ export default function DocPage() {
             <>
               <div className="my-3 border-t" style={{ borderColor: 'var(--border)' }} />
               <p className="text-[10px] font-medium uppercase tracking-wider mb-3" style={{ color: 'var(--text-muted)' }}>
-                Comments {comments.length > 0 && <span>· {comments.length}</span>}
+                Comments {comments.length > 0 && `· ${comments.length}`}
               </p>
-
               <div className="flex flex-col gap-3 mb-3">
-                {comments.length === 0 && (
-                  <p className="text-[11px]" style={{ color: 'var(--text-muted)' }}>No comments yet.</p>
-                )}
+                {comments.length === 0 && <p className="text-[11px]" style={{ color: 'var(--text-muted)' }}>No comments yet.</p>}
                 {comments.map(comment => (
                   <div key={comment.id} className="flex items-start gap-2 group">
                     <div className="w-5 h-5 rounded-full flex items-center justify-center text-[8px] font-medium shrink-0 mt-0.5" style={{ backgroundColor: 'var(--bg-tertiary)', border: '1px solid var(--border)', color: 'var(--text-secondary)' }}>
@@ -873,8 +693,7 @@ export default function DocPage() {
                         <div className="flex items-center gap-1 shrink-0">
                           <span className="text-[10px]" style={{ color: 'var(--text-muted)' }}>{timeAgo(comment.created_at)}</span>
                           {comment.user_id === String(currentUser?.id) && (
-                            <button
-                              onClick={() => handleDeleteComment(comment.id)}
+                            <button onClick={() => handleDeleteComment(comment.id)}
                               className="opacity-0 group-hover:opacity-100 transition-opacity hover:text-red-400 ml-1"
                               style={{ color: 'var(--text-muted)' }}
                             >
@@ -888,26 +707,18 @@ export default function DocPage() {
                   </div>
                 ))}
               </div>
-
               <div className="flex flex-col gap-2">
                 <textarea
                   ref={commentInputRef}
                   value={commentBody}
                   onChange={e => setCommentBody(e.target.value)}
-                  onKeyDown={e => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                      e.preventDefault()
-                      handlePostComment()
-                    }
-                  }}
+                  onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handlePostComment() } }}
                   placeholder="Add a comment..."
                   rows={2}
                   className="w-full rounded-lg px-3 py-2 text-[12px] focus:outline-none resize-none"
                   style={{ backgroundColor: 'var(--bg-tertiary)', border: '1px solid var(--border)', color: 'var(--text-primary)' }}
                 />
-                <button
-                  onClick={handlePostComment}
-                  disabled={!commentBody.trim() || postingComment}
+                <button onClick={handlePostComment} disabled={!commentBody.trim() || postingComment}
                   className="self-end flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium transition-colors disabled:opacity-30"
                   style={{ backgroundColor: 'var(--bg-tertiary)', color: 'var(--text-secondary)' }}
                 >
@@ -917,22 +728,13 @@ export default function DocPage() {
               </div>
             </>
           )}
-
         </div>
       </div>
     </div>
   )
 }
 
-function DetailRow({
-  label,
-  icon,
-  children,
-}: {
-  label: string
-  icon: React.ReactNode
-  children: React.ReactNode
-}) {
+function DetailRow({ label, icon, children }: { label: string; icon: React.ReactNode; children: React.ReactNode }) {
   return (
     <div className="flex items-center justify-between py-1.5">
       <span className="text-xs flex items-center gap-2" style={{ color: 'var(--text-secondary)' }}>
