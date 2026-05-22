@@ -1,24 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { neon } from '@neondatabase/serverless'
-import { jwtVerify } from 'jose'
+import { cookies } from 'next/headers'
+import { verifyToken } from '@/lib/auth'
 
 const sql = neon(process.env.DATABASE_URL!)
 
-async function getUserId(request: NextRequest): Promise<number | null> {
+async function getUserId(): Promise<string | null> {
   try {
-    const token = request.cookies.get('token')?.value
+    const cookieStore = await cookies()
+    const token = cookieStore.get('auth-token')?.value
     if (!token) return null
-    const secret = new TextEncoder().encode(process.env.JWT_SECRET!)
-    const { payload } = await jwtVerify(token, secret)
-    return payload.userId as number
+    const payload = await verifyToken(token)
+    if (!payload) return null
+    return payload.userId
   } catch {
     return null
   }
 }
 
-// GET /api/tasks — fetch all tasks (or filtered by docId) for the logged-in user
 export async function GET(request: NextRequest) {
-  const userId = await getUserId(request)
+  const userId = await getUserId()
   if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { searchParams } = new URL(request.url)
@@ -42,9 +43,8 @@ export async function GET(request: NextRequest) {
   return NextResponse.json(tasks)
 }
 
-// POST /api/tasks — create a new task
 export async function POST(request: NextRequest) {
-  const userId = await getUserId(request)
+  const userId = await getUserId()
   if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const body = await request.json()
@@ -62,9 +62,8 @@ export async function POST(request: NextRequest) {
   return NextResponse.json(task, { status: 201 })
 }
 
-// PATCH /api/tasks — toggle complete/incomplete
 export async function PATCH(request: NextRequest) {
-  const userId = await getUserId(request)
+  const userId = await getUserId()
   if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const body = await request.json()
@@ -79,9 +78,8 @@ export async function PATCH(request: NextRequest) {
   return NextResponse.json(task)
 }
 
-// DELETE /api/tasks — delete a task
 export async function DELETE(request: NextRequest) {
-  const userId = await getUserId(request)
+  const userId = await getUserId()
   if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const body = await request.json()
