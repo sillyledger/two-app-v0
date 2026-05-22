@@ -135,11 +135,9 @@ export default function DocPage() {
   const [currentUser, setCurrentUser] = useState<User | null>(null)
   const [priority, setPriority] = useState<Priority>(null)
 
-  // Sidebar priority dropdown
   const [priorityOpen, setPriorityOpen] = useState(false)
   const priorityRef = useRef<HTMLDivElement>(null)
 
-  // Header priority dropdown (separate so they don't interfere)
   const [headerPriorityOpen, setHeaderPriorityOpen] = useState(false)
   const headerPriorityRef = useRef<HTMLDivElement>(null)
 
@@ -199,7 +197,6 @@ export default function DocPage() {
     el.style.height = el.scrollHeight + 'px'
   }
 
-  // Single click-outside handler that covers both priority dropdowns
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
       if (priorityRef.current && !priorityRef.current.contains(e.target as Node)) {
@@ -448,11 +445,19 @@ export default function DocPage() {
         <button
           onClick={() => setDetailOpen((v) => !v)}
           title={detailOpen ? 'Close details' : 'Open details'}
-          className={`fixed top-[10px] right-4 z-40 flex items-center justify-center w-7 h-7 rounded-md transition-colors ${
-            detailOpen
-              ? 'bg-white/10 text-white'
-              : 'text-white/30 hover:text-white/60 hover:bg-white/5'
-          }`}
+          className="fixed top-[10px] right-4 z-40 flex items-center justify-center w-7 h-7 rounded-md transition-colors"
+          style={{
+            color: detailOpen ? 'var(--text-primary)' : 'var(--text-muted)',
+            backgroundColor: detailOpen ? 'var(--bg-tertiary)' : 'transparent',
+          }}
+          onMouseEnter={e => {
+            e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)'
+            e.currentTarget.style.color = 'var(--text-primary)'
+          }}
+          onMouseLeave={e => {
+            e.currentTarget.style.backgroundColor = detailOpen ? 'var(--bg-tertiary)' : 'transparent'
+            e.currentTarget.style.color = detailOpen ? 'var(--text-primary)' : 'var(--text-muted)'
+          }}
         >
           <PanelRight size={15} />
         </button>
@@ -572,85 +577,103 @@ export default function DocPage() {
 
       {/* Detail panel */}
       <div
-        className={`fixed top-0 right-0 h-full w-[280px] border-l border-[var(--border)] flex flex-col z-30 transition-transform duration-300 ease-in-out ${
+        className={`fixed top-0 right-0 h-full w-[280px] flex flex-col z-30 transition-transform duration-300 ease-in-out ${
           detailOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
+        style={{ backgroundColor: 'var(--bg-secondary)', borderLeft: '1px solid var(--border)' }}
       >
-        <div className="flex items-center justify-between px-4 h-[44px] shrink-0" style={{ backgroundColor: "var(--bg)", borderBottom: "1px solid #d1d1d1" }}>
-          <span className="text-xs font-medium uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>Details</span>
+        {/* Panel topbar — matches main topbar height exactly */}
+        <div
+          className="flex items-center justify-between px-4 shrink-0"
+          style={{
+            height: '44px',
+            backgroundColor: 'var(--bg)',
+            borderBottom: '1px solid var(--border)',
+          }}
+        >
+          <span
+            className="text-xs font-medium uppercase tracking-wider"
+            style={{ color: 'var(--text-muted)' }}
+          >
+            Details
+          </span>
           <button
             onClick={() => setDetailOpen(false)}
             className="flex items-center justify-center w-6 h-6 rounded-md transition-colors"
-            style={{ color: "var(--text-muted)" }}
+            style={{ color: 'var(--text-muted)' }}
             onMouseEnter={e => {
-              e.currentTarget.style.backgroundColor = "var(--bg-tertiary)"
-              e.currentTarget.style.color = "var(--text-primary)"
+              e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)'
+              e.currentTarget.style.color = 'var(--text-primary)'
             }}
             onMouseLeave={e => {
-              e.currentTarget.style.backgroundColor = "transparent"
-              e.currentTarget.style.color = "var(--text-muted)"
+              e.currentTarget.style.backgroundColor = 'transparent'
+              e.currentTarget.style.color = 'var(--text-muted)'
             }}
           >
             <X size={13} />
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto px-4 py-5 flex flex-col gap-1" style={{ backgroundColor: "var(--bg-secondary)" }}>
+        <div className="flex-1 overflow-y-auto px-4 py-5 flex flex-col gap-1">
 
-          <p className="text-[10px] font-medium text-[var(--text-muted)] uppercase tracking-wider mb-2">Document</p>
+          <p className="text-[10px] font-medium uppercase tracking-wider mb-2" style={{ color: 'var(--text-muted)' }}>Document</p>
 
           <DetailRow label="Created" icon={<CalendarDays size={12} />}>
-            <span className="text-[var(--text-primary)]">{formatDate(doc.created_at)}</span>
+            <span style={{ color: 'var(--text-primary)' }}>{formatDate(doc.created_at)}</span>
           </DetailRow>
           <DetailRow label="Author" icon={<User size={12} />}>
             {currentUser ? (
               <div className="flex items-center gap-1.5">
-                <div className="w-4 h-4 rounded-full bg-[var(--bg-tertiary)] border border-[var(--border)] flex items-center justify-center text-[8px] font-medium text-[#ccc]">
+                <div className="w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-medium" style={{ backgroundColor: 'var(--bg-tertiary)', border: '1px solid var(--border)', color: 'var(--text-secondary)' }}>
                   {getInitials(currentUser.name, currentUser.email)}
                 </div>
-                <span className="text-[var(--text-primary)] truncate">{currentUser.name || currentUser.email}</span>
+                <span className="truncate" style={{ color: 'var(--text-primary)' }}>{currentUser.name || currentUser.email}</span>
               </div>
             ) : (
-              <span className="text-[var(--text-muted)]">Unknown</span>
+              <span style={{ color: 'var(--text-muted)' }}>Unknown</span>
             )}
           </DetailRow>
           <DetailRow label="Words" icon={<FileText size={12} />}>
-            <span className="text-[var(--text-primary)]">{wordCount.toLocaleString()}</span>
+            <span style={{ color: 'var(--text-primary)' }}>{wordCount.toLocaleString()}</span>
           </DetailRow>
           <DetailRow label="Characters" icon={<Clock size={12} />}>
-            <span className="text-[var(--text-primary)]">{charCount.toLocaleString()}</span>
+            <span style={{ color: 'var(--text-primary)' }}>{charCount.toLocaleString()}</span>
           </DetailRow>
 
-          <div className="my-3 border-t border-[var(--border)]" />
-          <p className="text-[10px] font-medium text-[var(--text-muted)] uppercase tracking-wider mb-2">Properties</p>
+          <div className="my-3 border-t" style={{ borderColor: 'var(--border)' }} />
+          <p className="text-[10px] font-medium uppercase tracking-wider mb-2" style={{ color: 'var(--text-muted)' }}>Properties</p>
 
           <div className="flex items-center justify-between py-1.5 group">
-            <span className="text-xs text-[var(--text-secondary)] flex items-center gap-2">
-              <span className="text-[var(--text-muted)]">{activePriority.icon}</span>
+            <span className="text-xs flex items-center gap-2" style={{ color: 'var(--text-secondary)' }}>
+              <span style={{ color: 'var(--text-muted)' }}>{activePriority.icon}</span>
               Priority
             </span>
             {isLoggedIn ? (
               <div className="relative" ref={priorityRef}>
                 <button
                   onClick={() => setPriorityOpen((v) => !v)}
-                  className="flex items-center gap-1.5 px-2 py-1 rounded-md text-xs text-white/40 hover:bg-white/5 hover:text-white/60 transition-colors"
+                  className="flex items-center gap-1.5 px-2 py-1 rounded-md text-xs transition-colors"
+                  style={{ color: 'var(--text-secondary)' }}
+                  onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)')}
+                  onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
                 >
                   <span className={activePriority.color}>{activePriority.icon}</span>
                   <span>{activePriority.label}</span>
                 </button>
                 {priorityOpen && (
-                  <div className="absolute bottom-full right-0 mb-1 z-50 w-44 rounded-lg border border-[var(--border)] bg-[var(--bg-tertiary)] shadow-xl py-1">
+                  <div className="absolute bottom-full right-0 mb-1 z-50 w-44 rounded-lg shadow-xl py-1" style={{ backgroundColor: 'var(--bg-tertiary)', border: '1px solid var(--border)' }}>
                     {PRIORITIES.map((p) => (
                       <button
                         key={String(p.value)}
                         onClick={() => handlePriorityChange(p.value)}
-                        className={`w-full flex items-center gap-2.5 px-3 py-1.5 text-xs hover:bg-white/5 transition-colors ${
-                          priority === p.value ? 'text-white' : 'text-[#888]'
-                        }`}
+                        className="w-full flex items-center gap-2.5 px-3 py-1.5 text-xs transition-colors"
+                        style={{ color: priority === p.value ? 'var(--text-primary)' : 'var(--text-muted)' }}
+                        onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--border)')}
+                        onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
                       >
                         <span className={p.color}>{p.icon}</span>
                         <span>{p.label}</span>
-                        {priority === p.value && <span className="ml-auto text-[#555]">✓</span>}
+                        {priority === p.value && <span className="ml-auto">✓</span>}
                       </button>
                     ))}
                   </div>
@@ -662,43 +685,55 @@ export default function DocPage() {
           </div>
 
           <div className="flex items-center justify-between py-1.5">
-            <span className="text-xs text-[var(--text-secondary)]">Visibility</span>
-            <span className="text-xs text-[var(--text-secondary)] px-2 py-1">
+            <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>Visibility</span>
+            <span className="text-xs px-2 py-1" style={{ color: 'var(--text-secondary)' }}>
               {isPublic ? 'Public' : 'Private'}
             </span>
           </div>
 
           {isLoggedIn && (
             <>
-              <div className="my-3 border-t border-[var(--border)]" />
-              <p className="text-[10px] font-medium text-[var(--text-muted)] uppercase tracking-wider mb-2">Labels</p>
+              <div className="my-3 border-t" style={{ borderColor: 'var(--border)' }} />
+              <p className="text-[10px] font-medium uppercase tracking-wider mb-2" style={{ color: 'var(--text-muted)' }}>Labels</p>
               <div className="flex flex-wrap gap-1.5 mb-2">
                 {docLabels.map(label => (
                   <button
                     key={label.id}
                     onClick={() => handleToggleLabel(label)}
-                    className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-white/5 border border-[var(--border)] text-xs text-white/50 hover:bg-white/10 hover:text-white/70 transition-colors group"
+                    className="flex items-center gap-1.5 px-2 py-1 rounded-md text-xs transition-colors group"
+                    style={{ backgroundColor: 'var(--bg-tertiary)', border: '1px solid var(--border)', color: 'var(--text-secondary)' }}
+                    onMouseEnter={e => (e.currentTarget.style.color = 'var(--text-primary)')}
+                    onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-secondary)')}
                   >
                     <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: label.color }} />
                     <span>{label.name}</span>
-                    <X size={10} className="opacity-0 group-hover:opacity-100 transition-opacity text-[var(--text-muted)]" />
+                    <X size={10} className="opacity-0 group-hover:opacity-100 transition-opacity" style={{ color: 'var(--text-muted)' }} />
                   </button>
                 ))}
               </div>
               <div className="relative" ref={labelPickerRef}>
                 <button
                   onClick={() => { setLabelPickerOpen(v => !v); setCreatingLabel(false) }}
-                  className="flex items-center gap-1.5 px-2 py-1 rounded-md text-xs text-white/30 hover:bg-white/5 hover:text-white/50 transition-colors"
+                  className="flex items-center gap-1.5 px-2 py-1 rounded-md text-xs transition-colors"
+                  style={{ color: 'var(--text-muted)' }}
+                  onMouseEnter={e => {
+                    e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)'
+                    e.currentTarget.style.color = 'var(--text-secondary)'
+                  }}
+                  onMouseLeave={e => {
+                    e.currentTarget.style.backgroundColor = 'transparent'
+                    e.currentTarget.style.color = 'var(--text-muted)'
+                  }}
                 >
                   <Plus size={11} />
                   <span>Add label</span>
                 </button>
                 {labelPickerOpen && (
-                  <div className="absolute bottom-full right-0 mb-1 z-50 w-52 rounded-lg border border-[var(--border)] bg-[var(--bg-secondary)] shadow-xl py-1">
+                  <div className="absolute bottom-full right-0 mb-1 z-50 w-52 rounded-lg shadow-xl py-1" style={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border)' }}>
                     {!creatingLabel ? (
                       <>
                         {allLabels.length === 0 && (
-                          <p className="px-3 py-2 text-xs text-[var(--text-muted)]">No labels yet</p>
+                          <p className="px-3 py-2 text-xs" style={{ color: 'var(--text-muted)' }}>No labels yet</p>
                         )}
                         {allLabels.map(label => {
                           const isOn = docLabels.some(l => l.id === label.id)
@@ -706,18 +741,24 @@ export default function DocPage() {
                             <button
                               key={label.id}
                               onClick={() => handleToggleLabel(label)}
-                              className="w-full flex items-center gap-2.5 px-3 py-1.5 text-xs hover:bg-white/5 transition-colors text-white/50"
+                              className="w-full flex items-center gap-2.5 px-3 py-1.5 text-xs transition-colors"
+                              style={{ color: 'var(--text-secondary)' }}
+                              onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)')}
+                              onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
                             >
                               <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: label.color }} />
                               <span className="flex-1 text-left">{label.name}</span>
-                              {isOn && <Check size={11} className="text-[var(--text-secondary)]" />}
+                              {isOn && <Check size={11} style={{ color: 'var(--text-secondary)' }} />}
                             </button>
                           )
                         })}
-                        <div className="border-t border-[var(--border)] mt-1 pt-1">
+                        <div className="mt-1 pt-1" style={{ borderTop: '1px solid var(--border)' }}>
                           <button
                             onClick={() => setCreatingLabel(true)}
-                            className="w-full flex items-center gap-2.5 px-3 py-1.5 text-xs text-white/30 hover:bg-white/5 hover:text-white/50 transition-colors"
+                            className="w-full flex items-center gap-2.5 px-3 py-1.5 text-xs transition-colors"
+                            style={{ color: 'var(--text-muted)' }}
+                            onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)')}
+                            onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
                           >
                             <Plus size={11} />
                             <span>Create new label</span>
@@ -726,21 +767,22 @@ export default function DocPage() {
                       </>
                     ) : (
                       <div className="px-3 py-2 flex flex-col gap-2">
-                        <p className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider">New label</p>
+                        <p className="text-[10px] uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>New label</p>
                         <input
                           autoFocus
                           value={newLabelName}
                           onChange={e => setNewLabelName(e.target.value)}
                           onKeyDown={e => { if (e.key === 'Enter') handleCreateLabel() }}
                           placeholder="Label name..."
-                          className="w-full bg-[var(--bg-tertiary)] border border-[var(--border)] rounded-md px-2 py-1.5 text-xs text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-white/20"
+                          className="w-full rounded-md px-2 py-1.5 text-xs focus:outline-none"
+                          style={{ backgroundColor: 'var(--bg-tertiary)', border: '1px solid var(--border)', color: 'var(--text-primary)' }}
                         />
                         <div className="flex flex-wrap gap-1.5">
                           {LABEL_COLORS.map(c => (
                             <button
                               key={c}
                               onClick={() => setNewLabelColor(c)}
-                              className={`w-5 h-5 rounded-full transition-transform hover:scale-110 ${newLabelColor === c ? 'ring-2 ring-white/40 ring-offset-1 ring-offset-[var(--bg-secondary)]' : ''}`}
+                              className={`w-5 h-5 rounded-full transition-transform hover:scale-110 ${newLabelColor === c ? 'ring-2 ring-offset-1' : ''}`}
                               style={{ backgroundColor: c }}
                             />
                           ))}
@@ -748,13 +790,19 @@ export default function DocPage() {
                         <div className="flex gap-2 mt-1">
                           <button
                             onClick={handleCreateLabel}
-                            className="flex-1 px-2 py-1.5 rounded-md bg-white/10 text-xs text-white/60 hover:bg-white/15 hover:text-white/80 transition-colors"
+                            className="flex-1 px-2 py-1.5 rounded-md text-xs transition-colors"
+                            style={{ backgroundColor: 'var(--bg-tertiary)', color: 'var(--text-secondary)' }}
+                            onMouseEnter={e => (e.currentTarget.style.color = 'var(--text-primary)')}
+                            onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-secondary)')}
                           >
                             Create
                           </button>
                           <button
                             onClick={() => { setCreatingLabel(false); setNewLabelName('') }}
-                            className="px-2 py-1.5 rounded-md text-xs text-white/30 hover:bg-white/5 transition-colors"
+                            className="px-2 py-1.5 rounded-md text-xs transition-colors"
+                            style={{ color: 'var(--text-muted)' }}
+                            onMouseEnter={e => (e.currentTarget.style.color = 'var(--text-secondary)')}
+                            onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-muted)')}
                           >
                             Cancel
                           </button>
@@ -767,32 +815,31 @@ export default function DocPage() {
             </>
           )}
 
-          {/* Activity section */}
           {isLoggedIn && activityEntries.length > 0 && (
             <>
-              <div className="my-3 border-t border-[var(--border)]" />
-              <p className="text-[10px] font-medium text-[var(--text-muted)] uppercase tracking-wider mb-3">Activity</p>
+              <div className="my-3 border-t" style={{ borderColor: 'var(--border)' }} />
+              <p className="text-[10px] font-medium uppercase tracking-wider mb-3" style={{ color: 'var(--text-muted)' }}>Activity</p>
               <div className="flex flex-col gap-3">
                 {activityEntries.map((entry, i) => (
                   <div key={i} className="flex items-start gap-2.5">
                     <div className="flex flex-col items-center mt-0.5 shrink-0">
-                      <div className={`w-1.5 h-1.5 rounded-full ${entry.type === 'created' ? 'bg-emerald-500/60' : 'bg-[var(--bg-tertiary)]'}`} />
+                      <div className={`w-1.5 h-1.5 rounded-full ${entry.type === 'created' ? 'bg-emerald-500/60' : ''}`} style={entry.type !== 'created' ? { backgroundColor: 'var(--bg-tertiary)' } : {}} />
                       {i < activityEntries.length - 1 && (
-                        <div className="w-px h-5 bg-white/5 mt-1" />
+                        <div className="w-px h-5 mt-1" style={{ backgroundColor: 'var(--border)' }} />
                       )}
                     </div>
                     <div className="flex flex-col gap-0.5 min-w-0">
                       <div className="flex items-center gap-1.5">
                         {currentUser && (
-                          <div className="w-3.5 h-3.5 rounded-full bg-[var(--bg-tertiary)] border border-[var(--border)] flex items-center justify-center text-[7px] font-medium text-[#ccc] shrink-0">
+                          <div className="w-3.5 h-3.5 rounded-full flex items-center justify-center text-[7px] font-medium shrink-0" style={{ backgroundColor: 'var(--bg-tertiary)', border: '1px solid var(--border)', color: 'var(--text-secondary)' }}>
                             {getInitials(currentUser.name, currentUser.email)}
                           </div>
                         )}
-                        <span className="text-[11px] text-[var(--text-secondary)]">{currentUser?.name || currentUser?.email || 'You'}</span>
-                        <span className="text-[11px] text-[var(--text-muted)]">{entry.label.toLowerCase()}</span>
+                        <span className="text-[11px]" style={{ color: 'var(--text-secondary)' }}>{currentUser?.name || currentUser?.email || 'You'}</span>
+                        <span className="text-[11px]" style={{ color: 'var(--text-muted)' }}>{entry.label.toLowerCase()}</span>
                       </div>
                       <div className="flex items-center gap-1.5 ml-5">
-                        <span className="text-[10px] text-[var(--text-muted)]" title={formatDateTime(entry.timestamp)}>
+                        <span className="text-[10px]" style={{ color: 'var(--text-muted)' }} title={formatDateTime(entry.timestamp)}>
                           {timeAgo(entry.timestamp)}
                         </span>
                       </div>
@@ -803,46 +850,44 @@ export default function DocPage() {
             </>
           )}
 
-          {/* Comments section */}
           {isLoggedIn && (
             <>
-              <div className="my-3 border-t border-[var(--border)]" />
-              <p className="text-[10px] font-medium text-[var(--text-muted)] uppercase tracking-wider mb-3">
-                Comments {comments.length > 0 && <span className="text-[var(--text-muted)]">· {comments.length}</span>}
+              <div className="my-3 border-t" style={{ borderColor: 'var(--border)' }} />
+              <p className="text-[10px] font-medium uppercase tracking-wider mb-3" style={{ color: 'var(--text-muted)' }}>
+                Comments {comments.length > 0 && <span>· {comments.length}</span>}
               </p>
 
-              {/* Existing comments */}
               <div className="flex flex-col gap-3 mb-3">
                 {comments.length === 0 && (
-                  <p className="text-[11px] text-[var(--text-muted)]">No comments yet.</p>
+                  <p className="text-[11px]" style={{ color: 'var(--text-muted)' }}>No comments yet.</p>
                 )}
                 {comments.map(comment => (
                   <div key={comment.id} className="flex items-start gap-2 group">
-                    <div className="w-5 h-5 rounded-full bg-[var(--bg-tertiary)] border border-[var(--border)] flex items-center justify-center text-[8px] font-medium text-[#ccc] shrink-0 mt-0.5">
+                    <div className="w-5 h-5 rounded-full flex items-center justify-center text-[8px] font-medium shrink-0 mt-0.5" style={{ backgroundColor: 'var(--bg-tertiary)', border: '1px solid var(--border)', color: 'var(--text-secondary)' }}>
                       {comment.user_name?.[0]?.toUpperCase() ?? '?'}
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between gap-1">
-                        <span className="text-[11px] text-[var(--text-primary)] font-medium truncate">{comment.user_name}</span>
+                        <span className="text-[11px] font-medium truncate" style={{ color: 'var(--text-primary)' }}>{comment.user_name}</span>
                         <div className="flex items-center gap-1 shrink-0">
-                          <span className="text-[10px] text-[var(--text-muted)]">{timeAgo(comment.created_at)}</span>
+                          <span className="text-[10px]" style={{ color: 'var(--text-muted)' }}>{timeAgo(comment.created_at)}</span>
                           {comment.user_id === String(currentUser?.id) && (
                             <button
                               onClick={() => handleDeleteComment(comment.id)}
-                              className="opacity-0 group-hover:opacity-100 transition-opacity text-[var(--text-muted)] hover:text-red-400 ml-1"
+                              className="opacity-0 group-hover:opacity-100 transition-opacity hover:text-red-400 ml-1"
+                              style={{ color: 'var(--text-muted)' }}
                             >
                               <Trash2 size={10} />
                             </button>
                           )}
                         </div>
                       </div>
-                      <p className="text-[12px] text-[var(--text-secondary)] mt-0.5 leading-relaxed break-words">{comment.body}</p>
+                      <p className="text-[12px] mt-0.5 leading-relaxed break-words" style={{ color: 'var(--text-secondary)' }}>{comment.body}</p>
                     </div>
                   </div>
                 ))}
               </div>
 
-              {/* New comment input */}
               <div className="flex flex-col gap-2">
                 <textarea
                   ref={commentInputRef}
@@ -856,13 +901,14 @@ export default function DocPage() {
                   }}
                   placeholder="Add a comment..."
                   rows={2}
-                  className="w-full bg-[var(--bg-tertiary)] border border-[var(--border)] rounded-lg px-3 py-2 text-[12px] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-white/15 resize-none"
+                  className="w-full rounded-lg px-3 py-2 text-[12px] focus:outline-none resize-none"
+                  style={{ backgroundColor: 'var(--bg-tertiary)', border: '1px solid var(--border)', color: 'var(--text-primary)' }}
                 />
                 <button
                   onClick={handlePostComment}
                   disabled={!commentBody.trim() || postingComment}
                   className="self-end flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium transition-colors disabled:opacity-30"
-                  style={{ backgroundColor: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.6)' }}
+                  style={{ backgroundColor: 'var(--bg-tertiary)', color: 'var(--text-secondary)' }}
                 >
                   <Send size={11} />
                   {postingComment ? 'Posting...' : 'Post'}
@@ -888,8 +934,8 @@ function DetailRow({
 }) {
   return (
     <div className="flex items-center justify-between py-1.5">
-      <span className="text-xs text-[var(--text-secondary)] flex items-center gap-2">
-        <span className="text-[var(--text-muted)]">{icon}</span>
+      <span className="text-xs flex items-center gap-2" style={{ color: 'var(--text-secondary)' }}>
+        <span style={{ color: 'var(--text-muted)' }}>{icon}</span>
         {label}
       </span>
       <div className="text-xs">{children}</div>
