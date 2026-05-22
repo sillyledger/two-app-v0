@@ -55,7 +55,6 @@ export default function LibraryPage() {
       .then(({ labels, docs }) => {
         if (!Array.isArray(labels) || !Array.isArray(docs)) return
 
-        // Build collections: one per label
         const built: Collection[] = labels.map((label: Label) => ({
           label,
           docs: docs.filter((d: Doc) =>
@@ -63,7 +62,6 @@ export default function LibraryPage() {
           ),
         })).filter(c => c.docs.length > 0)
 
-        // Docs with no labels at all
         const noLabel = docs.filter((d: Doc) => d.labels.length === 0)
 
         setCollections(built)
@@ -87,7 +85,6 @@ export default function LibraryPage() {
     router.push(`/docs/${doc.uuid}`)
   }
 
-  // Determine card size based on doc count
   function cardSize(count: number) {
     if (count >= 8) return 'col-span-2 row-span-2'
     if (count >= 4) return 'col-span-2 row-span-1'
@@ -95,7 +92,10 @@ export default function LibraryPage() {
   }
 
   return (
-    <div className="flex h-screen overflow-hidden bg-[#111]">
+    <div
+      className="flex h-screen overflow-hidden"
+      style={{ backgroundColor: 'var(--bg)' }}
+    >
       <Sidebar
         collapsed={collapsed}
         onToggle={() => setCollapsed(v => !v)}
@@ -104,16 +104,34 @@ export default function LibraryPage() {
 
       <main className="flex-1 overflow-y-auto">
         {/* Topbar */}
-        <div className="sticky top-0 z-10 flex items-center justify-between px-8 h-[44px] border-b border-white/6 bg-[#111]">
-          <span className="text-[13px] font-medium text-white/60">Library</span>
+        <div
+          className="sticky top-0 z-10 flex items-center justify-between px-8 h-[44px]"
+          style={{
+            backgroundColor: 'var(--bg)',
+            borderBottom: '1px solid var(--border)',
+          }}
+        >
+          <span
+            className="text-[13px] font-medium"
+            style={{ color: 'var(--text-muted)' }}
+          >
+            Library
+          </span>
           <div className="flex items-center gap-2">
-            <div className="flex items-center gap-2 px-2.5 py-1 rounded-md bg-white/5 border border-white/8">
-              <Search size={11} className="text-white/30" />
+            <div
+              className="flex items-center gap-2 px-2.5 py-1 rounded-md"
+              style={{
+                backgroundColor: 'var(--bg-secondary)',
+                border: '1px solid var(--border)',
+              }}
+            >
+              <Search size={11} style={{ color: 'var(--text-muted)' }} />
               <input
                 value={search}
                 onChange={e => setSearch(e.target.value)}
                 placeholder="Search labels..."
-                className="bg-transparent text-xs text-white/60 placeholder:text-white/20 focus:outline-none w-32"
+                className="bg-transparent text-xs focus:outline-none w-32"
+                style={{ color: 'var(--text-secondary)', }}
               />
             </div>
           </div>
@@ -122,39 +140,66 @@ export default function LibraryPage() {
         <div className="px-8 py-8">
           {loading ? (
             <div className="flex items-center justify-center h-64">
-              <span className="text-xs text-white/20">Loading...</span>
+              <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                Loading...
+              </span>
             </div>
           ) : collections.length === 0 && unlabeled.length === 0 ? (
-            /* Empty state */
             <div className="flex flex-col items-center justify-center h-64 gap-3">
-              <div className="w-12 h-12 rounded-2xl bg-white/5 border border-white/8 flex items-center justify-center">
-                <FileText size={20} className="text-white/20" />
+              <div
+                className="w-12 h-12 rounded-2xl flex items-center justify-center"
+                style={{
+                  backgroundColor: 'var(--bg-secondary)',
+                  border: '1px solid var(--border)',
+                }}
+              >
+                <FileText size={20} style={{ color: 'var(--text-muted)' }} />
               </div>
-              <p className="text-sm text-white/30">No docs yet</p>
+              <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
+                No docs yet
+              </p>
               <button
                 onClick={handleNewDoc}
-                className="text-xs text-white/40 hover:text-white/60 transition-colors underline underline-offset-2"
+                className="text-xs underline underline-offset-2 transition-colors"
+                style={{ color: 'var(--text-muted)' }}
               >
                 Create your first doc
               </button>
             </div>
           ) : filtered.length === 0 && search ? (
             <div className="flex items-center justify-center h-64">
-              <p className="text-xs text-white/20">No results for "{search}"</p>
+              <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                No results for "{search}"
+              </p>
             </div>
           ) : (
             <>
               {/* Collections grid */}
               {filtered.length > 0 && (
                 <>
-                  <p className="text-[10px] font-medium text-white/20 uppercase tracking-wider mb-4">
-                    Collections · {filtered.length}
-                  </p>
+                  <div className="flex items-center gap-3 mb-4">
+                    <span
+                      className="text-[10px] font-medium uppercase tracking-wider"
+                      style={{ color: 'var(--text-muted)' }}
+                    >
+                      Collections · {filtered.length}
+                    </span>
+                    <div
+                      className="flex-1 h-px"
+                      style={{ backgroundColor: 'var(--border)' }}
+                    />
+                  </div>
+
                   <div className="grid grid-cols-3 gap-3 auto-rows-auto mb-10">
                     {filtered.map(({ label, docs }) => (
                       <div
                         key={label.id}
-                        className={`${cardSize(docs.length)} rounded-2xl border border-white/6 bg-white/[0.02] hover:bg-white/[0.04] transition-colors p-5 flex flex-col gap-3 cursor-default`}
+                        className={`${cardSize(docs.length)} rounded-2xl p-5 flex flex-col gap-3`}
+                        style={{
+                          backgroundColor: 'var(--bg-secondary)',
+                          border: '1px solid var(--border)',
+                          borderTop: `2px solid ${label.color}`,
+                        }}
                       >
                         {/* Label header */}
                         <div className="flex items-center justify-between">
@@ -163,16 +208,20 @@ export default function LibraryPage() {
                               className="w-2.5 h-2.5 rounded-full shrink-0"
                               style={{ backgroundColor: label.color }}
                             />
-                            <span className="text-[13px] font-semibold text-white/80">{label.name}</span>
+                            <span
+                              className="text-[13px] font-semibold"
+                              style={{ color: 'var(--text-primary)' }}
+                            >
+                              {label.name}
+                            </span>
                           </div>
-                          <span className="text-[11px] text-white/25">{docs.length} doc{docs.length !== 1 ? 's' : ''}</span>
+                          <span
+                            className="text-[11px]"
+                            style={{ color: 'var(--text-muted)' }}
+                          >
+                            {docs.length} doc{docs.length !== 1 ? 's' : ''}
+                          </span>
                         </div>
-
-                        {/* Colored top accent */}
-                        <div
-                          className="h-px w-full rounded-full opacity-40"
-                          style={{ backgroundColor: label.color }}
-                        />
 
                         {/* Doc list */}
                         <div className="flex flex-col gap-1.5">
@@ -180,18 +229,37 @@ export default function LibraryPage() {
                             <button
                               key={doc.uuid}
                               onClick={() => router.push(`/docs/${doc.uuid}`)}
-                              className="flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-lg bg-white/[0.03] hover:bg-white/[0.07] border border-white/5 transition-colors text-left group"
+                              className="flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-lg text-left transition-colors group"
+                              style={{
+                                backgroundColor: 'var(--bg-tertiary)',
+                                border: '1px solid var(--border)',
+                              }}
+                              onMouseEnter={e => {
+                                e.currentTarget.style.backgroundColor = 'var(--bg)'
+                              }}
+                              onMouseLeave={e => {
+                                e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)'
+                              }}
                             >
-                              <span className="text-[12px] text-white/50 group-hover:text-white/70 truncate transition-colors">
+                              <span
+                                className="text-[12px] truncate transition-colors"
+                                style={{ color: 'var(--text-secondary)' }}
+                              >
                                 {doc.title || 'Untitled'}
                               </span>
-                              <span className="text-[10px] text-white/20 shrink-0">
+                              <span
+                                className="text-[10px] shrink-0"
+                                style={{ color: 'var(--text-muted)' }}
+                              >
                                 {timeAgo(doc.updated_at)}
                               </span>
                             </button>
                           ))}
                           {docs.length > 5 && (
-                            <p className="text-[11px] text-white/20 px-2.5 pt-1">
+                            <p
+                              className="text-[11px] px-2.5 pt-1"
+                              style={{ color: 'var(--text-muted)' }}
+                            >
                               +{docs.length - 5} more
                             </p>
                           )}
@@ -205,25 +273,50 @@ export default function LibraryPage() {
               {/* Unlabeled docs */}
               {unlabeled.length > 0 && !search && (
                 <>
-                  <p className="text-[10px] font-medium text-white/20 uppercase tracking-wider mb-4">
-                    Unlabeled · {unlabeled.length}
-                  </p>
-                  <div className="grid grid-cols-3 gap-3">
-                    <div className="col-span-3 rounded-2xl border border-white/6 bg-white/[0.02] p-5 flex flex-col gap-2">
-                      <div className="flex flex-wrap gap-2">
-                        {unlabeled.map(doc => (
-                          <button
-                            key={doc.uuid}
-                            onClick={() => router.push(`/docs/${doc.uuid}`)}
-                            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-white/[0.03] hover:bg-white/[0.07] border border-white/5 transition-colors group"
-                          >
-                            <FileText size={10} className="text-white/20" />
-                            <span className="text-[12px] text-white/40 group-hover:text-white/60 transition-colors">
-                              {doc.title || 'Untitled'}
-                            </span>
-                          </button>
-                        ))}
-                      </div>
+                  <div className="flex items-center gap-3 mb-4">
+                    <span
+                      className="text-[10px] font-medium uppercase tracking-wider"
+                      style={{ color: 'var(--text-muted)' }}
+                    >
+                      Unlabeled · {unlabeled.length}
+                    </span>
+                    <div
+                      className="flex-1 h-px"
+                      style={{ backgroundColor: 'var(--border)' }}
+                    />
+                  </div>
+
+                  <div
+                    className="rounded-2xl p-5"
+                    style={{
+                      backgroundColor: 'var(--bg-secondary)',
+                      border: '1px solid var(--border)',
+                    }}
+                  >
+                    <div className="flex flex-wrap gap-2">
+                      {unlabeled.map(doc => (
+                        <button
+                          key={doc.uuid}
+                          onClick={() => router.push(`/docs/${doc.uuid}`)}
+                          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg transition-colors"
+                          style={{
+                            backgroundColor: 'var(--bg-tertiary)',
+                            border: '1px solid var(--border)',
+                            color: 'var(--text-secondary)',
+                          }}
+                          onMouseEnter={e => {
+                            e.currentTarget.style.backgroundColor = 'var(--bg)'
+                          }}
+                          onMouseLeave={e => {
+                            e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)'
+                          }}
+                        >
+                          <FileText size={10} style={{ color: 'var(--text-muted)' }} />
+                          <span className="text-[12px]">
+                            {doc.title || 'Untitled'}
+                          </span>
+                        </button>
+                      ))}
                     </div>
                   </div>
                 </>
