@@ -15,7 +15,10 @@ export async function GET(
   try {
     const { id } = await params
     const result = await sql`
-      SELECT * FROM docs WHERE uuid = ${id} AND user_id = ${payload.userId} AND deleted_at IS NULL
+      SELECT docs.*, folders.name AS folder_name, folders.id AS folder_uuid
+      FROM docs
+      LEFT JOIN folders ON folders.id::text = docs.folder_id::text
+      WHERE docs.uuid = ${id} AND docs.user_id = ${payload.userId} AND docs.deleted_at IS NULL
     `
     if (result.length === 0) {
       return NextResponse.json({ error: 'Doc not found' }, { status: 404 })
