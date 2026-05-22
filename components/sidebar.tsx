@@ -9,11 +9,11 @@ import {
   ChevronDown,
   ChevronRight,
   Settings,
-  BookOpen,
+  Layers,
   Activity,
   Home,
   Plus,
-  Folder,
+  FolderOpen,
   MoreHorizontal,
   Pencil,
   Trash2,
@@ -382,7 +382,7 @@ export default function Sidebar({ onNewNote, collapsed = false, onToggle }: Side
         <nav className="flex-1 px-2 overflow-y-auto mt-0.5">
           {navItem("/", <Home size={13} />, "Home")}
           {navItem("/activity", <Activity size={13} />, "Activity")}
-          {navItem("/library", <BookOpen size={13} />, "Library")}
+          {navItem("/library", <Layers size={13} />, "Library")}
 
           {!collapsed && (
             <>
@@ -460,7 +460,7 @@ export default function Sidebar({ onNewNote, collapsed = false, onToggle }: Side
                         onMouseEnter={e => (e.currentTarget.style.backgroundColor = "var(--bg-secondary)")}
                         onMouseLeave={e => (e.currentTarget.style.backgroundColor = "transparent")}
                       >
-                        <Folder size={12} style={{ color: "var(--text-muted)" }} />
+                        <FolderOpen size={12} style={{ color: "var(--text-muted)" }} />
                         New Folder
                       </button>
                     </div>
@@ -507,7 +507,7 @@ export default function Sidebar({ onNewNote, collapsed = false, onToggle }: Side
                       onDragLeave={(e) => { e.stopPropagation(); setDragOverFolderId(null) }}
                       onDrop={(e) => handleDrop(e, folder.id)}
                     >
-                      <Folder size={13} className="shrink-0" style={{ color: "var(--text-muted)" }} />
+                      <FolderOpen size={13} className="shrink-0" style={{ color: "var(--text-muted)" }} />
 
                       {renamingFolderId === folder.id ? (
                         <input
