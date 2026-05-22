@@ -25,6 +25,12 @@ interface Label {
   color: string
 }
 
+interface ActivityEntry {
+  type: 'created' | 'edited'
+  timestamp: string
+  label: string
+}
+
 type Priority = 'low' | 'medium' | 'high' | null
 
 const PRIORITIES: { value: Priority; label: string; icon: React.ReactNode; color: string }[] = [
@@ -58,6 +64,35 @@ function formatDate(dateStr: string) {
     day: 'numeric',
     year: 'numeric',
   })
+}
+
+function formatDateTime(dateStr: string) {
+  if (!dateStr) return ''
+  const date = new Date(dateStr)
+  if (isNaN(date.getTime())) return ''
+  return date.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  }) + ' · ' + date.toLocaleTimeString('en-US', {
+    hour: 'numeric',
+    minute: '2-digit',
+  })
+}
+
+function timeAgo(dateStr: string): string {
+  const date = new Date(dateStr)
+  const now = new Date()
+  const seconds = Math.floor((now.getTime() - date.getTime()) / 1000)
+  if (seconds < 60) return 'just now'
+  const minutes = Math.floor(seconds / 60)
+  if (minutes < 60) return `${minutes}m ago`
+  const hours = Math.floor(minutes / 60)
+  if (hours < 24) return `${hours}h ago`
+  const days = Math.floor(hours / 24)
+  if (days === 1) return 'yesterday'
+  if (days < 30) return `${days}d ago`
+  return formatDate(dateStr)
 }
 
 function getInitials(name: string, email: string): string {
@@ -95,6 +130,7 @@ export default function DocPage() {
   const priorityRef = useRef<HTMLDivElement>(null)
   const titleRef = useRef<HTMLTextAreaElement>(null)
   const editorFocusRef = useRef<(() => void) | null>(null)
+  const [lastSaved, setLastSaved] = useState<string | null>(null)
 
   const [docLabels, setDocLabels] = useState<Label[]>([])
   const [allLabels, setAllLabels] = useState<Label[]>([])
@@ -191,6 +227,7 @@ export default function DocPage() {
           setContent(data.content || '')
           setIsPublic(data.is_public ?? false)
           setPriority((data.priority as Priority) ?? null)
+          setLastSaved(data.updated_at ?? null)
           if (data.folder_id) {
             fetch(`/api/folders/${data.folder_id}`)
               .then((r) => r.json())
@@ -211,6 +248,7 @@ export default function DocPage() {
           setContent(data.content || '')
           setIsPublic(data.is_public ?? false)
           setPriority((data.priority as Priority) ?? null)
+          setLastSaved(data.updated_at ?? null)
         })
     }
   }, [id, authChecked])
@@ -228,6 +266,7 @@ export default function DocPage() {
       body: JSON.stringify({ title: latestTitle, content: latestContent, color: latestDoc?.color ?? 'yellow' }),
     })
     setSaveStatus('saved')
+    setLastSaved(new Date().toISOString())
   }, [id, isLoggedIn])
 
   useEffect(() => {
@@ -308,6 +347,22 @@ export default function DocPage() {
   const wordCount = getWordCount(content)
   const charCount = getCharCount(content)
   const activePriority = PRIORITIES.find(p => p.value === priority) ?? PRIORITIES[0]
+
+  // Build activity entries from doc timestamps
+  const activityEntries: ActivityEntry[] = []
+  if (doc) {
+    const createdAt = doc.created_at
+    const editedAt = lastSaved ?? doc.updated_at
+    const isEdited = editedAt && createdAt &&
+      Math.abs(new Date(editedAt).getTime() - new Date(createdAt).getTime()) > 5000
+
+    if (isEdited) {
+      activityEntries.push({ type: 'edited', timestamp: editedAt!, label: 'Last edited' })
+    }
+    if (createdAt) {
+      activityEntries.push({ type: 'created', timestamp: createdAt, label: 'Created' })
+    }
+  }
 
   if (!authChecked || !doc) return null
 
@@ -659,6 +714,47 @@ export default function DocPage() {
                     )}
                   </div>
                 )}
+              </div>
+            </>
+          )}
+
+          {/* Activity section */}
+          {isLoggedIn && activityEntries.length > 0 && (
+            <>
+              <div className="my-3 border-t border-white/5" />
+              <p className="text-[10px] font-medium text-white/20 uppercase tracking-wider mb-3">Activity</p>
+
+              <div className="flex flex-col gap-3">
+                {activityEntries.map((entry, i) => (
+                  <div key={i} className="flex items-start gap-2.5">
+                    {/* Timeline dot */}
+                    <div className="flex flex-col items-center mt-0.5 shrink-0">
+                      <div className={`w-1.5 h-1.5 rounded-full ${entry.type === 'created' ? 'bg-emerald-500/60' : 'bg-white/20'}`} />
+                      {i < activityEntries.length - 1 && (
+                        <div className="w-px h-5 bg-white/5 mt-1" />
+                      )}
+                    </div>
+                    {/* Entry text */}
+                    <div className="flex flex-col gap-0.5 min-w-0">
+                      <div className="flex items-center gap-1.5">
+                        {currentUser && (
+                          <div className="w-3.5 h-3.5 rounded-full bg-[#3a3a3a] border border-white/10 flex items-center justify-center text-[7px] font-medium text-[#ccc] shrink-0">
+                            {getInitials(currentUser.name, currentUser.email)}
+                          </div>
+                        )}
+                        <span className="text-[11px] text-white/40">
+                          {currentUser?.name || currentUser?.email || 'You'}
+                        </span>
+                        <span className="text-[11px] text-white/20">{entry.label.toLowerCase()}</span>
+                      </div>
+                      <div className="flex items-center gap-1.5 ml-5">
+                        <span className="text-[10px] text-white/20" title={formatDateTime(entry.timestamp)}>
+                          {timeAgo(entry.timestamp)}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
             </>
           )}
