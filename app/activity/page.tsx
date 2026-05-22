@@ -59,7 +59,7 @@ export default function ActivityPage() {
       <main className="flex-1 overflow-y-auto">
         <div className="p-8 max-w-2xl mx-auto w-full">
           <div className="mb-8">
-            <h1 className="text-2xl font-semibold" style={{ color: 'var(--text-primary)' }}>Activity</h1>
+            <h1 className="page-title text-3xl" style={{ color: 'var(--text-primary)' }}>Activity</h1>
             <p className="text-sm mt-1" style={{ color: 'var(--text-muted)' }}>Everything you've touched in the last 30 days</p>
           </div>
 
