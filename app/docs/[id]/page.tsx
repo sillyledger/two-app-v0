@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation'
 import Sidebar from '@/components/sidebar'
 import Editor from '@/components/editor'
 import DocTopbar from '@/components/doc-topbar'
-import { CalendarDays, SignalLow, SignalMedium, SignalHigh, Minus, PanelRight, X, FileText, User, Clock, Plus, Check, Send, Trash2 } from 'lucide-react'
+import { CalendarDays, SignalLow, SignalMedium, SignalHigh, Minus, PanelRight, X, FileText, User, Clock, Plus, Check, Send, Trash2, Circle, CheckCircle2 } from 'lucide-react'
 import type { Doc } from '@/lib/db'
 
 interface Folder {
@@ -36,6 +36,16 @@ interface Comment {
   user_id: string
   user_name: string
   body: string
+  created_at: string
+}
+
+interface Task {
+  id: number
+  title: string
+  due_date: string | null
+  doc_id: string
+  doc_title: string
+  completed: boolean
   created_at: string
 }
 
@@ -143,6 +153,13 @@ export default function DocPage() {
   const [postingComment, setPostingComment] = useState(false)
   const commentInputRef = useRef<HTMLTextAreaElement>(null)
 
+  // Tasks state
+  const [tasks, setTasks] = useState<Task[]>([])
+  const [addingTask, setAddingTask] = useState(false)
+  const [newTaskTitle, setNewTaskTitle] = useState('')
+  const [newTaskDueDate, setNewTaskDueDate] = useState('')
+  const newTaskInputRef = useRef<HTMLInputElement>(null)
+
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
       if (labelPickerRef.current && !labelPickerRef.current.contains(e.target as Node)) {
@@ -209,6 +226,9 @@ export default function DocPage() {
     fetch('/api/labels').then(r => r.json()).then(data => { if (Array.isArray(data)) setAllLabels(data) })
     fetch(`/api/docs/${id}/labels`).then(r => r.json()).then(data => { if (Array.isArray(data)) setDocLabels(data) })
     fetch(`/api/comments?docId=${id}`).then(r => r.json()).then(data => { if (Array.isArray(data)) setComments(data) })
+    fetch(`/api/tasks?docId=${id}`).then(r => r.json()).then(data => {
+      if (Array.isArray(data)) setTasks(data.filter((t: Task) => t.doc_id === String(id)))
+    })
   }, [isLoggedIn, id])
 
   useEffect(() => {
@@ -311,6 +331,44 @@ export default function DocPage() {
   const handleDeleteComment = async (commentId: number) => {
     await fetch('/api/comments', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ commentId }) })
     setComments(prev => prev.filter(c => c.id !== commentId))
+  }
+
+  const handleAddTask = async () => {
+    if (!newTaskTitle.trim()) return
+    const res = await fetch('/api/tasks', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        title: newTaskTitle.trim(),
+        due_date: newTaskDueDate || null,
+        doc_id: String(id),
+        doc_title: title || 'Untitled',
+      }),
+    })
+    const created = await res.json()
+    setTasks(prev => [created, ...prev])
+    setNewTaskTitle('')
+    setNewTaskDueDate('')
+    setAddingTask(false)
+  }
+
+  const handleToggleTask = async (task: Task) => {
+    const updated = { ...task, completed: !task.completed }
+    setTasks(prev => prev.map(t => t.id === task.id ? updated : t))
+    await fetch('/api/tasks', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: task.id, completed: updated.completed }),
+    })
+  }
+
+  const handleDeleteTask = async (taskId: number) => {
+    setTasks(prev => prev.filter(t => t.id !== taskId))
+    await fetch('/api/tasks', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: taskId }),
+    })
   }
 
   const handleNewDoc = async () => {
@@ -465,7 +523,7 @@ export default function DocPage() {
         </main>
       </div>
 
-      {/* Detail panel — Linear style, no header bar */}
+      {/* Detail panel */}
       <div
         className={`fixed top-0 right-0 h-full w-[280px] flex flex-col z-30 transition-transform duration-300 ease-in-out ${detailOpen ? 'translate-x-0' : 'translate-x-full'}`}
         style={{ backgroundColor: 'var(--bg)', borderLeft: '1px solid var(--border)' }}
@@ -728,6 +786,123 @@ export default function DocPage() {
               </div>
             </>
           )}
+
+          {/* ── TASKS SECTION ── */}
+          {isLoggedIn && (
+            <>
+              <div className="my-3 border-t" style={{ borderColor: 'var(--border)' }} />
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-[10px] font-medium uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>
+                  Tasks {tasks.length > 0 && `· ${tasks.length}`}
+                </p>
+                <button
+                  onClick={() => { setAddingTask(true); setTimeout(() => newTaskInputRef.current?.focus(), 50) }}
+                  className="flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[11px] transition-colors"
+                  style={{ color: 'var(--text-muted)' }}
+                  onMouseEnter={e => { e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)'; e.currentTarget.style.color = 'var(--text-secondary)' }}
+                  onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = 'var(--text-muted)' }}
+                >
+                  <Plus size={11} />
+                  Add
+                </button>
+              </div>
+
+              {addingTask && (
+                <div
+                  className="rounded-lg p-2.5 mb-3 flex flex-col gap-2"
+                  style={{ backgroundColor: 'var(--bg-tertiary)', border: '1px solid var(--border)' }}
+                >
+                  <input
+                    ref={newTaskInputRef}
+                    value={newTaskTitle}
+                    onChange={e => setNewTaskTitle(e.target.value)}
+                    onKeyDown={e => {
+                      if (e.key === 'Enter') handleAddTask()
+                      if (e.key === 'Escape') { setAddingTask(false); setNewTaskTitle(''); setNewTaskDueDate('') }
+                    }}
+                    placeholder="Task title..."
+                    className="w-full bg-transparent text-[12px] focus:outline-none"
+                    style={{ color: 'var(--text-primary)' }}
+                  />
+                  <input
+                    type="date"
+                    value={newTaskDueDate}
+                    onChange={e => setNewTaskDueDate(e.target.value)}
+                    className="w-full rounded-md px-2 py-1 text-[11px] focus:outline-none"
+                    style={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border)', color: 'var(--text-secondary)', colorScheme: 'dark' }}
+                  />
+                  <div className="flex gap-2 justify-end">
+                    <button
+                      onClick={() => { setAddingTask(false); setNewTaskTitle(''); setNewTaskDueDate('') }}
+                      className="px-2 py-1 rounded-md text-[11px] transition-colors"
+                      style={{ color: 'var(--text-muted)' }}
+                      onMouseEnter={e => (e.currentTarget.style.color = 'var(--text-secondary)')}
+                      onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-muted)')}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handleAddTask}
+                      disabled={!newTaskTitle.trim()}
+                      className="px-2 py-1 rounded-md text-[11px] font-medium transition-colors disabled:opacity-30"
+                      style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-secondary)' }}
+                      onMouseEnter={e => (e.currentTarget.style.color = 'var(--text-primary)')}
+                      onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-secondary)')}
+                    >
+                      Add task
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {tasks.length === 0 && !addingTask && (
+                <p className="text-[11px]" style={{ color: 'var(--text-muted)' }}>No tasks yet.</p>
+              )}
+
+              <div className="flex flex-col gap-1">
+                {tasks.map(task => (
+                  <div key={task.id} className="flex items-start gap-2 group py-1">
+                    <button
+                      onClick={() => handleToggleTask(task)}
+                      className="mt-[1px] shrink-0 transition-colors"
+                      style={{ color: task.completed ? 'var(--text-muted)' : 'var(--text-secondary)' }}
+                      onMouseEnter={e => (e.currentTarget.style.color = 'var(--text-primary)')}
+                      onMouseLeave={e => (e.currentTarget.style.color = task.completed ? 'var(--text-muted)' : 'var(--text-secondary)')}
+                    >
+                      {task.completed ? <CheckCircle2 size={13} /> : <Circle size={13} />}
+                    </button>
+                    <div className="flex-1 min-w-0">
+                      <p
+                        className="text-[12px] leading-snug"
+                        style={{
+                          color: task.completed ? 'var(--text-muted)' : 'var(--text-primary)',
+                          textDecoration: task.completed ? 'line-through' : 'none',
+                        }}
+                      >
+                        {task.title}
+                      </p>
+                      {task.due_date && (
+                        <p className="text-[10px] mt-0.5 flex items-center gap-1" style={{ color: 'var(--text-muted)' }}>
+                          <CalendarDays size={9} />
+                          {new Date(task.due_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' })}
+                        </p>
+                      )}
+                    </div>
+                    <button
+                      onClick={() => handleDeleteTask(task.id)}
+                      className="shrink-0 mt-[1px] opacity-0 group-hover:opacity-100 transition-opacity"
+                      style={{ color: 'var(--text-muted)' }}
+                      onMouseEnter={e => (e.currentTarget.style.color = '#e05252')}
+                      onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-muted)')}
+                    >
+                      <Trash2 size={11} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+
         </div>
       </div>
     </div>
