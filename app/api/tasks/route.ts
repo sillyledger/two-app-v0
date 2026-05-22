@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { neon } from '@neondatabase/serverless'
 import { cookies } from 'next/headers'
 import { verifyToken } from '@/lib/auth'
@@ -18,7 +18,7 @@ async function getUserId(): Promise<string | null> {
   }
 }
 
-export async function GET(request: NextRequest) {
+export async function GET(request: Request) {
   const userId = await getUserId()
   if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
@@ -43,7 +43,7 @@ export async function GET(request: NextRequest) {
   return NextResponse.json(tasks)
 }
 
-export async function POST(request: NextRequest) {
+export async function POST(request: Request) {
   const userId = await getUserId()
   if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
@@ -62,7 +62,7 @@ export async function POST(request: NextRequest) {
   return NextResponse.json(task, { status: 201 })
 }
 
-export async function PATCH(request: NextRequest) {
+export async function PATCH(request: Request) {
   const userId = await getUserId()
   if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
@@ -78,7 +78,7 @@ export async function PATCH(request: NextRequest) {
   return NextResponse.json(task)
 }
 
-export async function DELETE(request: NextRequest) {
+export async function DELETE(request: Request) {
   const userId = await getUserId()
   if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
