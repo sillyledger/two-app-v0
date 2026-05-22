@@ -52,10 +52,10 @@ interface Task {
 type Priority = 'low' | 'medium' | 'high' | null
 
 const PRIORITIES: { value: Priority; label: string; icon: React.ReactNode; color: string }[] = [
-  { value: null,     label: 'No priority', icon: <Minus size={12} />,        color: 'text-[#555]' },
-  { value: 'low',    label: 'Low',         icon: <SignalLow size={12} />,    color: 'text-[#888]' },
-  { value: 'medium', label: 'Medium',      icon: <SignalMedium size={12} />, color: 'text-[#f5a623]' },
-  { value: 'high',   label: 'High',        icon: <SignalHigh size={12} />,   color: 'text-[#e05252]' },
+  { value: null,     label: 'No priority', icon: <Minus size={12} />,        color: 'text-[var(--text-secondary)]' },
+  { value: 'low',    label: 'Low',         icon: <SignalLow size={12} />,    color: 'text-[var(--text-secondary)]' },
+  { value: 'medium', label: 'Medium',      icon: <SignalMedium size={12} />, color: 'text-[#d97706]' },
+  { value: 'high',   label: 'High',        icon: <SignalHigh size={12} />,   color: 'text-[#dc2626]' },
 ]
 
 const LABEL_COLORS = [
