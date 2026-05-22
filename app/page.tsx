@@ -139,7 +139,7 @@ export default function HomePage() {
       <main className="flex-1 overflow-y-auto transition-all duration-200">
         <div className="max-w-3xl mx-auto px-8 py-8">
           <div className="flex items-center justify-between mb-8">
-            <h1 className="text-2xl font-bold" style={{ color: "var(--text-primary)" }}>Recent Docs</h1>
+            <h1 className="page-title text-3xl" style={{ color: "var(--text-primary)" }}>Recent Docs</h1>
             <button
               onClick={handleCreateDoc}
               disabled={creating}
