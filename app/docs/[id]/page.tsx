@@ -879,16 +879,17 @@ export default function DocPage() {
                       {task.completed === true ? <CheckCircle2 size={13} /> : <Circle size={13} />}
                     </button>
                     <div className="flex-1 min-w-0">
-                      {/* Title — hardcoded colors so nothing can override them */}
-                      <p
-                        className="text-[12px] leading-snug"
+                    <div
                         style={{
+                          fontSize: '12px',
+                          lineHeight: '1.4',
+                          opacity: 1,
                           color: task.completed === true ? '#6b7280' : '#e8e8e8',
                           textDecoration: task.completed === true ? 'line-through' : 'none',
                         }}
                       >
                         {task.title}
-                      </p>
+                      </div>
                       {task.due_date && (
                         <p className="text-[10px] mt-0.5 flex items-center gap-1" style={{ color: '#6b7280' }}>
                           <CalendarDays size={9} />
