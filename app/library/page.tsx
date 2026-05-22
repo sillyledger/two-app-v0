@@ -112,8 +112,8 @@ export default function LibraryPage() {
           }}
         >
           <span
-            className="text-[13px] font-medium"
-            style={{ color: 'var(--text-muted)' }}
+            className="page-title text-[15px]"
+            style={{ color: 'var(--text-primary)' }}
           >
             Library
           </span>
