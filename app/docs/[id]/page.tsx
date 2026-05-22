@@ -134,8 +134,15 @@ export default function DocPage() {
   const [authChecked, setAuthChecked] = useState(false)
   const [currentUser, setCurrentUser] = useState<User | null>(null)
   const [priority, setPriority] = useState<Priority>(null)
+
+  // Sidebar priority dropdown
   const [priorityOpen, setPriorityOpen] = useState(false)
   const priorityRef = useRef<HTMLDivElement>(null)
+
+  // Header priority dropdown (separate so they don't interfere)
+  const [headerPriorityOpen, setHeaderPriorityOpen] = useState(false)
+  const headerPriorityRef = useRef<HTMLDivElement>(null)
+
   const titleRef = useRef<HTMLTextAreaElement>(null)
   const editorFocusRef = useRef<(() => void) | null>(null)
   const [lastSaved, setLastSaved] = useState<string | null>(null)
@@ -192,10 +199,14 @@ export default function DocPage() {
     el.style.height = el.scrollHeight + 'px'
   }
 
+  // Single click-outside handler that covers both priority dropdowns
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
       if (priorityRef.current && !priorityRef.current.contains(e.target as Node)) {
         setPriorityOpen(false)
+      }
+      if (headerPriorityRef.current && !headerPriorityRef.current.contains(e.target as Node)) {
+        setHeaderPriorityOpen(false)
       }
     }
     document.addEventListener('mousedown', handleClickOutside)
@@ -298,6 +309,7 @@ export default function DocPage() {
   const handlePriorityChange = async (value: Priority) => {
     setPriority(value)
     setPriorityOpen(false)
+    setHeaderPriorityOpen(false)
     await fetch(`/api/docs/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
@@ -351,10 +363,10 @@ export default function DocPage() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-  docId: id,   // ← was doc?.id, now uses the uuid
-  body: commentBody.trim(),
-  userName: currentUser?.name || currentUser?.email || 'Anonymous',
-}),
+        docId: id,
+        body: commentBody.trim(),
+        userName: currentUser?.name || currentUser?.email || 'Anonymous',
+      }),
     })
     const created = await res.json()
     setComments(prev => [...prev, created])
@@ -492,15 +504,15 @@ export default function DocPage() {
               )}
               <span className="text-[#444] select-none">·</span>
               {isLoggedIn && (
-                <div className="relative" ref={priorityRef}>
+                <div className="relative" ref={headerPriorityRef}>
                   <button
-                    onClick={() => setPriorityOpen((v) => !v)}
+                    onClick={() => setHeaderPriorityOpen((v) => !v)}
                     className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-white/5 border border-white/8 text-xs text-[#888] hover:bg-white/10 hover:text-[#aaa] transition-colors"
                   >
                     <span className={activePriority.color}>{activePriority.icon}</span>
                     <span>{activePriority.label}</span>
                   </button>
-                  {priorityOpen && (
+                  {headerPriorityOpen && (
                     <div className="absolute top-full mt-1.5 left-0 z-50 w-44 rounded-lg border border-white/10 bg-[#1e1e1e] shadow-xl py-1">
                       {PRIORITIES.map((p) => (
                         <button
