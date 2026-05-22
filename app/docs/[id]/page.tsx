@@ -227,7 +227,6 @@ export default function DocPage() {
     fetch('/api/labels').then(r => r.json()).then(data => { if (Array.isArray(data)) setAllLabels(data) })
     fetch(`/api/docs/${docId}/labels`).then(r => r.json()).then(data => { if (Array.isArray(data)) setDocLabels(data) })
     fetch(`/api/comments?docId=${docId}`).then(r => r.json()).then(data => { if (Array.isArray(data)) setComments(data) })
-    // Fetch ALL tasks, filter client-side — avoids any server-side type mismatch on doc_id
     fetch('/api/tasks')
       .then(r => r.json())
       .then(data => {
@@ -539,7 +538,132 @@ export default function DocPage() {
           className="flex-1 overflow-y-auto flex flex-col gap-1"
           style={{ padding: '56px 16px 20px', color: 'var(--text-primary)' }}
         >
-          <p className="text-[10px] font-medium uppercase tracking-wider mb-2" style={{ color: 'var(--text-muted)' }}>Document</p>
+
+          {/* ── TASKS SECTION (top) ── */}
+          {isLoggedIn && (
+            <>
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-[10px] font-medium uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>
+                  Tasks {tasks.length > 0 && `· ${tasks.length}`}
+                </p>
+                <button
+                  onClick={() => { setAddingTask(true); setTimeout(() => newTaskInputRef.current?.focus(), 50) }}
+                  className="flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[11px] transition-colors"
+                  style={{ color: 'var(--text-muted)' }}
+                  onMouseEnter={e => { e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)'; e.currentTarget.style.color = 'var(--text-secondary)' }}
+                  onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = 'var(--text-muted)' }}
+                >
+                  <Plus size={11} />
+                  Add
+                </button>
+              </div>
+
+              {addingTask && (
+                <div
+                  className="rounded-lg p-2.5 mb-3 flex flex-col gap-2"
+                  style={{ backgroundColor: 'var(--bg-tertiary)', border: '1px solid var(--border)' }}
+                >
+                  <input
+                    ref={newTaskInputRef}
+                    value={newTaskTitle}
+                    onChange={e => setNewTaskTitle(e.target.value)}
+                    onKeyDown={e => {
+                      if (e.key === 'Enter') handleAddTask()
+                      if (e.key === 'Escape') { setAddingTask(false); setNewTaskTitle(''); setNewTaskDueDate('') }
+                    }}
+                    placeholder="Task title..."
+                    className="w-full bg-transparent text-[12px] focus:outline-none"
+                    style={{ color: 'var(--text-primary)' }}
+                  />
+                  <input
+                    type="date"
+                    value={newTaskDueDate}
+                    onChange={e => setNewTaskDueDate(e.target.value)}
+                    className="w-full rounded-md px-2 py-1 text-[11px] focus:outline-none"
+                    style={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border)', color: 'var(--text-secondary)', colorScheme: 'dark' }}
+                  />
+                  <div className="flex gap-2 justify-end">
+                    <button
+                      onClick={() => { setAddingTask(false); setNewTaskTitle(''); setNewTaskDueDate('') }}
+                      className="px-2 py-1 rounded-md text-[11px] transition-colors"
+                      style={{ color: 'var(--text-muted)' }}
+                      onMouseEnter={e => (e.currentTarget.style.color = 'var(--text-secondary)')}
+                      onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-muted)')}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handleAddTask}
+                      disabled={!newTaskTitle.trim()}
+                      className="px-2 py-1 rounded-md text-[11px] font-medium transition-colors disabled:opacity-30"
+                      style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-secondary)' }}
+                      onMouseEnter={e => (e.currentTarget.style.color = 'var(--text-primary)')}
+                      onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-secondary)')}
+                    >
+                      Add task
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {tasks.length === 0 && !addingTask && (
+                <p className="text-[11px] mb-3" style={{ color: 'var(--text-muted)' }}>No tasks yet.</p>
+              )}
+
+              <div className="flex flex-col gap-0.5 mb-3">
+                {tasks.map(task => (
+                  <div
+                    key={task.id}
+                    className="flex items-start gap-2 py-1.5 px-1 rounded-md"
+                    style={{ backgroundColor: hoveredTaskId === task.id ? 'var(--bg-tertiary)' : 'transparent' }}
+                    onMouseEnter={() => setHoveredTaskId(task.id)}
+                    onMouseLeave={() => setHoveredTaskId(null)}
+                  >
+                    <button
+                      onClick={() => handleToggleTask(task)}
+                      className="mt-[1px] shrink-0"
+                      style={{ color: 'var(--text-secondary)' }}
+                    >
+                      {task.completed ? <CheckCircle2 size={13} /> : <Circle size={13} />}
+                    </button>
+                    <div className="flex-1 min-w-0">
+                      <span
+                        style={{
+                          display: 'block',
+                          fontSize: '12px',
+                          lineHeight: '1.4',
+                          color: 'var(--text-primary)',
+                          textDecoration: task.completed ? 'line-through' : 'none',
+                          opacity: task.completed ? 0.5 : 1,
+                        }}
+                      >
+                        {task.title}
+                      </span>
+                      {task.due_date && (
+                        <span style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '10px', color: 'var(--text-muted)', marginTop: '2px' }}>
+                          <CalendarDays size={9} />
+                          {new Date(task.due_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' })}
+                        </span>
+                      )}
+                    </div>
+                    <button
+                      onClick={() => handleDeleteTask(task.id)}
+                      className="shrink-0 mt-[1px]"
+                      style={{ color: hoveredTaskId === task.id ? 'var(--text-muted)' : 'transparent' }}
+                      onMouseEnter={e => (e.currentTarget.style.color = '#e05252')}
+                      onMouseLeave={e => (e.currentTarget.style.color = hoveredTaskId === task.id ? 'var(--text-muted)' : 'transparent')}
+                    >
+                      <Trash2 size={11} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+              <div className="border-t mb-1" style={{ borderColor: 'var(--border)' }} />
+            </>
+          )}
+
+          {/* ── DOCUMENT SECTION ── */}
+          <p className="text-[10px] font-medium uppercase tracking-wider mb-2 mt-3" style={{ color: 'var(--text-muted)' }}>Document</p>
 
           <DetailRow label="Created" icon={<CalendarDays size={12} />}>
             <span style={{ color: 'var(--text-primary)' }}>{formatDate(doc.created_at)}</span>
@@ -790,129 +914,6 @@ export default function DocPage() {
                   <Send size={11} />
                   {postingComment ? 'Posting...' : 'Post'}
                 </button>
-              </div>
-            </>
-          )}
-
-          {/* ── TASKS SECTION ── */}
-          {isLoggedIn && (
-            <>
-              <div className="my-3 border-t" style={{ borderColor: 'var(--border)' }} />
-              <div className="flex items-center justify-between mb-3">
-                <p className="text-[10px] font-medium uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>
-                  Tasks {tasks.length > 0 && `· ${tasks.length}`}
-                </p>
-                <button
-                  onClick={() => { setAddingTask(true); setTimeout(() => newTaskInputRef.current?.focus(), 50) }}
-                  className="flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[11px] transition-colors"
-                  style={{ color: 'var(--text-muted)' }}
-                  onMouseEnter={e => { e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)'; e.currentTarget.style.color = 'var(--text-secondary)' }}
-                  onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = 'var(--text-muted)' }}
-                >
-                  <Plus size={11} />
-                  Add
-                </button>
-              </div>
-
-              {addingTask && (
-                <div
-                  className="rounded-lg p-2.5 mb-3 flex flex-col gap-2"
-                  style={{ backgroundColor: 'var(--bg-tertiary)', border: '1px solid var(--border)' }}
-                >
-                  <input
-                    ref={newTaskInputRef}
-                    value={newTaskTitle}
-                    onChange={e => setNewTaskTitle(e.target.value)}
-                    onKeyDown={e => {
-                      if (e.key === 'Enter') handleAddTask()
-                      if (e.key === 'Escape') { setAddingTask(false); setNewTaskTitle(''); setNewTaskDueDate('') }
-                    }}
-                    placeholder="Task title..."
-                    className="w-full bg-transparent text-[12px] focus:outline-none"
-                    style={{ color: 'var(--text-primary)' }}
-                  />
-                  <input
-                    type="date"
-                    value={newTaskDueDate}
-                    onChange={e => setNewTaskDueDate(e.target.value)}
-                    className="w-full rounded-md px-2 py-1 text-[11px] focus:outline-none"
-                    style={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border)', color: 'var(--text-secondary)', colorScheme: 'dark' }}
-                  />
-                  <div className="flex gap-2 justify-end">
-                    <button
-                      onClick={() => { setAddingTask(false); setNewTaskTitle(''); setNewTaskDueDate('') }}
-                      className="px-2 py-1 rounded-md text-[11px] transition-colors"
-                      style={{ color: 'var(--text-muted)' }}
-                      onMouseEnter={e => (e.currentTarget.style.color = 'var(--text-secondary)')}
-                      onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-muted)')}
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      onClick={handleAddTask}
-                      disabled={!newTaskTitle.trim()}
-                      className="px-2 py-1 rounded-md text-[11px] font-medium transition-colors disabled:opacity-30"
-                      style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-secondary)' }}
-                      onMouseEnter={e => (e.currentTarget.style.color = 'var(--text-primary)')}
-                      onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-secondary)')}
-                    >
-                      Add task
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {tasks.length === 0 && !addingTask && (
-                <p className="text-[11px]" style={{ color: 'var(--text-muted)' }}>No tasks yet.</p>
-              )}
-
-              <div className="flex flex-col gap-0.5">
-                {tasks.map(task => (
-                  <div
-                    key={task.id}
-                    className="flex items-start gap-2 py-1.5 px-1 rounded-md"
-                    style={{ backgroundColor: hoveredTaskId === task.id ? 'var(--bg-tertiary)' : 'transparent' }}
-                    onMouseEnter={() => setHoveredTaskId(task.id)}
-                    onMouseLeave={() => setHoveredTaskId(null)}
-                  >
-                    <button
-                      onClick={() => handleToggleTask(task)}
-                      className="mt-[1px] shrink-0"
-                      style={{ color: 'var(--text-secondary)' }}
-                    >
-                      {task.completed ? <CheckCircle2 size={13} /> : <Circle size={13} />}
-                    </button>
-                    <div className="flex-1 min-w-0">
-                      <span
-                        style={{
-                          display: 'block',
-                          fontSize: '12px',
-                          lineHeight: '1.4',
-                          color: 'var(--text-primary)',
-                          textDecoration: task.completed ? 'line-through' : 'none',
-                          opacity: task.completed ? 0.5 : 1,
-                        }}
-                      >
-                        {task.title}
-                      </span>
-                      {task.due_date && (
-                        <span style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '10px', color: 'var(--text-muted)', marginTop: '2px' }}>
-                          <CalendarDays size={9} />
-                          {new Date(task.due_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' })}
-                        </span>
-                      )}
-                    </div>
-                    <button
-                      onClick={() => handleDeleteTask(task.id)}
-                      className="shrink-0 mt-[1px]"
-                      style={{ color: hoveredTaskId === task.id ? 'var(--text-muted)' : 'transparent' }}
-                      onMouseEnter={e => (e.currentTarget.style.color = '#e05252')}
-                      onMouseLeave={e => (e.currentTarget.style.color = hoveredTaskId === task.id ? 'var(--text-muted)' : 'transparent')}
-                    >
-                      <Trash2 size={11} />
-                    </button>
-                  </div>
-                ))}
               </div>
             </>
           )}
