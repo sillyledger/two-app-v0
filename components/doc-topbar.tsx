@@ -178,13 +178,15 @@ export default function DocTopbar({
           <span className="mx-1 text-[12px]" style={{ color: "var(--text-muted)" }}>/</span>
           {folder && (
             <>
-              <span
-                className="text-[12px] font-medium truncate"
+              <span className="mx-1 text-[12px]" style={{ color: "var(--text-muted)" }}>/</span>
+              <Link
+                href={`/folders/${folder.id}`}
+                className="text-[12px] font-medium truncate transition-colors"
                 style={{ color: "var(--text-muted)" }}
               >
                 {folder.name}
-              </span>
-              <ChevronRight size={11} className="shrink-0 mx-0.5" style={{ color: "var(--text-muted)" }} />
+              </Link>
+              <span className="mx-1 text-[12px]" style={{ color: "var(--text-muted)" }}>/</span>
             </>
           )}
           <span
