@@ -576,11 +576,20 @@ export default function DocPage() {
           detailOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
       >
-        <div className="flex items-center justify-between px-4 h-[44px] border-b border-[var(--border)] shrink-0">
-          <span className="text-xs font-medium text-[var(--text-muted)] uppercase tracking-wider">Details</span>
+        <div className="flex items-center justify-between px-4 h-[44px] border-b border-[var(--border)] shrink-0" style={{ backgroundColor: "var(--bg)" }}>
+          <span className="text-xs font-medium uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>Details</span>
           <button
             onClick={() => setDetailOpen(false)}
-            className="flex items-center justify-center w-6 h-6 rounded-md text-white/20 hover:text-white/50 hover:bg-white/5 transition-colors"
+            className="flex items-center justify-center w-6 h-6 rounded-md transition-colors"
+            style={{ color: "var(--text-muted)" }}
+            onMouseEnter={e => {
+              e.currentTarget.style.backgroundColor = "var(--bg-tertiary)"
+              e.currentTarget.style.color = "var(--text-primary)"
+            }}
+            onMouseLeave={e => {
+              e.currentTarget.style.backgroundColor = "transparent"
+              e.currentTarget.style.color = "var(--text-muted)"
+            }}
           >
             <X size={13} />
           </button>
