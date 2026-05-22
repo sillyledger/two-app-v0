@@ -178,19 +178,20 @@ export default function FolderPage() {
               <span className="text-[12px]" style={{ color: "var(--text-muted)" }}>{docs.length} docs</span>
             </div>
             <button
-              onClick={handleCreateDoc}
-              disabled={creating}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-colors"
-              style={{
-                border: "1px solid var(--border)",
-                color: "var(--text-primary)",
-              }}
-              onMouseEnter={e => (e.currentTarget.style.backgroundColor = "var(--bg-tertiary)")}
-              onMouseLeave={e => (e.currentTarget.style.backgroundColor = "transparent")}
-            >
-              <Plus size={15} />
-              {creating ? "Creating..." : "New Doc"}
-            </button>
+  onClick={handleCreateDoc}
+  disabled={creating}
+  className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-opacity"
+  style={{
+    backgroundColor: "var(--text-primary)",
+    border: "1px solid var(--border)",
+    color: "var(--bg)",
+  }}
+  onMouseEnter={e => (e.currentTarget.style.opacity = "0.85")}
+  onMouseLeave={e => (e.currentTarget.style.opacity = "1")}
+>
+  <Plus size={15} />
+  {creating ? "Creating..." : "New Doc"}
+</button>
           </div>
 
           {/* Doc list */}
