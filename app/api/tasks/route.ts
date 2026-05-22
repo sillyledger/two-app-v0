@@ -16,16 +16,29 @@ async function getUserId(request: NextRequest): Promise<number | null> {
   }
 }
 
-// GET /api/tasks — fetch all tasks for the logged-in user
+// GET /api/tasks — fetch all tasks (or filtered by docId) for the logged-in user
 export async function GET(request: NextRequest) {
   const userId = await getUserId(request)
   if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const tasks = await sql`
-    SELECT * FROM tasks
-    WHERE user_id = ${userId}
-    ORDER BY created_at DESC
-  `
+  const { searchParams } = new URL(request.url)
+  const docId = searchParams.get('docId')
+
+  let tasks
+  if (docId) {
+    tasks = await sql`
+      SELECT * FROM tasks
+      WHERE user_id = ${userId} AND doc_id = ${docId}
+      ORDER BY created_at DESC
+    `
+  } else {
+    tasks = await sql`
+      SELECT * FROM tasks
+      WHERE user_id = ${userId}
+      ORDER BY created_at DESC
+    `
+  }
+
   return NextResponse.json(tasks)
 }
 
