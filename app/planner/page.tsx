@@ -59,7 +59,6 @@ export default function PlannerPage() {
     if (saved === 'true') setCollapsed(true)
   }, [])
 
-  // Step 1: check auth first
   useEffect(() => {
     fetch('/api/auth/me').then(r => {
       if (!r.ok) {
@@ -70,7 +69,6 @@ export default function PlannerPage() {
     })
   }, [])
 
-  // Step 2: only fetch tasks once auth is confirmed
   useEffect(() => {
     if (!authChecked) return
     fetch('/api/tasks')
@@ -121,7 +119,7 @@ export default function PlannerPage() {
         }}
       />
 
-      <main className="flex-1 overflow-y-auto px-10 py-12 max-w-[720px]">
+      <main className="flex-1 overflow-y-auto px-10 py-12" style={{ maxWidth: '720px' }}>
         <div className="mb-8">
           <h1 className="text-[22px] font-bold tracking-tight" style={{ color: 'var(--text-primary)' }}>
             Planner
@@ -219,7 +217,7 @@ function TaskGroup({
           >
             <button
               onClick={() => onToggle(task)}
-              className="mt-[2px] shrink-0 transition-colors"
+              className="mt-[2px] shrink-0"
               style={{ color: 'var(--text-muted)' }}
               onMouseEnter={e => (e.currentTarget.style.color = 'var(--text-primary)')}
               onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-muted)')}
@@ -228,15 +226,18 @@ function TaskGroup({
             </button>
 
             <div className="flex-1 min-w-0">
-              <p
-                className="text-[13px] leading-snug"
+              <span
                 style={{
-                  color: task.completed ? 'var(--text-muted)' : 'var(--text-primary)',
+                  display: 'block',
+                  fontSize: '13px',
+                  lineHeight: '1.4',
+                  color: 'var(--text-primary)',
                   textDecoration: task.completed ? 'line-through' : 'none',
+                  opacity: task.completed ? 0.5 : 1,
                 }}
               >
                 {task.title}
-              </p>
+              </span>
               <div className="flex items-center gap-2 mt-1 flex-wrap">
                 <Link
                   href={`/docs/${task.doc_id}`}
@@ -257,7 +258,7 @@ function TaskGroup({
 
             <button
               onClick={() => onDelete(task.id)}
-              className="shrink-0 mt-[2px] transition-colors"
+              className="shrink-0 mt-[2px]"
               style={{ color: 'transparent' }}
               onMouseEnter={e => (e.currentTarget.style.color = '#e05252')}
               onMouseLeave={e => (e.currentTarget.style.color = 'transparent')}
