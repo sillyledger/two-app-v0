@@ -36,7 +36,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
     if (!name?.trim()) return NextResponse.json({ error: 'Name required' }, { status: 400 })
 
     const result = await sql`
-      UPDATE folders SET name = ${name.trim()} WHERE id = ${params.id} RETURNING *
+      SELECT * FROM folders WHERE id::text = ${params.id}
     `
     return NextResponse.json(result[0])
   } catch (error) {
