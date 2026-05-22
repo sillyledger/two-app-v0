@@ -572,7 +572,7 @@ export default function DocPage() {
 
       {/* Detail panel */}
       <div
-        className={`fixed top-0 right-0 h-full w-[280px] border-l border-[var(--border)] bg-[var(--bg-secondary)] flex flex-col z-30 transition-transform duration-300 ease-in-out ${
+        className={`fixed top-0 right-0 h-full w-[280px] border-l border-[var(--border)] flex flex-col z-30 transition-transform duration-300 ease-in-out ${
           detailOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
       >
@@ -595,7 +595,7 @@ export default function DocPage() {
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto px-4 py-5 flex flex-col gap-1">
+        <div className="flex-1 overflow-y-auto px-4 py-5 flex flex-col gap-1" style={{ backgroundColor: "var(--bg-secondary)" }}>
 
           <p className="text-[10px] font-medium text-[var(--text-muted)] uppercase tracking-wider mb-2">Document</p>
 
