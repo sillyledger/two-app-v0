@@ -35,6 +35,7 @@ import {
   Columns,
 } from "lucide-react"
 import { useCallback, useState, useRef, useEffect } from "react"
+import { useRouter } from "next/navigation"
 
 const lowlight = createLowlight(common)
 
@@ -52,6 +53,7 @@ interface Doc {
 
 export { Editor }
 export default function Editor({ content, onChange, onReady, editable = true }: EditorProps) {
+  const router = useRouter()
   const [bubbleVisible, setBubbleVisible] = useState(false)
   const [bubblePos, setBubblePos] = useState({ top: 0, left: 0 })
   const containerRef = useRef<HTMLDivElement>(null)
@@ -250,6 +252,19 @@ export default function Editor({ content, onChange, onReady, editable = true }: 
         if (linkPopupRef.current && related && linkPopupRef.current.contains(related)) return
         hidePopupTimer.current = setTimeout(() => setLinkPopup(null), 600)
       })
+
+      // Handle clicks on links — internal links use router, external open new tab
+      a.addEventListener("click", (e) => {
+        const href = a.getAttribute("href") || ""
+        if (!href) return
+        e.preventDefault()
+        e.stopPropagation()
+        if (href.startsWith("/")) {
+          router.push(href)
+        } else {
+          window.open(href, "_blank", "noopener,noreferrer")
+        }
+      })
     }
 
     container.querySelectorAll("a").forEach((a) => attachToLink(a as HTMLAnchorElement))
@@ -263,7 +278,7 @@ export default function Editor({ content, onChange, onReady, editable = true }: 
       observer.disconnect()
       attachedLinks.clear()
     }
-  }, [editorReady])
+  }, [editorReady, router])
 
   const handlePopupMouseEnter = () => {
     if (hidePopupTimer.current) clearTimeout(hidePopupTimer.current)
@@ -630,18 +645,23 @@ export default function Editor({ content, onChange, onReady, editable = true }: 
           onMouseDown={(e) => e.preventDefault()}
         >
           <span className="max-w-[200px] truncate text-xs text-white/60">
-            {linkPopup.url}
+            {linkPopup.url.startsWith("/docs/") ? "Internal doc" : linkPopup.url}
           </span>
           <div className="mx-1 h-3 w-px bg-white/10" />
           <button
             onMouseDown={(e) => {
               e.preventDefault()
-              window.open(linkPopup.url, "_blank", "noopener,noreferrer")
+              const url = linkPopup.url
               setLinkPopup(null)
+              if (url.startsWith("/")) {
+                router.push(url)
+              } else {
+                window.open(url, "_blank", "noopener,noreferrer")
+              }
             }}
             className="flex items-center gap-1 rounded px-1.5 py-0.5 text-xs text-white/60 hover:bg-white/10 hover:text-white transition-colors"
           >
-            <ExternalLink size={11} />
+            {linkPopup.url.startsWith("/") ? null : <ExternalLink size={11} />}
             Open
           </button>
           {editable && (
