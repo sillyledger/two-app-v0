@@ -113,7 +113,9 @@ function getInitials(name: string, email: string): string {
 }
 
 export default function DocPage() {
-  const { id } = useParams()
+  const params = useParams()
+  // Always a plain string — guards against Next.js returning string | string[]
+  const docId = Array.isArray(params.id) ? params.id[0] : (params.id as string)
   const router = useRouter()
   const [collapsed, setCollapsed] = useState(false)
 
@@ -224,17 +226,17 @@ export default function DocPage() {
   useEffect(() => {
     if (!isLoggedIn) return
     fetch('/api/labels').then(r => r.json()).then(data => { if (Array.isArray(data)) setAllLabels(data) })
-    fetch(`/api/docs/${id}/labels`).then(r => r.json()).then(data => { if (Array.isArray(data)) setDocLabels(data) })
-    fetch(`/api/comments?docId=${id}`).then(r => r.json()).then(data => { if (Array.isArray(data)) setComments(data) })
-    fetch(`/api/tasks?docId=${id}`).then(r => r.json()).then(data => {
-      if (Array.isArray(data)) setTasks(data.filter((t: Task) => t.doc_id === String(id)))
+    fetch(`/api/docs/${docId}/labels`).then(r => r.json()).then(data => { if (Array.isArray(data)) setDocLabels(data) })
+    fetch(`/api/comments?docId=${docId}`).then(r => r.json()).then(data => { if (Array.isArray(data)) setComments(data) })
+    fetch(`/api/tasks?docId=${docId}`).then(r => r.json()).then(data => {
+      if (Array.isArray(data)) setTasks(data)
     })
-  }, [isLoggedIn, id])
+  }, [isLoggedIn, docId])
 
   useEffect(() => {
     if (!authChecked) return
     if (isLoggedIn) {
-      fetch(`/api/docs/${id}`).then((res) => res.json()).then((data: Doc) => {
+      fetch(`/api/docs/${docId}`).then((res) => res.json()).then((data: Doc) => {
         if (data.error) { router.push('/'); return }
         setDoc(data)
         setTitle(data.title)
@@ -247,7 +249,7 @@ export default function DocPage() {
         }
       })
     } else {
-      fetch(`/api/docs/public/${id}`).then((res) => res.json()).then((data: Doc) => {
+      fetch(`/api/docs/public/${docId}`).then((res) => res.json()).then((data: Doc) => {
         if (data.error) { router.push('/login'); return }
         setDoc(data)
         setTitle(data.title)
@@ -257,21 +259,21 @@ export default function DocPage() {
         setLastSaved(data.updated_at ?? null)
       })
     }
-  }, [id, authChecked])
+  }, [docId, authChecked])
 
   useEffect(() => { resizeTitle() }, [title])
 
   const handleSave = useCallback(async (latestTitle: string, latestContent: string, latestDoc: Doc | null) => {
     if (!isLoggedIn) return
     setSaveStatus('saving')
-    await fetch(`/api/docs/${id}`, {
+    await fetch(`/api/docs/${docId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ title: latestTitle, content: latestContent, color: latestDoc?.color ?? 'yellow' }),
     })
     setSaveStatus('saved')
     setLastSaved(new Date().toISOString())
-  }, [id, isLoggedIn])
+  }, [docId, isLoggedIn])
 
   useEffect(() => {
     if (!doc || !isLoggedIn) return
@@ -284,7 +286,7 @@ export default function DocPage() {
     setPriority(value)
     setPriorityOpen(false)
     setHeaderPriorityOpen(false)
-    await fetch(`/api/docs/${id}`, {
+    await fetch(`/api/docs/${docId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ priority: value }),
@@ -294,10 +296,10 @@ export default function DocPage() {
   const handleToggleLabel = async (label: Label) => {
     const isOn = docLabels.some(l => l.id === label.id)
     if (isOn) {
-      await fetch(`/api/docs/${id}/labels`, { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ labelId: label.id }) })
+      await fetch(`/api/docs/${docId}/labels`, { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ labelId: label.id }) })
       setDocLabels(prev => prev.filter(l => l.id !== label.id))
     } else {
-      await fetch(`/api/docs/${id}/labels`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ labelId: label.id }) })
+      await fetch(`/api/docs/${docId}/labels`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ labelId: label.id }) })
       setDocLabels(prev => [...prev, label])
     }
   }
@@ -307,7 +309,7 @@ export default function DocPage() {
     const res = await fetch('/api/labels', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: newLabelName.trim(), color: newLabelColor }) })
     const created = await res.json()
     setAllLabels(prev => [...prev, created])
-    await fetch(`/api/docs/${id}/labels`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ labelId: created.id }) })
+    await fetch(`/api/docs/${docId}/labels`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ labelId: created.id }) })
     setDocLabels(prev => [...prev, created])
     setNewLabelName('')
     setNewLabelColor('#888888')
@@ -320,7 +322,7 @@ export default function DocPage() {
     const res = await fetch('/api/comments', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ docId: id, body: commentBody.trim(), userName: currentUser?.name || currentUser?.email || 'Anonymous' }),
+      body: JSON.stringify({ docId, body: commentBody.trim(), userName: currentUser?.name || currentUser?.email || 'Anonymous' }),
     })
     const created = await res.json()
     setComments(prev => [...prev, created])
@@ -341,7 +343,7 @@ export default function DocPage() {
       body: JSON.stringify({
         title: newTaskTitle.trim(),
         due_date: newTaskDueDate || null,
-        doc_id: String(id),
+        doc_id: docId,
         doc_title: title || 'Untitled',
       }),
     })
@@ -378,7 +380,7 @@ export default function DocPage() {
   }
 
   const handleDelete = async () => {
-    await fetch(`/api/docs/${id}`, { method: 'DELETE' })
+    await fetch(`/api/docs/${docId}`, { method: 'DELETE' })
     router.push('/')
   }
 
@@ -413,7 +415,7 @@ export default function DocPage() {
           folder={folder}
           saveStatus={saveStatus}
           onDelete={isLoggedIn ? handleDelete : undefined}
-          docId={id}
+          docId={docId}
           isPublic={isPublic}
           sidebarWidth={sidebarWidth}
           wideMode={wideMode}
