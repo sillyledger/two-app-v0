@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { Share2, MoreHorizontal, Copy, Download, Trash2, Globe, Lock, FolderInput, AlignCenter, AlignJustify } from "lucide-react"
+import { Share2, MoreHorizontal, Copy, Download, Trash2, Globe, Lock, FolderInput, AlignCenter, AlignJustify, ChevronRight } from "lucide-react"
 import { useState, useRef, useEffect } from "react"
 
 interface Folder {
@@ -175,19 +175,20 @@ export default function DocTopbar({
           >
             Home
           </Link>
-          <span className="mx-1 text-[12px]" style={{ color: "var(--text-muted)" }}>/</span>
-          {folder && (
+          {folder ? (
             <>
               <span className="mx-1 text-[12px]" style={{ color: "var(--text-muted)" }}>/</span>
               <Link
                 href={`/folders/${folder.id}`}
-                className="text-[12px] font-medium truncate transition-colors"
+                className="text-[12px] font-medium truncate transition-colors hover:underline"
                 style={{ color: "var(--text-muted)" }}
               >
                 {folder.name}
               </Link>
               <span className="mx-1 text-[12px]" style={{ color: "var(--text-muted)" }}>/</span>
             </>
+          ) : (
+            <span className="mx-1 text-[12px]" style={{ color: "var(--text-muted)" }}>/</span>
           )}
           <span
             className="text-[12px] font-medium truncate max-w-[220px]"
