@@ -85,7 +85,8 @@ export default function Sidebar({ onNewNote, collapsed = false, onToggle }: Side
     fetch("/api/docs")
       .then((r) => r.json())
       .then((data) => {
-        setDocs(Array.isArray(data) ? data.slice(0, 8) : [])
+        const unfiled = Array.isArray(data) ? data.filter((d: any) => !d.folder_id) : []
+        setDocs(unfiled.slice(0, 8))
       })
       .catch(() => {})
   }
