@@ -450,7 +450,7 @@ export default function Editor({ content, onChange, onReady, editable = true }: 
           text-align: left;
         }
         .editor-content td {
-          color: var(--text-secondary);
+          color: var(--text-primary);
           background: var(--bg-secondary);
         }
         .editor-content tr:hover td {
