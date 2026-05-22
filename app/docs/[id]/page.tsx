@@ -411,7 +411,7 @@ export default function DocPage() {
       )}
 
       <div
-        className="flex-1 flex flex-col min-h-screen transition-all duration-300 ease-in-out min-w-0"
+        className="flex-1 flex flex-col min-h-screen transition-all duration-300 ease-in-out min-w-0 overflow-hidden"
         style={{ marginRight: detailOpen ? '280px' : '0' }}
       >
         <DocTopbar
