@@ -160,10 +160,12 @@ export default function DocTopbar({
   return (
     <>
       <header
-        className="fixed top-0 right-0 z-40 h-[44px] flex items-center px-4 transition-all duration-200"
+        className="fixed top-0 z-40 h-[44px] flex items-center px-4 transition-all duration-200"
         style={{
           left: sidebarWidth,
+          right: 0,
           backgroundColor: "var(--bg)",
+          borderBottom: "1px solid var(--border)",
         }}
       >
         {/* Left — Breadcrumbs */}
