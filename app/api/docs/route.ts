@@ -12,6 +12,7 @@ export async function GET(request: Request) {
 
   const { searchParams } = new URL(request.url)
   const folderId = searchParams.get('folder_id')
+  const workspaceId = searchParams.get('workspace_id')
 
   try {
     const docs = folderId
@@ -24,6 +25,16 @@ export async function GET(request: Request) {
             AND docs.deleted_at IS NULL
           ORDER BY docs.created_at DESC
         `
+      : workspaceId
+      ? await sql`
+          SELECT docs.*, users.name AS author_name, users.email AS author_email
+          FROM docs
+          LEFT JOIN users ON docs.user_id = users.id
+          WHERE docs.user_id = ${payload.userId}
+            AND docs.workspace_id = ${workspaceId}
+            AND docs.deleted_at IS NULL
+          ORDER BY docs.created_at DESC
+        `
       : await sql`
           SELECT docs.*, users.name AS author_name, users.email AS author_email
           FROM docs
@@ -32,6 +43,7 @@ export async function GET(request: Request) {
             AND docs.deleted_at IS NULL
           ORDER BY docs.created_at DESC
         `
+
     return NextResponse.json(docs)
   } catch (error) {
     console.error('Failed to fetch docs:', error)
@@ -47,9 +59,9 @@ export async function POST(request: Request) {
   if (!payload) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   try {
-    const { title, content, color, type = 'doc', folder_id = null } = await request.json()
+    const { title, content, color, type = 'doc', folder_id = null, workspace_id = null } = await request.json()
     const result = await sql`
-      INSERT INTO docs (title, content, color, type, user_id, folder_id, uuid)
+      INSERT INTO docs (title, content, color, type, user_id, folder_id, workspace_id, uuid)
       VALUES (
         ${title},
         ${content},
@@ -57,6 +69,7 @@ export async function POST(request: Request) {
         ${type},
         ${payload.userId},
         ${folder_id},
+        ${workspace_id},
         gen_random_uuid()::TEXT
       )
       RETURNING *
