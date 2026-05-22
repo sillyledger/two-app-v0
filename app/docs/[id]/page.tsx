@@ -461,14 +461,10 @@ export default function DocPage() {
               <span className="text-[#444] select-none">·</span>
               {currentUser ? (
                 <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-white/5 border border-[var(--border)] text-xs text-[#888]">
-                  <div className="w-4 h-4 rounded-full bg-[var(--bg-tertiary)] border border-[var(--border)] flex items-center justify-center text-[9px] font-medium text-[#ccc] select-none">
-                    {getInitials(currentUser.name, currentUser.email)}
-                  </div>
                   <span>{currentUser.name || currentUser.email}</span>
                 </div>
               ) : (
                 <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-white/5 border border-[var(--border)] text-xs text-[#555]">
-                  <div className="w-4 h-4 rounded-full bg-[var(--bg-tertiary)] border border-[var(--border)]" />
                   <span>Unknown</span>
                 </div>
               )}
