@@ -141,3 +141,40 @@ body {
   pointer-events: none;
   height: 0;
 }
+/* ── Table styles ── */
+.ProseMirror table {
+  border-collapse: collapse;
+  width: auto;
+  margin: 1em 0;
+  table-layout: fixed;
+}
+
+.ProseMirror td,
+.ProseMirror th {
+  border: 1px solid rgba(255,255,255,0.2);
+  padding: 8px 12px;
+  min-width: 120px;
+  max-width: 240px;
+  vertical-align: top;
+  word-break: break-word;
+}
+
+.ProseMirror th {
+  background-color: var(--bg-tertiary);
+  font-weight: 600;
+}
+
+html.light .ProseMirror td,
+html.light .ProseMirror th {
+  border-color: rgba(0,0,0,0.2);
+}
+
+.ProseMirror .tableWrapper {
+  overflow-x: auto;
+  margin: 1em 0;
+}
+
+.ProseMirror .tableWrapper.fit-width table {
+  width: 100%;
+  max-width: 100%;
+}
