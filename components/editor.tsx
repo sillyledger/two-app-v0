@@ -205,7 +205,7 @@ export default function Editor({ content, onChange, onReady, editable = true }: 
       })
       setBubbleVisible(true)
     },
-    editorProps: {
+  editorProps: {
       attributes: {
         class: `prose prose-invert max-w-none focus:outline-none min-h-[60vh] editor-content ${
           !editable ? "cursor-default select-text" : ""
@@ -219,6 +219,20 @@ export default function Editor({ content, onChange, onReady, editable = true }: 
           return true
         }
         return false
+      },
+      handleClick: (view, pos, event) => {
+        const target = event.target as HTMLElement
+        const anchor = target.closest("a")
+        if (!anchor) return false
+        const href = anchor.getAttribute("href")
+        if (!href) return false
+        event.preventDefault()
+        if (href.startsWith("/")) {
+          router.push(href)
+        } else {
+          window.open(href, "_blank", "noopener,noreferrer")
+        }
+        return true
       },
     },
     onCreate: () => setEditorReady(true),
