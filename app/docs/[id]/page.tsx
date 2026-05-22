@@ -482,7 +482,8 @@ export default function DocPage() {
                     <div className="absolute top-full mt-1.5 left-0 z-50 w-44 rounded-lg border border-[var(--border)] bg-[var(--bg-tertiary)] shadow-xl py-1">
                       {PRIORITIES.map((p) => (
                         <button key={String(p.value)} onClick={() => handlePriorityChange(p.value)}
-                          className={`w-full flex items-center gap-2.5 px-3 py-1.5 text-xs hover:bg-white/5 transition-colors ${priority === p.value ? 'text-white' : 'text-[#888]'}`}>
+                          className={`w-full flex items-center gap-2.5 px-3 py-1.5 text-xs transition-colors`}
+                        style={{ color: priority === p.value ? 'var(--text-primary)' : 'var(--text-secondary)' }}>
                           <span className={p.color}>{p.icon}</span>
                           <span>{p.label}</span>
                           {priority === p.value && <span className="ml-auto text-[#555]">✓</span>}
