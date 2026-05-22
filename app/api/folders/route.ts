@@ -3,19 +3,30 @@ import { cookies } from 'next/headers'
 import { verifyToken } from '@/lib/auth'
 import { sql } from '@/lib/db'
 
-export async function GET() {
+export async function GET(request: Request) {
   const cookieStore = await cookies()
   const token = cookieStore.get('auth-token')
   if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   const payload = await verifyToken(token.value)
   if (!payload) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
+  const { searchParams } = new URL(request.url)
+  const workspaceId = searchParams.get('workspace_id')
+
   try {
-    const folders = await sql`
-      SELECT * FROM folders
-      WHERE user_id = ${payload.userId}
-      ORDER BY created_at ASC
-    `
+    const folders = workspaceId
+      ? await sql`
+          SELECT * FROM folders
+          WHERE user_id = ${payload.userId}
+            AND workspace_id = ${workspaceId}
+          ORDER BY created_at ASC
+        `
+      : await sql`
+          SELECT * FROM folders
+          WHERE user_id = ${payload.userId}
+          ORDER BY created_at ASC
+        `
+
     return NextResponse.json(folders)
   } catch (error) {
     console.error('Failed to fetch folders:', error)
