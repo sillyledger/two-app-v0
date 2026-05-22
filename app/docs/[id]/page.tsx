@@ -484,21 +484,21 @@ export default function DocPage() {
             />
 
             <div className="mb-8 flex items-center gap-2 flex-wrap">
-              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-white/5 border border-white/8 text-xs text-[#888]">
+              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-white/5 border border-[var(--border)] text-xs text-[#888]">
                 <CalendarDays size={12} className="text-[#666]" />
                 <span>{formatDate(doc.created_at)}</span>
               </div>
               <span className="text-[#444] select-none">·</span>
               {currentUser ? (
-                <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-white/5 border border-white/8 text-xs text-[#888]">
-                  <div className="w-4 h-4 rounded-full bg-[#3a3a3a] border border-white/10 flex items-center justify-center text-[9px] font-medium text-[#ccc] select-none">
+                <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-white/5 border border-[var(--border)] text-xs text-[#888]">
+                  <div className="w-4 h-4 rounded-full bg-[var(--bg-tertiary)] border border-[var(--border)] flex items-center justify-center text-[9px] font-medium text-[#ccc] select-none">
                     {getInitials(currentUser.name, currentUser.email)}
                   </div>
                   <span>{currentUser.name || currentUser.email}</span>
                 </div>
               ) : (
-                <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-white/5 border border-white/8 text-xs text-[#555]">
-                  <div className="w-4 h-4 rounded-full bg-[#2a2a2a] border border-white/10" />
+                <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-white/5 border border-[var(--border)] text-xs text-[#555]">
+                  <div className="w-4 h-4 rounded-full bg-[var(--bg-tertiary)] border border-[var(--border)]" />
                   <span>Unknown</span>
                 </div>
               )}
@@ -507,13 +507,13 @@ export default function DocPage() {
                 <div className="relative" ref={headerPriorityRef}>
                   <button
                     onClick={() => setHeaderPriorityOpen((v) => !v)}
-                    className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-white/5 border border-white/8 text-xs text-[#888] hover:bg-white/10 hover:text-[#aaa] transition-colors"
+                    className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-white/5 border border-[var(--border)] text-xs text-[#888] hover:bg-white/10 hover:text-[#aaa] transition-colors"
                   >
                     <span className={activePriority.color}>{activePriority.icon}</span>
                     <span>{activePriority.label}</span>
                   </button>
                   {headerPriorityOpen && (
-                    <div className="absolute top-full mt-1.5 left-0 z-50 w-44 rounded-lg border border-white/10 bg-[#1e1e1e] shadow-xl py-1">
+                    <div className="absolute top-full mt-1.5 left-0 z-50 w-44 rounded-lg border border-[var(--border)] bg-[var(--bg-tertiary)] shadow-xl py-1">
                       {PRIORITIES.map((p) => (
                         <button
                           key={String(p.value)}
@@ -537,7 +537,7 @@ export default function DocPage() {
                   {docLabels.map(label => (
                     <div
                       key={label.id}
-                      className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-white/5 border border-white/8 text-xs text-[#888]"
+                      className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-white/5 border border-[var(--border)] text-xs text-[#888]"
                     >
                       <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: label.color }} />
                       <span>{label.name}</span>
@@ -572,12 +572,12 @@ export default function DocPage() {
 
       {/* Detail panel */}
       <div
-        className={`fixed top-0 right-0 h-full w-[280px] border-l border-white/6 bg-[#141414] flex flex-col z-30 transition-transform duration-300 ease-in-out ${
+        className={`fixed top-0 right-0 h-full w-[280px] border-l border-[var(--border)] bg-[var(--bg-secondary)] flex flex-col z-30 transition-transform duration-300 ease-in-out ${
           detailOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
       >
-        <div className="flex items-center justify-between px-4 h-[44px] border-b border-white/6 shrink-0">
-          <span className="text-xs font-medium text-white/40 uppercase tracking-wider">Details</span>
+        <div className="flex items-center justify-between px-4 h-[44px] border-b border-[var(--border)] shrink-0">
+          <span className="text-xs font-medium text-[var(--text-muted)] uppercase tracking-wider">Details</span>
           <button
             onClick={() => setDetailOpen(false)}
             className="flex items-center justify-center w-6 h-6 rounded-md text-white/20 hover:text-white/50 hover:bg-white/5 transition-colors"
@@ -588,36 +588,36 @@ export default function DocPage() {
 
         <div className="flex-1 overflow-y-auto px-4 py-5 flex flex-col gap-1">
 
-          <p className="text-[10px] font-medium text-white/20 uppercase tracking-wider mb-2">Document</p>
+          <p className="text-[10px] font-medium text-[var(--text-muted)] uppercase tracking-wider mb-2">Document</p>
 
           <DetailRow label="Created" icon={<CalendarDays size={12} />}>
-            <span className="text-white/50">{formatDate(doc.created_at)}</span>
+            <span className="text-[var(--text-primary)]">{formatDate(doc.created_at)}</span>
           </DetailRow>
           <DetailRow label="Author" icon={<User size={12} />}>
             {currentUser ? (
               <div className="flex items-center gap-1.5">
-                <div className="w-4 h-4 rounded-full bg-[#3a3a3a] border border-white/10 flex items-center justify-center text-[8px] font-medium text-[#ccc]">
+                <div className="w-4 h-4 rounded-full bg-[var(--bg-tertiary)] border border-[var(--border)] flex items-center justify-center text-[8px] font-medium text-[#ccc]">
                   {getInitials(currentUser.name, currentUser.email)}
                 </div>
-                <span className="text-white/50 truncate">{currentUser.name || currentUser.email}</span>
+                <span className="text-[var(--text-primary)] truncate">{currentUser.name || currentUser.email}</span>
               </div>
             ) : (
-              <span className="text-white/25">Unknown</span>
+              <span className="text-[var(--text-muted)]">Unknown</span>
             )}
           </DetailRow>
           <DetailRow label="Words" icon={<FileText size={12} />}>
-            <span className="text-white/50">{wordCount.toLocaleString()}</span>
+            <span className="text-[var(--text-primary)]">{wordCount.toLocaleString()}</span>
           </DetailRow>
           <DetailRow label="Characters" icon={<Clock size={12} />}>
-            <span className="text-white/50">{charCount.toLocaleString()}</span>
+            <span className="text-[var(--text-primary)]">{charCount.toLocaleString()}</span>
           </DetailRow>
 
-          <div className="my-3 border-t border-white/5" />
-          <p className="text-[10px] font-medium text-white/20 uppercase tracking-wider mb-2">Properties</p>
+          <div className="my-3 border-t border-[var(--border)]" />
+          <p className="text-[10px] font-medium text-[var(--text-muted)] uppercase tracking-wider mb-2">Properties</p>
 
           <div className="flex items-center justify-between py-1.5 group">
-            <span className="text-xs text-white/30 flex items-center gap-2">
-              <span className="text-white/20">{activePriority.icon}</span>
+            <span className="text-xs text-[var(--text-secondary)] flex items-center gap-2">
+              <span className="text-[var(--text-muted)]">{activePriority.icon}</span>
               Priority
             </span>
             {isLoggedIn ? (
@@ -630,7 +630,7 @@ export default function DocPage() {
                   <span>{activePriority.label}</span>
                 </button>
                 {priorityOpen && (
-                  <div className="absolute bottom-full right-0 mb-1 z-50 w-44 rounded-lg border border-white/10 bg-[#1e1e1e] shadow-xl py-1">
+                  <div className="absolute bottom-full right-0 mb-1 z-50 w-44 rounded-lg border border-[var(--border)] bg-[var(--bg-tertiary)] shadow-xl py-1">
                     {PRIORITIES.map((p) => (
                       <button
                         key={String(p.value)}
@@ -653,26 +653,26 @@ export default function DocPage() {
           </div>
 
           <div className="flex items-center justify-between py-1.5">
-            <span className="text-xs text-white/30">Visibility</span>
-            <span className="text-xs text-white/40 px-2 py-1">
+            <span className="text-xs text-[var(--text-secondary)]">Visibility</span>
+            <span className="text-xs text-[var(--text-secondary)] px-2 py-1">
               {isPublic ? 'Public' : 'Private'}
             </span>
           </div>
 
           {isLoggedIn && (
             <>
-              <div className="my-3 border-t border-white/5" />
-              <p className="text-[10px] font-medium text-white/20 uppercase tracking-wider mb-2">Labels</p>
+              <div className="my-3 border-t border-[var(--border)]" />
+              <p className="text-[10px] font-medium text-[var(--text-muted)] uppercase tracking-wider mb-2">Labels</p>
               <div className="flex flex-wrap gap-1.5 mb-2">
                 {docLabels.map(label => (
                   <button
                     key={label.id}
                     onClick={() => handleToggleLabel(label)}
-                    className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-white/5 border border-white/8 text-xs text-white/50 hover:bg-white/10 hover:text-white/70 transition-colors group"
+                    className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-white/5 border border-[var(--border)] text-xs text-white/50 hover:bg-white/10 hover:text-white/70 transition-colors group"
                   >
                     <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: label.color }} />
                     <span>{label.name}</span>
-                    <X size={10} className="opacity-0 group-hover:opacity-100 transition-opacity text-white/30" />
+                    <X size={10} className="opacity-0 group-hover:opacity-100 transition-opacity text-[var(--text-muted)]" />
                   </button>
                 ))}
               </div>
@@ -685,11 +685,11 @@ export default function DocPage() {
                   <span>Add label</span>
                 </button>
                 {labelPickerOpen && (
-                  <div className="absolute bottom-full right-0 mb-1 z-50 w-52 rounded-lg border border-white/10 bg-[#1a1a1a] shadow-xl py-1">
+                  <div className="absolute bottom-full right-0 mb-1 z-50 w-52 rounded-lg border border-[var(--border)] bg-[var(--bg-secondary)] shadow-xl py-1">
                     {!creatingLabel ? (
                       <>
                         {allLabels.length === 0 && (
-                          <p className="px-3 py-2 text-xs text-white/25">No labels yet</p>
+                          <p className="px-3 py-2 text-xs text-[var(--text-muted)]">No labels yet</p>
                         )}
                         {allLabels.map(label => {
                           const isOn = docLabels.some(l => l.id === label.id)
@@ -701,11 +701,11 @@ export default function DocPage() {
                             >
                               <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: label.color }} />
                               <span className="flex-1 text-left">{label.name}</span>
-                              {isOn && <Check size={11} className="text-white/40" />}
+                              {isOn && <Check size={11} className="text-[var(--text-secondary)]" />}
                             </button>
                           )
                         })}
-                        <div className="border-t border-white/5 mt-1 pt-1">
+                        <div className="border-t border-[var(--border)] mt-1 pt-1">
                           <button
                             onClick={() => setCreatingLabel(true)}
                             className="w-full flex items-center gap-2.5 px-3 py-1.5 text-xs text-white/30 hover:bg-white/5 hover:text-white/50 transition-colors"
@@ -717,21 +717,21 @@ export default function DocPage() {
                       </>
                     ) : (
                       <div className="px-3 py-2 flex flex-col gap-2">
-                        <p className="text-[10px] text-white/30 uppercase tracking-wider">New label</p>
+                        <p className="text-[10px] text-[var(--text-muted)] uppercase tracking-wider">New label</p>
                         <input
                           autoFocus
                           value={newLabelName}
                           onChange={e => setNewLabelName(e.target.value)}
                           onKeyDown={e => { if (e.key === 'Enter') handleCreateLabel() }}
                           placeholder="Label name..."
-                          className="w-full bg-white/5 border border-white/10 rounded-md px-2 py-1.5 text-xs text-white/70 placeholder:text-white/20 focus:outline-none focus:border-white/20"
+                          className="w-full bg-[var(--bg-tertiary)] border border-[var(--border)] rounded-md px-2 py-1.5 text-xs text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-white/20"
                         />
                         <div className="flex flex-wrap gap-1.5">
                           {LABEL_COLORS.map(c => (
                             <button
                               key={c}
                               onClick={() => setNewLabelColor(c)}
-                              className={`w-5 h-5 rounded-full transition-transform hover:scale-110 ${newLabelColor === c ? 'ring-2 ring-white/40 ring-offset-1 ring-offset-[#1a1a1a]' : ''}`}
+                              className={`w-5 h-5 rounded-full transition-transform hover:scale-110 ${newLabelColor === c ? 'ring-2 ring-white/40 ring-offset-1 ring-offset-[var(--bg-secondary)]' : ''}`}
                               style={{ backgroundColor: c }}
                             />
                           ))}
@@ -761,13 +761,13 @@ export default function DocPage() {
           {/* Activity section */}
           {isLoggedIn && activityEntries.length > 0 && (
             <>
-              <div className="my-3 border-t border-white/5" />
-              <p className="text-[10px] font-medium text-white/20 uppercase tracking-wider mb-3">Activity</p>
+              <div className="my-3 border-t border-[var(--border)]" />
+              <p className="text-[10px] font-medium text-[var(--text-muted)] uppercase tracking-wider mb-3">Activity</p>
               <div className="flex flex-col gap-3">
                 {activityEntries.map((entry, i) => (
                   <div key={i} className="flex items-start gap-2.5">
                     <div className="flex flex-col items-center mt-0.5 shrink-0">
-                      <div className={`w-1.5 h-1.5 rounded-full ${entry.type === 'created' ? 'bg-emerald-500/60' : 'bg-white/20'}`} />
+                      <div className={`w-1.5 h-1.5 rounded-full ${entry.type === 'created' ? 'bg-emerald-500/60' : 'bg-[var(--bg-tertiary)]'}`} />
                       {i < activityEntries.length - 1 && (
                         <div className="w-px h-5 bg-white/5 mt-1" />
                       )}
@@ -775,15 +775,15 @@ export default function DocPage() {
                     <div className="flex flex-col gap-0.5 min-w-0">
                       <div className="flex items-center gap-1.5">
                         {currentUser && (
-                          <div className="w-3.5 h-3.5 rounded-full bg-[#3a3a3a] border border-white/10 flex items-center justify-center text-[7px] font-medium text-[#ccc] shrink-0">
+                          <div className="w-3.5 h-3.5 rounded-full bg-[var(--bg-tertiary)] border border-[var(--border)] flex items-center justify-center text-[7px] font-medium text-[#ccc] shrink-0">
                             {getInitials(currentUser.name, currentUser.email)}
                           </div>
                         )}
-                        <span className="text-[11px] text-white/40">{currentUser?.name || currentUser?.email || 'You'}</span>
-                        <span className="text-[11px] text-white/20">{entry.label.toLowerCase()}</span>
+                        <span className="text-[11px] text-[var(--text-secondary)]">{currentUser?.name || currentUser?.email || 'You'}</span>
+                        <span className="text-[11px] text-[var(--text-muted)]">{entry.label.toLowerCase()}</span>
                       </div>
                       <div className="flex items-center gap-1.5 ml-5">
-                        <span className="text-[10px] text-white/20" title={formatDateTime(entry.timestamp)}>
+                        <span className="text-[10px] text-[var(--text-muted)]" title={formatDateTime(entry.timestamp)}>
                           {timeAgo(entry.timestamp)}
                         </span>
                       </div>
@@ -797,37 +797,37 @@ export default function DocPage() {
           {/* Comments section */}
           {isLoggedIn && (
             <>
-              <div className="my-3 border-t border-white/5" />
-              <p className="text-[10px] font-medium text-white/20 uppercase tracking-wider mb-3">
-                Comments {comments.length > 0 && <span className="text-white/15">· {comments.length}</span>}
+              <div className="my-3 border-t border-[var(--border)]" />
+              <p className="text-[10px] font-medium text-[var(--text-muted)] uppercase tracking-wider mb-3">
+                Comments {comments.length > 0 && <span className="text-[var(--text-muted)]">· {comments.length}</span>}
               </p>
 
               {/* Existing comments */}
               <div className="flex flex-col gap-3 mb-3">
                 {comments.length === 0 && (
-                  <p className="text-[11px] text-white/20">No comments yet.</p>
+                  <p className="text-[11px] text-[var(--text-muted)]">No comments yet.</p>
                 )}
                 {comments.map(comment => (
                   <div key={comment.id} className="flex items-start gap-2 group">
-                    <div className="w-5 h-5 rounded-full bg-[#3a3a3a] border border-white/10 flex items-center justify-center text-[8px] font-medium text-[#ccc] shrink-0 mt-0.5">
+                    <div className="w-5 h-5 rounded-full bg-[var(--bg-tertiary)] border border-[var(--border)] flex items-center justify-center text-[8px] font-medium text-[#ccc] shrink-0 mt-0.5">
                       {comment.user_name?.[0]?.toUpperCase() ?? '?'}
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between gap-1">
-                        <span className="text-[11px] text-white/50 font-medium truncate">{comment.user_name}</span>
+                        <span className="text-[11px] text-[var(--text-primary)] font-medium truncate">{comment.user_name}</span>
                         <div className="flex items-center gap-1 shrink-0">
-                          <span className="text-[10px] text-white/20">{timeAgo(comment.created_at)}</span>
+                          <span className="text-[10px] text-[var(--text-muted)]">{timeAgo(comment.created_at)}</span>
                           {comment.user_id === String(currentUser?.id) && (
                             <button
                               onClick={() => handleDeleteComment(comment.id)}
-                              className="opacity-0 group-hover:opacity-100 transition-opacity text-white/20 hover:text-red-400 ml-1"
+                              className="opacity-0 group-hover:opacity-100 transition-opacity text-[var(--text-muted)] hover:text-red-400 ml-1"
                             >
                               <Trash2 size={10} />
                             </button>
                           )}
                         </div>
                       </div>
-                      <p className="text-[12px] text-white/50 mt-0.5 leading-relaxed break-words">{comment.body}</p>
+                      <p className="text-[12px] text-[var(--text-secondary)] mt-0.5 leading-relaxed break-words">{comment.body}</p>
                     </div>
                   </div>
                 ))}
@@ -847,7 +847,7 @@ export default function DocPage() {
                   }}
                   placeholder="Add a comment..."
                   rows={2}
-                  className="w-full bg-white/5 border border-white/8 rounded-lg px-3 py-2 text-[12px] text-white/60 placeholder:text-white/20 focus:outline-none focus:border-white/15 resize-none"
+                  className="w-full bg-[var(--bg-tertiary)] border border-[var(--border)] rounded-lg px-3 py-2 text-[12px] text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-white/15 resize-none"
                 />
                 <button
                   onClick={handlePostComment}
@@ -879,8 +879,8 @@ function DetailRow({
 }) {
   return (
     <div className="flex items-center justify-between py-1.5">
-      <span className="text-xs text-white/30 flex items-center gap-2">
-        <span className="text-white/20">{icon}</span>
+      <span className="text-xs text-[var(--text-secondary)] flex items-center gap-2">
+        <span className="text-[var(--text-muted)]">{icon}</span>
         {label}
       </span>
       <div className="text-xs">{children}</div>
