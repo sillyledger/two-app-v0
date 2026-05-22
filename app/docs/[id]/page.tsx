@@ -351,10 +351,10 @@ export default function DocPage() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        docId: doc?.id,
-        body: commentBody.trim(),
-        userName: currentUser?.name || currentUser?.email || 'Anonymous',
-      }),
+  docId: id,   // ← was doc?.id, now uses the uuid
+  body: commentBody.trim(),
+  userName: currentUser?.name || currentUser?.email || 'Anonymous',
+}),
     })
     const created = await res.json()
     setComments(prev => [...prev, created])
