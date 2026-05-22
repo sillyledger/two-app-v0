@@ -14,7 +14,7 @@
   --code-bg: #2a2a2a;
   --pre-bg: #111111;
   --blockquote-border: #3a3a3a;
-  --font-instrument-serif: var(--font-instrument-serif, 'Instrument Serif', Georgia, serif);
+  --font-instrument-serif: 'Instrument Serif', Georgia, serif;
 }
 
 html.light {
