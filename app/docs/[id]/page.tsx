@@ -249,7 +249,10 @@ export default function DocPage() {
         setPriority((data.priority as Priority) ?? null)
         setLastSaved(data.updated_at ?? null)
         if (data.folder_id) {
-          fetch(`/api/folders/${data.folder_id}`).then((r) => r.json()).then((f: Folder) => setFolder(f)).catch(() => {})
+          fetch(`/api/folders/${data.folder_id}`)
+            .then((r) => r.json())
+            .then((f: Folder) => { if (f && f.id) setFolder(f) })
+            .catch(() => {})
         }
       })
     } else {
