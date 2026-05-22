@@ -27,20 +27,18 @@ function isToday(dateStr: string): boolean {
 }
 
 function isUpcoming(dateStr: string): boolean {
-  const d = new Date(dateStr)
   const now = new Date()
-  now.setHours(0, 0, 0, 0)
-  const target = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()))
   const today = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()))
+  const d = new Date(dateStr)
+  const target = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()))
   return target > today
 }
 
 function isPast(dateStr: string): boolean {
-  const d = new Date(dateStr)
   const now = new Date()
-  now.setHours(0, 0, 0, 0)
-  const target = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()))
   const today = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()))
+  const d = new Date(dateStr)
+  const target = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()))
   return target < today
 }
 
@@ -54,23 +52,35 @@ export default function PlannerPage() {
   const [collapsed, setCollapsed] = useState(false)
   const [tasks, setTasks] = useState<Task[]>([])
   const [loading, setLoading] = useState(true)
+  const [authChecked, setAuthChecked] = useState(false)
 
   useEffect(() => {
     const saved = localStorage.getItem('sidebar-collapsed')
     if (saved === 'true') setCollapsed(true)
   }, [])
 
+  // Step 1: check auth first
   useEffect(() => {
     fetch('/api/auth/me').then(r => {
-      if (!r.ok) router.push('/login')
+      if (!r.ok) {
+        router.push('/login')
+      } else {
+        setAuthChecked(true)
+      }
     })
+  }, [])
+
+  // Step 2: only fetch tasks once auth is confirmed
+  useEffect(() => {
+    if (!authChecked) return
     fetch('/api/tasks')
       .then(r => r.json())
       .then(data => {
         setTasks(Array.isArray(data) ? data : [])
         setLoading(false)
       })
-  }, [])
+      .catch(() => setLoading(false))
+  }, [authChecked])
 
   const toggle = async (task: Task) => {
     const updated = { ...task, completed: !task.completed }
@@ -97,6 +107,8 @@ export default function PlannerPage() {
   const upcomingTasks = active.filter(t => t.due_date && isUpcoming(t.due_date))
   const nodateTasks = active.filter(t => !t.due_date)
   const completedTasks = tasks.filter(t => t.completed)
+
+  if (!authChecked) return null
 
   return (
     <div className="flex min-h-screen" style={{ backgroundColor: 'var(--bg)' }}>
@@ -136,52 +148,19 @@ export default function PlannerPage() {
         )}
 
         {overdueTasks.length > 0 && (
-          <TaskGroup
-            label="Overdue"
-            labelColor="#e05252"
-            tasks={overdueTasks}
-            onToggle={toggle}
-            onDelete={remove}
-            showDate
-          />
+          <TaskGroup label="Overdue" labelColor="#e05252" tasks={overdueTasks} onToggle={toggle} onDelete={remove} showDate />
         )}
-
         {todayTasks.length > 0 && (
-          <TaskGroup
-            label="Today"
-            tasks={todayTasks}
-            onToggle={toggle}
-            onDelete={remove}
-          />
+          <TaskGroup label="Today" tasks={todayTasks} onToggle={toggle} onDelete={remove} />
         )}
-
         {upcomingTasks.length > 0 && (
-          <TaskGroup
-            label="Upcoming"
-            tasks={upcomingTasks}
-            onToggle={toggle}
-            onDelete={remove}
-            showDate
-          />
+          <TaskGroup label="Upcoming" tasks={upcomingTasks} onToggle={toggle} onDelete={remove} showDate />
         )}
-
         {nodateTasks.length > 0 && (
-          <TaskGroup
-            label="No date"
-            tasks={nodateTasks}
-            onToggle={toggle}
-            onDelete={remove}
-          />
+          <TaskGroup label="No date" tasks={nodateTasks} onToggle={toggle} onDelete={remove} />
         )}
-
         {completedTasks.length > 0 && (
-          <TaskGroup
-            label="Completed"
-            tasks={completedTasks}
-            onToggle={toggle}
-            onDelete={remove}
-            muted
-          />
+          <TaskGroup label="Completed" tasks={completedTasks} onToggle={toggle} onDelete={remove} muted />
         )}
       </main>
     </div>
@@ -216,7 +195,7 @@ function TaskGroup({
         </span>
         <span
           className="text-[11px] font-medium px-1.5 py-0.5 rounded-md"
-          style={{ backgroundColor: 'var(--bg-tertiary)', color: 'var(--text-muted)' }}
+          style={{ backgroundColor: 'var(--bg-tertiary)', color: 'var(--text-secondary)' }}
         >
           {tasks.length}
         </span>
@@ -229,20 +208,21 @@ function TaskGroup({
         {tasks.map((task, i) => (
           <div
             key={task.id}
-            className="flex items-start gap-3 px-4 py-3 group transition-colors"
+            className="flex items-start gap-3 px-4 py-3"
             style={{
               borderTop: i > 0 ? '1px solid var(--border)' : 'none',
               opacity: muted ? 0.5 : 1,
+              backgroundColor: 'var(--bg-secondary)',
             }}
             onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)')}
-            onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
+            onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'var(--bg-secondary)')}
           >
             <button
               onClick={() => onToggle(task)}
               className="mt-[2px] shrink-0 transition-colors"
-              style={{ color: task.completed ? 'var(--text-muted)' : 'var(--text-secondary)' }}
+              style={{ color: 'var(--text-muted)' }}
               onMouseEnter={e => (e.currentTarget.style.color = 'var(--text-primary)')}
-              onMouseLeave={e => (e.currentTarget.style.color = task.completed ? 'var(--text-muted)' : 'var(--text-secondary)')}
+              onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-muted)')}
             >
               {task.completed ? <CheckCircle2 size={15} /> : <Circle size={15} />}
             </button>
@@ -260,10 +240,8 @@ function TaskGroup({
               <div className="flex items-center gap-2 mt-1 flex-wrap">
                 <Link
                   href={`/docs/${task.doc_id}`}
-                  className="flex items-center gap-1 text-[11px] px-1.5 py-0.5 rounded-md transition-colors"
-                  style={{ backgroundColor: 'var(--bg-tertiary)', color: 'var(--text-muted)' }}
-                  onMouseEnter={e => (e.currentTarget.style.color = 'var(--text-secondary)')}
-                  onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-muted)')}
+                  className="flex items-center gap-1 text-[11px] px-1.5 py-0.5 rounded-md"
+                  style={{ backgroundColor: 'var(--bg-tertiary)', color: 'var(--text-secondary)' }}
                 >
                   <FileText size={10} />
                   <span>{task.doc_title || 'Untitled doc'}</span>
@@ -279,10 +257,10 @@ function TaskGroup({
 
             <button
               onClick={() => onDelete(task.id)}
-              className="shrink-0 mt-[2px] opacity-0 group-hover:opacity-100 transition-opacity"
-              style={{ color: 'var(--text-muted)' }}
+              className="shrink-0 mt-[2px] transition-colors"
+              style={{ color: 'transparent' }}
               onMouseEnter={e => (e.currentTarget.style.color = '#e05252')}
-              onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-muted)')}
+              onMouseLeave={e => (e.currentTarget.style.color = 'transparent')}
             >
               <Trash2 size={13} />
             </button>
