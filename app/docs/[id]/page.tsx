@@ -114,7 +114,6 @@ function getInitials(name: string, email: string): string {
 
 export default function DocPage() {
   const params = useParams()
-  // Always a plain string — guards against Next.js returning string | string[]
   const docId = Array.isArray(params.id) ? params.id[0] : (params.id as string)
   const router = useRouter()
   const [collapsed, setCollapsed] = useState(false)
@@ -155,12 +154,12 @@ export default function DocPage() {
   const [postingComment, setPostingComment] = useState(false)
   const commentInputRef = useRef<HTMLTextAreaElement>(null)
 
-  // Tasks state
   const [tasks, setTasks] = useState<Task[]>([])
   const [addingTask, setAddingTask] = useState(false)
   const [newTaskTitle, setNewTaskTitle] = useState('')
   const [newTaskDueDate, setNewTaskDueDate] = useState('')
   const newTaskInputRef = useRef<HTMLInputElement>(null)
+  const [hoveredTaskId, setHoveredTaskId] = useState<number | null>(null)
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -861,15 +860,19 @@ export default function DocPage() {
                 <p className="text-[11px]" style={{ color: 'var(--text-muted)' }}>No tasks yet.</p>
               )}
 
-              <div className="flex flex-col gap-1">
+              <div className="flex flex-col gap-0.5">
                 {tasks.map(task => (
-                  <div key={task.id} className="flex items-start gap-2 group py-1">
+                  <div
+                    key={task.id}
+                    className="flex items-start gap-2 py-1.5 px-1 rounded-md transition-colors"
+                    style={{ backgroundColor: hoveredTaskId === task.id ? 'var(--bg-tertiary)' : 'transparent' }}
+                    onMouseEnter={() => setHoveredTaskId(task.id)}
+                    onMouseLeave={() => setHoveredTaskId(null)}
+                  >
                     <button
                       onClick={() => handleToggleTask(task)}
                       className="mt-[1px] shrink-0 transition-colors"
                       style={{ color: task.completed ? 'var(--text-muted)' : 'var(--text-secondary)' }}
-                      onMouseEnter={e => (e.currentTarget.style.color = 'var(--text-primary)')}
-                      onMouseLeave={e => (e.currentTarget.style.color = task.completed ? 'var(--text-muted)' : 'var(--text-secondary)')}
                     >
                       {task.completed ? <CheckCircle2 size={13} /> : <Circle size={13} />}
                     </button>
@@ -892,10 +895,10 @@ export default function DocPage() {
                     </div>
                     <button
                       onClick={() => handleDeleteTask(task.id)}
-                      className="shrink-0 mt-[1px] opacity-0 group-hover:opacity-100 transition-opacity"
-                      style={{ color: 'var(--text-muted)' }}
+                      className="shrink-0 mt-[1px] transition-colors"
+                      style={{ color: hoveredTaskId === task.id ? 'var(--text-muted)' : 'transparent' }}
                       onMouseEnter={e => (e.currentTarget.style.color = '#e05252')}
-                      onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-muted)')}
+                      onMouseLeave={e => (e.currentTarget.style.color = hoveredTaskId === task.id ? 'var(--text-muted)' : 'transparent')}
                     >
                       <Trash2 size={11} />
                     </button>
