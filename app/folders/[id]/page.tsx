@@ -154,6 +154,15 @@ export default function FolderPage() {
     setMovingDoc(null)
   }
 
+  const handlePriorityChange = async (docUuid: string, value: string | null) => {
+    setDocs((prev) => prev.map((d) => d.uuid === docUuid ? { ...d, priority: value } : d))
+    await fetch(`/api/docs/${docUuid}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ priority: value }),
+    })
+  }
+
   const handleDelete = async () => {
     if (!deletingDoc) return
     await fetch(`/api/docs/${deletingDoc.uuid}`, { method: "DELETE" })
@@ -265,7 +274,38 @@ export default function FolderPage() {
                   </div>
 
                   {/* Priority */}
-                  <PriorityBadge priority={doc.priority} />
+                  <div className="relative" onClick={e => e.stopPropagation()}>
+                    <button
+                      onClick={() => setOpenMenuId(openMenuId === `priority-${doc.uuid}` ? null : `priority-${doc.uuid}`)}
+                      className="flex items-center gap-1 px-2 py-1 rounded-md text-[11px] transition-colors"
+                      style={{ color: "var(--text-muted)" }}
+                      onMouseEnter={e => (e.currentTarget.style.backgroundColor = "var(--bg-tertiary)")}
+                      onMouseLeave={e => (e.currentTarget.style.backgroundColor = "transparent")}
+                    >
+                      <PriorityBadge priority={doc.priority} />
+                    </button>
+                    {openMenuId === `priority-${doc.uuid}` && (
+                      <div className="absolute left-0 top-full mt-1 z-50 w-36 rounded-lg shadow-xl py-1" style={{ backgroundColor: "var(--bg-tertiary)", border: "1px solid var(--border)" }}>
+                        {[
+                          { value: null, label: "None", icon: <Minus size={11} />, color: "var(--text-muted)" },
+                          { value: "low", label: "Low", icon: <SignalLow size={11} />, color: "var(--text-secondary)" },
+                          { value: "medium", label: "Medium", icon: <SignalMedium size={11} />, color: "#f5a623" },
+                          { value: "high", label: "High", icon: <SignalHigh size={11} />, color: "#e05252" },
+                        ].map((p) => (
+                          <button key={String(p.value)} onClick={() => { handlePriorityChange(doc.uuid, p.value); setOpenMenuId(null) }}
+                            className="w-full flex items-center gap-2 px-3 py-1.5 text-[11px] transition-colors"
+                            style={{ color: p.color }}
+                            onMouseEnter={e => (e.currentTarget.style.backgroundColor = "var(--border)")}
+                            onMouseLeave={e => (e.currentTarget.style.backgroundColor = "transparent")}
+                          >
+                            {p.icon}
+                            {p.label}
+                            {doc.priority === p.value && <span className="ml-auto">✓</span>}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
 
                   {/* Three-dot menu */}
                   <div
