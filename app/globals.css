@@ -117,9 +117,13 @@ body {
   font-size: 0.875em;
 }
 .ProseMirror a {
-  color: #60a5fa;
+  color: #2563eb;
   text-decoration: underline;
   cursor: pointer;
+}
+
+.dark .ProseMirror a {
+  color: #3b82f6;
 }
 .ProseMirror strong {
   font-weight: 700;
