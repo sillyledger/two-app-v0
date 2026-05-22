@@ -169,7 +169,7 @@ export default function Editor({ content, onChange, onReady, editable = true }: 
             const containerRect = containerRef.current.getBoundingClientRect()
             setTableToolbar({
               top: tableRect.top - containerRect.top - 44,
-              left: tableRect.left - containerRect.left,
+              left: 0,
             })
             return
           }
