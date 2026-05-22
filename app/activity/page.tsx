@@ -1,7 +1,9 @@
-import { sql } from '@/lib/db'
+'use client'
+
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { redirect } from 'next/navigation'
-import { getSession } from '@/lib/auth'
+import { useRouter } from 'next/navigation'
+import Sidebar from '@/components/sidebar'
 
 function timeAgo(dateStr: string): string {
   const date = new Date(dateStr)
@@ -29,72 +31,85 @@ function groupByDay(docs: any[]) {
   return groups
 }
 
-export default async function ActivityPage() {
-  const session = await getSession()
-  if (!session) redirect('/login')
+export default function ActivityPage() {
+  const router = useRouter()
+  const [docs, setDocs] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const [collapsed, setCollapsed] = useState(false)
 
-  const thirtyDaysAgo = new Date()
-  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
-
-  const docs = await sql`
-    SELECT id, uuid, title, content, updated_at, created_at
-    FROM docs
-    WHERE updated_at >= ${thirtyDaysAgo.toISOString()}
-      AND user_id = ${session.userId}
-      AND deleted_at IS NULL
-    ORDER BY updated_at DESC
-  `
+  useEffect(() => {
+    fetch('/api/activity')
+      .then((r) => {
+        if (r.status === 401) { router.push('/login'); return null }
+        return r.json()
+      })
+      .then((data) => {
+        if (data) setDocs(data)
+        setLoading(false)
+      })
+      .catch(() => setLoading(false))
+  }, [router])
 
   const grouped = groupByDay(docs)
   const days = Object.keys(grouped)
 
   return (
-    <div className="flex-1 p-8 max-w-2xl mx-auto w-full">
-      <div className="mb-8">
-        <h1 className="text-2xl font-semibold text-white">Activity</h1>
-        <p className="text-sm text-neutral-500 mt-1">Everything you've touched in the last 30 days</p>
-      </div>
+    <div className="flex h-screen overflow-hidden" style={{ backgroundColor: 'var(--bg)' }}>
+      <Sidebar collapsed={collapsed} onToggle={() => setCollapsed((v) => !v)} />
+      <main className="flex-1 overflow-y-auto">
+        <div className="p-8 max-w-2xl mx-auto w-full">
+          <div className="mb-8">
+            <h1 className="text-2xl font-semibold" style={{ color: 'var(--text-primary)' }}>Activity</h1>
+            <p className="text-sm mt-1" style={{ color: 'var(--text-muted)' }}>Everything you've touched in the last 30 days</p>
+          </div>
 
-      {days.length === 0 ? (
-        <p className="text-neutral-500 text-sm">No activity yet.</p>
-      ) : (
-        <div className="space-y-8">
-          {days.map((day) => (
-            <div key={day}>
-              <p className="text-xs font-medium text-neutral-500 uppercase tracking-widest mb-3">{day}</p>
-              <div className="space-y-1">
-                {grouped[day].map((doc: any) => {
-                  const isNew =
-                    Math.abs(new Date(doc.updated_at).getTime() - new Date(doc.created_at).getTime()) < 5000
-                  return (
-                    <Link
-                      key={doc.uuid}
-                      href={`/docs/${doc.uuid}`}
-                      className="flex items-center justify-between px-4 py-3 rounded-lg hover:bg-neutral-800 transition-colors group"
-                    >
-                      <div className="flex items-center gap-3 min-w-0">
-                        <span className="text-xs w-14 shrink-0">
-                          {isNew ? (
-                            <span className="text-emerald-500 font-medium">created</span>
-                          ) : (
-                            <span className="text-neutral-500">edited</span>
-                          )}
-                        </span>
-                        <span className="text-neutral-200 text-sm truncate group-hover:text-white transition-colors">
-                          {doc.title || 'Untitled'}
-                        </span>
-                      </div>
-                      <span className="text-neutral-600 text-xs shrink-0 ml-4">
-                        {timeAgo(doc.updated_at)}
-                      </span>
-                    </Link>
-                  )
-                })}
-              </div>
+          {loading ? (
+            <p className="text-sm" style={{ color: 'var(--text-muted)' }}>Loading...</p>
+          ) : days.length === 0 ? (
+            <p className="text-sm" style={{ color: 'var(--text-muted)' }}>No activity yet.</p>
+          ) : (
+            <div className="space-y-8">
+              {days.map((day) => (
+                <div key={day}>
+                  <p className="text-xs font-medium uppercase tracking-widest mb-3" style={{ color: 'var(--text-muted)' }}>{day}</p>
+                  <div className="space-y-1">
+                    {grouped[day].map((doc: any) => {
+                      const isNew =
+                        Math.abs(new Date(doc.updated_at).getTime() - new Date(doc.created_at).getTime()) < 5000
+                      return (
+                        <Link
+                          key={doc.uuid}
+                          href={`/docs/${doc.uuid}`}
+                          className="flex items-center justify-between px-4 py-3 rounded-lg transition-colors group"
+                          style={{ color: 'inherit' }}
+                          onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)')}
+                          onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
+                        >
+                          <div className="flex items-center gap-3 min-w-0">
+                            <span className="text-xs w-14 shrink-0">
+                              {isNew ? (
+                                <span className="text-emerald-500 font-medium">created</span>
+                              ) : (
+                                <span style={{ color: 'var(--text-muted)' }}>edited</span>
+                              )}
+                            </span>
+                            <span className="text-sm truncate" style={{ color: 'var(--text-secondary)' }}>
+                              {doc.title || 'Untitled'}
+                            </span>
+                          </div>
+                          <span className="text-xs shrink-0 ml-4" style={{ color: 'var(--text-muted)' }}>
+                            {timeAgo(doc.updated_at)}
+                          </span>
+                        </Link>
+                      )
+                    })}
+                  </div>
+                </div>
+              ))}
             </div>
-          ))}
+          )}
         </div>
-      )}
+      </main>
     </div>
   )
 }
