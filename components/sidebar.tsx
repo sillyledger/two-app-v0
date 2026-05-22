@@ -167,6 +167,8 @@ export default function Sidebar({ onNewNote, collapsed = false, onToggle }: Side
         if (data?.id) {
           setWorkspaceId(data.id)
           setActiveWorkspaceId(data.id)
+          fetchDocsForWorkspace(data.id, true)
+          fetchFoldersForWorkspace(data.id, true)
         }
       })
       .catch(() => {})
@@ -175,15 +177,6 @@ export default function Sidebar({ onNewNote, collapsed = false, onToggle }: Side
       .then((r) => r.json())
       .then((data) => {
         setWorkspaces(Array.isArray(data) ? data : [])
-      })
-      .catch(() => {})
-
-    fetchDocs()
-
-    fetch("/api/folders")
-      .then((r) => r.json())
-      .then((data) => {
-        setFolders(Array.isArray(data) ? data : [])
       })
       .catch(() => {})
   }, [])
