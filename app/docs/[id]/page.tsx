@@ -587,8 +587,9 @@ export default function DocPage() {
           className="flex items-center justify-between px-4 shrink-0"
           style={{
             height: '44px',
-            backgroundColor: 'var(--bg)',
-            borderBottom: '1px solid var(--border)',
+            backgroundColor: 'var(--bg-secondary)',
+          borderBottom: '1px solid var(--border)',
+          boxShadow: 'inset 0 -1px 0 0 var(--border)',
           }}
         >
           <span
