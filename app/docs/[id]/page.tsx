@@ -222,14 +222,16 @@ export default function DocPage() {
     })
   }, [])
 
+  // ── Fetch per-doc data — guarded: needs both isLoggedIn AND a real docId ──
   useEffect(() => {
-    if (!isLoggedIn) return
+    if (!isLoggedIn || !docId) return
     fetch('/api/labels').then(r => r.json()).then(data => { if (Array.isArray(data)) setAllLabels(data) })
     fetch(`/api/docs/${docId}/labels`).then(r => r.json()).then(data => { if (Array.isArray(data)) setDocLabels(data) })
     fetch(`/api/comments?docId=${docId}`).then(r => r.json()).then(data => { if (Array.isArray(data)) setComments(data) })
-    fetch(`/api/tasks?docId=${docId}`).then(r => r.json()).then(data => {
-      if (Array.isArray(data)) setTasks(data)
-    })
+    fetch(`/api/tasks?docId=${docId}`)
+      .then(r => r.json())
+      .then(data => { if (Array.isArray(data)) setTasks(data) })
+      .catch(() => {})
   }, [isLoggedIn, docId])
 
   useEffect(() => {
@@ -864,30 +866,31 @@ export default function DocPage() {
                 {tasks.map(task => (
                   <div
                     key={task.id}
-                    className="flex items-start gap-2 py-1.5 px-1 rounded-md transition-colors"
+                    className="flex items-start gap-2 py-1.5 px-1 rounded-md"
                     style={{ backgroundColor: hoveredTaskId === task.id ? 'var(--bg-tertiary)' : 'transparent' }}
                     onMouseEnter={() => setHoveredTaskId(task.id)}
                     onMouseLeave={() => setHoveredTaskId(null)}
                   >
                     <button
                       onClick={() => handleToggleTask(task)}
-                      className="mt-[1px] shrink-0 transition-colors"
-                      style={{ color: task.completed ? 'var(--text-muted)' : 'var(--text-secondary)' }}
+                      className="mt-[1px] shrink-0"
+                      style={{ color: task.completed === true ? 'var(--text-muted)' : 'var(--text-secondary)' }}
                     >
-                      {task.completed ? <CheckCircle2 size={13} /> : <Circle size={13} />}
+                      {task.completed === true ? <CheckCircle2 size={13} /> : <Circle size={13} />}
                     </button>
                     <div className="flex-1 min-w-0">
+                      {/* Title — hardcoded colors so nothing can override them */}
                       <p
                         className="text-[12px] leading-snug"
                         style={{
-                          color: task.completed ? 'var(--text-muted)' : 'var(--text-primary)',
-                          textDecoration: task.completed ? 'line-through' : 'none',
+                          color: task.completed === true ? '#6b7280' : '#e8e8e8',
+                          textDecoration: task.completed === true ? 'line-through' : 'none',
                         }}
                       >
                         {task.title}
                       </p>
                       {task.due_date && (
-                        <p className="text-[10px] mt-0.5 flex items-center gap-1" style={{ color: 'var(--text-muted)' }}>
+                        <p className="text-[10px] mt-0.5 flex items-center gap-1" style={{ color: '#6b7280' }}>
                           <CalendarDays size={9} />
                           {new Date(task.due_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' })}
                         </p>
@@ -895,10 +898,10 @@ export default function DocPage() {
                     </div>
                     <button
                       onClick={() => handleDeleteTask(task.id)}
-                      className="shrink-0 mt-[1px] transition-colors"
-                      style={{ color: hoveredTaskId === task.id ? 'var(--text-muted)' : 'transparent' }}
+                      className="shrink-0 mt-[1px]"
+                      style={{ color: hoveredTaskId === task.id ? '#6b7280' : 'transparent' }}
                       onMouseEnter={e => (e.currentTarget.style.color = '#e05252')}
-                      onMouseLeave={e => (e.currentTarget.style.color = hoveredTaskId === task.id ? 'var(--text-muted)' : 'transparent')}
+                      onMouseLeave={e => (e.currentTarget.style.color = hoveredTaskId === task.id ? '#6b7280' : 'transparent')}
                     >
                       <Trash2 size={11} />
                     </button>
