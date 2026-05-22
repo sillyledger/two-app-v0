@@ -45,60 +45,50 @@ interface SidebarProps {
   onToggle?: () => void
 }
 
+// ── simple session cache ──────────────────────────────────────────
+function cacheGet<T>(key: string): T | null {
+  try {
+    const raw = sessionStorage.getItem(key)
+    return raw ? (JSON.parse(raw) as T) : null
+  } catch { return null }
+}
+function cacheSet(key: string, value: unknown) {
+  try { sessionStorage.setItem(key, JSON.stringify(value)) } catch {}
+}
+
 export default function Sidebar({ onNewNote, collapsed = false, onToggle }: SidebarProps = {}) {
   const pathname = usePathname()
   const router = useRouter()
   const [workspaceOpen, setWorkspaceOpen] = useState(true)
   const [searchQuery, setSearchQuery] = useState("")
-  const [userName, setUserName] = useState("")
-  const [userAvatar, setUserAvatar] = useState<string | null>(null)
-
-  // Primary workspace (first/default)
-  const [workspaceName, setWorkspaceName] = useState("My Workspace")
-  const [workspaceId, setWorkspaceId] = useState<string | null>(null)
-
-  // All workspaces
-  const [workspaces, setWorkspaces] = useState<Workspace[]>([])
-
-  // Active workspace (the one currently selected)
-  const [activeWorkspaceId, setActiveWorkspaceId] = useState<string | null>(null)
-
-  // Per-workspace docs and folders
-  const [docs, setDocs] = useState<Doc[]>([])
-  const [folders, setFolders] = useState<FolderType[]>([])
-
-  // Extra workspace expanded state: { [workspaceId]: boolean }
+  const [userName, setUserName] = useState(() => cacheGet<string>("sb_userName") ?? "")
+  const [userAvatar, setUserAvatar] = useState<string | null>(() => cacheGet<string>("sb_userAvatar"))
+  const [workspaceName, setWorkspaceName] = useState(() => cacheGet<string>("sb_workspaceName") ?? "My Workspace")
+  const [workspaceId, setWorkspaceId] = useState<string | null>(() => cacheGet<string>("sb_workspaceId"))
+  const [workspaces, setWorkspaces] = useState<Workspace[]>(() => cacheGet<Workspace[]>("sb_workspaces") ?? [])
+  const [activeWorkspaceId, setActiveWorkspaceId] = useState<string | null>(() => cacheGet<string>("sb_workspaceId"))
+  const [docs, setDocs] = useState<Doc[]>(() => cacheGet<Doc[]>("sb_docs") ?? [])
+  const [folders, setFolders] = useState<FolderType[]>(() => cacheGet<FolderType[]>("sb_folders") ?? [])
   const [expandedWorkspaces, setExpandedWorkspaces] = useState<Record<string, boolean>>({})
-
-  // Extra workspace docs/folders: { [workspaceId]: { docs, folders } }
   const [wsData, setWsData] = useState<Record<string, { docs: Doc[]; folders: FolderType[] }>>({})
-
   const [creating, setCreating] = useState(false)
-
   const [renamingWorkspace, setRenamingWorkspace] = useState(false)
   const [workspaceRenameValue, setWorkspaceRenameValue] = useState("")
   const workspaceInputRef = useRef<HTMLInputElement>(null)
-
-  // Extra workspace menu/rename state
   const [wsMenuId, setWsMenuId] = useState<string | null>(null)
   const wsMenuRef = useRef<HTMLDivElement>(null)
   const [renamingWsId, setRenamingWsId] = useState<string | null>(null)
   const [wsRenameValue, setWsRenameValue] = useState("")
   const wsRenameInputRef = useRef<HTMLInputElement>(null)
-
   const [folderMenuId, setFolderMenuId] = useState<string | null>(null)
   const folderMenuRef = useRef<HTMLDivElement>(null)
-
   const [renamingFolderId, setRenamingFolderId] = useState<string | null>(null)
   const [folderRenameValue, setFolderRenameValue] = useState("")
   const folderRenameInputRef = useRef<HTMLInputElement>(null)
-
   const [draggingDocId, setDraggingDocId] = useState<string | null>(null)
   const [dragOverFolderId, setDragOverFolderId] = useState<string | null>(null)
-
   const [showPicker, setShowPicker] = useState(false)
   const pickerRef = useRef<HTMLDivElement>(null)
-
   const [showModal, setShowModal] = useState(false)
   const [modalType, setModalType] = useState<"doc" | "folder" | "workspace">("doc")
   const [modalName, setModalName] = useState("")
@@ -110,12 +100,14 @@ export default function Sidebar({ onNewNote, collapsed = false, onToggle }: Side
       .then((r) => r.json())
       .then((data) => {
         const unfiled = Array.isArray(data) ? data.filter((d: any) => !d.folder_id) : []
+        const sliced = unfiled.slice(0, 8)
         if (isPrimary) {
-          setDocs(unfiled.slice(0, 8))
+          setDocs(sliced)
+          cacheSet("sb_docs", sliced)
         } else {
           setWsData((prev) => ({
             ...prev,
-            [wsId]: { docs: unfiled.slice(0, 8), folders: prev[wsId]?.folders ?? [] },
+            [wsId]: { docs: sliced, folders: prev[wsId]?.folders ?? [] },
           }))
         }
       })
@@ -129,6 +121,7 @@ export default function Sidebar({ onNewNote, collapsed = false, onToggle }: Side
         const list = Array.isArray(data) ? data : []
         if (isPrimary) {
           setFolders(list)
+          cacheSet("sb_folders", list)
         } else {
           setWsData((prev) => ({
             ...prev,
@@ -139,23 +132,17 @@ export default function Sidebar({ onNewNote, collapsed = false, onToggle }: Side
       .catch(() => {})
   }
 
-  const fetchDocs = () => {
-    fetch("/api/docs")
-      .then((r) => r.json())
-      .then((data) => {
-        const unfiled = Array.isArray(data) ? data.filter((d: any) => !d.folder_id) : []
-        setDocs(unfiled.slice(0, 8))
-      })
-      .catch(() => {})
-  }
-
   useEffect(() => {
     fetch("/api/auth/me")
       .then((r) => r.json())
       .then((data) => {
         if (data.user) {
-          setUserName(data.user.name || data.user.email.split("@")[0])
-          setUserAvatar(data.user.avatar_url || null)
+          const name = data.user.name || data.user.email.split("@")[0]
+          const avatar = data.user.avatar_url || null
+          setUserName(name)
+          setUserAvatar(avatar)
+          cacheSet("sb_userName", name)
+          cacheSet("sb_userAvatar", avatar)
         }
       })
       .catch(() => {})
@@ -163,10 +150,14 @@ export default function Sidebar({ onNewNote, collapsed = false, onToggle }: Side
     fetch("/api/workspace")
       .then((r) => r.json())
       .then((data) => {
-        if (data?.name) setWorkspaceName(data.name)
+        if (data?.name) {
+          setWorkspaceName(data.name)
+          cacheSet("sb_workspaceName", data.name)
+        }
         if (data?.id) {
           setWorkspaceId(data.id)
           setActiveWorkspaceId(data.id)
+          cacheSet("sb_workspaceId", data.id)
           fetchDocsForWorkspace(data.id, true)
           fetchFoldersForWorkspace(data.id, true)
         }
@@ -176,12 +167,13 @@ export default function Sidebar({ onNewNote, collapsed = false, onToggle }: Side
     fetch("/api/workspaces")
       .then((r) => r.json())
       .then((data) => {
-        setWorkspaces(Array.isArray(data) ? data : [])
+        const list = Array.isArray(data) ? data : []
+        setWorkspaces(list)
+        cacheSet("sb_workspaces", list)
       })
       .catch(() => {})
   }, [])
 
-  // Close pickers on outside click
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (pickerRef.current && !pickerRef.current.contains(e.target as Node)) setShowPicker(false)
@@ -232,6 +224,7 @@ export default function Sidebar({ onNewNote, collapsed = false, onToggle }: Side
     setRenamingWorkspace(false)
     if (!trimmed || trimmed === workspaceName) return
     setWorkspaceName(trimmed)
+    cacheSet("sb_workspaceName", trimmed)
     try {
       await fetch("/api/workspace", {
         method: "PUT",
@@ -250,7 +243,9 @@ export default function Sidebar({ onNewNote, collapsed = false, onToggle }: Side
     const trimmed = wsRenameValue.trim()
     setRenamingWsId(null)
     if (!trimmed) return
-    setWorkspaces((prev) => prev.map((w) => (w.id === wsId ? { ...w, name: trimmed } : w)))
+    const updated = workspaces.map((w) => (w.id === wsId ? { ...w, name: trimmed } : w))
+    setWorkspaces(updated)
+    cacheSet("sb_workspaces", updated)
     try {
       await fetch(`/api/workspaces/${wsId}`, {
         method: "PUT",
@@ -262,7 +257,9 @@ export default function Sidebar({ onNewNote, collapsed = false, onToggle }: Side
 
   const deleteExtraWorkspace = async (wsId: string) => {
     setWsMenuId(null)
-    setWorkspaces((prev) => prev.filter((w) => w.id !== wsId))
+    const updated = workspaces.filter((w) => w.id !== wsId)
+    setWorkspaces(updated)
+    cacheSet("sb_workspaces", updated)
     if (activeWorkspaceId === wsId) setActiveWorkspaceId(workspaceId)
     try {
       await fetch(`/api/workspaces/${wsId}`, { method: "DELETE" })
@@ -279,7 +276,9 @@ export default function Sidebar({ onNewNote, collapsed = false, onToggle }: Side
     const trimmed = folderRenameValue.trim()
     setRenamingFolderId(null)
     if (!trimmed) return
-    setFolders((prev) => prev.map((f) => (f.id === folderId ? { ...f, name: trimmed } : f)))
+    const updated = folders.map((f) => (f.id === folderId ? { ...f, name: trimmed } : f))
+    setFolders(updated)
+    cacheSet("sb_folders", updated)
     try {
       await fetch(`/api/folders/${folderId}`, {
         method: "PUT",
@@ -291,13 +290,16 @@ export default function Sidebar({ onNewNote, collapsed = false, onToggle }: Side
 
   const deleteFolder = async (folderId: string) => {
     setFolderMenuId(null)
-    setFolders((prev) => prev.filter((f) => f.id !== folderId))
+    const updated = folders.filter((f) => f.id !== folderId)
+    setFolders(updated)
+    cacheSet("sb_folders", updated)
     try {
       await fetch(`/api/folders/${folderId}`, { method: "DELETE" })
     } catch {}
   }
 
   const handleLogout = async () => {
+    sessionStorage.clear()
     await fetch("/api/auth", { method: "DELETE" })
     router.push("/login")
   }
@@ -315,7 +317,7 @@ export default function Sidebar({ onNewNote, collapsed = false, onToggle }: Side
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ folder_id: folderId }),
       })
-      if (res.ok) fetchDocs()
+      if (res.ok && workspaceId) fetchDocsForWorkspace(workspaceId, true)
     } catch {}
   }
 
@@ -354,8 +356,8 @@ export default function Sidebar({ onNewNote, collapsed = false, onToggle }: Side
         const doc = await res.json()
         if (modalTargetWorkspaceId && modalTargetWorkspaceId !== workspaceId) {
           fetchDocsForWorkspace(modalTargetWorkspaceId, false)
-        } else {
-          fetchDocs()
+        } else if (workspaceId) {
+          fetchDocsForWorkspace(workspaceId, true)
         }
         router.push(`/docs/${doc.uuid}`)
       } finally {
@@ -376,7 +378,9 @@ export default function Sidebar({ onNewNote, collapsed = false, onToggle }: Side
         if (targetId !== workspaceId) {
           fetchFoldersForWorkspace(targetId, false)
         } else {
-          setFolders((prev) => [...prev, folder])
+          const updated = [...folders, folder]
+          setFolders(updated)
+          cacheSet("sb_folders", updated)
         }
       } catch {}
     }
@@ -389,7 +393,9 @@ export default function Sidebar({ onNewNote, collapsed = false, onToggle }: Side
           body: JSON.stringify({ name: modalName }),
         })
         const workspace = await res.json()
-        setWorkspaces((prev) => [...prev, workspace])
+        const updated = [...workspaces, workspace]
+        setWorkspaces(updated)
+        cacheSet("sb_workspaces", updated)
       } catch {}
     }
   }
@@ -432,7 +438,6 @@ export default function Sidebar({ onNewNote, collapsed = false, onToggle }: Side
     </div>
   )
 
-  // Reusable folder+doc list for any workspace
   const WorkspaceContents = ({
     wsFolders,
     wsDocs,
@@ -592,7 +597,6 @@ export default function Sidebar({ onNewNote, collapsed = false, onToggle }: Side
           borderColor: "var(--border)",
         }}
       >
-        {/* Top: avatar + name + toggle */}
         {collapsed ? (
           <div className="flex flex-col items-center px-3 pt-4 pb-2.5 gap-2.5">
             <AvatarBubble />
@@ -622,7 +626,6 @@ export default function Sidebar({ onNewNote, collapsed = false, onToggle }: Side
           </div>
         )}
 
-        {/* Search */}
         {!collapsed && (
           <div className="px-2 mb-2">
             <div
@@ -662,7 +665,6 @@ export default function Sidebar({ onNewNote, collapsed = false, onToggle }: Side
                   >
                     {workspaceOpen ? <ChevronDown size={11} /> : <ChevronRight size={11} />}
                   </button>
-
                   {renamingWorkspace ? (
                     <input
                       ref={workspaceInputRef}
@@ -691,18 +693,15 @@ export default function Sidebar({ onNewNote, collapsed = false, onToggle }: Side
                     </span>
                   )}
                 </div>
-
                 <div className="relative ml-1 shrink-0" ref={pickerRef}>
                   <button
                     onClick={() => setShowPicker((v) => !v)}
                     disabled={creating}
                     style={{ color: "var(--text-muted)" }}
                     className="hover:text-[var(--text-primary)] transition-colors"
-                    title="New Doc or Folder"
                   >
                     <Plus size={13} />
                   </button>
-
                   {showPicker && (
                     <div
                       className="absolute right-0 top-5 z-50 rounded-lg shadow-xl w-[140px] py-1 overflow-hidden"
@@ -753,7 +752,6 @@ export default function Sidebar({ onNewNote, collapsed = false, onToggle }: Side
                       >
                         {expandedWorkspaces[ws.id] ? <ChevronDown size={11} /> : <ChevronRight size={11} />}
                       </button>
-
                       {renamingWsId === ws.id ? (
                         <input
                           ref={wsRenameInputRef}
@@ -780,9 +778,7 @@ export default function Sidebar({ onNewNote, collapsed = false, onToggle }: Side
                         </span>
                       )}
                     </div>
-
                     <div className="flex items-center gap-1 shrink-0">
-                      {/* + button for new doc/folder in this workspace */}
                       <button
                         onClick={() => openModal("doc", ws.id)}
                         style={{ color: "var(--text-muted)" }}
@@ -791,8 +787,6 @@ export default function Sidebar({ onNewNote, collapsed = false, onToggle }: Side
                       >
                         <Plus size={13} />
                       </button>
-
-                      {/* ··· menu */}
                       <div className="relative" ref={wsMenuId === ws.id ? wsMenuRef : undefined}>
                         <button
                           onClick={(e) => { e.stopPropagation(); setWsMenuId(wsMenuId === ws.id ? null : ws.id) }}
@@ -801,7 +795,6 @@ export default function Sidebar({ onNewNote, collapsed = false, onToggle }: Side
                         >
                           <MoreHorizontal size={13} />
                         </button>
-
                         {wsMenuId === ws.id && (
                           <div
                             className="absolute right-0 top-6 z-50 rounded-lg shadow-xl w-[150px] py-1 overflow-hidden"
@@ -822,11 +815,7 @@ export default function Sidebar({ onNewNote, collapsed = false, onToggle }: Side
                               <Pencil size={12} style={{ color: "var(--text-muted)" }} /> Rename
                             </button>
                             <button
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                openModal("folder", ws.id)
-                                setWsMenuId(null)
-                              }}
+                              onClick={(e) => { e.stopPropagation(); openModal("folder", ws.id); setWsMenuId(null) }}
                               className="flex items-center gap-2 w-full px-3 py-2 text-[12px] transition-colors"
                               style={{ color: "var(--text-secondary)" }}
                               onMouseEnter={e => (e.currentTarget.style.backgroundColor = "var(--bg-secondary)")}
@@ -847,7 +836,6 @@ export default function Sidebar({ onNewNote, collapsed = false, onToggle }: Side
                       </div>
                     </div>
                   </div>
-
                   {expandedWorkspaces[ws.id] && (
                     <WorkspaceContents
                       wsFolders={wsData[ws.id]?.folders ?? []}
@@ -861,7 +849,6 @@ export default function Sidebar({ onNewNote, collapsed = false, onToggle }: Side
           )}
         </nav>
 
-        {/* Bottom */}
         <div
           className={`border-t px-2 py-2.5 space-y-[1px] ${collapsed ? "flex flex-col items-center" : ""}`}
           style={{ borderColor: "var(--border)" }}
@@ -873,14 +860,8 @@ export default function Sidebar({ onNewNote, collapsed = false, onToggle }: Side
               onClick={() => openModal("workspace")}
               className="flex items-center gap-2 px-2 py-[5px] rounded-md transition-colors text-[12px] font-medium w-full"
               style={{ color: "var(--text-muted)" }}
-              onMouseEnter={e => {
-                e.currentTarget.style.backgroundColor = "var(--bg-tertiary)"
-                e.currentTarget.style.color = "var(--text-primary)"
-              }}
-              onMouseLeave={e => {
-                e.currentTarget.style.backgroundColor = "transparent"
-                e.currentTarget.style.color = "var(--text-muted)"
-              }}
+              onMouseEnter={e => { e.currentTarget.style.backgroundColor = "var(--bg-tertiary)"; e.currentTarget.style.color = "var(--text-primary)" }}
+              onMouseLeave={e => { e.currentTarget.style.backgroundColor = "transparent"; e.currentTarget.style.color = "var(--text-muted)" }}
             >
               <Plus size={13} />
               Add Workspace
@@ -891,14 +872,8 @@ export default function Sidebar({ onNewNote, collapsed = false, onToggle }: Side
               onClick={handleLogout}
               className="flex items-center gap-2 px-2 py-[5px] rounded-md transition-colors text-[12px] font-medium w-full"
               style={{ color: "var(--text-secondary)" }}
-              onMouseEnter={e => {
-                e.currentTarget.style.backgroundColor = "var(--bg-tertiary)"
-                e.currentTarget.style.color = "var(--text-primary)"
-              }}
-              onMouseLeave={e => {
-                e.currentTarget.style.backgroundColor = "transparent"
-                e.currentTarget.style.color = "var(--text-secondary)"
-              }}
+              onMouseEnter={e => { e.currentTarget.style.backgroundColor = "var(--bg-tertiary)"; e.currentTarget.style.color = "var(--text-primary)" }}
+              onMouseLeave={e => { e.currentTarget.style.backgroundColor = "transparent"; e.currentTarget.style.color = "var(--text-secondary)" }}
             >
               <LogOut size={13} />
               Log out
@@ -909,14 +884,8 @@ export default function Sidebar({ onNewNote, collapsed = false, onToggle }: Side
               title="Log out"
               className="flex items-center justify-center p-1.5 rounded-md transition-colors"
               style={{ color: "var(--text-muted)" }}
-              onMouseEnter={e => {
-                e.currentTarget.style.backgroundColor = "var(--bg-tertiary)"
-                e.currentTarget.style.color = "var(--text-primary)"
-              }}
-              onMouseLeave={e => {
-                e.currentTarget.style.backgroundColor = "transparent"
-                e.currentTarget.style.color = "var(--text-muted)"
-              }}
+              onMouseEnter={e => { e.currentTarget.style.backgroundColor = "var(--bg-tertiary)"; e.currentTarget.style.color = "var(--text-primary)" }}
+              onMouseLeave={e => { e.currentTarget.style.backgroundColor = "transparent"; e.currentTarget.style.color = "var(--text-muted)" }}
             >
               <LogOut size={13} />
             </button>
@@ -924,7 +893,6 @@ export default function Sidebar({ onNewNote, collapsed = false, onToggle }: Side
         </div>
       </aside>
 
-      {/* Modal */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div className="absolute inset-0 bg-black/50 backdrop-blur-[2px]" onClick={() => setShowModal(false)} />
