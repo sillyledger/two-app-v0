@@ -20,6 +20,7 @@ import {
   LogOut,
   PanelLeftClose,
   PanelLeftOpen,
+  CheckSquare,
 } from "lucide-react"
 
 interface Doc {
@@ -381,6 +382,7 @@ export default function Sidebar({ onNewNote, collapsed = false, onToggle }: Side
 
         <nav className="flex-1 px-2 overflow-y-auto mt-0.5">
           {navItem("/", <Home size={13} />, "Home")}
+          {navItem("/planner", <CheckSquare size={13} />, "Planner")}
           {navItem("/activity", <Activity size={13} />, "Activity")}
           {navItem("/library", <Layers size={13} />, "Library")}
 
