@@ -576,7 +576,7 @@ export default function DocPage() {
           detailOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
       >
-        <div className="flex items-center justify-between px-4 h-[44px] shrink-0" style={{ backgroundColor: "var(--bg)", borderBottom: "1px solid var(--border)", boxShadow: "0 1px 0 0 var(--border)" }}>
+        <div className="flex items-center justify-between px-4 h-[44px] shrink-0" style={{ backgroundColor: "var(--bg)", borderBottom: "1px solid #d1d1d1" }}>
           <span className="text-xs font-medium uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>Details</span>
           <button
             onClick={() => setDetailOpen(false)}
