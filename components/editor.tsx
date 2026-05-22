@@ -72,6 +72,7 @@ export default function Editor({ content, onChange, onReady, editable = true }: 
 
   // Table toolbar state
   const [tableToolbar, setTableToolbar] = useState<{ top: number; left: number } | null>(null)
+  const [tableAddRow, setTableAddRow] = useState<{ top: number; left: number; width: number } | null>(null)
   const [tableFitWidth, setTableFitWidth] = useState(false)
   const tableToolbarRef = useRef<HTMLDivElement>(null)
 
@@ -171,6 +172,11 @@ export default function Editor({ content, onChange, onReady, editable = true }: 
               top: tableRect.top - containerRect.top - 44,
               left: 0,
             })
+            setTableAddRow({
+              top: tableRect.bottom - containerRect.top + 4,
+              left: tableRect.left - containerRect.left,
+              width: tableRect.width,
+            })
             return
           }
         }
@@ -179,6 +185,7 @@ export default function Editor({ content, onChange, onReady, editable = true }: 
       }
 
       setTableToolbar(null)
+      setTableAddRow(null)
 
       const { from, to } = editor.state.selection
       const hasSelection = from !== to
@@ -644,6 +651,30 @@ export default function Editor({ content, onChange, onReady, editable = true }: 
           >
             <Trash2 size={13} />
             <span className="text-[11px]">Delete</span>
+          </button>
+        </div>
+      )}
+
+      {/* ── Add row button ── */}
+      {tableAddRow && editable && (
+        <div
+          className="absolute z-40 flex items-center justify-center"
+          style={{ top: tableAddRow.top, left: tableAddRow.left, width: tableAddRow.width }}
+        >
+          <button
+            onMouseDown={(e) => {
+              e.preventDefault()
+              editor.chain().focus().addRowAfter().run()
+            }}
+            className="w-full flex items-center justify-center gap-1 py-0.5 rounded text-[11px] transition-colors opacity-0 hover:opacity-100"
+            style={{
+              color: 'var(--text-muted)',
+              backgroundColor: 'var(--bg-tertiary)',
+              border: '1px solid var(--border)',
+            }}
+            title="Add row"
+          >
+            <Plus size={11} />
           </button>
         </div>
       )}
