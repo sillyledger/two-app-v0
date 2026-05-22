@@ -584,7 +584,7 @@ export default function Sidebar({ onNewNote, collapsed = false, onToggle }: Side
   return (
     <>
       <aside
-        className="h-screen flex flex-col sticky top-0 border-r transition-all duration-200 ease-in-out overflow-hidden"
+        className="h-screen flex flex-col sticky top-0 border-r transition-all duration-200 ease-in-out overflow-hidden shrink-0"
         style={{
           width: collapsed ? "52px" : "210px",
           minWidth: collapsed ? "52px" : "210px",
