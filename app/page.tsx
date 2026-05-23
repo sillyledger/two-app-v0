@@ -158,7 +158,7 @@ export default function HomePage() {
               Recent Docs
             </h1>
 
-            {/* New Doc + Templates buttons */}
+            {/* Buttons */}
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setTemplateModalOpen(true)}
@@ -198,6 +198,7 @@ export default function HomePage() {
                 New Doc
               </button>
             </div>
+          </div>
 
           {/* Pills */}
           <div className="flex gap-2 mb-7">
