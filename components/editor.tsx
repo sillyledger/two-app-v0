@@ -77,6 +77,30 @@ export default function Editor({ content, onChange, onReady, onImageUpload, edit
   const [tableFitWidth, setTableFitWidth] = useState(false)
   const tableToolbarRef = useRef<HTMLDivElement>(null)
 
+  const onImageUploadRef = useRef(onImageUpload)
+  const editorRef = useRef<ReturnType<typeof useEditor>>(null)
+  const uploadingRef = useRef(false)
+
+  useEffect(() => {
+    onImageUploadRef.current = onImageUpload
+  }, [onImageUpload])
+
+  const doImageUpload = useCallback(async (file: File) => {
+    if (uploadingRef.current) return
+    if (!onImageUploadRef.current) return
+    uploadingRef.current = true
+    setUploading(true)
+    try {
+      const url = await onImageUploadRef.current(file)
+      if (url && editorRef.current) {
+        editorRef.current.chain().focus().setImage({ src: url }).run()
+      }
+    } finally {
+      uploadingRef.current = false
+      setUploading(false)
+    }
+  }, [])
+
   useEffect(() => {
     const saved = localStorage.getItem("font-size-px")
     const size = saved ? Number(saved) : 17
@@ -251,7 +275,7 @@ export default function Editor({ content, onChange, onReady, onImageUpload, edit
         const imageFile = Array.from(files).find((f) => f.type.startsWith("image/"))
         if (!imageFile) return false
         event.preventDefault()
-        handleImageUpload(imageFile)
+        doImageUpload(imageFile)
         return true
       },
       handlePaste: (view, event) => {
@@ -263,7 +287,7 @@ export default function Editor({ content, onChange, onReady, onImageUpload, edit
             const file = item.getAsFile()
             if (file) {
               event.preventDefault()
-              handleImageUpload(file)
+              doImageUpload(file)
               return true
             }
           }
@@ -271,22 +295,15 @@ export default function Editor({ content, onChange, onReady, onImageUpload, edit
         return false
       },
     },
-    onCreate: () => setEditorReady(true),
+    onCreate: ({ editor: e }) => {
+      editorRef.current = e
+      setEditorReady(true)
+    },
   })
 
-  const handleImageUpload = useCallback(async (file: File) => {
-    if (!editor) return
-    if (!onImageUpload) return
-    setUploading(true)
-    try {
-      const url = await onImageUpload(file)
-      if (url) {
-        editor.chain().focus().setImage({ src: url }).run()
-      }
-    } finally {
-      setUploading(false)
-    }
-  }, [editor, onImageUpload])
+  useEffect(() => {
+    if (editor) editorRef.current = editor
+  }, [editor])
 
   useEffect(() => {
     if (!editorReady) return
