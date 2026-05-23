@@ -73,9 +73,14 @@ export default function Editor({ content, onChange, onReady, editable = true }: 
   const [editorReady, setEditorReady] = useState(false)
 
   const [uploading, setUploading] = useState(false)
-  const imageInputRef = useRef<HTMLInputElement>(null)
-  useEffect(() => {
-  const handler = () => imageInputRef.current?.click()
+const imageInputRef = useRef<HTMLInputElement>(null)
+const uploadHandlerRef = useRef<(() => void) | null>(null)
+
+useEffect(() => {
+  uploadHandlerRef.current = () => {
+    setTimeout(() => imageInputRef.current?.click(), 50)
+  }
+  const handler = (e: Event) => uploadHandlerRef.current?.()
   window.addEventListener("tiptap-upload-image", handler)
   return () => window.removeEventListener("tiptap-upload-image", handler)
 }, [])
