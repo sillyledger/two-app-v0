@@ -417,7 +417,7 @@ export default function Sidebar({ onNewNote, collapsed = false, onToggle }: Side
       } ${
         pathname === href
           ? "bg-[var(--bg-tertiary)] text-[var(--text-primary)]"
-          : "text-[var(--text-primary)] opacity-60 hover:opacity-100 hover:bg-[var(--bg-tertiary)]"
+          : "text-[#e8e8e8] hover:bg-[var(--bg-tertiary)] hover:text-white"
       }`}
     >
       {icon}
