@@ -49,23 +49,24 @@ function getAccent(index: number) {
   return ACCENT_COLORS[index % ACCENT_COLORS.length]
 }
 
-type FilterTab = "recent" | "pinned" | "workspace" | "trash"
+type FilterTab = "recent" | "favorites" | "deleted"
 
 export default function HomePage() {
   const router = useRouter()
   const [collapsed, setCollapsed] = useState(false)
-const [sidebarReady, setSidebarReady] = useState(false)
+  const [sidebarReady, setSidebarReady] = useState(false)
 
-useEffect(() => {
-  const saved = localStorage.getItem("sidebar-collapsed")
-  if (saved === "true") setCollapsed(true)
-  setSidebarReady(true)
-}, [])
+  useEffect(() => {
+    const saved = localStorage.getItem("sidebar-collapsed")
+    if (saved === "true") setCollapsed(true)
+    setSidebarReady(true)
+  }, [])
 
   const [docs, setDocs] = useState<Doc[]>([])
   const [loading, setLoading] = useState(true)
   const [creating, setCreating] = useState(false)
   const [activeTab, setActiveTab] = useState<FilterTab>("recent")
+  const [hoveredPill, setHoveredPill] = useState<string | null>(null)
 
   const [openMenuId, setOpenMenuId] = useState<string | null>(null)
   const menuRef = useRef<HTMLDivElement>(null)
@@ -153,11 +154,10 @@ useEffect(() => {
     setFolders(Array.isArray(data) ? data : [])
   }
 
-  const tabs: { key: FilterTab; label: string }[] = [
+  const pills: { key: FilterTab; label: string; soon?: boolean; href?: string }[] = [
     { key: "recent", label: "Recent" },
-    { key: "pinned", label: "Pinned" },
-    { key: "workspace", label: "My workspace" },
-    { key: "trash", label: "Trash" },
+    { key: "favorites", label: "Favorites", soon: true },
+    { key: "deleted", label: "Deleted", href: "/trash" },
   ]
 
   return (
@@ -189,29 +189,64 @@ useEffect(() => {
             </button>
           </div>
 
-          {/* Filter tabs */}
-          <div
-            className="flex gap-0 mb-7"
-            style={{ borderBottom: "1px solid var(--border)" }}
-          >
-            {tabs.map((tab) => (
-              <button
-                key={tab.key}
-                onClick={() => setActiveTab(tab.key)}
-                className="px-4 py-2.5 text-[13.5px] font-medium transition-colors"
-                style={{
-                  color: activeTab === tab.key ? "var(--text-primary)" : "var(--text-muted)",
-                  fontWeight: activeTab === tab.key ? 500 : 400,
-                  borderBottom: activeTab === tab.key
-                    ? "2px solid var(--text-primary)"
-                    : "2px solid transparent",
-                  marginBottom: "-1px",
-                  background: "transparent",
-                }}
-              >
-                {tab.label}
-              </button>
-            ))}
+          {/* Pills */}
+          <div className="flex gap-2 mb-7">
+            {pills.map((pill) => {
+              const isActive = activeTab === pill.key
+              const isHovered = hoveredPill === pill.key
+              return (
+                <div key={pill.key} style={{ position: "relative" }}>
+                  <button
+                    onClick={() => {
+                      if (pill.href) {
+                        router.push(pill.href)
+                      } else if (!pill.soon) {
+                        setActiveTab(pill.key)
+                      }
+                    }}
+                    onMouseEnter={() => setHoveredPill(pill.key)}
+                    onMouseLeave={() => setHoveredPill(null)}
+                    style={{
+                      padding: "6px 16px",
+                      borderRadius: "99px",
+                      fontSize: "13.5px",
+                      fontWeight: isActive ? 500 : 400,
+                      border: "1px solid",
+                      borderColor: isActive ? "var(--text-primary)" : "var(--border)",
+                      backgroundColor: isActive ? "var(--text-primary)" : "transparent",
+                      color: isActive ? "var(--bg)" : "var(--text-muted)",
+                      cursor: pill.soon ? "default" : "pointer",
+                      transition: "all 0.15s",
+                      opacity: pill.soon && !isActive ? 0.6 : 1,
+                    }}
+                  >
+                    {pill.label}
+                  </button>
+                  {/* Coming soon tooltip */}
+                  {pill.soon && isHovered && (
+                    <div
+                      style={{
+                        position: "absolute",
+                        top: "calc(100% + 8px)",
+                        left: "50%",
+                        transform: "translateX(-50%)",
+                        backgroundColor: "var(--bg-secondary)",
+                        border: "1px solid var(--border)",
+                        borderRadius: "8px",
+                        padding: "5px 10px",
+                        fontSize: "11px",
+                        color: "var(--text-muted)",
+                        whiteSpace: "nowrap",
+                        zIndex: 50,
+                        pointerEvents: "none",
+                      }}
+                    >
+                      Coming soon
+                    </div>
+                  )}
+                </div>
+              )
+            })}
           </div>
 
           {/* Grid */}
