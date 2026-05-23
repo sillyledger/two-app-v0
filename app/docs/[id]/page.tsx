@@ -540,12 +540,13 @@ export default function DocPage() {
 
             {doc !== null && (
               <Editor
-                content={content}
-                editable={isLoggedIn}
-                onChange={(newContent) => { if (!isLoggedIn) return; setContent(newContent) }}
-                onReady={(focusFn) => { editorFocusRef.current = focusFn }}
-                onImageUpload={handleImageUpload}
-              />
+  content={content}
+  editable={isLoggedIn}
+  onChange={(newContent) => { if (!isLoggedIn) return; setContent(newContent) }}
+  onReady={(focusFn) => { editorFocusRef.current = focusFn }}
+  onImageUpload={handleImageUpload}
+  onInsertImageReady={(fn) => { insertImageRef.current = fn }}
+/>
             )}
 
             {wordCount > 0 && (
