@@ -16,6 +16,8 @@ interface Task {
   created_at: string
 }
 
+type FilterTab = 'all' | 'today' | 'upcoming' | 'overdue' | 'completed'
+
 function isToday(dateStr: string): boolean {
   const d = new Date(dateStr)
   const now = new Date()
@@ -53,6 +55,7 @@ export default function PlannerPage() {
   const [tasks, setTasks] = useState<Task[]>([])
   const [loading, setLoading] = useState(true)
   const [authChecked, setAuthChecked] = useState(false)
+  const [activeTab, setActiveTab] = useState<FilterTab>('all')
 
   useEffect(() => {
     const saved = localStorage.getItem('sidebar-collapsed')
@@ -106,7 +109,21 @@ export default function PlannerPage() {
   const nodateTasks = active.filter(t => !t.due_date)
   const completedTasks = tasks.filter(t => t.completed)
 
+  const tabs: { key: FilterTab; label: string; count: number }[] = [
+    { key: 'all', label: 'All', count: tasks.length },
+    { key: 'today', label: 'Today', count: todayTasks.length },
+    { key: 'upcoming', label: 'Upcoming', count: upcomingTasks.length },
+    { key: 'overdue', label: 'Overdue', count: overdueTasks.length },
+    { key: 'completed', label: 'Completed', count: completedTasks.length },
+  ]
+
   if (!authChecked) return null
+
+  const showOverdue = activeTab === 'all' || activeTab === 'overdue'
+  const showToday = activeTab === 'all' || activeTab === 'today'
+  const showUpcoming = activeTab === 'all' || activeTab === 'upcoming'
+  const showNoDate = activeTab === 'all'
+  const showCompleted = activeTab === 'all' || activeTab === 'completed'
 
   return (
     <div className="flex min-h-screen" style={{ backgroundColor: 'var(--bg)' }}>
@@ -119,47 +136,89 @@ export default function PlannerPage() {
         }}
       />
 
-      <main className="flex-1 overflow-y-auto px-10 py-12" style={{ maxWidth: '720px' }}>
-        <div className="mb-8">
-          <h1 className="text-[22px] font-bold tracking-tight" style={{ color: 'var(--text-primary)' }}>
-            Planner
-          </h1>
-          <p className="text-[13px] mt-1" style={{ color: 'var(--text-muted)' }}>
-            Tasks linked to your docs
-          </p>
-        </div>
+      <main className="flex-1 overflow-y-auto">
+        <div className="max-w-5xl mx-auto px-10 py-12">
 
-        {loading && (
-          <p className="text-[13px]" style={{ color: 'var(--text-muted)' }}>Loading...</p>
-        )}
-
-        {!loading && tasks.length === 0 && (
-          <div
-            className="rounded-xl p-8 text-center"
-            style={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border)' }}
-          >
-            <p className="text-[13px] font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>No tasks yet</p>
-            <p className="text-[12px]" style={{ color: 'var(--text-muted)' }}>
-              Open a doc and use the detail panel to add tasks.
+          <div className="mb-8">
+            <h1 className="text-[32px] font-bold tracking-tight" style={{ color: 'var(--text-primary)' }}>
+              Planner
+            </h1>
+            <p className="text-[13px] mt-1" style={{ color: 'var(--text-muted)' }}>
+              Tasks linked to your docs
             </p>
           </div>
-        )}
 
-        {overdueTasks.length > 0 && (
-          <TaskGroup label="Overdue" labelColor="#e05252" tasks={overdueTasks} onToggle={toggle} onDelete={remove} showDate />
-        )}
-        {todayTasks.length > 0 && (
-          <TaskGroup label="Today" tasks={todayTasks} onToggle={toggle} onDelete={remove} />
-        )}
-        {upcomingTasks.length > 0 && (
-          <TaskGroup label="Upcoming" tasks={upcomingTasks} onToggle={toggle} onDelete={remove} showDate />
-        )}
-        {nodateTasks.length > 0 && (
-          <TaskGroup label="No date" tasks={nodateTasks} onToggle={toggle} onDelete={remove} />
-        )}
-        {completedTasks.length > 0 && (
-          <TaskGroup label="Completed" tasks={completedTasks} onToggle={toggle} onDelete={remove} muted />
-        )}
+          <div className="flex items-center gap-2 flex-wrap mb-8">
+            {tabs.map(tab => (
+              <button
+                key={tab.key}
+                onClick={() => setActiveTab(tab.key)}
+                className="flex items-center gap-1.5 px-3.5 py-[5px] rounded-full text-[13px] font-medium transition-colors"
+                style={{
+                  backgroundColor: activeTab === tab.key ? 'var(--text-primary)' : 'var(--bg-secondary)',
+                  color: activeTab === tab.key ? 'var(--bg)' : 'var(--text-secondary)',
+                  border: activeTab === tab.key ? '1px solid transparent' : '1px solid var(--border)',
+                }}
+              >
+                {tab.label}
+                {tab.count > 0 && (
+                  <span
+                    className="text-[11px]"
+                    style={{ opacity: 0.6 }}
+                  >
+                    {tab.count}
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
+
+          {loading && (
+            <p className="text-[13px]" style={{ color: 'var(--text-muted)' }}>Loading...</p>
+          )}
+
+          {!loading && tasks.length === 0 && (
+            <div
+              className="rounded-xl p-8 text-center"
+              style={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border)' }}
+            >
+              <p className="text-[13px] font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>No tasks yet</p>
+              <p className="text-[12px]" style={{ color: 'var(--text-muted)' }}>
+                Open a doc and use the detail panel to add tasks.
+              </p>
+            </div>
+          )}
+
+          {showOverdue && overdueTasks.length > 0 && (
+            <TaskGroup label="Overdue" labelColor="#e05252" tasks={overdueTasks} onToggle={toggle} onDelete={remove} showDate />
+          )}
+          {showToday && todayTasks.length > 0 && (
+            <TaskGroup label="Today" tasks={todayTasks} onToggle={toggle} onDelete={remove} />
+          )}
+          {showUpcoming && upcomingTasks.length > 0 && (
+            <TaskGroup label="Upcoming" tasks={upcomingTasks} onToggle={toggle} onDelete={remove} showDate />
+          )}
+          {showNoDate && nodateTasks.length > 0 && (
+            <TaskGroup label="No date" tasks={nodateTasks} onToggle={toggle} onDelete={remove} />
+          )}
+          {showCompleted && completedTasks.length > 0 && (
+            <TaskGroup label="Completed" tasks={completedTasks} onToggle={toggle} onDelete={remove} muted />
+          )}
+
+          {!loading && tasks.length > 0 && activeTab === 'today' && todayTasks.length === 0 && (
+            <p className="text-[13px]" style={{ color: 'var(--text-muted)' }}>No tasks due today.</p>
+          )}
+          {!loading && tasks.length > 0 && activeTab === 'upcoming' && upcomingTasks.length === 0 && (
+            <p className="text-[13px]" style={{ color: 'var(--text-muted)' }}>No upcoming tasks.</p>
+          )}
+          {!loading && tasks.length > 0 && activeTab === 'overdue' && overdueTasks.length === 0 && (
+            <p className="text-[13px]" style={{ color: 'var(--text-muted)' }}>No overdue tasks.</p>
+          )}
+          {!loading && tasks.length > 0 && activeTab === 'completed' && completedTasks.length === 0 && (
+            <p className="text-[13px]" style={{ color: 'var(--text-muted)' }}>Nothing completed yet.</p>
+          )}
+
+        </div>
       </main>
     </div>
   )
