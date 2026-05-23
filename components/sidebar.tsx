@@ -416,8 +416,8 @@ export default function Sidebar({ onNewNote, collapsed = false, onToggle }: Side
         collapsed ? "justify-center" : ""
       } ${
         pathname === href
-          ? "bg-[var(--bg-tertiary)] text-white"
-          : "text-[#e8e8e8] hover:bg-[var(--bg-tertiary)] hover:text-white"
+          ? "bg-[var(--bg-tertiary)] text-[var(--text-primary)]"
+          : "text-[var(--sidebar-item)] hover:bg-[var(--bg-tertiary)] hover:text-[var(--text-primary)]"
       }`}
     >
       {icon}
@@ -456,17 +456,17 @@ export default function Sidebar({ onNewNote, collapsed = false, onToggle }: Side
               dragOverFolderId === folder.id || pathname === `/folders/${folder.id}`
                 ? "var(--bg-tertiary)"
                 : "transparent",
-            color: "#e8e8e8",
+            color: "var(--sidebar-item)",
           }}
           onMouseEnter={e => {
             e.currentTarget.style.backgroundColor = "var(--bg-tertiary)"
-            e.currentTarget.style.color = "#ffffff"
+            e.currentTarget.style.color = "var(--text-primary)"
           }}
           onMouseLeave={e => {
             if (pathname !== `/folders/${folder.id}`) {
               e.currentTarget.style.backgroundColor = "transparent"
             }
-            e.currentTarget.style.color = "#e8e8e8"
+            e.currentTarget.style.color = "var(--sidebar-item)"
           }}
           onClick={() => {
             if (renamingFolderId !== folder.id) {
@@ -477,7 +477,7 @@ export default function Sidebar({ onNewNote, collapsed = false, onToggle }: Side
           onDragLeave={(e) => { e.stopPropagation(); setDragOverFolderId(null) }}
           onDrop={(e) => handleDrop(e, folder.id)}
         >
-          <FolderOpen size={13} className="shrink-0" style={{ color: "#9ca3af" }} />
+          <FolderOpen size={13} className="shrink-0" style={{ color: "var(--text-secondary)" }} />
           {renamingFolderId === folder.id ? (
             <input
               ref={folderRenameInputRef}
@@ -504,7 +504,7 @@ export default function Sidebar({ onNewNote, collapsed = false, onToggle }: Side
               <button
                 onClick={(e) => { e.stopPropagation(); setFolderMenuId(folderMenuId === folder.id ? null : folder.id) }}
                 className="opacity-0 group-hover:opacity-100 p-0.5 rounded transition-all"
-                style={{ color: "#9ca3af" }}
+                style={{ color: "var(--text-secondary)" }}
               >
                 <MoreHorizontal size={13} />
               </button>
@@ -516,11 +516,11 @@ export default function Sidebar({ onNewNote, collapsed = false, onToggle }: Side
                   <button
                     onClick={(e) => { e.stopPropagation(); startRenamingFolder(folder) }}
                     className="flex items-center gap-2 w-full px-3 py-2 text-[12px] transition-colors"
-                    style={{ color: "#e8e8e8" }}
+                    style={{ color: "var(--sidebar-item)" }}
                     onMouseEnter={e => (e.currentTarget.style.backgroundColor = "var(--bg-secondary)")}
                     onMouseLeave={e => (e.currentTarget.style.backgroundColor = "transparent")}
                   >
-                    <Pencil size={12} style={{ color: "#9ca3af" }} /> Rename
+                    <Pencil size={12} style={{ color: "var(--text-secondary)" }} /> Rename
                   </button>
                   <button
                     onClick={(e) => { e.stopPropagation(); deleteFolder(folder.id) }}
@@ -552,28 +552,28 @@ export default function Sidebar({ onNewNote, collapsed = false, onToggle }: Side
           style={{
             opacity: draggingDocId === doc.uuid ? 0.4 : 1,
             backgroundColor: pathname === `/docs/${doc.uuid}` ? "var(--bg-tertiary)" : "transparent",
-            color: pathname === `/docs/${doc.uuid}` ? "#ffffff" : "#e8e8e8",
+            color: pathname === `/docs/${doc.uuid}` ? "var(--text-primary)" : "var(--sidebar-item)",
           }}
           onMouseEnter={e => {
             if (pathname !== `/docs/${doc.uuid}`) {
               e.currentTarget.style.backgroundColor = "var(--bg-tertiary)"
-              e.currentTarget.style.color = "#ffffff"
+              e.currentTarget.style.color = "var(--text-primary)"
             }
           }}
           onMouseLeave={e => {
             if (pathname !== `/docs/${doc.uuid}`) {
               e.currentTarget.style.backgroundColor = "transparent"
-              e.currentTarget.style.color = "#e8e8e8"
+              e.currentTarget.style.color = "var(--sidebar-item)"
             }
           }}
         >
-          <FileText size={13} className="shrink-0" style={{ color: "#9ca3af" }} />
+          <FileText size={13} className="shrink-0" style={{ color: "var(--text-secondary)" }} />
           <span className="truncate">{doc.title || "Untitled"}</span>
         </div>
       ))}
 
       {wsFolders.length === 0 && wsDocs.length === 0 && (
-        <p className="text-[11px] px-2 py-1" style={{ color: "#6b7280" }}>No docs yet</p>
+        <p className="text-[11px] px-2 py-1" style={{ color: "var(--text-muted)" }}>No docs yet</p>
       )}
     </div>
   )
@@ -597,8 +597,8 @@ export default function Sidebar({ onNewNote, collapsed = false, onToggle }: Side
             <button
               onClick={() => { localStorage.setItem("sidebar-collapsed", "false"); onToggle?.() }}
               title="Expand sidebar"
-              style={{ color: "#9ca3af" }}
-              className="hover:text-white transition-colors"
+              style={{ color: "var(--text-secondary)" }}
+              className="hover:text-[var(--text-primary)] transition-colors"
             >
               <PanelLeftOpen size={14} />
             </button>
@@ -606,14 +606,14 @@ export default function Sidebar({ onNewNote, collapsed = false, onToggle }: Side
         ) : (
           <div className="flex items-center gap-2 px-3 pt-4 pb-2.5">
             <AvatarBubble />
-            <span className="font-semibold text-[13px] truncate flex-1" style={{ color: "#ffffff" }}>
+            <span className="font-semibold text-[13px] truncate flex-1" style={{ color: "var(--text-primary)" }}>
               {userName || "..."}
             </span>
             <button
               onClick={() => { localStorage.setItem("sidebar-collapsed", "true"); onToggle?.() }}
               title="Collapse sidebar"
-              style={{ color: "#9ca3af" }}
-              className="hover:text-white transition-colors shrink-0"
+              style={{ color: "var(--text-secondary)" }}
+              className="hover:text-[var(--text-primary)] transition-colors shrink-0"
             >
               <PanelLeftClose size={14} />
             </button>
@@ -626,14 +626,14 @@ export default function Sidebar({ onNewNote, collapsed = false, onToggle }: Side
               className="flex items-center gap-2 rounded-md px-2.5 py-[6px]"
               style={{ backgroundColor: "var(--bg-tertiary)" }}
             >
-              <Search size={12} style={{ color: "#6b7280" }} className="shrink-0" />
+              <Search size={12} style={{ color: "var(--text-muted)" }} className="shrink-0" />
               <input
                 type="text"
                 placeholder="Search..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="bg-transparent text-[12px] outline-none w-full placeholder-[#6b7280]"
-                style={{ color: "#e8e8e8" }}
+                className="bg-transparent text-[12px] outline-none w-full"
+                style={{ color: "var(--sidebar-item)" }}
               />
             </div>
           </div>
@@ -653,8 +653,8 @@ export default function Sidebar({ onNewNote, collapsed = false, onToggle }: Side
                 <div className="flex items-center gap-1 flex-1 min-w-0">
                   <button
                     onClick={() => setWorkspaceOpen(!workspaceOpen)}
-                    style={{ color: "#6b7280" }}
-                    className="hover:text-[#9ca3af] transition-colors shrink-0"
+                    style={{ color: "var(--text-muted)" }}
+                    className="hover:text-[var(--text-secondary)] transition-colors shrink-0"
                   >
                     {workspaceOpen ? <ChevronDown size={11} /> : <ChevronRight size={11} />}
                   </button>
@@ -672,7 +672,7 @@ export default function Sidebar({ onNewNote, collapsed = false, onToggle }: Side
                       style={{
                         backgroundColor: "var(--bg-tertiary)",
                         border: "1px solid var(--border)",
-                        color: "#e8e8e8",
+                        color: "var(--sidebar-item)",
                       }}
                     />
                   ) : (
@@ -680,7 +680,7 @@ export default function Sidebar({ onNewNote, collapsed = false, onToggle }: Side
                       onDoubleClick={startRenamingWorkspace}
                       title="Double-click to rename"
                       className="text-[10px] font-semibold uppercase tracking-wider truncate cursor-default select-none"
-                      style={{ color: "#6b7280" }}
+                      style={{ color: "var(--text-muted)" }}
                     >
                       {workspaceName}
                     </span>
@@ -690,8 +690,8 @@ export default function Sidebar({ onNewNote, collapsed = false, onToggle }: Side
                   <button
                     onClick={() => setShowPicker((v) => !v)}
                     disabled={creating}
-                    style={{ color: "#6b7280" }}
-                    className="hover:text-white transition-colors"
+                    style={{ color: "var(--text-muted)" }}
+                    className="hover:text-[var(--text-primary)] transition-colors"
                   >
                     <Plus size={13} />
                   </button>
@@ -703,21 +703,21 @@ export default function Sidebar({ onNewNote, collapsed = false, onToggle }: Side
                       <button
                         onClick={() => openModal("doc", workspaceId ?? undefined)}
                         className="flex items-center gap-2 w-full px-3 py-2 text-[12px] transition-colors"
-                        style={{ color: "#e8e8e8" }}
+                        style={{ color: "var(--sidebar-item)" }}
                         onMouseEnter={e => (e.currentTarget.style.backgroundColor = "var(--bg-secondary)")}
                         onMouseLeave={e => (e.currentTarget.style.backgroundColor = "transparent")}
                       >
-                        <FileText size={12} style={{ color: "#9ca3af" }} />
+                        <FileText size={12} style={{ color: "var(--text-secondary)" }} />
                         New Doc
                       </button>
                       <button
                         onClick={() => openModal("folder", workspaceId ?? undefined)}
                         className="flex items-center gap-2 w-full px-3 py-2 text-[12px] transition-colors"
-                        style={{ color: "#e8e8e8" }}
+                        style={{ color: "var(--sidebar-item)" }}
                         onMouseEnter={e => (e.currentTarget.style.backgroundColor = "var(--bg-secondary)")}
                         onMouseLeave={e => (e.currentTarget.style.backgroundColor = "transparent")}
                       >
-                        <FolderOpen size={12} style={{ color: "#9ca3af" }} />
+                        <FolderOpen size={12} style={{ color: "var(--text-secondary)" }} />
                         New Folder
                       </button>
                     </div>
@@ -739,8 +739,8 @@ export default function Sidebar({ onNewNote, collapsed = false, onToggle }: Side
                     <div className="flex items-center gap-1 flex-1 min-w-0">
                       <button
                         onClick={() => toggleExtraWorkspace(ws.id)}
-                        style={{ color: "#6b7280" }}
-                        className="hover:text-[#9ca3af] transition-colors shrink-0"
+                        style={{ color: "var(--text-muted)" }}
+                        className="hover:text-[var(--text-secondary)] transition-colors shrink-0"
                       >
                         {expandedWorkspaces[ws.id] ? <ChevronDown size={11} /> : <ChevronRight size={11} />}
                       </button>
@@ -758,13 +758,13 @@ export default function Sidebar({ onNewNote, collapsed = false, onToggle }: Side
                           style={{
                             backgroundColor: "var(--bg-tertiary)",
                             border: "1px solid var(--border)",
-                            color: "#e8e8e8",
+                            color: "var(--sidebar-item)",
                           }}
                         />
                       ) : (
                         <span
                           className="text-[10px] font-semibold uppercase tracking-wider truncate cursor-default select-none"
-                          style={{ color: "#6b7280" }}
+                          style={{ color: "var(--text-muted)" }}
                         >
                           {ws.name}
                         </span>
@@ -773,8 +773,8 @@ export default function Sidebar({ onNewNote, collapsed = false, onToggle }: Side
                     <div className="flex items-center gap-1 shrink-0">
                       <button
                         onClick={() => openModal("doc", ws.id)}
-                        style={{ color: "#6b7280" }}
-                        className="opacity-0 group-hover:opacity-100 hover:text-white transition-all"
+                        style={{ color: "var(--text-muted)" }}
+                        className="opacity-0 group-hover:opacity-100 hover:text-[var(--text-primary)] transition-all"
                         title="New Doc"
                       >
                         <Plus size={13} />
@@ -782,8 +782,8 @@ export default function Sidebar({ onNewNote, collapsed = false, onToggle }: Side
                       <div className="relative" ref={wsMenuId === ws.id ? wsMenuRef : undefined}>
                         <button
                           onClick={(e) => { e.stopPropagation(); setWsMenuId(wsMenuId === ws.id ? null : ws.id) }}
-                          style={{ color: "#6b7280" }}
-                          className="opacity-0 group-hover:opacity-100 hover:text-white transition-all p-0.5 rounded"
+                          style={{ color: "var(--text-muted)" }}
+                          className="opacity-0 group-hover:opacity-100 hover:text-[var(--text-primary)] transition-all p-0.5 rounded"
                         >
                           <MoreHorizontal size={13} />
                         </button>
@@ -800,20 +800,20 @@ export default function Sidebar({ onNewNote, collapsed = false, onToggle }: Side
                                 setRenamingWsId(ws.id)
                               }}
                               className="flex items-center gap-2 w-full px-3 py-2 text-[12px] transition-colors"
-                              style={{ color: "#e8e8e8" }}
+                              style={{ color: "var(--sidebar-item)" }}
                               onMouseEnter={e => (e.currentTarget.style.backgroundColor = "var(--bg-secondary)")}
                               onMouseLeave={e => (e.currentTarget.style.backgroundColor = "transparent")}
                             >
-                              <Pencil size={12} style={{ color: "#9ca3af" }} /> Rename
+                              <Pencil size={12} style={{ color: "var(--text-secondary)" }} /> Rename
                             </button>
                             <button
                               onClick={(e) => { e.stopPropagation(); openModal("folder", ws.id); setWsMenuId(null) }}
                               className="flex items-center gap-2 w-full px-3 py-2 text-[12px] transition-colors"
-                              style={{ color: "#e8e8e8" }}
+                              style={{ color: "var(--sidebar-item)" }}
                               onMouseEnter={e => (e.currentTarget.style.backgroundColor = "var(--bg-secondary)")}
                               onMouseLeave={e => (e.currentTarget.style.backgroundColor = "transparent")}
                             >
-                              <FolderOpen size={12} style={{ color: "#9ca3af" }} /> New Folder
+                              <FolderOpen size={12} style={{ color: "var(--text-secondary)" }} /> New Folder
                             </button>
                             <button
                               onClick={(e) => { e.stopPropagation(); deleteExtraWorkspace(ws.id) }}
@@ -851,9 +851,9 @@ export default function Sidebar({ onNewNote, collapsed = false, onToggle }: Side
             <button
               onClick={() => openModal("workspace")}
               className="flex items-center gap-2 px-2 py-[5px] rounded-md transition-colors text-[12px] font-medium w-full"
-              style={{ color: "#9ca3af" }}
-              onMouseEnter={e => { e.currentTarget.style.backgroundColor = "var(--bg-tertiary)"; e.currentTarget.style.color = "#ffffff" }}
-              onMouseLeave={e => { e.currentTarget.style.backgroundColor = "transparent"; e.currentTarget.style.color = "#9ca3af" }}
+              style={{ color: "var(--text-muted)" }}
+              onMouseEnter={e => { e.currentTarget.style.backgroundColor = "var(--bg-tertiary)"; e.currentTarget.style.color = "var(--text-primary)" }}
+              onMouseLeave={e => { e.currentTarget.style.backgroundColor = "transparent"; e.currentTarget.style.color = "var(--text-muted)" }}
             >
               <Plus size={13} />
               Add Workspace
@@ -863,9 +863,9 @@ export default function Sidebar({ onNewNote, collapsed = false, onToggle }: Side
             <button
               onClick={handleLogout}
               className="flex items-center gap-2 px-2 py-[5px] rounded-md transition-colors text-[12px] font-medium w-full"
-              style={{ color: "#e8e8e8" }}
-              onMouseEnter={e => { e.currentTarget.style.backgroundColor = "var(--bg-tertiary)"; e.currentTarget.style.color = "#ffffff" }}
-              onMouseLeave={e => { e.currentTarget.style.backgroundColor = "transparent"; e.currentTarget.style.color = "#e8e8e8" }}
+              style={{ color: "var(--sidebar-item)" }}
+              onMouseEnter={e => { e.currentTarget.style.backgroundColor = "var(--bg-tertiary)"; e.currentTarget.style.color = "var(--text-primary)" }}
+              onMouseLeave={e => { e.currentTarget.style.backgroundColor = "transparent"; e.currentTarget.style.color = "var(--sidebar-item)" }}
             >
               <LogOut size={13} />
               Log out
@@ -875,9 +875,9 @@ export default function Sidebar({ onNewNote, collapsed = false, onToggle }: Side
               onClick={handleLogout}
               title="Log out"
               className="flex items-center justify-center p-1.5 rounded-md transition-colors"
-              style={{ color: "#9ca3af" }}
-              onMouseEnter={e => { e.currentTarget.style.backgroundColor = "var(--bg-tertiary)"; e.currentTarget.style.color = "#ffffff" }}
-              onMouseLeave={e => { e.currentTarget.style.backgroundColor = "transparent"; e.currentTarget.style.color = "#9ca3af" }}
+              style={{ color: "var(--text-secondary)" }}
+              onMouseEnter={e => { e.currentTarget.style.backgroundColor = "var(--bg-tertiary)"; e.currentTarget.style.color = "var(--text-primary)" }}
+              onMouseLeave={e => { e.currentTarget.style.backgroundColor = "transparent"; e.currentTarget.style.color = "var(--text-secondary)" }}
             >
               <LogOut size={13} />
             </button>
@@ -892,11 +892,11 @@ export default function Sidebar({ onNewNote, collapsed = false, onToggle }: Side
             className="relative rounded-xl shadow-2xl w-[320px] p-5 z-10"
             style={{ backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border)" }}
           >
-            <h2 className="text-[14px] font-semibold mb-4" style={{ color: "#ffffff" }}>
+            <h2 className="text-[14px] font-semibold mb-4" style={{ color: "var(--text-primary)" }}>
               {modalType === "doc" ? "New Doc" : modalType === "folder" ? "New Folder" : "New Workspace"}
             </h2>
             <div className="mb-1">
-              <label className="text-[11px] font-medium uppercase tracking-wider mb-1 block" style={{ color: "#6b7280" }}>Name</label>
+              <label className="text-[11px] font-medium uppercase tracking-wider mb-1 block" style={{ color: "var(--text-muted)" }}>Name</label>
               <input
                 ref={modalInputRef}
                 type="text"
@@ -910,7 +910,7 @@ export default function Sidebar({ onNewNote, collapsed = false, onToggle }: Side
                 style={{
                   backgroundColor: "var(--bg-tertiary)",
                   border: "1px solid var(--border)",
-                  color: "#e8e8e8",
+                  color: "var(--sidebar-item)",
                 }}
               />
             </div>
@@ -918,7 +918,7 @@ export default function Sidebar({ onNewNote, collapsed = false, onToggle }: Side
               <button
                 onClick={() => setShowModal(false)}
                 className="px-3 py-1.5 rounded-lg text-[12px] font-medium transition-colors"
-                style={{ color: "#9ca3af" }}
+                style={{ color: "var(--text-muted)" }}
                 onMouseEnter={e => (e.currentTarget.style.backgroundColor = "var(--bg-tertiary)")}
                 onMouseLeave={e => (e.currentTarget.style.backgroundColor = "transparent")}
               >
