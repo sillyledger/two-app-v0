@@ -13,14 +13,11 @@ const instrumentSerif = Instrument_Serif({
 });
 
 export const metadata: Metadata = {
-  title: 'TWO - Notes',
-  description: 'A beautiful note-taking app',
+  title: 'TWO — Write better. Think clearer.',
+  description: 'Beautiful docs for individuals and small teams who live on Apple devices. Fast, focused, and nothing you don\'t need.',
+  applicationName: 'TWO',
   icons: {
-    icon: [
-      { url: '/icon-light-32x32.png', media: '(prefers-color-scheme: light)' },
-      { url: '/icon-dark-32x32.png', media: '(prefers-color-scheme: dark)' },
-      { url: '/icon.svg', type: 'image/svg+xml' },
-    ],
+    icon: '/logo-two.svg',
     apple: '/apple-icon.png',
   },
 }
@@ -33,6 +30,8 @@ export default function RootLayout({
   return (
     <html lang="en" className={`dark bg-background ${instrumentSerif.variable}`}>
       <head>
+        <meta name="apple-mobile-web-app-title" content="TWO" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
         <script
           dangerouslySetInnerHTML={{
             __html: `
