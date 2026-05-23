@@ -74,6 +74,11 @@ export default function Editor({ content, onChange, onReady, editable = true }: 
 
   const [uploading, setUploading] = useState(false)
   const imageInputRef = useRef<HTMLInputElement>(null)
+  useEffect(() => {
+  const handler = () => imageInputRef.current?.click()
+  window.addEventListener("tiptap-upload-image", handler)
+  return () => window.removeEventListener("tiptap-upload-image", handler)
+}, [])
 
   const [tableToolbar, setTableToolbar] = useState<{ top: number; left: number } | null>(null)
   const [tableAddRow, setTableAddRow] = useState<{ top: number; left: number; width: number } | null>(null)
@@ -849,14 +854,7 @@ export default function Editor({ content, onChange, onReady, editable = true }: 
           <BubbleButton onClick={() => editor.chain().focus().toggleCodeBlock().run()} active={editor.isActive("codeBlock")} title="Code Block"><Code2 size={14} /></BubbleButton>
           <div className="mx-1 h-4 w-px bg-white/10" />
           <BubbleButton onClick={openLinkModal} active={editor.isActive("link")} title="Link"><LinkIcon size={14} /></BubbleButton>
-          <div className="mx-1 h-4 w-px bg-white/10" />
-          <BubbleButton
-            onClick={() => imageInputRef.current?.click()}
-            active={false}
-            title="Upload image"
-          >
-            <ImageIcon size={14} />
-          </BubbleButton>
+        
         </div>
       )}
 
