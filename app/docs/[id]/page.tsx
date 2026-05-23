@@ -154,6 +154,7 @@ export default function DocPage() {
   const [postingComment, setPostingComment] = useState(false)
   const commentInputRef = useRef<HTMLTextAreaElement>(null)
   const imageInputRef = useRef<HTMLInputElement>(null)
+  const insertImageRef = useRef<((url: string) => void) | null>(null)
 
   const [tasks, setTasks] = useState<Task[]>([])
   const [addingTask, setAddingTask] = useState(false)
@@ -425,11 +426,16 @@ export default function DocPage() {
         type="file"
         accept="image/jpeg,image/png,image/gif,image/webp"
         className="hidden"
-        onChange={(e) => {
-          const file = e.target.files?.[0]
-          if (file) handleImageUpload(file)
-          e.target.value = ""
-        }}
+        onChange={async (e) => {
+  const file = e.target.files?.[0]
+  if (file) {
+    const url = await handleImageUpload(file)
+    if (url && insertImageRef.current) {
+      insertImageRef.current(url)
+    }
+  }
+  e.target.value = ""
+}}
       />
 
       {isLoggedIn && (
