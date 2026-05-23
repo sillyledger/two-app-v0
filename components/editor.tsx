@@ -45,6 +45,7 @@ interface EditorProps {
   onChange: (content: string) => void
   onReady?: (focusFn: () => void) => void
   onImageUpload?: (file: File) => Promise<string | null>
+  onInsertImageReady?: (fn: (url: string) => void) => void
   editable?: boolean
 }
 
@@ -53,7 +54,7 @@ interface Doc {
   title: string
 }
 
-export default function Editor({ content, onChange, onReady, onImageUpload, editable = true }: EditorProps) {
+export default function Editor({ content, onChange, onReady, onImageUpload, onInsertImageReady, editable = true }: EditorProps) {
   const router = useRouter()
   const [bubbleVisible, setBubbleVisible] = useState(false)
   const [bubblePos, setBubblePos] = useState({ top: 0, left: 0 })
@@ -300,6 +301,13 @@ export default function Editor({ content, onChange, onReady, onImageUpload, edit
       setEditorReady(true)
     },
   })
+  useEffect(() => {
+    if (editor && onInsertImageReady) {
+      onInsertImageReady((url: string) => {
+        editor.chain().focus().setImage({ src: url }).run()
+      })
+    }
+  }, [editor, onInsertImageReady])
 
   useEffect(() => {
     if (editor) editorRef.current = editor
