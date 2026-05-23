@@ -34,7 +34,6 @@ import {
   ArrowLeftRight,
   Rows,
   Columns,
-  ImageIcon,
 } from "lucide-react"
 import { useCallback, useState, useRef, useEffect } from "react"
 import { useRouter } from "next/navigation"
@@ -45,6 +44,7 @@ interface EditorProps {
   content: string
   onChange: (content: string) => void
   onReady?: (focusFn: () => void) => void
+  onImageUpload?: (file: File) => Promise<string | null>
   editable?: boolean
 }
 
@@ -54,7 +54,7 @@ interface Doc {
 }
 
 export { Editor }
-export default function Editor({ content, onChange, onReady, editable = true }: EditorProps) {
+export default function Editor({ content, onChange, onReady, onImageUpload, editable = true }: EditorProps) {
   const router = useRouter()
   const [bubbleVisible, setBubbleVisible] = useState(false)
   const [bubblePos, setBubblePos] = useState({ top: 0, left: 0 })
@@ -73,17 +73,6 @@ export default function Editor({ content, onChange, onReady, editable = true }: 
   const [editorReady, setEditorReady] = useState(false)
 
   const [uploading, setUploading] = useState(false)
-const imageInputRef = useRef<HTMLInputElement>(null)
-const uploadHandlerRef = useRef<(() => void) | null>(null)
-
-useEffect(() => {
-  uploadHandlerRef.current = () => {
-    setTimeout(() => imageInputRef.current?.click(), 50)
-  }
-  const handler = (e: Event) => uploadHandlerRef.current?.()
-  window.addEventListener("tiptap-upload-image", handler)
-  return () => window.removeEventListener("tiptap-upload-image", handler)
-}, [])
 
   const [tableToolbar, setTableToolbar] = useState<{ top: number; left: number } | null>(null)
   const [tableAddRow, setTableAddRow] = useState<{ top: number; left: number; width: number } | null>(null)
@@ -118,32 +107,17 @@ useEffect(() => {
 
   const handleImageUpload = useCallback(async (file: File) => {
     if (!editor) return
-    if (file.size > 5 * 1024 * 1024) {
-      alert("Image too large. Maximum size is 5MB.")
-      return
-    }
-    const allowed = ["image/jpeg", "image/png", "image/gif", "image/webp"]
-    if (!allowed.includes(file.type)) {
-      alert("Only JPEG, PNG, GIF and WebP images are allowed.")
-      return
-    }
+    if (!onImageUpload) return
     setUploading(true)
     try {
-      const formData = new FormData()
-      formData.append("file", file)
-      const res = await fetch("/api/upload", { method: "POST", body: formData })
-      const data = await res.json()
-      if (data.url) {
-        editor.chain().focus().setImage({ src: data.url }).run()
-      } else {
-        alert(data.error || "Upload failed.")
+      const url = await onImageUpload(file)
+      if (url) {
+        editor.chain().focus().setImage({ src: url }).run()
       }
-    } catch {
-      alert("Upload failed. Please try again.")
     } finally {
       setUploading(false)
     }
-  }, [])
+  }, [editor, onImageUpload])
 
   const editor = useEditor({
     extensions: [
@@ -451,18 +425,6 @@ useEffect(() => {
 
   return (
     <div ref={containerRef} className="relative">
-      <input
-        ref={imageInputRef}
-        type="file"
-        accept="image/jpeg,image/png,image/gif,image/webp"
-        className="hidden"
-        onChange={(e) => {
-          const file = e.target.files?.[0]
-          if (file) handleImageUpload(file)
-          e.target.value = ""
-        }}
-      />
-
       <style>{`
         .editor-content {
           font-size: var(--editor-font-size, 17px);
@@ -645,7 +607,6 @@ useEffect(() => {
         .hljs-strong { font-weight: bold; }
       `}</style>
 
-      {/* Upload indicator */}
       {uploading && (
         <div className="absolute inset-0 z-50 flex items-center justify-center rounded-lg bg-black/40">
           <div className="flex items-center gap-2 rounded-lg bg-[#2a2a2a] px-4 py-2.5 text-sm text-white/80 shadow-xl">
@@ -655,7 +616,6 @@ useEffect(() => {
         </div>
       )}
 
-      {/* Table toolbar */}
       {tableToolbar && editable && (
         <div
           ref={tableToolbarRef}
@@ -710,7 +670,6 @@ useEffect(() => {
         </div>
       )}
 
-      {/* Add row button */}
       {tableAddRow && editable && (
         <div
           className="absolute z-40 flex items-center justify-center"
@@ -730,7 +689,6 @@ useEffect(() => {
         </div>
       )}
 
-      {/* Link hover popup */}
       {linkPopup && (
         <div
           ref={linkPopupRef}
@@ -778,7 +736,6 @@ useEffect(() => {
         </div>
       )}
 
-      {/* Link modal */}
       {linkModalOpen && editable && (
         <div
           className="fixed inset-0 z-[100] flex items-center justify-center"
@@ -837,7 +794,6 @@ useEffect(() => {
         </div>
       )}
 
-      {/* Bubble toolbar */}
       {bubbleVisible && editable && (
         <div
           className="absolute z-50 flex items-center gap-0.5 rounded-lg border border-white/10 bg-[#2a2a2a] px-1.5 py-1 shadow-xl"
@@ -859,7 +815,6 @@ useEffect(() => {
           <BubbleButton onClick={() => editor.chain().focus().toggleCodeBlock().run()} active={editor.isActive("codeBlock")} title="Code Block"><Code2 size={14} /></BubbleButton>
           <div className="mx-1 h-4 w-px bg-white/10" />
           <BubbleButton onClick={openLinkModal} active={editor.isActive("link")} title="Link"><LinkIcon size={14} /></BubbleButton>
-        
         </div>
       )}
 
