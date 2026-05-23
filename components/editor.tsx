@@ -70,7 +70,6 @@ export default function Editor({ content, onChange, onReady, onImageUpload, edit
   const linkPopupRef = useRef<HTMLDivElement>(null)
   const hidePopupTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [editorReady, setEditorReady] = useState(false)
-
   const [uploading, setUploading] = useState(false)
 
   const [tableToolbar, setTableToolbar] = useState<{ top: number; left: number } | null>(null)
@@ -103,20 +102,6 @@ export default function Editor({ content, onChange, onReady, onImageUpload, edit
     setDocResults(allDocs.filter((d) => (d.title || "Untitled").toLowerCase().includes(q)).slice(0, 6))
     setSelectedIndex(0)
   }, [linkUrl, allDocs])
-
-  const handleImageUpload = useCallback(async (file: File) => {
-    if (!editor) return
-    if (!onImageUpload) return
-    setUploading(true)
-    try {
-      const url = await onImageUpload(file)
-      if (url) {
-        editor.chain().focus().setImage({ src: url }).run()
-      }
-    } finally {
-      setUploading(false)
-    }
-  }, [editor, onImageUpload])
 
   const editor = useEditor({
     extensions: [
@@ -288,6 +273,20 @@ export default function Editor({ content, onChange, onReady, onImageUpload, edit
     },
     onCreate: () => setEditorReady(true),
   })
+
+  const handleImageUpload = useCallback(async (file: File) => {
+    if (!editor) return
+    if (!onImageUpload) return
+    setUploading(true)
+    try {
+      const url = await onImageUpload(file)
+      if (url) {
+        editor.chain().focus().setImage({ src: url }).run()
+      }
+    } finally {
+      setUploading(false)
+    }
+  }, [editor, onImageUpload])
 
   useEffect(() => {
     if (!editorReady) return
