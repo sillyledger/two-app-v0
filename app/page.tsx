@@ -196,7 +196,7 @@ export default function HomePage() {
               <button
                 key={tab.key}
                 onClick={() => setActiveTab(tab.key)}
-                className="px-4 py-2.5 text-[13px] transition-colors"
+                className="px-4 py-2.5 text-[13.5px] font-medium transition-colors"
                 style={{
                   color: activeTab === tab.key ? "var(--text-primary)" : "var(--text-muted)",
                   fontWeight: activeTab === tab.key ? 500 : 400,
