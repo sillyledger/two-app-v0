@@ -167,7 +167,7 @@ export default function HomePage() {
 
           {/* Header */}
           <div className="flex items-center justify-between mb-6">
-            <h1 className="text-[26px] font-medium" style={{ color: "var(--text-primary)" }}>
+            <h1 className="text-[32px] font-bold tracking-tight" style={{ color: "var(--text-primary)" }}>
               Recent Docs
             </h1>
             <button
