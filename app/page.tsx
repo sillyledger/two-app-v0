@@ -145,6 +145,20 @@ export default function HomePage() {
     { key: "deleted", label: "Deleted", href: "/trash" },
   ]
 
+  const btnBase: React.CSSProperties = {
+    height: "36px",
+    display: "flex",
+    alignItems: "center",
+    gap: "7px",
+    padding: "0 16px",
+    borderRadius: "8px",
+    fontSize: "13.5px",
+    fontWeight: 500,
+    cursor: "pointer",
+    whiteSpace: "nowrap",
+    transition: "opacity 0.15s, background-color 0.15s, border-color 0.15s, color 0.15s",
+  }
+
   return (
     <div className="flex h-screen overflow-hidden" style={{ backgroundColor: "var(--bg)" }}>
       {sidebarReady && <Sidebar collapsed={collapsed} onToggle={() => setCollapsed((v) => !v)} />}
@@ -159,11 +173,11 @@ export default function HomePage() {
             </h1>
 
             {/* Buttons */}
-            <div className="flex items-center gap-2">
+            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
               <button
                 onClick={() => setTemplateModalOpen(true)}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg text-[13.5px] font-medium transition-all"
                 style={{
+                  ...btnBase,
                   backgroundColor: "transparent",
                   color: "var(--text-muted)",
                   border: "1px solid var(--border)",
@@ -179,22 +193,22 @@ export default function HomePage() {
                   e.currentTarget.style.borderColor = "var(--border)"
                 }}
               >
-                <LayoutTemplate size={15} />
+                <LayoutTemplate size={14} />
                 Templates
               </button>
 
               <button
                 onClick={() => setTemplateModalOpen(true)}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg text-[13.5px] font-medium transition-opacity"
                 style={{
+                  ...btnBase,
                   backgroundColor: "var(--text-primary)",
                   color: "var(--bg)",
-                  border: "1px solid var(--border)",
+                  border: "1px solid transparent",
                 }}
                 onMouseEnter={(e) => (e.currentTarget.style.opacity = "0.85")}
                 onMouseLeave={(e) => (e.currentTarget.style.opacity = "1")}
               >
-                <Plus size={15} />
+                <Plus size={14} />
                 New Doc
               </button>
             </div>
