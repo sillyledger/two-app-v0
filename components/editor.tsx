@@ -53,7 +53,6 @@ interface Doc {
   title: string
 }
 
-export { Editor }
 export default function Editor({ content, onChange, onReady, onImageUpload, editable = true }: EditorProps) {
   const router = useRouter()
   const [bubbleVisible, setBubbleVisible] = useState(false)
