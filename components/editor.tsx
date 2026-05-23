@@ -10,6 +10,7 @@ import { Table as TableExtension } from "@tiptap/extension-table"
 import TableRow from "@tiptap/extension-table-row"
 import TableHeader from "@tiptap/extension-table-header"
 import TableCell from "@tiptap/extension-table-cell"
+import Image from "@tiptap/extension-image"
 import { SlashCommands } from "./slash-commands"
 import { common, createLowlight } from "lowlight"
 import {
@@ -33,6 +34,7 @@ import {
   ArrowLeftRight,
   Rows,
   Columns,
+  ImageIcon,
 } from "lucide-react"
 import { useCallback, useState, useRef, useEffect } from "react"
 import { useRouter } from "next/navigation"
@@ -70,7 +72,9 @@ export default function Editor({ content, onChange, onReady, editable = true }: 
   const hidePopupTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [editorReady, setEditorReady] = useState(false)
 
-  // Table toolbar state
+  const [uploading, setUploading] = useState(false)
+  const imageInputRef = useRef<HTMLInputElement>(null)
+
   const [tableToolbar, setTableToolbar] = useState<{ top: number; left: number } | null>(null)
   const [tableAddRow, setTableAddRow] = useState<{ top: number; left: number; width: number } | null>(null)
   const [tableFitWidth, setTableFitWidth] = useState(false)
@@ -102,6 +106,35 @@ export default function Editor({ content, onChange, onReady, editable = true }: 
     setSelectedIndex(0)
   }, [linkUrl, allDocs])
 
+  const handleImageUpload = useCallback(async (file: File) => {
+    if (!editor) return
+    if (file.size > 5 * 1024 * 1024) {
+      alert("Image too large. Maximum size is 5MB.")
+      return
+    }
+    const allowed = ["image/jpeg", "image/png", "image/gif", "image/webp"]
+    if (!allowed.includes(file.type)) {
+      alert("Only JPEG, PNG, GIF and WebP images are allowed.")
+      return
+    }
+    setUploading(true)
+    try {
+      const formData = new FormData()
+      formData.append("file", file)
+      const res = await fetch("/api/upload", { method: "POST", body: formData })
+      const data = await res.json()
+      if (data.url) {
+        editor.chain().focus().setImage({ src: data.url }).run()
+      } else {
+        alert(data.error || "Upload failed.")
+      }
+    } catch {
+      alert("Upload failed. Please try again.")
+    } finally {
+      setUploading(false)
+    }
+  }, [])
+
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
@@ -125,6 +158,11 @@ export default function Editor({ content, onChange, onReady, editable = true }: 
         HTMLAttributes: {
           rel: "noopener noreferrer",
           target: null,
+        },
+      }),
+      Image.configure({
+        HTMLAttributes: {
+          class: "editor-image",
         },
       }),
       TableExtension.configure({
@@ -151,16 +189,13 @@ export default function Editor({ content, onChange, onReady, editable = true }: 
         return
       }
 
-      // Check if cursor is inside a table
       const isInTable = editor.isActive("table") || editor.isActive("tableCell") || editor.isActive("tableHeader")
 
       if (isInTable) {
         setBubbleVisible(false)
-        // Position table toolbar above the table
         const { from } = editor.state.selection
         const domNode = editor.view.nodeDOM(from) as HTMLElement | null
         if (domNode) {
-          // Walk up to find the table element
           let el: HTMLElement | null = domNode
           while (el && el.tagName !== "TABLE") {
             el = el.parentElement
@@ -212,7 +247,7 @@ export default function Editor({ content, onChange, onReady, editable = true }: 
       })
       setBubbleVisible(true)
     },
-  editorProps: {
+    editorProps: {
       attributes: {
         class: `prose prose-invert max-w-none focus:outline-none min-h-[60vh] editor-content ${
           !editable ? "cursor-default select-text" : ""
@@ -240,6 +275,32 @@ export default function Editor({ content, onChange, onReady, editable = true }: 
           window.open(href, "_blank", "noopener,noreferrer")
         }
         return true
+      },
+      handleDrop: (view, event) => {
+        if (!editable) return false
+        const files = event.dataTransfer?.files
+        if (!files || files.length === 0) return false
+        const imageFile = Array.from(files).find((f) => f.type.startsWith("image/"))
+        if (!imageFile) return false
+        event.preventDefault()
+        handleImageUpload(imageFile)
+        return true
+      },
+      handlePaste: (view, event) => {
+        if (!editable) return false
+        const items = event.clipboardData?.items
+        if (!items) return false
+        for (const item of Array.from(items)) {
+          if (item.type.startsWith("image/")) {
+            const file = item.getAsFile()
+            if (file) {
+              event.preventDefault()
+              handleImageUpload(file)
+              return true
+            }
+          }
+        }
+        return false
       },
     },
     onCreate: () => setEditorReady(true),
@@ -274,7 +335,6 @@ export default function Editor({ content, onChange, onReady, editable = true }: 
         hidePopupTimer.current = setTimeout(() => setLinkPopup(null), 600)
       })
 
-      // Handle clicks on links — internal links use router, external open new tab
       a.addEventListener("click", (e) => {
         const href = a.getAttribute("href") || ""
         if (!href) return
@@ -381,6 +441,18 @@ export default function Editor({ content, onChange, onReady, editable = true }: 
 
   return (
     <div ref={containerRef} className="relative">
+      <input
+        ref={imageInputRef}
+        type="file"
+        accept="image/jpeg,image/png,image/gif,image/webp"
+        className="hidden"
+        onChange={(e) => {
+          const file = e.target.files?.[0]
+          if (file) handleImageUpload(file)
+          e.target.value = ""
+        }}
+      />
+
       <style>{`
         .editor-content {
           font-size: var(--editor-font-size, 17px);
@@ -397,14 +469,17 @@ export default function Editor({ content, onChange, onReady, editable = true }: 
           margin-top: 1.5em;
           margin-bottom: 0.4em;
         }
-
-        /* ── Table wrapper — horizontal scroll by default ── */
+        .editor-image {
+          max-width: 100%;
+          border-radius: 8px;
+          margin: 1em 0;
+          display: block;
+        }
         .tableWrapper {
           overflow-x: auto;
           margin: 1.25em 0;
           -webkit-overflow-scrolling: touch;
         }
-        /* Fit-width: bust out of the narrow editor column */
         .tableWrapper.fit-width {
           overflow-x: visible;
           width: 100vw;
@@ -420,8 +495,6 @@ export default function Editor({ content, onChange, onReady, editable = true }: 
           width: 100%;
           min-width: 0;
         }
-
-        /* ── Table styles ── */
         .editor-content table {
           border-collapse: collapse;
           width: 100%;
@@ -432,7 +505,6 @@ export default function Editor({ content, onChange, onReady, editable = true }: 
           display: table;
           min-width: 400px;
         }
-
         .editor-content td,
         .editor-content th {
           border: 1px solid var(--border);
@@ -479,8 +551,6 @@ export default function Editor({ content, onChange, onReady, editable = true }: 
         .editor-content th:hover .column-resize-handle {
           opacity: 1;
         }
-
-        /* ── Slash command menu ── */
         .slash-menu {
           background: var(--bg-tertiary);
           border: 1px solid var(--border);
@@ -533,8 +603,6 @@ export default function Editor({ content, onChange, onReady, editable = true }: 
           font-size: 11px;
           color: var(--text-muted);
         }
-
-        /* ── Syntax highlighting ── */
         .editor-content pre {
           background: #1e1e1e;
           border-radius: 8px;
@@ -567,7 +635,17 @@ export default function Editor({ content, onChange, onReady, editable = true }: 
         .hljs-strong { font-weight: bold; }
       `}</style>
 
-      {/* ── Table toolbar ── */}
+      {/* Upload indicator */}
+      {uploading && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center rounded-lg bg-black/40">
+          <div className="flex items-center gap-2 rounded-lg bg-[#2a2a2a] px-4 py-2.5 text-sm text-white/80 shadow-xl">
+            <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/20 border-t-white/80" />
+            Uploading image…
+          </div>
+        </div>
+      )}
+
+      {/* Table toolbar */}
       {tableToolbar && editable && (
         <div
           ref={tableToolbarRef}
@@ -575,52 +653,24 @@ export default function Editor({ content, onChange, onReady, editable = true }: 
           style={{ top: tableToolbar.top, left: tableToolbar.left }}
           onMouseDown={(e) => e.preventDefault()}
         >
-          {/* Add row below */}
-          <TableButton
-            onClick={() => editor.chain().focus().addRowAfter().run()}
-            title="Add row below"
-          >
-            <Rows size={13} />
-            <Plus size={9} className="-ml-0.5 -mt-1" />
+          <TableButton onClick={() => editor.chain().focus().addRowAfter().run()} title="Add row below">
+            <Rows size={13} /><Plus size={9} className="-ml-0.5 -mt-1" />
           </TableButton>
-
-          {/* Add column right */}
-          <TableButton
-            onClick={() => editor.chain().focus().addColumnAfter().run()}
-            title="Add column right"
-          >
-            <Columns size={13} />
-            <Plus size={9} className="-ml-0.5 -mt-1" />
+          <TableButton onClick={() => editor.chain().focus().addColumnAfter().run()} title="Add column right">
+            <Columns size={13} /><Plus size={9} className="-ml-0.5 -mt-1" />
           </TableButton>
-
           <div className="mx-1 h-4 w-px bg-white/10" />
-
-          {/* Delete row */}
-          <TableButton
-            onClick={() => editor.chain().focus().deleteRow().run()}
-            title="Delete row"
-          >
-            <Rows size={13} className="opacity-60" />
-            <Trash2 size={9} className="-ml-0.5 -mt-1 text-red-400" />
+          <TableButton onClick={() => editor.chain().focus().deleteRow().run()} title="Delete row">
+            <Rows size={13} className="opacity-60" /><Trash2 size={9} className="-ml-0.5 -mt-1 text-red-400" />
           </TableButton>
-
-          {/* Delete column */}
-          <TableButton
-            onClick={() => editor.chain().focus().deleteColumn().run()}
-            title="Delete column"
-          >
-            <Columns size={13} className="opacity-60" />
-            <Trash2 size={9} className="-ml-0.5 -mt-1 text-red-400" />
+          <TableButton onClick={() => editor.chain().focus().deleteColumn().run()} title="Delete column">
+            <Columns size={13} className="opacity-60" /><Trash2 size={9} className="-ml-0.5 -mt-1 text-red-400" />
           </TableButton>
-
           <div className="mx-1 h-4 w-px bg-white/10" />
-
-          {/* Fit to width toggle */}
           <button
             onMouseDown={(e) => {
               e.preventDefault()
               setTableFitWidth((v) => !v)
-              // Toggle class on the nearest tableWrapper
               if (containerRef.current) {
                 const wrapper = containerRef.current.querySelector(".tableWrapper")
                 if (wrapper) wrapper.classList.toggle("fit-width")
@@ -628,18 +678,13 @@ export default function Editor({ content, onChange, onReady, editable = true }: 
             }}
             title={tableFitWidth ? "Unset full width" : "Fit to width"}
             className={`flex items-center gap-1 rounded px-2 py-1 text-xs transition-colors ${
-              tableFitWidth
-                ? "bg-white/20 text-white"
-                : "text-white/60 hover:bg-white/10 hover:text-white"
+              tableFitWidth ? "bg-white/20 text-white" : "text-white/60 hover:bg-white/10 hover:text-white"
             }`}
           >
             <ArrowLeftRight size={13} />
             <span className="text-[11px]">Fit width</span>
           </button>
-
           <div className="mx-1 h-4 w-px bg-white/10" />
-
-          {/* Delete whole table */}
           <button
             onMouseDown={(e) => {
               e.preventDefault()
@@ -655,7 +700,7 @@ export default function Editor({ content, onChange, onReady, editable = true }: 
         </div>
       )}
 
-      {/* ── Add row button ── */}
+      {/* Add row button */}
       {tableAddRow && editable && (
         <div
           className="absolute z-40 flex items-center justify-center"
@@ -667,11 +712,7 @@ export default function Editor({ content, onChange, onReady, editable = true }: 
               editor.chain().focus().addRowAfter().run()
             }}
             className="w-full flex items-center justify-center gap-1 py-0.5 rounded text-[11px] transition-colors opacity-0 hover:opacity-100"
-            style={{
-              color: 'var(--text-muted)',
-              backgroundColor: 'var(--bg-tertiary)',
-              border: '1px solid var(--border)',
-            }}
+            style={{ color: "var(--text-muted)", backgroundColor: "var(--bg-tertiary)", border: "1px solid var(--border)" }}
             title="Add row"
           >
             <Plus size={11} />
@@ -766,7 +807,7 @@ export default function Editor({ content, onChange, onReady, editable = true }: 
             )}
             {linkUrl.length > 0 && docResults.length === 0 &&
               !linkUrl.startsWith("http") && !linkUrl.startsWith("www.") && (
-              <p className="mt-2 text-xs text-white/30">No docs match "{linkUrl}"</p>
+              <p className="mt-2 text-xs text-white/30">No docs match &quot;{linkUrl}&quot;</p>
             )}
             <div className="mt-4 flex justify-end gap-2">
               <button
@@ -786,7 +827,7 @@ export default function Editor({ content, onChange, onReady, editable = true }: 
         </div>
       )}
 
-      {/* Bubble toolbar — only when NOT in table */}
+      {/* Bubble toolbar */}
       {bubbleVisible && editable && (
         <div
           className="absolute z-50 flex items-center gap-0.5 rounded-lg border border-white/10 bg-[#2a2a2a] px-1.5 py-1 shadow-xl"
@@ -808,6 +849,14 @@ export default function Editor({ content, onChange, onReady, editable = true }: 
           <BubbleButton onClick={() => editor.chain().focus().toggleCodeBlock().run()} active={editor.isActive("codeBlock")} title="Code Block"><Code2 size={14} /></BubbleButton>
           <div className="mx-1 h-4 w-px bg-white/10" />
           <BubbleButton onClick={openLinkModal} active={editor.isActive("link")} title="Link"><LinkIcon size={14} /></BubbleButton>
+          <div className="mx-1 h-4 w-px bg-white/10" />
+          <BubbleButton
+            onClick={() => imageInputRef.current?.click()}
+            active={false}
+            title="Upload image"
+          >
+            <ImageIcon size={14} />
+          </BubbleButton>
         </div>
       )}
 
@@ -817,10 +866,7 @@ export default function Editor({ content, onChange, onReady, editable = true }: 
 }
 
 function BubbleButton({
-  onClick,
-  active,
-  title,
-  children,
+  onClick, active, title, children,
 }: {
   onClick: () => void
   active: boolean
@@ -841,9 +887,7 @@ function BubbleButton({
 }
 
 function TableButton({
-  onClick,
-  title,
-  children,
+  onClick, title, children,
 }: {
   onClick: () => void
   title: string
