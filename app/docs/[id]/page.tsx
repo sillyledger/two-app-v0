@@ -153,6 +153,7 @@ export default function DocPage() {
   const [commentBody, setCommentBody] = useState('')
   const [postingComment, setPostingComment] = useState(false)
   const commentInputRef = useRef<HTMLTextAreaElement>(null)
+  const imageInputRef = useRef<HTMLInputElement>(null)
 
   const [tasks, setTasks] = useState<Task[]>([])
   const [addingTask, setAddingTask] = useState(false)
@@ -388,6 +389,19 @@ export default function DocPage() {
     router.push('/')
   }
 
+  const handleImageUpload = useCallback(async (file: File): Promise<string | null> => {
+    if (file.size > 5 * 1024 * 1024) { alert('Image too large. Maximum 5MB.'); return null }
+    const allowed = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
+    if (!allowed.includes(file.type)) { alert('Only JPEG, PNG, GIF and WebP allowed.'); return null }
+    const formData = new FormData()
+    formData.append('file', file)
+    const res = await fetch('/api/upload', { method: 'POST', body: formData })
+    const data = await res.json()
+    if (data.url) return data.url
+    alert(data.error || 'Upload failed')
+    return null
+  }, [])
+
   const sidebarWidth = collapsed ? '52px' : '210px'
   const wordCount = getWordCount(content)
   const charCount = getCharCount(content)
@@ -406,6 +420,18 @@ export default function DocPage() {
 
   return (
     <div className="flex h-screen bg-background overflow-hidden">
+      <input
+        ref={imageInputRef}
+        type="file"
+        accept="image/jpeg,image/png,image/gif,image/webp"
+        className="hidden"
+        onChange={(e) => {
+          const file = e.target.files?.[0]
+          if (file) handleImageUpload(file)
+          e.target.value = ""
+        }}
+      />
+
       {isLoggedIn && (
         <Sidebar onNewNote={handleNewDoc} collapsed={collapsed} onToggle={() => setCollapsed((v) => !v)} />
       )}
@@ -512,6 +538,7 @@ export default function DocPage() {
                 editable={isLoggedIn}
                 onChange={(newContent) => { if (!isLoggedIn) return; setContent(newContent) }}
                 onReady={(focusFn) => { editorFocusRef.current = focusFn }}
+                onImageUpload={handleImageUpload}
               />
             )}
 
@@ -526,7 +553,6 @@ export default function DocPage() {
         </main>
       </div>
 
-      {/* Detail panel */}
       <div
         className={`fixed top-0 right-0 h-full w-[280px] flex flex-col z-30 transition-transform duration-300 ease-in-out ${detailOpen ? 'translate-x-0' : 'translate-x-full'}`}
         style={{ backgroundColor: 'var(--bg)', borderLeft: '1px solid var(--border)' }}
@@ -535,8 +561,6 @@ export default function DocPage() {
           className="flex-1 overflow-y-auto flex flex-col gap-1"
           style={{ padding: '56px 16px 20px', color: 'var(--text-primary)' }}
         >
-
-          {/* ── TASKS SECTION (top) ── */}
           {isLoggedIn && (
             <>
               <div className="flex items-center justify-between mb-3">
@@ -659,7 +683,6 @@ export default function DocPage() {
             </>
           )}
 
-          {/* ── DOCUMENT SECTION ── */}
           <p className="text-[10px] font-medium uppercase tracking-wider mb-2 mt-3" style={{ color: 'var(--text-muted)' }}>Document</p>
 
           <DetailRow label="Created" icon={<CalendarDays size={12} />}>
@@ -688,9 +711,7 @@ export default function DocPage() {
           <p className="text-[10px] font-medium uppercase tracking-wider mb-2" style={{ color: 'var(--text-muted)' }}>Properties</p>
 
           <div className="flex items-center justify-between py-1.5">
-            <span className="text-xs flex items-center gap-2" style={{ color: 'var(--text-secondary)' }}>
-  Priority
-</span>
+            <span className="text-xs flex items-center gap-2" style={{ color: 'var(--text-secondary)' }}>Priority</span>
             {isLoggedIn ? (
               <div className="relative" ref={priorityRef}>
                 <button
@@ -913,7 +934,6 @@ export default function DocPage() {
               </div>
             </>
           )}
-
         </div>
       </div>
     </div>
