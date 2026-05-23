@@ -1,8 +1,9 @@
 "use client"
 import { useEffect, useState, useRef } from "react"
 import { useRouter } from "next/navigation"
-import { Plus, MoreHorizontal, Pencil, FolderInput, Trash2 } from "lucide-react"
+import { Plus, MoreHorizontal, Pencil, FolderInput, Trash2, LayoutTemplate } from "lucide-react"
 import Sidebar from "@/components/sidebar"
+import TemplatePickerModal from "@/components/template-picker-modal"
 
 interface Doc {
   id: string
@@ -55,6 +56,7 @@ export default function HomePage() {
   const router = useRouter()
   const [collapsed, setCollapsed] = useState(false)
   const [sidebarReady, setSidebarReady] = useState(false)
+  const [templateModalOpen, setTemplateModalOpen] = useState(false)
 
   useEffect(() => {
     const saved = localStorage.getItem("sidebar-collapsed")
@@ -64,7 +66,6 @@ export default function HomePage() {
 
   const [docs, setDocs] = useState<Doc[]>([])
   const [loading, setLoading] = useState(true)
-  const [creating, setCreating] = useState(false)
   const [activeTab, setActiveTab] = useState<FilterTab>("recent")
   const [hoveredPill, setHoveredPill] = useState<string | null>(null)
 
@@ -98,22 +99,6 @@ export default function HomePage() {
     if (openMenuId) document.addEventListener("mousedown", handleClick)
     return () => document.removeEventListener("mousedown", handleClick)
   }, [openMenuId])
-
-  const handleCreateDoc = async () => {
-    if (creating) return
-    setCreating(true)
-    try {
-      const res = await fetch("/api/docs", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title: "Untitled", content: "", color: "yellow", type: "doc" }),
-      })
-      const doc = await res.json()
-      router.push(`/docs/${doc.uuid}`)
-    } catch {
-      setCreating(false)
-    }
-  }
 
   const handleRename = async () => {
     if (!renamingDoc || !renameValue.trim()) return
@@ -172,21 +157,47 @@ export default function HomePage() {
             <h1 className="text-[32px] font-bold tracking-tight" style={{ color: "var(--text-primary)" }}>
               Recent Docs
             </h1>
-            <button
-              onClick={handleCreateDoc}
-              disabled={creating}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg text-[13.5px] font-medium transition-opacity"
-              style={{
-                backgroundColor: "var(--text-primary)",
-                color: "var(--bg)",
-                border: "1px solid var(--border)",
-              }}
-              onMouseEnter={(e) => (e.currentTarget.style.opacity = "0.85")}
-              onMouseLeave={(e) => (e.currentTarget.style.opacity = "1")}
-            >
-              <Plus size={15} />
-              {creating ? "Creating..." : "New Doc"}
-            </button>
+
+            {/* New Doc + Templates buttons */}
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setTemplateModalOpen(true)}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-[13px] font-medium transition-all"
+                style={{
+                  backgroundColor: "transparent",
+                  color: "var(--text-muted)",
+                  border: "1px solid var(--border)",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = "var(--bg-tertiary)"
+                  e.currentTarget.style.color = "var(--text-primary)"
+                  e.currentTarget.style.borderColor = "var(--text-muted)"
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = "transparent"
+                  e.currentTarget.style.color = "var(--text-muted)"
+                  e.currentTarget.style.borderColor = "var(--border)"
+                }}
+              >
+                <LayoutTemplate size={13} />
+                Templates
+              </button>
+
+              <button
+                onClick={() => setTemplateModalOpen(true)}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg text-[13.5px] font-medium transition-opacity"
+                style={{
+                  backgroundColor: "var(--text-primary)",
+                  color: "var(--bg)",
+                  border: "1px solid var(--border)",
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.opacity = "0.85")}
+                onMouseLeave={(e) => (e.currentTarget.style.opacity = "1")}
+              >
+                <Plus size={15} />
+                New Doc
+              </button>
+            </div>
           </div>
 
           {/* Pills */}
@@ -222,7 +233,6 @@ export default function HomePage() {
                   >
                     {pill.label}
                   </button>
-                  {/* Coming soon tooltip */}
                   {pill.soon && isHovered && (
                     <div
                       style={{
@@ -288,7 +298,6 @@ export default function HomePage() {
                     e.currentTarget.style.borderColor = "var(--border)"
                   }}
                 >
-                  {/* Accent bar */}
                   <div
                     style={{
                       height: "5px",
@@ -298,7 +307,6 @@ export default function HomePage() {
                     }}
                   />
 
-                  {/* Card body */}
                   <button
                     onClick={() => router.push(`/docs/${doc.uuid}`)}
                     className="text-left px-5 pt-4 pb-3 flex flex-col flex-1 w-full"
@@ -317,7 +325,6 @@ export default function HomePage() {
                     </p>
                   </button>
 
-                  {/* Card footer */}
                   <div
                     className="flex items-center justify-between px-5 py-3"
                     style={{ borderTop: "1px solid var(--border)" }}
@@ -327,7 +334,6 @@ export default function HomePage() {
                     </p>
                   </div>
 
-                  {/* Three-dot menu */}
                   <div
                     className="absolute top-7 right-4"
                     ref={openMenuId === doc.uuid ? menuRef : null}
@@ -395,10 +401,7 @@ export default function HomePage() {
                           <FolderInput size={13} style={{ color: "var(--text-muted)" }} />
                           Move
                         </button>
-                        <div
-                          className="my-1 border-t"
-                          style={{ borderColor: "var(--border)" }}
-                        />
+                        <div className="my-1 border-t" style={{ borderColor: "var(--border)" }} />
                         <button
                           onClick={(e) => {
                             e.stopPropagation()
@@ -426,6 +429,12 @@ export default function HomePage() {
         </div>
       </main>
 
+      {/* Template picker modal */}
+      <TemplatePickerModal
+        open={templateModalOpen}
+        onClose={() => setTemplateModalOpen(false)}
+      />
+
       {/* Rename modal */}
       {renamingDoc && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
@@ -436,10 +445,7 @@ export default function HomePage() {
               border: "1px solid var(--border)",
             }}
           >
-            <h2
-              className="font-semibold text-base mb-4"
-              style={{ color: "var(--text-primary)" }}
-            >
+            <h2 className="font-semibold text-base mb-4" style={{ color: "var(--text-primary)" }}>
               Rename doc
             </h2>
             <input
@@ -498,10 +504,7 @@ export default function HomePage() {
               border: "1px solid var(--border)",
             }}
           >
-            <h2
-              className="font-semibold text-base mb-4"
-              style={{ color: "var(--text-primary)" }}
-            >
+            <h2 className="font-semibold text-base mb-4" style={{ color: "var(--text-primary)" }}>
               Move to folder
             </h2>
             {folders.length === 0 ? (
@@ -553,15 +556,11 @@ export default function HomePage() {
               border: "1px solid var(--border)",
             }}
           >
-            <h2
-              className="font-semibold text-base mb-2"
-              style={{ color: "var(--text-primary)" }}
-            >
+            <h2 className="font-semibold text-base mb-2" style={{ color: "var(--text-primary)" }}>
               Delete doc?
             </h2>
             <p className="text-sm mb-6" style={{ color: "var(--text-muted)" }}>
-              &ldquo;{deletingDoc.title || "Untitled"}&rdquo; will be deleted. This cannot be
-              undone.
+              &ldquo;{deletingDoc.title || "Untitled"}&rdquo; will be deleted. This cannot be undone.
             </p>
             <div className="flex gap-2 justify-end">
               <button
