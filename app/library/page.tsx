@@ -125,39 +125,41 @@ export default function LibraryPage() {
       <main className="flex-1 overflow-y-auto">
         {/* Topbar */}
         <div
-          className="sticky top-0 z-10 flex items-center justify-between px-8 h-[44px]"
+          className="sticky top-0 z-10 h-[44px] flex items-center"
           style={{
             backgroundColor: 'var(--bg)',
             borderBottom: '1px solid var(--border)',
           }}
         >
-          <span
-            className="page-title text-[15px]"
-            style={{ color: 'var(--text-primary)' }}
-          >
-            Library
-          </span>
-          <div className="flex items-center gap-2">
-            <div
-              className="flex items-center gap-2 px-2.5 py-1 rounded-md"
-              style={{
-                backgroundColor: 'var(--bg-secondary)',
-                border: '1px solid var(--border)',
-              }}
+          <div className="max-w-5xl mx-auto px-10 w-full flex items-center justify-between">
+            <span
+              className="page-title text-[15px]"
+              style={{ color: 'var(--text-primary)' }}
             >
-              <Search size={11} style={{ color: 'var(--text-muted)' }} />
-              <input
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-                placeholder="Search labels..."
-                className="bg-transparent text-xs focus:outline-none w-32"
-                style={{ color: 'var(--text-secondary)' }}
-              />
+              Library
+            </span>
+            <div className="flex items-center gap-2">
+              <div
+                className="flex items-center gap-2 px-2.5 py-1 rounded-md"
+                style={{
+                  backgroundColor: 'var(--bg-secondary)',
+                  border: '1px solid var(--border)',
+                }}
+              >
+                <Search size={11} style={{ color: 'var(--text-muted)' }} />
+                <input
+                  value={search}
+                  onChange={e => setSearch(e.target.value)}
+                  placeholder="Search labels..."
+                  className="bg-transparent text-xs focus:outline-none w-32"
+                  style={{ color: 'var(--text-secondary)' }}
+                />
+              </div>
             </div>
           </div>
         </div>
 
-        <div className="px-8 py-8">
+        <div className="max-w-5xl mx-auto px-10 py-10">
           {loading ? (
             <div className="flex items-center justify-center h-64">
               <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
