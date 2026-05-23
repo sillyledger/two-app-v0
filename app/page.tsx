@@ -53,12 +53,10 @@ type FilterTab = "recent" | "pinned" | "workspace" | "trash"
 
 export default function HomePage() {
   const router = useRouter()
-  const [collapsed, setCollapsed] = useState(false)
-
-  useEffect(() => {
-    const saved = localStorage.getItem("sidebar-collapsed")
-    if (saved === "true") setCollapsed(true)
-  }, [])
+  const [collapsed, setCollapsed] = useState(() => {
+  if (typeof window === "undefined") return false
+  return localStorage.getItem("sidebar-collapsed") === "true"
+})
 
   const [docs, setDocs] = useState<Doc[]>([])
   const [loading, setLoading] = useState(true)
