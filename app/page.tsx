@@ -162,7 +162,7 @@ export default function HomePage() {
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setTemplateModalOpen(true)}
-                className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-[13px] font-medium transition-all"
+                className="flex items-center gap-2 px-4 py-2 rounded-lg text-[13.5px] font-medium transition-all"
                 style={{
                   backgroundColor: "transparent",
                   color: "var(--text-muted)",
@@ -179,7 +179,7 @@ export default function HomePage() {
                   e.currentTarget.style.borderColor = "var(--border)"
                 }}
               >
-                <LayoutTemplate size={13} />
+                <LayoutTemplate size={15} />
                 Templates
               </button>
 
@@ -198,7 +198,6 @@ export default function HomePage() {
                 New Doc
               </button>
             </div>
-          </div>
 
           {/* Pills */}
           <div className="flex gap-2 mb-7">
