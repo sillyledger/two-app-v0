@@ -14,6 +14,7 @@
   --code-bg: #2a2a2a;
   --pre-bg: #111111;
   --blockquote-border: #3a3a3a;
+  --sidebar-item: #e8e8e8;
 }
 
 html.light {
@@ -27,6 +28,7 @@ html.light {
   --code-bg: #eeede9;
   --pre-bg: #1a1a1a;
   --blockquote-border: #d1d5db;
+  --sidebar-item: #1a1a1a;
 }
 
 /* ── App base ── */
