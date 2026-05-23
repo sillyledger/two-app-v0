@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Sidebar from '@/components/sidebar'
+import TemplatePickerModal from '@/components/template-picker-modal'
 import { FileText, Search, Plus } from 'lucide-react'
 
 interface Label {
@@ -48,6 +49,7 @@ export default function LibraryPage() {
   const [loading, setLoading] = useState(true)
   const [activePill, setActivePill] = useState<LibraryPill>('all')
   const [hoveredPill, setHoveredPill] = useState<string | null>(null)
+  const [templateModalOpen, setTemplateModalOpen] = useState(false)
 
   useEffect(() => {
     const saved = localStorage.getItem('sidebar-collapsed')
@@ -80,16 +82,6 @@ export default function LibraryPage() {
     c.label.name.toLowerCase().includes(search.toLowerCase()) ||
     c.docs.some(d => d.title.toLowerCase().includes(search.toLowerCase()))
   )
-
-  const handleNewDoc = async () => {
-    const res = await fetch('/api/docs', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title: 'Untitled', content: '', color: 'yellow', type: 'doc' }),
-    })
-    const doc = await res.json()
-    router.push(`/docs/${doc.uuid}`)
-  }
 
   function cardSize(count: number) {
     if (count >= 8) return 'col-span-2 row-span-2'
@@ -129,7 +121,6 @@ export default function LibraryPage() {
       <Sidebar
         collapsed={collapsed}
         onToggle={() => setCollapsed(v => !v)}
-        onNewNote={handleNewDoc}
       />
 
       <main className="flex-1 overflow-y-auto">
@@ -140,21 +131,36 @@ export default function LibraryPage() {
             <h1 className="text-[32px] font-bold tracking-tight" style={{ color: 'var(--text-primary)' }}>
               Library
             </h1>
-            <div
-              className="flex items-center gap-2 px-2.5 py-1 rounded-md"
-              style={{
-                backgroundColor: 'var(--bg-secondary)',
-                border: '1px solid var(--border)',
-              }}
-            >
-              <Search size={11} style={{ color: 'var(--text-muted)' }} />
-              <input
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-                placeholder="Search labels..."
-                className="bg-transparent text-xs focus:outline-none w-32"
-                style={{ color: 'var(--text-secondary)' }}
-              />
+            <div className="flex items-center gap-3">
+              <div
+                className="flex items-center gap-2 px-2.5 py-1 rounded-md"
+                style={{
+                  backgroundColor: 'var(--bg-secondary)',
+                  border: '1px solid var(--border)',
+                }}
+              >
+                <Search size={11} style={{ color: 'var(--text-muted)' }} />
+                <input
+                  value={search}
+                  onChange={e => setSearch(e.target.value)}
+                  placeholder="Search labels..."
+                  className="bg-transparent text-xs focus:outline-none w-32"
+                  style={{ color: 'var(--text-secondary)' }}
+                />
+              </div>
+              <button
+                onClick={() => setTemplateModalOpen(true)}
+                className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-[13px] font-medium transition-opacity"
+                style={{
+                  backgroundColor: 'var(--text-primary)',
+                  color: 'var(--bg)',
+                }}
+                onMouseEnter={e => (e.currentTarget.style.opacity = '0.85')}
+                onMouseLeave={e => (e.currentTarget.style.opacity = '1')}
+              >
+                <Plus size={13} />
+                New Doc
+              </button>
             </div>
           </div>
 
@@ -219,7 +225,7 @@ export default function LibraryPage() {
             </div>
           ) : (
             <>
-              {/* ── BENTO GRID ── */}
+              {/* Bento grid */}
               <div
                 style={{
                   display: 'grid',
@@ -426,9 +432,9 @@ export default function LibraryPage() {
                   </div>
                 )}
 
-                {/* New document CTA */}
+                {/* New document CTA — now opens template picker */}
                 <div
-                  onClick={handleNewDoc}
+                  onClick={() => setTemplateModalOpen(true)}
                   style={{
                     gridColumn: '9 / 13', gridRow: '3 / 4',
                     borderRadius: '14px',
@@ -441,14 +447,21 @@ export default function LibraryPage() {
                     justifyContent: 'center',
                     gap: '10px',
                   }}
+                  onMouseEnter={e => {
+                    e.currentTarget.style.backgroundColor = 'var(--bg-secondary)'
+                    e.currentTarget.style.borderColor = 'var(--text-muted)'
+                  }}
+                  onMouseLeave={e => {
+                    e.currentTarget.style.backgroundColor = 'transparent'
+                    e.currentTarget.style.borderColor = 'var(--border)'
+                  }}
                 >
                   <Plus size={18} style={{ color: 'var(--text-muted)' }} />
                   <span style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>New document</span>
                 </div>
               </div>
-              {/* ── END BENTO GRID ── */}
 
-              {/* Collections + Unlabeled — shown for 'all', 'collections', 'unlabeled' */}
+              {/* Collections + Unlabeled */}
               {(activePill === 'all' || activePill === 'collections' || activePill === 'unlabeled') && (
                 <>
                   {collections.length === 0 && unlabeled.length === 0 ? (
@@ -461,7 +474,7 @@ export default function LibraryPage() {
                       </div>
                       <p className="text-sm" style={{ color: 'var(--text-muted)' }}>No docs yet</p>
                       <button
-                        onClick={handleNewDoc}
+                        onClick={() => setTemplateModalOpen(true)}
                         className="text-xs underline underline-offset-2"
                         style={{ color: 'var(--text-muted)' }}
                       >
@@ -471,12 +484,11 @@ export default function LibraryPage() {
                   ) : filtered.length === 0 && search ? (
                     <div className="flex items-center justify-center h-64">
                       <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
-                        No results for "{search}"
+                        No results for &ldquo;{search}&rdquo;
                       </p>
                     </div>
                   ) : (
                     <>
-                      {/* Collections */}
                       {(activePill === 'all' || activePill === 'collections') && filtered.length > 0 && (
                         <>
                           <div className="flex items-center gap-3 mb-4">
@@ -537,7 +549,6 @@ export default function LibraryPage() {
                         </>
                       )}
 
-                      {/* Unlabeled */}
                       {(activePill === 'all' || activePill === 'unlabeled') && unlabeled.length > 0 && !search && (
                         <>
                           <div className="flex items-center gap-3 mb-4">
@@ -573,6 +584,12 @@ export default function LibraryPage() {
           )}
         </div>
       </main>
+
+      {/* Template picker modal */}
+      <TemplatePickerModal
+        open={templateModalOpen}
+        onClose={() => setTemplateModalOpen(false)}
+      />
     </div>
   )
 }
