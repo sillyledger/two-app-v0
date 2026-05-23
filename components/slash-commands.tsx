@@ -17,6 +17,7 @@ import {
   Code2,
   Minus,
   Table,
+  ImageIcon,
 } from "lucide-react"
 import {
   forwardRef,
@@ -106,6 +107,14 @@ const COMMANDS = [
     description: "Horizontal rule",
     icon: Minus,
     command: (editor: any) => editor.chain().focus().setHorizontalRule().run(),
+  },
+  {
+    title: "Image",
+    description: "Upload an image from your device",
+    icon: ImageIcon,
+    command: (_editor: any) => {
+      window.dispatchEvent(new CustomEvent("tiptap-upload-image"))
+    },
   },
 ]
 
