@@ -29,6 +29,7 @@ export async function POST(request: Request) {
         VALUES (${email}, ${hashedPassword}, false, ${verificationToken})
         RETURNING *
       `
+
       const user = result[0]
       await getOrCreateWorkspace(user.id, email.split('@')[0])
 
@@ -48,6 +49,20 @@ export async function POST(request: Request) {
         `,
       })
 
+      // Notify founder of new signup
+      await resend.emails.send({
+        from: 'TWO <noreply@two.so>',
+        to: 'two@strevius.com',
+        subject: `New TWO signup: ${email}`,
+        html: `
+          <div style="font-family: -apple-system, BlinkMacSystemFont, 'Inter', sans-serif; max-width: 480px; margin: 0 auto; padding: 40px 24px;">
+            <h1 style="font-size: 24px; font-weight: 700; color: #1a1a1a; margin-bottom: 8px;">New signup 🎉</h1>
+            <p style="font-size: 15px; color: #555; margin-bottom: 8px;"><strong>${email}</strong> just signed up for TWO.</p>
+            <p style="font-size: 13px; color: #999;">${new Date().toUTCString()}</p>
+          </div>
+        `,
+      })
+
       return NextResponse.json({ success: true, emailSent: true })
     }
 
@@ -60,7 +75,6 @@ export async function POST(request: Request) {
       }
 
       const user = result[0]
-
       const passwordMatch = await bcrypt.compare(password, user.password)
       if (!passwordMatch) {
         return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 })
@@ -83,7 +97,6 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json({ error: 'Invalid action' }, { status: 400 })
-
   } catch (error) {
     console.error('Auth error:', error)
     return NextResponse.json({ error: 'Auth failed' }, { status: 500 })
