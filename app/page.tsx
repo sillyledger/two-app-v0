@@ -163,17 +163,17 @@ export default function HomePage() {
       <Sidebar collapsed={collapsed} onToggle={() => setCollapsed((v) => !v)} />
 
       <main className="flex-1 overflow-y-auto transition-all duration-200">
-        <div className="max-w-4xl mx-auto px-8 py-8">
+        <div className="max-w-5xl mx-auto px-10 py-10">
 
           {/* Header */}
-          <div className="flex items-center justify-between mb-5">
-            <h1 className="text-[22px] font-medium" style={{ color: "var(--text-primary)" }}>
+          <div className="flex items-center justify-between mb-6">
+            <h1 className="text-[26px] font-medium" style={{ color: "var(--text-primary)" }}>
               Recent Docs
             </h1>
             <button
               onClick={handleCreateDoc}
               disabled={creating}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-[13px] font-medium transition-opacity"
+              className="flex items-center gap-2 px-4 py-2 rounded-lg text-[13.5px] font-medium transition-opacity"
               style={{
                 backgroundColor: "var(--text-primary)",
                 color: "var(--bg)",
@@ -182,21 +182,21 @@ export default function HomePage() {
               onMouseEnter={(e) => (e.currentTarget.style.opacity = "0.85")}
               onMouseLeave={(e) => (e.currentTarget.style.opacity = "1")}
             >
-              <Plus size={14} />
+              <Plus size={15} />
               {creating ? "Creating..." : "New Doc"}
             </button>
           </div>
 
           {/* Filter tabs */}
           <div
-            className="flex gap-0 mb-6"
+            className="flex gap-0 mb-7"
             style={{ borderBottom: "1px solid var(--border)" }}
           >
             {tabs.map((tab) => (
               <button
                 key={tab.key}
                 onClick={() => setActiveTab(tab.key)}
-                className="px-4 py-2 text-[12.5px] transition-colors"
+                className="px-4 py-2.5 text-[13px] transition-colors"
                 style={{
                   color: activeTab === tab.key ? "var(--text-primary)" : "var(--text-muted)",
                   fontWeight: activeTab === tab.key ? 500 : 400,
@@ -214,11 +214,11 @@ export default function HomePage() {
 
           {/* Grid */}
           {loading ? (
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-3 gap-5">
               {Array.from({ length: 9 }).map((_, i) => (
                 <div
                   key={i}
-                  className="h-44 rounded-xl animate-pulse"
+                  className="h-52 rounded-xl animate-pulse"
                   style={{ backgroundColor: "var(--bg-tertiary)" }}
                 />
               ))}
@@ -232,7 +232,7 @@ export default function HomePage() {
               <p className="text-sm">Click + New Doc to get started</p>
             </div>
           ) : (
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-3 gap-5">
               {docs.map((doc, index) => (
                 <div
                   key={doc.uuid}
@@ -240,6 +240,7 @@ export default function HomePage() {
                   style={{
                     backgroundColor: "var(--bg-secondary)",
                     border: "1px solid var(--border)",
+                    minHeight: "200px",
                   }}
                   onMouseEnter={(e) => {
                     e.currentTarget.style.backgroundColor = "var(--bg-tertiary)"
@@ -253,7 +254,7 @@ export default function HomePage() {
                   {/* Accent bar */}
                   <div
                     style={{
-                      height: "4px",
+                      height: "5px",
                       backgroundColor: getAccent(index),
                       width: "100%",
                       flexShrink: 0,
@@ -263,16 +264,16 @@ export default function HomePage() {
                   {/* Card body */}
                   <button
                     onClick={() => router.push(`/docs/${doc.uuid}`)}
-                    className="text-left px-4 pt-3 pb-2 flex flex-col flex-1 w-full"
+                    className="text-left px-5 pt-4 pb-3 flex flex-col flex-1 w-full"
                   >
                     <p
-                      className="font-medium text-[13.5px] leading-snug mb-2 pr-5"
+                      className="font-semibold text-[15px] leading-snug mb-3 pr-6"
                       style={{ color: "var(--text-primary)" }}
                     >
                       {doc.title || "Untitled"}
                     </p>
                     <p
-                      className="text-[11.5px] leading-relaxed line-clamp-3 flex-1"
+                      className="text-[13px] leading-relaxed line-clamp-3 flex-1"
                       style={{ color: "var(--text-secondary)" }}
                     >
                       {stripHtml(doc.content)}
@@ -281,17 +282,17 @@ export default function HomePage() {
 
                   {/* Card footer */}
                   <div
-                    className="flex items-center justify-between px-4 py-2.5"
+                    className="flex items-center justify-between px-5 py-3"
                     style={{ borderTop: "1px solid var(--border)" }}
                   >
-                    <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>
+                    <p className="text-[12px]" style={{ color: "var(--text-muted)" }}>
                       {formatDate(doc.created_at)}
                     </p>
                   </div>
 
-                  {/* Three-dot menu button */}
+                  {/* Three-dot menu */}
                   <div
-                    className="absolute top-6 right-3"
+                    className="absolute top-7 right-4"
                     ref={openMenuId === doc.uuid ? menuRef : null}
                   >
                     <button
@@ -299,7 +300,7 @@ export default function HomePage() {
                         e.stopPropagation()
                         setOpenMenuId(openMenuId === doc.uuid ? null : doc.uuid)
                       }}
-                      className="w-6 h-6 rounded flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                      className="w-7 h-7 rounded flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
                       style={{ color: "var(--text-muted)" }}
                       onMouseEnter={(e) => {
                         e.currentTarget.style.backgroundColor = "var(--bg-tertiary)"
@@ -310,12 +311,12 @@ export default function HomePage() {
                         e.currentTarget.style.color = "var(--text-muted)"
                       }}
                     >
-                      <MoreHorizontal size={14} />
+                      <MoreHorizontal size={15} />
                     </button>
 
                     {openMenuId === doc.uuid && (
                       <div
-                        className="absolute right-0 top-7 w-44 rounded-xl shadow-xl z-50 overflow-hidden py-1"
+                        className="absolute right-0 top-8 w-44 rounded-xl shadow-xl z-50 overflow-hidden py-1"
                         style={{
                           backgroundColor: "var(--bg-secondary)",
                           border: "1px solid var(--border)",
