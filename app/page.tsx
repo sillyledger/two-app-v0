@@ -162,7 +162,7 @@ useEffect(() => {
 
   return (
     <div className="flex h-screen overflow-hidden" style={{ backgroundColor: "var(--bg)" }}>
-      <Sidebar collapsed={collapsed} onToggle={() => setCollapsed((v) => !v)} />
+      {sidebarReady && <Sidebar collapsed={collapsed} onToggle={() => setCollapsed((v) => !v)} />}
 
       <main className="flex-1 overflow-y-auto transition-all duration-200">
         <div className="max-w-5xl mx-auto px-10 py-10">
