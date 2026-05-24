@@ -562,7 +562,12 @@ export default function Sidebar({ onNewNote, collapsed = false, onToggle }: Side
         </div>
       ))}
 
-      {wsDocs.map((doc) => (
+      {wsDocs.length > 0 && (
+  <p className="text-[10px] font-semibold uppercase tracking-wider px-2 pt-3 pb-1 select-none" style={{ color: "var(--text-muted)" }}>
+    Unfiled
+  </p>
+)}
+{wsDocs.map((doc) => (
         <div
           key={doc.uuid}
           draggable
