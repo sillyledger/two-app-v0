@@ -269,15 +269,23 @@ export default function Sidebar({ onNewNote, collapsed = false, onToggle }: Side
   }
 
   const deleteExtraWorkspace = async (wsId: string) => {
-    setWsMenuId(null)
+  setWsMenuId(null)
+  const confirmed = window.confirm("Delete this workspace? This cannot be undone.")
+  if (!confirmed) return
+  try {
+    const res = await fetch(`/api/workspaces/${wsId}`, { method: "DELETE" })
+    if (!res.ok) {
+      alert("Failed to delete workspace. Please try again.")
+      return
+    }
     const updated = workspaces.filter((w) => w.id !== wsId)
     setWorkspaces(updated)
     cacheSet("sb_workspaces", updated)
     if (activeWorkspaceId === wsId) setActiveWorkspaceId(workspaceId)
-    try {
-      await fetch(`/api/workspaces/${wsId}`, { method: "DELETE" })
-    } catch {}
+  } catch {
+    alert("Something went wrong. Please try again.")
   }
+}
 
   const startRenamingFolder = (folder: FolderType) => {
     setFolderMenuId(null)
