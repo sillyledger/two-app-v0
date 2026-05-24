@@ -120,20 +120,34 @@ export default function Editor({ content, onChange, onReady, onImageUpload, onIn
   }, [onImageUpload])
 
   const doImageUpload = useCallback(async (file: File) => {
-    if (uploadingRef.current) return
-    if (!onImageUploadRef.current) return
-    uploadingRef.current = true
-    setUploading(true)
-    try {
-      const url = await onImageUploadRef.current(file)
-      if (url && editorRef.current) {
-        editorRef.current.chain().focus().setImage({ src: url }).run()
-      }
-    } finally {
-      uploadingRef.current = false
-      setUploading(false)
+  if (uploadingRef.current) return
+  if (!onImageUploadRef.current) return
+  uploadingRef.current = true
+  setUploading(true)
+
+  // Show image instantly using a local blob URL
+  const blobUrl = URL.createObjectURL(file)
+  editorRef.current?.chain().focus().setImage({ src: blobUrl }).run()
+
+  try {
+    const realUrl = await onImageUploadRef.current(file)
+    if (realUrl && editorRef.current) {
+      // Swap the blob URL for the real R2 URL in the editor content
+      const { state, dispatch } = editorRef.current.view
+      const { tr, doc } = state
+      doc.descendants((node, pos) => {
+        if (node.type.name === 'image' && node.attrs.src === blobUrl) {
+          tr.setNodeMarkup(pos, undefined, { ...node.attrs, src: realUrl })
+        }
+      })
+      dispatch(tr)
     }
-  }, [])
+  } finally {
+    URL.revokeObjectURL(blobUrl)
+    uploadingRef.current = false
+    setUploading(false)
+  }
+}, [])
 
   useEffect(() => {
     const saved = localStorage.getItem("font-size-px")
