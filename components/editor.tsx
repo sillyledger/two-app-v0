@@ -793,8 +793,28 @@ export default function Editor({ content, onChange, onReady, onImageUpload, onIn
               <button
                 onMouseDown={(e) => {
                   e.preventDefault()
+                  const urlToRemove = linkPopup?.url
                   setLinkPopup(null)
-                  editor.chain().focus().extendMarkRange("link").unsetLink().run()
+                  if (!urlToRemove) return
+                  // Find the link in the doc by scanning all marks and select + unset it
+                  const { state } = editor
+                  const { doc, tr } = state
+                  let found = false
+                  doc.descendants((node, pos) => {
+                    if (found) return false
+                    node.marks.forEach((mark) => {
+                      if (mark.type.name === "link" && mark.attrs.href === urlToRemove) {
+                        const from = pos
+                        const to = pos + node.nodeSize
+                        editor.chain()
+                          .focus()
+                          .setTextSelection({ from, to })
+                          .unsetLink()
+                          .run()
+                        found = true
+                      }
+                    })
+                  })
                 }}
                 className="flex items-center gap-1 rounded px-1.5 py-0.5 text-xs text-red-400/70 hover:bg-red-500/10 hover:text-red-400 transition-colors"
               >
