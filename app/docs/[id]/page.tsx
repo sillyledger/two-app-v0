@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation'
 import Sidebar from '@/components/sidebar'
 import Editor from '@/components/editor'
 import DocTopbar from '@/components/doc-topbar'
-import { CalendarDays, SignalLow, SignalMedium, SignalHigh, Minus, PanelRight, X, FileText, User, Clock, Plus, Check, Send, Trash2, Circle, CheckCircle2 } from 'lucide-react'
+import { CalendarDays, SignalLow, SignalMedium, SignalHigh, Minus, PanelRight, X, FileText, User, Clock, Plus, Check, Send, Trash2, Circle, CheckCircle2, Pencil } from 'lucide-react'
 import type { Doc } from '@/lib/db'
 
 interface Folder {
@@ -155,6 +155,11 @@ export default function DocPage() {
   const commentInputRef = useRef<HTMLTextAreaElement>(null)
   const imageInputRef = useRef<HTMLInputElement>(null)
   const insertImageRef = useRef<((url: string) => void) | null>(null)
+
+  // Label editing state
+  const [editingLabelId, setEditingLabelId] = useState<number | null>(null)
+  const [editingLabelName, setEditingLabelName] = useState('')
+  const [editingLabelColor, setEditingLabelColor] = useState('')
 
   const [tasks, setTasks] = useState<Task[]>([])
   const [addingTask, setAddingTask] = useState(false)
@@ -322,6 +327,26 @@ export default function DocPage() {
     setCreatingLabel(false)
   }
 
+  const handleEditLabel = async (label: Label) => {
+    if (!editingLabelName.trim()) return
+    const res = await fetch(`/api/labels/${label.id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: editingLabelName.trim(), color: editingLabelColor }),
+    })
+    const updated = await res.json()
+    setAllLabels(prev => prev.map(l => l.id === label.id ? updated : l))
+    setDocLabels(prev => prev.map(l => l.id === label.id ? updated : l))
+    setEditingLabelId(null)
+  }
+
+  const handleDeleteLabel = async (labelId: number) => {
+    await fetch(`/api/labels/${labelId}`, { method: 'DELETE' })
+    setAllLabels(prev => prev.filter(l => l.id !== labelId))
+    setDocLabels(prev => prev.filter(l => l.id !== labelId))
+    setEditingLabelId(null)
+  }
+
   const handlePostComment = async () => {
     if (!commentBody.trim() || postingComment) return
     setPostingComment(true)
@@ -427,15 +452,15 @@ export default function DocPage() {
         accept="image/jpeg,image/png,image/gif,image/webp"
         className="hidden"
         onChange={async (e) => {
-  const file = e.target.files?.[0]
-  if (file) {
-    const url = await handleImageUpload(file)
-    if (url && insertImageRef.current) {
-      insertImageRef.current(url)
-    }
-  }
-  e.target.value = ""
-}}
+          const file = e.target.files?.[0]
+          if (file) {
+            const url = await handleImageUpload(file)
+            if (url && insertImageRef.current) {
+              insertImageRef.current(url)
+            }
+          }
+          e.target.value = ""
+        }}
       />
 
       {isLoggedIn && (
@@ -540,13 +565,13 @@ export default function DocPage() {
 
             {doc !== null && (
               <Editor
-  content={content}
-  editable={isLoggedIn}
-  onChange={(newContent) => { if (!isLoggedIn) return; setContent(newContent) }}
-  onReady={(focusFn) => { editorFocusRef.current = focusFn }}
-  onImageUpload={handleImageUpload}
-  onInsertImageReady={(fn) => { insertImageRef.current = fn }}
-/>
+                content={content}
+                editable={isLoggedIn}
+                onChange={(newContent) => { if (!isLoggedIn) return; setContent(newContent) }}
+                onReady={(focusFn) => { editorFocusRef.current = focusFn }}
+                onImageUpload={handleImageUpload}
+                onInsertImageReady={(fn) => { insertImageRef.current = fn }}
+              />
             )}
 
             {wordCount > 0 && (
@@ -762,20 +787,112 @@ export default function DocPage() {
             <>
               <div className="my-3 border-t" style={{ borderColor: 'var(--border)' }} />
               <p className="text-[10px] font-medium uppercase tracking-wider mb-2" style={{ color: 'var(--text-muted)' }}>Labels</p>
-              <div className="flex flex-wrap gap-1.5 mb-2">
-                {docLabels.map(label => (
-                  <button key={label.id} onClick={() => handleToggleLabel(label)}
-                    className="flex items-center gap-1.5 px-2 py-1 rounded-md text-xs transition-colors group"
-                    style={{ backgroundColor: 'var(--bg-tertiary)', border: '1px solid var(--border)', color: 'var(--text-secondary)' }}
-                    onMouseEnter={e => (e.currentTarget.style.color = 'var(--text-primary)')}
-                    onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-secondary)')}
-                  >
-                    <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: label.color }} />
-                    <span>{label.name}</span>
-                    <X size={10} className="opacity-0 group-hover:opacity-100 transition-opacity" style={{ color: 'var(--text-muted)' }} />
-                  </button>
-                ))}
+
+              {/* All labels list with edit/delete */}
+              <div className="flex flex-col gap-0.5 mb-2">
+                {allLabels.map(label => {
+                  const isOn = docLabels.some(l => l.id === label.id)
+                  const isEditing = editingLabelId === label.id
+                  return (
+                    <div key={label.id}>
+                      {isEditing ? (
+                        <div
+                          className="rounded-lg p-2 flex flex-col gap-2 mb-1"
+                          style={{ backgroundColor: 'var(--bg-tertiary)', border: '1px solid var(--border)' }}
+                        >
+                          <input
+                            autoFocus
+                            value={editingLabelName}
+                            onChange={e => setEditingLabelName(e.target.value)}
+                            onKeyDown={e => {
+                              if (e.key === 'Enter') handleEditLabel(label)
+                              if (e.key === 'Escape') setEditingLabelId(null)
+                            }}
+                            className="w-full bg-transparent text-[12px] focus:outline-none"
+                            style={{ color: 'var(--text-primary)' }}
+                          />
+                          <div className="flex flex-wrap gap-1">
+                            {LABEL_COLORS.map(c => (
+                              <button
+                                key={c}
+                                onClick={() => setEditingLabelColor(c)}
+                                className={`w-4 h-4 rounded-full transition-transform hover:scale-110 ${editingLabelColor === c ? 'ring-2 ring-offset-1' : ''}`}
+                                style={{ backgroundColor: c }}
+                              />
+                            ))}
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <button
+                              onClick={() => handleDeleteLabel(label.id)}
+                              className="text-[11px] transition-colors"
+                              style={{ color: '#e05252' }}
+                              onMouseEnter={e => (e.currentTarget.style.color = '#f87171')}
+                              onMouseLeave={e => (e.currentTarget.style.color = '#e05252')}
+                            >
+                              Delete label
+                            </button>
+                            <div className="flex gap-2">
+                              <button
+                                onClick={() => setEditingLabelId(null)}
+                                className="px-2 py-1 rounded-md text-[11px] transition-colors"
+                                style={{ color: 'var(--text-muted)' }}
+                                onMouseEnter={e => (e.currentTarget.style.color = 'var(--text-secondary)')}
+                                onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-muted)')}
+                              >
+                                Cancel
+                              </button>
+                              <button
+                                onClick={() => handleEditLabel(label)}
+                                className="px-2 py-1 rounded-md text-[11px] font-medium transition-colors"
+                                style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-secondary)' }}
+                                onMouseEnter={e => (e.currentTarget.style.color = 'var(--text-primary)')}
+                                onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-secondary)')}
+                              >
+                                Save
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      ) : (
+                        <div
+                          className="group flex items-center gap-2 py-1 px-1 rounded-md"
+                          style={{ backgroundColor: 'transparent' }}
+                          onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)')}
+                          onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
+                        >
+                          <button
+                            onClick={() => handleToggleLabel(label)}
+                            className="flex items-center gap-1.5 flex-1 min-w-0"
+                          >
+                            <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: label.color }} />
+                            <span className="text-[12px] truncate" style={{ color: isOn ? 'var(--text-primary)' : 'var(--text-secondary)' }}>{label.name}</span>
+                            {isOn && <Check size={10} className="shrink-0 ml-auto" style={{ color: 'var(--text-secondary)' }} />}
+                          </button>
+                          <button
+                            onClick={() => {
+                              setEditingLabelId(label.id)
+                              setEditingLabelName(label.name)
+                              setEditingLabelColor(label.color)
+                            }}
+                            className="opacity-0 group-hover:opacity-100 transition-opacity shrink-0 p-0.5 rounded"
+                            style={{ color: 'var(--text-muted)' }}
+                            onMouseEnter={e => (e.currentTarget.style.color = 'var(--text-primary)')}
+                            onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-muted)')}
+                          >
+                            <Pencil size={10} />
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
               </div>
+
+              {allLabels.length === 0 && (
+                <p className="text-[11px] mb-2" style={{ color: 'var(--text-muted)' }}>No labels yet.</p>
+              )}
+
+              {/* Create new label */}
               <div className="relative" ref={labelPickerRef}>
                 <button
                   onClick={() => { setLabelPickerOpen(v => !v); setCreatingLabel(false) }}
@@ -785,73 +902,44 @@ export default function DocPage() {
                   onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = 'var(--text-muted)' }}
                 >
                   <Plus size={11} />
-                  <span>Add label</span>
+                  <span>Create label</span>
                 </button>
                 {labelPickerOpen && (
                   <div className="absolute bottom-full right-0 mb-1 z-50 w-52 rounded-lg shadow-xl py-1" style={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border)' }}>
-                    {!creatingLabel ? (
-                      <>
-                        {allLabels.length === 0 && <p className="px-3 py-2 text-xs" style={{ color: 'var(--text-muted)' }}>No labels yet</p>}
-                        {allLabels.map(label => {
-                          const isOn = docLabels.some(l => l.id === label.id)
-                          return (
-                            <button key={label.id} onClick={() => handleToggleLabel(label)}
-                              className="w-full flex items-center gap-2.5 px-3 py-1.5 text-xs transition-colors"
-                              style={{ color: 'var(--text-secondary)' }}
-                              onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)')}
-                              onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
-                            >
-                              <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: label.color }} />
-                              <span className="flex-1 text-left">{label.name}</span>
-                              {isOn && <Check size={11} style={{ color: 'var(--text-secondary)' }} />}
-                            </button>
-                          )
-                        })}
-                        <div className="mt-1 pt-1" style={{ borderTop: '1px solid var(--border)' }}>
-                          <button onClick={() => setCreatingLabel(true)}
-                            className="w-full flex items-center gap-2.5 px-3 py-1.5 text-xs transition-colors"
-                            style={{ color: 'var(--text-muted)' }}
-                            onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)')}
-                            onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
-                          >
-                            <Plus size={11} />
-                            <span>Create new label</span>
-                          </button>
-                        </div>
-                      </>
-                    ) : (
-                      <div className="px-3 py-2 flex flex-col gap-2">
-                        <p className="text-[10px] uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>New label</p>
-                        <input autoFocus value={newLabelName} onChange={e => setNewLabelName(e.target.value)}
-                          onKeyDown={e => { if (e.key === 'Enter') handleCreateLabel() }}
-                          placeholder="Label name..."
-                          className="w-full rounded-md px-2 py-1.5 text-xs focus:outline-none"
-                          style={{ backgroundColor: 'var(--bg-tertiary)', border: '1px solid var(--border)', color: 'var(--text-primary)' }}
-                        />
-                        <div className="flex flex-wrap gap-1.5">
-                          {LABEL_COLORS.map(c => (
-                            <button key={c} onClick={() => setNewLabelColor(c)}
-                              className={`w-5 h-5 rounded-full transition-transform hover:scale-110 ${newLabelColor === c ? 'ring-2 ring-offset-1' : ''}`}
-                              style={{ backgroundColor: c }}
-                            />
-                          ))}
-                        </div>
-                        <div className="flex gap-2 mt-1">
-                          <button onClick={handleCreateLabel}
-                            className="flex-1 px-2 py-1.5 rounded-md text-xs transition-colors"
-                            style={{ backgroundColor: 'var(--bg-tertiary)', color: 'var(--text-secondary)' }}
-                            onMouseEnter={e => (e.currentTarget.style.color = 'var(--text-primary)')}
-                            onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-secondary)')}
-                          >Create</button>
-                          <button onClick={() => { setCreatingLabel(false); setNewLabelName('') }}
-                            className="px-2 py-1.5 rounded-md text-xs transition-colors"
-                            style={{ color: 'var(--text-muted)' }}
-                            onMouseEnter={e => (e.currentTarget.style.color = 'var(--text-secondary)')}
-                            onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-muted)')}
-                          >Cancel</button>
-                        </div>
+                    <div className="px-3 py-2 flex flex-col gap-2">
+                      <p className="text-[10px] uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>New label</p>
+                      <input
+                        autoFocus
+                        value={newLabelName}
+                        onChange={e => setNewLabelName(e.target.value)}
+                        onKeyDown={e => { if (e.key === 'Enter') handleCreateLabel() }}
+                        placeholder="Label name..."
+                        className="w-full rounded-md px-2 py-1.5 text-xs focus:outline-none"
+                        style={{ backgroundColor: 'var(--bg-tertiary)', border: '1px solid var(--border)', color: 'var(--text-primary)' }}
+                      />
+                      <div className="flex flex-wrap gap-1.5">
+                        {LABEL_COLORS.map(c => (
+                          <button key={c} onClick={() => setNewLabelColor(c)}
+                            className={`w-5 h-5 rounded-full transition-transform hover:scale-110 ${newLabelColor === c ? 'ring-2 ring-offset-1' : ''}`}
+                            style={{ backgroundColor: c }}
+                          />
+                        ))}
                       </div>
-                    )}
+                      <div className="flex gap-2 mt-1">
+                        <button onClick={handleCreateLabel}
+                          className="flex-1 px-2 py-1.5 rounded-md text-xs transition-colors"
+                          style={{ backgroundColor: 'var(--bg-tertiary)', color: 'var(--text-secondary)' }}
+                          onMouseEnter={e => (e.currentTarget.style.color = 'var(--text-primary)')}
+                          onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-secondary)')}
+                        >Create</button>
+                        <button onClick={() => { setLabelPickerOpen(false); setNewLabelName('') }}
+                          className="px-2 py-1.5 rounded-md text-xs transition-colors"
+                          style={{ color: 'var(--text-muted)' }}
+                          onMouseEnter={e => (e.currentTarget.style.color = 'var(--text-secondary)')}
+                          onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-muted)')}
+                        >Cancel</button>
+                      </div>
+                    </div>
                   </div>
                 )}
               </div>
