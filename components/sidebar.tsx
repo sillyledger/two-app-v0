@@ -94,6 +94,20 @@ export default function Sidebar({ onNewNote, collapsed = false, onToggle }: Side
   const [modalTargetWorkspaceId, setModalTargetWorkspaceId] = useState<string | null>(null)
   const modalInputRef = useRef<HTMLInputElement>(null)
 
+  // Help modal state
+  const [showHelp, setShowHelp] = useState(false)
+  const [helpTab, setHelpTab] = useState<"shortcuts" | "started" | "tips" | "new">("shortcuts")
+
+  // Close help modal on Escape
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setShowHelp(false)
+      if (e.key === "?" && !showModal) setShowHelp((v) => !v)
+    }
+    document.addEventListener("keydown", handler)
+    return () => document.removeEventListener("keydown", handler)
+  }, [showModal])
+
   const fetchDocsForWorkspace = (wsId: string, isPrimary: boolean) => {
     fetch(`/api/docs?workspace_id=${wsId}`)
       .then((r) => r.json())
@@ -580,6 +594,13 @@ export default function Sidebar({ onNewNote, collapsed = false, onToggle }: Side
 
   const extraWorkspaces = workspaces.filter((w) => w.id !== workspaceId)
 
+  const helpTabClass = (tab: string) =>
+    `px-3 py-2 text-[11px] font-medium transition-colors border-b-2 ${
+      helpTab === tab
+        ? "border-[var(--text-primary)] text-[var(--text-primary)]"
+        : "border-transparent text-[var(--text-muted)] hover:text-[var(--text-secondary)]"
+    }`
+
   return (
     <>
       <aside
@@ -847,6 +868,33 @@ export default function Sidebar({ onNewNote, collapsed = false, onToggle }: Side
         >
           {navItem("/settings", <Settings size={13} />, "Settings")}
           {!collapsed && navItem("/trash", <Trash2 size={13} />, "Trash")}
+
+          {/* Help button — only visible when sidebar is expanded */}
+          {!collapsed && (
+            <button
+              onClick={() => { setHelpTab("shortcuts"); setShowHelp(true) }}
+              title="Help & shortcuts"
+              className="flex items-center gap-2 px-2 py-[5px] rounded-md transition-colors text-[12px] font-medium w-full"
+              style={{ color: "var(--text-muted)" }}
+              onMouseEnter={e => { e.currentTarget.style.backgroundColor = "var(--bg-tertiary)"; e.currentTarget.style.color = "var(--text-primary)" }}
+              onMouseLeave={e => { e.currentTarget.style.backgroundColor = "transparent"; e.currentTarget.style.color = "var(--text-muted)" }}
+            >
+              <span
+                className="flex items-center justify-center rounded border text-[10px] font-mono leading-none"
+                style={{
+                  width: "14px",
+                  height: "14px",
+                  borderColor: "var(--border)",
+                  color: "var(--text-muted)",
+                  flexShrink: 0,
+                }}
+              >
+                ?
+              </span>
+              Help & Shortcuts
+            </button>
+          )}
+
           {!collapsed && (
             <button
               onClick={() => openModal("workspace")}
@@ -885,6 +933,7 @@ export default function Sidebar({ onNewNote, collapsed = false, onToggle }: Side
         </div>
       </aside>
 
+      {/* ── New doc / folder / workspace modal ── */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div className="absolute inset-0 bg-black/50 backdrop-blur-[2px]" onClick={() => setShowModal(false)} />
@@ -931,6 +980,204 @@ export default function Sidebar({ onNewNote, collapsed = false, onToggle }: Side
               >
                 Create
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Help modal ── */}
+      {showHelp && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div
+            className="absolute inset-0 bg-black/50 backdrop-blur-[2px]"
+            onClick={() => setShowHelp(false)}
+          />
+          <div
+            className="relative rounded-xl shadow-2xl w-[500px] max-w-[calc(100vw-32px)] z-10 overflow-hidden"
+            style={{ backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border)" }}
+          >
+            {/* Tab bar */}
+            <div className="flex border-b" style={{ borderColor: "var(--border)" }}>
+              {(["shortcuts", "started", "tips", "new"] as const).map((tab) => (
+                <button
+                  key={tab}
+                  onClick={() => setHelpTab(tab)}
+                  className={helpTabClass(tab)}
+                >
+                  {tab === "shortcuts" && "Shortcuts"}
+                  {tab === "started" && "Getting Started"}
+                  {tab === "tips" && "Tips"}
+                  {tab === "new" && "What's New"}
+                </button>
+              ))}
+              <button
+                onClick={() => setShowHelp(false)}
+                className="ml-auto px-3 py-2 text-[12px] transition-colors"
+                style={{ color: "var(--text-muted)" }}
+                onMouseEnter={e => (e.currentTarget.style.color = "var(--text-primary)")}
+                onMouseLeave={e => (e.currentTarget.style.color = "var(--text-muted)")}
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Panel content */}
+            <div className="overflow-y-auto" style={{ maxHeight: "380px" }}>
+
+              {/* Shortcuts */}
+              {helpTab === "shortcuts" && (
+                <div className="p-5 space-y-5">
+                  {[
+                    {
+                      label: "Formatting",
+                      rows: [
+                        { action: "Bold", keys: ["⌘", "B"] },
+                        { action: "Italic", keys: ["⌘", "I"] },
+                        { action: "Strikethrough", keys: ["⌘", "⇧", "S"] },
+                        { action: "Inline code", keys: ["⌘", "E"] },
+                        { action: "Heading 1 / 2 / 3", keys: ["⌘", "⌥", "1–3"] },
+                      ],
+                    },
+                    {
+                      label: "Navigation",
+                      rows: [
+                        { action: "New doc", keys: ["⌘", "N"] },
+                        { action: "Search", keys: ["⌘", "K"] },
+                        { action: "Toggle sidebar", keys: ["⌘", "\\"] },
+                        { action: "Open help", keys: ["?"] },
+                      ],
+                    },
+                  ].map((section) => (
+                    <div key={section.label}>
+                      <p className="text-[10px] font-semibold uppercase tracking-wider mb-2" style={{ color: "var(--text-muted)" }}>
+                        {section.label}
+                      </p>
+                      <div className="space-y-[1px]">
+                        {section.rows.map((row) => (
+                          <div
+                            key={row.action}
+                            className="flex items-center justify-between py-[6px] border-b"
+                            style={{ borderColor: "var(--border)" }}
+                          >
+                            <span className="text-[12px]" style={{ color: "var(--text-secondary)" }}>{row.action}</span>
+                            <div className="flex items-center gap-1">
+                              {row.keys.map((k) => (
+                                <kbd
+                                  key={k}
+                                  className="font-mono text-[11px] px-1.5 py-0.5 rounded"
+                                  style={{
+                                    backgroundColor: "var(--bg-tertiary)",
+                                    border: "1px solid var(--border)",
+                                    color: "var(--text-primary)",
+                                  }}
+                                >
+                                  {k}
+                                </kbd>
+                              ))}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Getting Started */}
+              {helpTab === "started" && (
+                <div className="p-5 space-y-1">
+                  {[
+                    { n: 1, title: "Create your first doc", desc: "Press ⌘N or tap + in the sidebar to create a new doc instantly." },
+                    { n: 2, title: "Format as you write", desc: "Select any text to reveal the formatting toolbar. Use headings, bold, italic, and code blocks." },
+                    { n: 3, title: "Find anything fast", desc: "Press ⌘K to search across all your docs by title or content. Results appear instantly." },
+                    { n: 4, title: "Your docs save automatically", desc: "Every change is saved in the background. You'll see a quiet \"Saved\" indicator — no manual saving needed." },
+                  ].map((step) => (
+                    <div key={step.n} className="flex gap-3 py-3 border-b" style={{ borderColor: "var(--border)" }}>
+                      <div
+                        className="flex items-center justify-center rounded-full text-[10px] font-mono shrink-0 mt-0.5"
+                        style={{
+                          width: "20px", height: "20px",
+                          border: "1px solid var(--border)",
+                          color: "var(--text-muted)",
+                        }}
+                      >
+                        {step.n}
+                      </div>
+                      <div>
+                        <p className="text-[12px] font-medium mb-1" style={{ color: "var(--text-primary)" }}>{step.title}</p>
+                        <p className="text-[12px] leading-relaxed" style={{ color: "var(--text-muted)" }}>{step.desc}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Tips */}
+              {helpTab === "tips" && (
+                <div className="p-5 space-y-1">
+                  {[
+                    { title: "Use headings to create structure", desc: "Break long docs into sections with H1, H2, and H3. Makes scanning much faster when you revisit later." },
+                    { title: "Code blocks for technical notes", desc: "Wrap commands, snippets, or config values in a code block to keep them visually distinct and easy to copy." },
+                    { title: "Keep one doc per topic", desc: "Short focused docs are easier to find and reference than one giant file. Use search to pull them up in seconds." },
+                    { title: "Blockquotes for highlights", desc: "Use blockquotes to call out key decisions, quotes from meetings, or anything you want to stand out at a glance." },
+                  ].map((tip) => (
+                    <div key={tip.title} className="py-3 border-b" style={{ borderColor: "var(--border)" }}>
+                      <p className="text-[12px] font-medium mb-1" style={{ color: "var(--text-primary)" }}>{tip.title}</p>
+                      <p className="text-[12px] leading-relaxed" style={{ color: "var(--text-muted)" }}>{tip.desc}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* What's New */}
+              {helpTab === "new" && (
+                <div className="p-5 space-y-1">
+                  {[
+                    {
+                      version: "v0.4", date: "May 2026", tag: "Latest",
+                      items: ["Notes are scoped per user — your docs are private to your account", "Autosave with Saved status indicator in the editor", "Search bar with autocomplete on the dashboard"],
+                    },
+                    {
+                      version: "v0.3", date: "Apr 2026", tag: null,
+                      items: ["Rich text editor with full formatting toolbar", "Heading levels H1, H2, H3", "Code blocks and inline code"],
+                    },
+                    {
+                      version: "v0.2", date: "Mar 2026", tag: null,
+                      items: ["Auth system — signup, login, logout", "Sidebar with settings and user avatar"],
+                    },
+                  ].map((release) => (
+                    <div key={release.version} className="py-3 border-b" style={{ borderColor: "var(--border)" }}>
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-[12px] font-mono font-medium" style={{ color: "var(--text-primary)" }}>{release.version}</span>
+                        <span className="text-[11px]" style={{ color: "var(--text-muted)" }}>{release.date}</span>
+                        {release.tag && (
+                          <span
+                            className="text-[10px] px-1.5 py-0.5 rounded"
+                            style={{ backgroundColor: "var(--bg-tertiary)", border: "1px solid var(--border)", color: "var(--text-secondary)" }}
+                          >
+                            {release.tag}
+                          </span>
+                        )}
+                      </div>
+                      {release.items.map((item) => (
+                        <p key={item} className="text-[12px] leading-relaxed pl-3 relative" style={{ color: "var(--text-muted)" }}>
+                          <span className="absolute left-0" style={{ color: "var(--border)" }}>–</span>
+                          {item}
+                        </p>
+                      ))}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="px-5 py-3 border-t flex items-center gap-1.5" style={{ borderColor: "var(--border)" }}>
+              <span className="text-[11px]" style={{ color: "var(--text-muted)" }}>Press</span>
+              <kbd className="font-mono text-[10px] px-1.5 py-0.5 rounded" style={{ backgroundColor: "var(--bg-tertiary)", border: "1px solid var(--border)", color: "var(--text-primary)" }}>?</kbd>
+              <span className="text-[11px]" style={{ color: "var(--text-muted)" }}>or</span>
+              <kbd className="font-mono text-[10px] px-1.5 py-0.5 rounded" style={{ backgroundColor: "var(--bg-tertiary)", border: "1px solid var(--border)", color: "var(--text-primary)" }}>Esc</kbd>
+              <span className="text-[11px]" style={{ color: "var(--text-muted)" }}>to close</span>
             </div>
           </div>
         </div>
