@@ -338,7 +338,10 @@ export default function Sidebar({ onNewNote, collapsed = false, onToggle }: Side
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ folder_id: folderId }),
       })
-      if (res.ok && workspaceId) fetchDocsForWorkspace(workspaceId, true)
+      if (res.ok) {
+  if (workspaceId) fetchDocsForWorkspace(workspaceId, true)
+  setDocs(prev => prev.filter(d => d.uuid !== docId))
+}
     } catch {}
   }
 
