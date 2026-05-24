@@ -417,7 +417,7 @@ const handleToggleFavorite = async () => {
   await fetch(`/api/docs/${docId}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ is_favorite: newValue }),
+    body: JSON.stringify({ is_starred: newValue }),
   })
 }
   const handleDelete = async () => {
