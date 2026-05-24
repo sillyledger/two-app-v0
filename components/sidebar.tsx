@@ -573,7 +573,7 @@ export default function Sidebar({ onNewNote, collapsed = false, onToggle }: Side
           }}
           onDragEnd={() => { setDraggingDocId(null); setDragOverFolderId(null) }}
           onClick={() => router.push(`/docs/${doc.uuid}`)}
-          className="flex items-center gap-2 px-2 py-[5px] rounded-md transition-colors text-[12px] font-medium cursor-pointer"
+          className="group flex items-center gap-2 px-2 py-[5px] rounded-md transition-colors text-[12px] font-medium cursor-pointer"
           style={{
             opacity: draggingDocId === doc.uuid ? 0.4 : 1,
             backgroundColor: pathname === `/docs/${doc.uuid}` ? "var(--bg-tertiary)" : "transparent",
@@ -592,7 +592,7 @@ export default function Sidebar({ onNewNote, collapsed = false, onToggle }: Side
             }
           }}
         >
-          <FileText size={13} className="shrink-0" style={{ color: "var(--text-secondary)" }} />
+          <span className="opacity-0 group-hover:opacity-100 transition-opacity cursor-grab shrink-0 text-[var(--text-muted)] select-none" style={{ fontSize: "12px", lineHeight: 1 }}>⠿</span> <FileText size={13} className="shrink-0" style={{ color: "var(--text-secondary)" }} />
           <span className="truncate">{doc.title || "Untitled"}</span>
         </div>
       ))}
