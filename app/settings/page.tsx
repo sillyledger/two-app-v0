@@ -1,10 +1,11 @@
 'use client'
 import { useEffect, useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { Sun, Moon, Camera, User, Palette, FileText, Lock, X, CreditCard, Settings2 } from 'lucide-react'
+import { Sun, Moon, Monitor, Camera, User, Palette, FileText, Lock, X, CreditCard, Settings2 } from 'lucide-react'
 import Sidebar from '@/components/sidebar'
 
 type Section = 'account' | 'appearance' | 'preferences' | 'editor' | 'security' | 'billing'
+type Theme = 'dark' | 'light' | 'system'
 
 const NAV: { id: Section; label: string; icon: React.ReactNode }[] = [
   { id: 'account',     label: 'Account',     icon: <User size={14} /> },
@@ -14,6 +15,17 @@ const NAV: { id: Section; label: string; icon: React.ReactNode }[] = [
   { id: 'security',    label: 'Security',    icon: <Lock size={14} /> },
   { id: 'billing',     label: 'Billing',     icon: <CreditCard size={14} /> },
 ]
+
+function applyTheme(t: Theme) {
+  if (t === 'system') {
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
+    document.documentElement.classList.remove('dark', 'light')
+    document.documentElement.classList.add(prefersDark ? 'dark' : 'light')
+  } else {
+    document.documentElement.classList.remove('dark', 'light')
+    document.documentElement.classList.add(t)
+  }
+}
 
 export default function SettingsPage() {
   const router = useRouter()
@@ -32,7 +44,7 @@ export default function SettingsPage() {
   const [savingEmail, setSavingEmail] = useState(false)
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
-  const [theme, setTheme] = useState<'dark' | 'light'>('dark')
+  const [theme, setTheme] = useState<Theme>('dark')
   const [fontSize, setFontSize] = useState(16)
   const [defaultWidth, setDefaultWidth] = useState<'narrow' | 'wide'>('narrow')
   const [timezone, setTimezone] = useState('UTC+8')
@@ -43,8 +55,10 @@ export default function SettingsPage() {
     const savedCollapsed = localStorage.getItem('sidebar-collapsed')
     if (savedCollapsed === 'true') setCollapsed(true)
 
-    const savedTheme = localStorage.getItem('theme')
-    if (savedTheme === 'light') setTheme('light')
+    const savedTheme = localStorage.getItem('theme') as Theme | null
+    if (savedTheme === 'light' || savedTheme === 'dark' || savedTheme === 'system') {
+      setTheme(savedTheme)
+    }
 
     const savedFont = localStorage.getItem('font-size-px')
     if (savedFont) setFontSize(Number(savedFont))
@@ -76,12 +90,20 @@ export default function SettingsPage() {
       .catch(() => router.push('/login'))
   }, [])
 
-  const toggleTheme = () => {
-    const next = theme === 'dark' ? 'light' : 'dark'
-    setTheme(next)
-    localStorage.setItem('theme', next)
-    document.documentElement.classList.remove('dark', 'light')
-    document.documentElement.classList.add(next)
+  const handleTheme = (t: Theme) => {
+    setTheme(t)
+    localStorage.setItem('theme', t)
+    applyTheme(t)
+
+    // If system, also listen for OS changes while user is on this page
+    if (t === 'system') {
+      const mq = window.matchMedia('(prefers-color-scheme: dark)')
+      const handler = (e: MediaQueryListEvent) => {
+        document.documentElement.classList.remove('dark', 'light')
+        document.documentElement.classList.add(e.matches ? 'dark' : 'light')
+      }
+      mq.addEventListener('change', handler)
+    }
   }
 
   const handleFontSizeChange = (delta: number) => {
@@ -186,6 +208,12 @@ export default function SettingsPage() {
   const rowClass = "flex items-center justify-between py-4 border-b"
   const labelClass = "text-[13px] font-medium"
   const descClass = "text-[11px] mt-0.5"
+
+  const themeOptions: { value: Theme; label: string; icon: React.ReactNode }[] = [
+    { value: 'dark',   label: 'Dark',   icon: <Moon size={12} /> },
+    { value: 'light',  label: 'Light',  icon: <Sun size={12} /> },
+    { value: 'system', label: 'System', icon: <Monitor size={12} /> },
+  ]
 
   if (loading) return (
     <div className="flex h-screen" style={{ backgroundColor: "var(--bg)" }}>
@@ -324,21 +352,21 @@ export default function SettingsPage() {
                 <div className={rowClass} style={{ borderColor: "var(--border)" }}>
                   <div>
                     <p className={labelClass} style={{ color: "var(--text-secondary)" }}>Interface theme</p>
-                    <p className={descClass} style={{ color: "var(--text-muted)" }}>Choose between dark and light mode</p>
+                    <p className={descClass} style={{ color: "var(--text-muted)" }}>Dark, light, or follow your system setting</p>
                   </div>
                   <div className="flex items-center gap-1 rounded-lg p-0.5" style={{ backgroundColor: "var(--bg-tertiary)", border: "1px solid var(--border)" }}>
-                    {(['dark', 'light'] as const).map((t) => (
+                    {themeOptions.map((t) => (
                       <button
-                        key={t}
-                        onClick={() => { if (theme !== t) toggleTheme() }}
-                        className="flex items-center gap-1.5 px-3 py-1 rounded-md text-[12px] font-medium transition-colors capitalize"
+                        key={t.value}
+                        onClick={() => handleTheme(t.value)}
+                        className="flex items-center gap-1.5 px-3 py-1 rounded-md text-[12px] font-medium transition-colors"
                         style={{
-                          backgroundColor: theme === t ? "var(--bg-secondary)" : "transparent",
-                          color: theme === t ? "var(--text-primary)" : "var(--text-muted)",
+                          backgroundColor: theme === t.value ? "var(--bg-secondary)" : "transparent",
+                          color: theme === t.value ? "var(--text-primary)" : "var(--text-muted)",
                         }}
                       >
-                        {t === 'dark' ? <Moon size={12} /> : <Sun size={12} />}
-                        {t === 'dark' ? 'Dark' : 'Light'}
+                        {t.icon}
+                        {t.label}
                       </button>
                     ))}
                   </div>
