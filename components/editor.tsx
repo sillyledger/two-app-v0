@@ -1,6 +1,6 @@
 "use client"
 
-import { useEditor, EditorContent } from "@tiptap/react"
+import { useEditor, EditorContent, Extension } from "@tiptap/react"
 import StarterKit from "@tiptap/starter-kit"
 import Link from "@tiptap/extension-link"
 import Typography from "@tiptap/extension-typography"
@@ -39,6 +39,39 @@ import { useCallback, useState, useRef, useEffect } from "react"
 import { useRouter } from "next/navigation"
 
 const lowlight = createLowlight(common)
+
+// Breaks out of link mark on Space, and removes link mark cleanly on Backspace
+const LinkKeyboardFix = Extension.create({
+  name: "linkKeyboardFix",
+  addKeyboardShortcuts() {
+    return {
+      Space: ({ editor }) => {
+        if (editor.isActive("link")) {
+          editor.commands.unsetMark("link")
+          editor.commands.insertContent(" ")
+          return true
+        }
+        return false
+      },
+      Backspace: ({ editor }) => {
+        const { selection } = editor.state
+        const { empty, anchor } = selection
+        if (!empty || anchor === 0) return false
+        // If cursor is right after a link, remove the link mark before deleting
+        if (editor.isActive("link")) {
+          const { from } = selection
+          editor.chain()
+            .setTextSelection({ from: from - 1, to: from })
+            .unsetMark("link")
+            .setTextSelection(from)
+            .run()
+          return false // let default backspace delete the character
+        }
+        return false
+      },
+    }
+  },
+})
 
 interface EditorProps {
   content: string
@@ -153,6 +186,7 @@ export default function Editor({ content, onChange, onReady, onImageUpload, onIn
           target: null,
         },
       }),
+      LinkKeyboardFix,
       Image.configure({
         HTMLAttributes: {
           class: "editor-image",
@@ -742,19 +776,32 @@ export default function Editor({ content, onChange, onReady, onImageUpload, onIn
             Open
           </button>
           {editable && (
-            <button
-              onMouseDown={(e) => {
-                e.preventDefault()
-                const url = linkPopup.url
-                setLinkPopup(null)
-                setLinkUrl(url)
-                setLinkModalOpen(true)
-              }}
-              className="flex items-center gap-1 rounded px-1.5 py-0.5 text-xs text-white/60 hover:bg-white/10 hover:text-white transition-colors"
-            >
-              <Pencil size={11} />
-              Edit
-            </button>
+            <>
+              <button
+                onMouseDown={(e) => {
+                  e.preventDefault()
+                  const url = linkPopup.url
+                  setLinkPopup(null)
+                  setLinkUrl(url)
+                  setLinkModalOpen(true)
+                }}
+                className="flex items-center gap-1 rounded px-1.5 py-0.5 text-xs text-white/60 hover:bg-white/10 hover:text-white transition-colors"
+              >
+                <Pencil size={11} />
+                Edit
+              </button>
+              <button
+                onMouseDown={(e) => {
+                  e.preventDefault()
+                  setLinkPopup(null)
+                  editor.chain().focus().extendMarkRange("link").unsetLink().run()
+                }}
+                className="flex items-center gap-1 rounded px-1.5 py-0.5 text-xs text-red-400/70 hover:bg-red-500/10 hover:text-red-400 transition-colors"
+              >
+                <Trash2 size={11} />
+                Remove
+              </button>
+            </>
           )}
         </div>
       )}
