@@ -93,12 +93,9 @@ export default function Sidebar({ onNewNote, collapsed = false, onToggle }: Side
   const [modalName, setModalName] = useState("")
   const [modalTargetWorkspaceId, setModalTargetWorkspaceId] = useState<string | null>(null)
   const modalInputRef = useRef<HTMLInputElement>(null)
-
-  // Help modal state
   const [showHelp, setShowHelp] = useState(false)
   const [helpTab, setHelpTab] = useState<"shortcuts" | "started" | "tips" | "new">("shortcuts")
 
-  // Close help modal on Escape
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.key === "Escape") setShowHelp(false)
@@ -269,23 +266,23 @@ export default function Sidebar({ onNewNote, collapsed = false, onToggle }: Side
   }
 
   const deleteExtraWorkspace = async (wsId: string) => {
-  setWsMenuId(null)
-  const confirmed = window.confirm("Delete this workspace? This cannot be undone.")
-  if (!confirmed) return
-  try {
-    const res = await fetch(`/api/workspaces/${wsId}`, { method: "DELETE" })
-    if (!res.ok) {
-      alert("Failed to delete workspace. Please try again.")
-      return
+    setWsMenuId(null)
+    const confirmed = window.confirm("Delete this workspace? This cannot be undone.")
+    if (!confirmed) return
+    try {
+      const res = await fetch(`/api/workspaces/${wsId}`, { method: "DELETE" })
+      if (!res.ok) {
+        alert("Failed to delete workspace. Please try again.")
+        return
+      }
+      const updated = workspaces.filter((w) => w.id !== wsId)
+      setWorkspaces(updated)
+      cacheSet("sb_workspaces", updated)
+      if (activeWorkspaceId === wsId) setActiveWorkspaceId(workspaceId)
+    } catch {
+      alert("Something went wrong. Please try again.")
     }
-    const updated = workspaces.filter((w) => w.id !== wsId)
-    setWorkspaces(updated)
-    cacheSet("sb_workspaces", updated)
-    if (activeWorkspaceId === wsId) setActiveWorkspaceId(workspaceId)
-  } catch {
-    alert("Something went wrong. Please try again.")
   }
-}
 
   const startRenamingFolder = (folder: FolderType) => {
     setFolderMenuId(null)
@@ -339,9 +336,9 @@ export default function Sidebar({ onNewNote, collapsed = false, onToggle }: Side
         body: JSON.stringify({ folder_id: folderId }),
       })
       if (res.ok) {
-  if (workspaceId) fetchDocsForWorkspace(workspaceId, true)
-  setDocs(prev => prev.filter(d => d.uuid !== docId))
-}
+        if (workspaceId) fetchDocsForWorkspace(workspaceId, true)
+        setDocs(prev => prev.filter(d => d.uuid !== docId))
+      }
     } catch {}
   }
 
@@ -433,76 +430,103 @@ export default function Sidebar({ onNewNote, collapsed = false, onToggle }: Side
     }
   }
 
-  const navItem = (href: string, icon: React.ReactNode, label: string) => (
-    <Link
-      href={href}
-      title={collapsed ? label : undefined}
-      className={`flex items-center gap-2 px-2 py-[5px] rounded-md mb-[1px] transition-colors text-[12px] font-medium ${
-        collapsed ? "justify-center" : ""
-      } ${
-        pathname === href
-          ? "bg-[var(--bg-tertiary)] text-[var(--text-primary)]"
-          : "text-[var(--sidebar-item)] hover:bg-[var(--bg-tertiary)] hover:text-[var(--text-primary)]"
-      }`}
-    >
-      {icon}
-      {!collapsed && label}
-    </Link>
-  )
+  // ── Styled nav item (works for both Link and button) ──
+  const navItemClass = (href: string) =>
+    `group relative flex items-center gap-3 px-3 py-2 rounded-lg mb-[2px] transition-all duration-100 text-[13.5px] font-medium tracking-[-0.01em] ${
+      collapsed ? "justify-center" : ""
+    } ${
+      pathname === href
+        ? "text-[#c4b8ff]"
+        : "text-[#7a7a82] hover:text-[#d8d7d1]"
+    }`
 
-  const AvatarBubble = ({ size = 5 }: { size?: number }) => (
-    <div className={`w-${size} h-${size} rounded-full overflow-hidden shrink-0`}>
+  const navItemStyle = (href: string): React.CSSProperties =>
+    pathname === href
+      ? { background: "rgba(107,92,231,0.16)" }
+      : {}
+
+  const ActiveBar = ({ href }: { href: string }) =>
+    pathname === href ? (
+      <span
+        style={{
+          position: "absolute",
+          left: 0,
+          top: "50%",
+          transform: "translateY(-50%)",
+          width: 3,
+          height: 18,
+          background: "#6b5ce7",
+          borderRadius: "0 3px 3px 0",
+        }}
+      />
+    ) : null
+
+  const AvatarBubble = ({ size = 28 }: { size?: number }) => (
+    <div
+      style={{ width: size, height: size, borderRadius: "50%", overflow: "hidden", flexShrink: 0 }}
+    >
       {userAvatar ? (
-        <img src={userAvatar} alt="Avatar" className="w-full h-full object-cover" />
+        <img src={userAvatar} alt="Avatar" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
       ) : (
-        <div className="w-full h-full rounded-full bg-[#7C3AED] flex items-center justify-center">
-          <span className="text-[9px] font-bold text-white">{initial}</span>
+        <div
+          style={{
+            width: "100%", height: "100%", borderRadius: "50%",
+            background: "linear-gradient(135deg,#f59e0b,#ef4444)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+          }}
+        >
+          <span style={{ fontSize: 11, fontWeight: 700, color: "#fff" }}>{initial}</span>
         </div>
       )}
     </div>
   )
 
+  // ── Dropdown menu shared styles ──
+  const dropdownStyle: React.CSSProperties = {
+    position: "absolute", right: 0, top: 28, zIndex: 50,
+    borderRadius: 10, boxShadow: "0 8px 32px rgba(0,0,0,0.4)",
+    width: 148, padding: "4px 0", overflow: "hidden",
+    background: "#28282c", border: "1px solid rgba(255,255,255,0.08)",
+  }
+  const dropdownBtnStyle: React.CSSProperties = {
+    display: "flex", alignItems: "center", gap: 8,
+    width: "100%", padding: "8px 12px",
+    fontSize: 12.5, color: "#9a9a9f",
+    background: "transparent", border: "none", cursor: "pointer",
+    transition: "all 0.1s", textAlign: "left",
+  }
+
   const WorkspaceContents = ({
-    wsFolders,
-    wsDocs,
-    wsId,
+    wsFolders, wsDocs, wsId,
   }: {
     wsFolders: FolderType[]
     wsDocs: Doc[]
     wsId: string
   }) => (
-    <div className="space-y-[1px]">
+    <div style={{ paddingLeft: 4 }}>
       {wsFolders.map((folder) => (
         <div
           key={folder.id}
-          className="group relative flex items-center gap-2 px-2 py-[5px] rounded-md text-[12px] font-medium transition-colors cursor-pointer"
+          className="group relative"
           style={{
-            backgroundColor:
-              dragOverFolderId === folder.id || pathname === `/folders/${folder.id}`
-                ? "var(--bg-tertiary)"
-                : "transparent",
-            color: "var(--sidebar-item)",
+            display: "flex", alignItems: "center", gap: 8,
+            padding: "6px 10px 6px 12px", borderRadius: 8,
+            fontSize: 13, fontWeight: 400, cursor: "pointer",
+            color: dragOverFolderId === folder.id || pathname === `/folders/${folder.id}` ? "#d8d7d1" : "#5a5a64",
+            background: dragOverFolderId === folder.id || pathname === `/folders/${folder.id}` ? "rgba(255,255,255,0.06)" : "transparent",
+            transition: "all 0.1s", marginBottom: 1,
           }}
-          onMouseEnter={e => {
-            e.currentTarget.style.backgroundColor = "var(--bg-tertiary)"
-            e.currentTarget.style.color = "var(--text-primary)"
-          }}
+          onMouseEnter={e => { e.currentTarget.style.background = "rgba(255,255,255,0.05)"; e.currentTarget.style.color = "#c0bfba" }}
           onMouseLeave={e => {
-            if (pathname !== `/folders/${folder.id}`) {
-              e.currentTarget.style.backgroundColor = "transparent"
-            }
-            e.currentTarget.style.color = "var(--sidebar-item)"
+            e.currentTarget.style.background = pathname === `/folders/${folder.id}` ? "rgba(255,255,255,0.06)" : "transparent"
+            e.currentTarget.style.color = pathname === `/folders/${folder.id}` ? "#d8d7d1" : "#5a5a64"
           }}
-          onClick={() => {
-            if (renamingFolderId !== folder.id) {
-              router.push(`/folders/${folder.id}?name=${encodeURIComponent(folder.name)}`)
-            }
-          }}
+          onClick={() => { if (renamingFolderId !== folder.id) router.push(`/folders/${folder.id}?name=${encodeURIComponent(folder.name)}`) }}
           onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setDragOverFolderId(folder.id) }}
           onDragLeave={(e) => { e.stopPropagation(); setDragOverFolderId(null) }}
           onDrop={(e) => handleDrop(e, folder.id)}
         >
-          <FolderOpen size={13} className="shrink-0" style={{ color: "var(--text-secondary)" }} />
+          <FolderOpen size={13} style={{ color: "#4a4a52", flexShrink: 0 }} />
           {renamingFolderId === folder.id ? (
             <input
               ref={folderRenameInputRef}
@@ -514,44 +538,39 @@ export default function Sidebar({ onNewNote, collapsed = false, onToggle }: Side
                 if (e.key === "Escape") setRenamingFolderId(null)
               }}
               onClick={(e) => e.stopPropagation()}
-              className="flex-1 min-w-0 rounded px-1.5 py-0.5 text-[12px] outline-none"
               style={{
-                backgroundColor: "var(--bg-tertiary)",
-                border: "1px solid var(--border)",
-                color: "var(--text-primary)",
+                flex: 1, minWidth: 0, borderRadius: 6, padding: "2px 8px",
+                fontSize: 12, outline: "none",
+                background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.12)",
+                color: "#e0dfd9",
               }}
             />
           ) : (
-            <span className="truncate flex-1">{folder.name}</span>
+            <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{folder.name}</span>
           )}
           {renamingFolderId !== folder.id && (
             <div className="relative" ref={folderMenuId === folder.id ? folderMenuRef : undefined}>
               <button
                 onClick={(e) => { e.stopPropagation(); setFolderMenuId(folderMenuId === folder.id ? null : folder.id) }}
-                className="opacity-0 group-hover:opacity-100 p-0.5 rounded transition-all"
-                style={{ color: "var(--text-secondary)" }}
+                style={{ opacity: 0, color: "#555", background: "none", border: "none", cursor: "pointer", padding: 2, borderRadius: 4, transition: "opacity 0.1s" }}
+                className="group-hover:opacity-100"
+                onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.opacity = "1" }}
               >
                 <MoreHorizontal size={13} />
               </button>
               {folderMenuId === folder.id && (
-                <div
-                  className="absolute right-0 top-6 z-50 rounded-lg shadow-xl w-[140px] py-1 overflow-hidden"
-                  style={{ backgroundColor: "var(--bg-tertiary)", border: "1px solid var(--border)" }}
-                >
-                  <button
+                <div style={dropdownStyle}>
+                  <button style={dropdownBtnStyle}
                     onClick={(e) => { e.stopPropagation(); startRenamingFolder(folder) }}
-                    className="flex items-center gap-2 w-full px-3 py-2 text-[12px] transition-colors"
-                    style={{ color: "var(--sidebar-item)" }}
-                    onMouseEnter={e => (e.currentTarget.style.backgroundColor = "var(--bg-secondary)")}
-                    onMouseLeave={e => (e.currentTarget.style.backgroundColor = "transparent")}
+                    onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = "rgba(255,255,255,0.06)"; (e.currentTarget as HTMLButtonElement).style.color = "#d0cfca" }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "transparent"; (e.currentTarget as HTMLButtonElement).style.color = "#9a9a9f" }}
                   >
-                    <Pencil size={12} style={{ color: "var(--text-secondary)" }} /> Rename
+                    <Pencil size={12} style={{ color: "#555" }} /> Rename
                   </button>
-                  <button
+                  <button style={{ ...dropdownBtnStyle, color: "#f87171" }}
                     onClick={(e) => { e.stopPropagation(); deleteFolder(folder.id) }}
-                    className="flex items-center gap-2 w-full px-3 py-2 text-[12px] text-red-400 hover:text-red-300 transition-colors"
-                    onMouseEnter={e => (e.currentTarget.style.backgroundColor = "var(--bg-secondary)")}
-                    onMouseLeave={e => (e.currentTarget.style.backgroundColor = "transparent")}
+                    onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = "rgba(255,255,255,0.06)" }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "transparent" }}
                   >
                     <Trash2 size={12} /> Delete
                   </button>
@@ -563,47 +582,38 @@ export default function Sidebar({ onNewNote, collapsed = false, onToggle }: Side
       ))}
 
       {wsDocs.length > 0 && (
-  <p className="text-[10px] font-semibold uppercase tracking-wider px-2 pt-3 pb-1 select-none" style={{ color: "var(--text-muted)" }}>
-    Unfiled
-  </p>
-)}
-{wsDocs.map((doc) => (
+        <p style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", padding: "10px 12px 4px", color: "#3a3a42", userSelect: "none" }}>
+          Unfiled
+        </p>
+      )}
+      {wsDocs.map((doc) => (
         <div
           key={doc.uuid}
           draggable
-          onDragStart={(e) => {
-            e.dataTransfer.setData("docId", String(doc.uuid))
-            e.dataTransfer.effectAllowed = "move"
-            setDraggingDocId(doc.uuid)
-          }}
+          onDragStart={(e) => { e.dataTransfer.setData("docId", String(doc.uuid)); e.dataTransfer.effectAllowed = "move"; setDraggingDocId(doc.uuid) }}
           onDragEnd={() => { setDraggingDocId(null); setDragOverFolderId(null) }}
           onClick={() => router.push(`/docs/${doc.uuid}`)}
-          className="group flex items-center gap-2 px-2 py-[5px] rounded-md transition-colors text-[12px] font-medium cursor-pointer"
+          className="group"
           style={{
+            display: "flex", alignItems: "center", gap: 8,
+            padding: "6px 10px 6px 12px", borderRadius: 8,
+            fontSize: 13, fontWeight: 400, cursor: "pointer",
             opacity: draggingDocId === doc.uuid ? 0.4 : 1,
-            backgroundColor: pathname === `/docs/${doc.uuid}` ? "var(--bg-tertiary)" : "transparent",
-            color: pathname === `/docs/${doc.uuid}` ? "var(--text-primary)" : "var(--sidebar-item)",
+            color: pathname === `/docs/${doc.uuid}` ? "#c4b8ff" : "#5a5a64",
+            background: pathname === `/docs/${doc.uuid}` ? "rgba(107,92,231,0.14)" : "transparent",
+            transition: "all 0.1s", marginBottom: 1,
           }}
-          onMouseEnter={e => {
-            if (pathname !== `/docs/${doc.uuid}`) {
-              e.currentTarget.style.backgroundColor = "var(--bg-tertiary)"
-              e.currentTarget.style.color = "var(--text-primary)"
-            }
-          }}
-          onMouseLeave={e => {
-            if (pathname !== `/docs/${doc.uuid}`) {
-              e.currentTarget.style.backgroundColor = "transparent"
-              e.currentTarget.style.color = "var(--sidebar-item)"
-            }
-          }}
+          onMouseEnter={e => { if (pathname !== `/docs/${doc.uuid}`) { e.currentTarget.style.background = "rgba(255,255,255,0.05)"; e.currentTarget.style.color = "#c0bfba" } }}
+          onMouseLeave={e => { if (pathname !== `/docs/${doc.uuid}`) { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#5a5a64" } }}
         >
-          <span className="opacity-0 group-hover:opacity-100 transition-opacity cursor-grab shrink-0 text-[var(--text-muted)] select-none" style={{ fontSize: "12px", lineHeight: 1 }}>⠿</span> <FileText size={13} className="shrink-0" style={{ color: "var(--text-secondary)" }} />
-          <span className="truncate">{doc.title || "Untitled"}</span>
+          <span className="opacity-0 group-hover:opacity-100" style={{ fontSize: 12, color: "#3a3a42", cursor: "grab", userSelect: "none", flexShrink: 0 }}>⠿</span>
+          <FileText size={13} style={{ color: "#4a4a52", flexShrink: 0 }} />
+          <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{doc.title || "Untitled"}</span>
         </div>
       ))}
 
       {wsFolders.length === 0 && wsDocs.length === 0 && (
-        <p className="text-[11px] px-2 py-1" style={{ color: "var(--text-muted)" }}>No docs yet</p>
+        <p style={{ fontSize: 11, padding: "4px 12px", color: "#3a3a42" }}>No docs yet</p>
       )}
     </div>
   )
@@ -617,81 +627,114 @@ export default function Sidebar({ onNewNote, collapsed = false, onToggle }: Side
         : "border-transparent text-[var(--text-muted)] hover:text-[var(--text-secondary)]"
     }`
 
+  // ── Sidebar width ──
+  const sidebarWidth = collapsed ? 52 : 220
+
   return (
     <>
       <aside
-        className="h-screen flex flex-col sticky top-0 border-r transition-all duration-200 ease-in-out overflow-hidden shrink-0"
         style={{
-          width: collapsed ? "52px" : "210px",
-          minWidth: collapsed ? "52px" : "210px",
-          backgroundColor: "var(--bg-secondary)",
-          borderColor: "var(--border)",
+          width: sidebarWidth,
+          minWidth: sidebarWidth,
+          height: "100vh",
+          display: "flex",
+          flexDirection: "column",
+          position: "sticky",
+          top: 0,
+          overflow: "hidden",
+          flexShrink: 0,
+          background: "#1a1a1c",
+          borderRight: "1px solid rgba(255,255,255,0.06)",
+          transition: "width 0.22s cubic-bezier(0.4,0,0.2,1), min-width 0.22s cubic-bezier(0.4,0,0.2,1)",
+          fontFamily: "'DM Sans', system-ui, sans-serif",
         }}
       >
+        {/* ── Header ── */}
         {collapsed ? (
-          <div className="flex flex-col items-center px-3 pt-4 pb-2.5 gap-2.5">
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "18px 0 12px", gap: 12, borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
             <AvatarBubble />
             <button
               onClick={() => { localStorage.setItem("sidebar-collapsed", "false"); onToggle?.() }}
               title="Expand sidebar"
-              style={{ color: "var(--text-secondary)" }}
-              className="hover:text-[var(--text-primary)] transition-colors"
+              style={{ background: "none", border: "none", cursor: "pointer", color: "#444", padding: 4 }}
+              onMouseEnter={e => (e.currentTarget.style.color = "#888")}
+              onMouseLeave={e => (e.currentTarget.style.color = "#444")}
             >
-              <PanelLeftOpen size={14} />
+              <PanelLeftOpen size={15} />
             </button>
           </div>
         ) : (
-          <div className="flex items-center gap-2 px-3 pt-4 pb-2.5">
+          <div style={{ display: "flex", alignItems: "center", gap: 9, padding: "18px 14px 14px", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
             <AvatarBubble />
-            <span className="font-semibold text-[13px] truncate flex-1" style={{ color: "var(--text-primary)" }}>
-              {userName || "..."}
+            <span style={{ fontSize: 14.5, fontWeight: 600, color: "#f0efe9", letterSpacing: "-0.02em", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              {userName || "…"}
             </span>
             <button
               onClick={() => { localStorage.setItem("sidebar-collapsed", "true"); onToggle?.() }}
               title="Collapse sidebar"
-              style={{ color: "var(--text-secondary)" }}
-              className="hover:text-[var(--text-primary)] transition-colors shrink-0"
+              style={{ background: "none", border: "none", cursor: "pointer", color: "#444", padding: 4, flexShrink: 0 }}
+              onMouseEnter={e => (e.currentTarget.style.color = "#888")}
+              onMouseLeave={e => (e.currentTarget.style.color = "#444")}
             >
-              <PanelLeftClose size={14} />
+              <PanelLeftClose size={15} />
             </button>
           </div>
         )}
 
+        {/* ── Search ── */}
         {!collapsed && (
-          <div className="px-2 mb-2">
-            <div
-              className="flex items-center gap-2 rounded-md px-2.5 py-[6px]"
-              style={{ backgroundColor: "var(--bg-tertiary)" }}
-            >
-              <Search size={12} style={{ color: "var(--text-muted)" }} className="shrink-0" />
+          <div style={{ padding: "10px 10px 4px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, background: "rgba(255,255,255,0.05)", borderRadius: 9, padding: "7px 12px" }}>
+              <Search size={12} style={{ color: "#3a3a42", flexShrink: 0 }} />
               <input
                 type="text"
                 placeholder="Search..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="bg-transparent text-[12px] outline-none w-full"
-                style={{ color: "var(--sidebar-item)" }}
+                style={{ background: "transparent", border: "none", outline: "none", fontSize: 13.5, color: "#7a7a82", width: "100%", fontFamily: "inherit" }}
               />
             </div>
           </div>
         )}
 
-        <nav className="flex-1 px-2 overflow-y-auto mt-0.5">
-          {navItem("/", <Home size={13} />, "Home")}
-          {navItem("/planner", <CheckSquare size={13} />, "Planner")}
-          {navItem("/activity", <Activity size={13} />, "Activity")}
-          {navItem("/library", <Layers size={13} />, "Library")}
+        {/* ── Nav ── */}
+        <nav style={{ flex: 1, padding: "8px 8px", overflowY: "auto", scrollbarWidth: "none" }}>
+
+          {/* Primary links */}
+          <Link href="/" className={navItemClass("/")} style={navItemStyle("/")}>
+            <ActiveBar href="/" />
+            <Home size={15} style={{ flexShrink: 0, opacity: pathname === "/" ? 1 : 0.6 }} />
+            {!collapsed && "Home"}
+          </Link>
+          <Link href="/planner" className={navItemClass("/planner")} style={navItemStyle("/planner")}>
+            <ActiveBar href="/planner" />
+            <CheckSquare size={15} style={{ flexShrink: 0, opacity: pathname === "/planner" ? 1 : 0.6 }} />
+            {!collapsed && "Planner"}
+          </Link>
+          <Link href="/activity" className={navItemClass("/activity")} style={navItemStyle("/activity")}>
+            <ActiveBar href="/activity" />
+            <Activity size={15} style={{ flexShrink: 0, opacity: pathname === "/activity" ? 1 : 0.6 }} />
+            {!collapsed && "Activity"}
+          </Link>
+          <Link href="/library" className={navItemClass("/library")} style={navItemStyle("/library")}>
+            <ActiveBar href="/library" />
+            <Layers size={15} style={{ flexShrink: 0, opacity: pathname === "/library" ? 1 : 0.6 }} />
+            {!collapsed && "Library"}
+          </Link>
 
           {!collapsed && (
             <>
-              <div className="my-2 border-t" style={{ borderColor: "var(--border)" }} />
+              {/* Divider */}
+              <div style={{ height: 1, background: "rgba(255,255,255,0.05)", margin: "8px 4px" }} />
 
-              <div className="flex items-center justify-between px-2 py-[4px] mb-0.5">
-                <div className="flex items-center gap-1 flex-1 min-w-0">
+              {/* Workspace header */}
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "4px 10px 2px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 4, flex: 1, minWidth: 0 }}>
                   <button
                     onClick={() => setWorkspaceOpen(!workspaceOpen)}
-                    style={{ color: "var(--text-muted)" }}
-                    className="hover:text-[var(--text-secondary)] transition-colors shrink-0"
+                    style={{ background: "none", border: "none", cursor: "pointer", color: "#3a3a42", padding: 2, display: "flex" }}
+                    onMouseEnter={e => (e.currentTarget.style.color = "#666")}
+                    onMouseLeave={e => (e.currentTarget.style.color = "#3a3a42")}
                   >
                     {workspaceOpen ? <ChevronDown size={11} /> : <ChevronRight size={11} />}
                   </button>
@@ -705,57 +748,48 @@ export default function Sidebar({ onNewNote, collapsed = false, onToggle }: Side
                         if (e.key === "Enter") commitWorkspaceRename()
                         if (e.key === "Escape") cancelWorkspaceRename()
                       }}
-                      className="flex-1 min-w-0 rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider outline-none"
                       style={{
-                        backgroundColor: "var(--bg-tertiary)",
-                        border: "1px solid var(--border)",
-                        color: "var(--sidebar-item)",
+                        flex: 1, minWidth: 0, borderRadius: 5, padding: "2px 8px",
+                        fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em",
+                        outline: "none", background: "rgba(255,255,255,0.07)",
+                        border: "1px solid rgba(255,255,255,0.12)", color: "#9a9a9f", fontFamily: "inherit",
                       }}
                     />
                   ) : (
                     <span
                       onDoubleClick={startRenamingWorkspace}
                       title="Double-click to rename"
-                      className="text-[10px] font-semibold uppercase tracking-wider truncate cursor-default select-none"
-                      style={{ color: "var(--text-muted)" }}
+                      style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em", color: "#3a3a42", userSelect: "none", cursor: "default", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
                     >
                       {workspaceName}
                     </span>
                   )}
                 </div>
-                <div className="relative ml-1 shrink-0" ref={pickerRef}>
+                <div className="relative" ref={pickerRef} style={{ marginLeft: 4, flexShrink: 0 }}>
                   <button
                     onClick={() => setShowPicker((v) => !v)}
                     disabled={creating}
-                    style={{ color: "var(--text-muted)" }}
-                    className="hover:text-[var(--text-primary)] transition-colors"
+                    style={{ background: "none", border: "none", cursor: "pointer", color: "#3a3a42", padding: 2, display: "flex" }}
+                    onMouseEnter={e => (e.currentTarget.style.color = "#888")}
+                    onMouseLeave={e => (e.currentTarget.style.color = "#3a3a42")}
                   >
                     <Plus size={13} />
                   </button>
                   {showPicker && (
-                    <div
-                      className="absolute right-0 top-5 z-50 rounded-lg shadow-xl w-[140px] py-1 overflow-hidden"
-                      style={{ backgroundColor: "var(--bg-tertiary)", border: "1px solid var(--border)" }}
-                    >
-                      <button
+                    <div style={dropdownStyle}>
+                      <button style={dropdownBtnStyle}
                         onClick={() => openModal("doc", workspaceId ?? undefined)}
-                        className="flex items-center gap-2 w-full px-3 py-2 text-[12px] transition-colors"
-                        style={{ color: "var(--sidebar-item)" }}
-                        onMouseEnter={e => (e.currentTarget.style.backgroundColor = "var(--bg-secondary)")}
-                        onMouseLeave={e => (e.currentTarget.style.backgroundColor = "transparent")}
+                        onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = "rgba(255,255,255,0.06)"; (e.currentTarget as HTMLButtonElement).style.color = "#d0cfca" }}
+                        onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "transparent"; (e.currentTarget as HTMLButtonElement).style.color = "#9a9a9f" }}
                       >
-                        <FileText size={12} style={{ color: "var(--text-secondary)" }} />
-                        New Doc
+                        <FileText size={12} style={{ color: "#555" }} /> New Doc
                       </button>
-                      <button
+                      <button style={dropdownBtnStyle}
                         onClick={() => openModal("folder", workspaceId ?? undefined)}
-                        className="flex items-center gap-2 w-full px-3 py-2 text-[12px] transition-colors"
-                        style={{ color: "var(--sidebar-item)" }}
-                        onMouseEnter={e => (e.currentTarget.style.backgroundColor = "var(--bg-secondary)")}
-                        onMouseLeave={e => (e.currentTarget.style.backgroundColor = "transparent")}
+                        onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = "rgba(255,255,255,0.06)"; (e.currentTarget as HTMLButtonElement).style.color = "#d0cfca" }}
+                        onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "transparent"; (e.currentTarget as HTMLButtonElement).style.color = "#9a9a9f" }}
                       >
-                        <FolderOpen size={12} style={{ color: "var(--text-secondary)" }} />
-                        New Folder
+                        <FolderOpen size={12} style={{ color: "#555" }} /> New Folder
                       </button>
                     </div>
                   )}
@@ -763,21 +797,19 @@ export default function Sidebar({ onNewNote, collapsed = false, onToggle }: Side
               </div>
 
               {workspaceOpen && (
-                <WorkspaceContents
-                  wsFolders={folders}
-                  wsDocs={docs}
-                  wsId={workspaceId ?? ""}
-                />
+                <WorkspaceContents wsFolders={folders} wsDocs={docs} wsId={workspaceId ?? ""} />
               )}
 
+              {/* Extra workspaces */}
               {extraWorkspaces.map((ws) => (
-                <div key={ws.id} className="mt-3">
-                  <div className="group flex items-center justify-between px-2 py-[4px] mb-0.5">
-                    <div className="flex items-center gap-1 flex-1 min-w-0">
+                <div key={ws.id} style={{ marginTop: 10 }}>
+                  <div className="group" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "4px 10px 2px" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 4, flex: 1, minWidth: 0 }}>
                       <button
                         onClick={() => toggleExtraWorkspace(ws.id)}
-                        style={{ color: "var(--text-muted)" }}
-                        className="hover:text-[var(--text-secondary)] transition-colors shrink-0"
+                        style={{ background: "none", border: "none", cursor: "pointer", color: "#3a3a42", padding: 2, display: "flex" }}
+                        onMouseEnter={e => (e.currentTarget.style.color = "#666")}
+                        onMouseLeave={e => (e.currentTarget.style.color = "#3a3a42")}
                       >
                         {expandedWorkspaces[ws.id] ? <ChevronDown size={11} /> : <ChevronRight size={11} />}
                       </button>
@@ -791,72 +823,60 @@ export default function Sidebar({ onNewNote, collapsed = false, onToggle }: Side
                             if (e.key === "Enter") commitExtraWsRename(ws.id)
                             if (e.key === "Escape") setRenamingWsId(null)
                           }}
-                          className="flex-1 min-w-0 rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider outline-none"
                           style={{
-                            backgroundColor: "var(--bg-tertiary)",
-                            border: "1px solid var(--border)",
-                            color: "var(--sidebar-item)",
+                            flex: 1, minWidth: 0, borderRadius: 5, padding: "2px 8px",
+                            fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em",
+                            outline: "none", background: "rgba(255,255,255,0.07)",
+                            border: "1px solid rgba(255,255,255,0.12)", color: "#9a9a9f", fontFamily: "inherit",
                           }}
                         />
                       ) : (
-                        <span
-                          className="text-[10px] font-semibold uppercase tracking-wider truncate cursor-default select-none"
-                          style={{ color: "var(--text-muted)" }}
-                        >
+                        <span style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em", color: "#3a3a42", userSelect: "none", cursor: "default", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                           {ws.name}
                         </span>
                       )}
                     </div>
-                    <div className="flex items-center gap-1 shrink-0">
+                    <div style={{ display: "flex", alignItems: "center", gap: 4, flexShrink: 0 }}>
                       <button
                         onClick={() => openModal("doc", ws.id)}
-                        style={{ color: "var(--text-muted)" }}
-                        className="opacity-0 group-hover:opacity-100 hover:text-[var(--text-primary)] transition-all"
                         title="New Doc"
+                        style={{ background: "none", border: "none", cursor: "pointer", color: "#3a3a42", padding: 2, display: "flex", opacity: 0, transition: "opacity 0.1s" }}
+                        className="group-hover:opacity-100"
+                        onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.opacity = "1"; (e.currentTarget as HTMLButtonElement).style.color = "#888" }}
+                        onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.color = "#3a3a42"}
                       >
                         <Plus size={13} />
                       </button>
                       <div className="relative" ref={wsMenuId === ws.id ? wsMenuRef : undefined}>
                         <button
                           onClick={(e) => { e.stopPropagation(); setWsMenuId(wsMenuId === ws.id ? null : ws.id) }}
-                          style={{ color: "var(--text-muted)" }}
-                          className="opacity-0 group-hover:opacity-100 hover:text-[var(--text-primary)] transition-all p-0.5 rounded"
+                          style={{ background: "none", border: "none", cursor: "pointer", color: "#3a3a42", padding: 2, display: "flex", opacity: 0, borderRadius: 4, transition: "opacity 0.1s" }}
+                          className="group-hover:opacity-100"
+                          onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.opacity = "1"; (e.currentTarget as HTMLButtonElement).style.color = "#888" }}
+                          onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.color = "#3a3a42"}
                         >
                           <MoreHorizontal size={13} />
                         </button>
                         {wsMenuId === ws.id && (
-                          <div
-                            className="absolute right-0 top-6 z-50 rounded-lg shadow-xl w-[150px] py-1 overflow-hidden"
-                            style={{ backgroundColor: "var(--bg-tertiary)", border: "1px solid var(--border)" }}
-                          >
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                setWsMenuId(null)
-                                setWsRenameValue(ws.name)
-                                setRenamingWsId(ws.id)
-                              }}
-                              className="flex items-center gap-2 w-full px-3 py-2 text-[12px] transition-colors"
-                              style={{ color: "var(--sidebar-item)" }}
-                              onMouseEnter={e => (e.currentTarget.style.backgroundColor = "var(--bg-secondary)")}
-                              onMouseLeave={e => (e.currentTarget.style.backgroundColor = "transparent")}
+                          <div style={dropdownStyle}>
+                            <button style={dropdownBtnStyle}
+                              onClick={(e) => { e.stopPropagation(); setWsMenuId(null); setWsRenameValue(ws.name); setRenamingWsId(ws.id) }}
+                              onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = "rgba(255,255,255,0.06)"; (e.currentTarget as HTMLButtonElement).style.color = "#d0cfca" }}
+                              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "transparent"; (e.currentTarget as HTMLButtonElement).style.color = "#9a9a9f" }}
                             >
-                              <Pencil size={12} style={{ color: "var(--text-secondary)" }} /> Rename
+                              <Pencil size={12} style={{ color: "#555" }} /> Rename
                             </button>
-                            <button
+                            <button style={dropdownBtnStyle}
                               onClick={(e) => { e.stopPropagation(); openModal("folder", ws.id); setWsMenuId(null) }}
-                              className="flex items-center gap-2 w-full px-3 py-2 text-[12px] transition-colors"
-                              style={{ color: "var(--sidebar-item)" }}
-                              onMouseEnter={e => (e.currentTarget.style.backgroundColor = "var(--bg-secondary)")}
-                              onMouseLeave={e => (e.currentTarget.style.backgroundColor = "transparent")}
+                              onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = "rgba(255,255,255,0.06)"; (e.currentTarget as HTMLButtonElement).style.color = "#d0cfca" }}
+                              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "transparent"; (e.currentTarget as HTMLButtonElement).style.color = "#9a9a9f" }}
                             >
-                              <FolderOpen size={12} style={{ color: "var(--text-secondary)" }} /> New Folder
+                              <FolderOpen size={12} style={{ color: "#555" }} /> New Folder
                             </button>
-                            <button
+                            <button style={{ ...dropdownBtnStyle, color: "#f87171" }}
                               onClick={(e) => { e.stopPropagation(); deleteExtraWorkspace(ws.id) }}
-                              className="flex items-center gap-2 w-full px-3 py-2 text-[12px] text-red-400 hover:text-red-300 transition-colors"
-                              onMouseEnter={e => (e.currentTarget.style.backgroundColor = "var(--bg-secondary)")}
-                              onMouseLeave={e => (e.currentTarget.style.backgroundColor = "transparent")}
+                              onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = "rgba(255,255,255,0.06)" }}
+                              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "transparent" }}
                             >
                               <Trash2 size={12} /> Delete
                             </button>
@@ -866,11 +886,7 @@ export default function Sidebar({ onNewNote, collapsed = false, onToggle }: Side
                     </div>
                   </div>
                   {expandedWorkspaces[ws.id] && (
-                    <WorkspaceContents
-                      wsFolders={wsData[ws.id]?.folders ?? []}
-                      wsDocs={wsData[ws.id]?.docs ?? []}
-                      wsId={ws.id}
-                    />
+                    <WorkspaceContents wsFolders={wsData[ws.id]?.folders ?? []} wsDocs={wsData[ws.id]?.docs ?? []} wsId={ws.id} />
                   )}
                 </div>
               ))}
@@ -878,72 +894,71 @@ export default function Sidebar({ onNewNote, collapsed = false, onToggle }: Side
           )}
         </nav>
 
-        <div
-          className={`border-t px-2 py-2.5 space-y-[1px] ${collapsed ? "flex flex-col items-center" : ""}`}
-          style={{ borderColor: "var(--border)" }}
-        >
-          {navItem("/settings", <Settings size={13} />, "Settings")}
-          {!collapsed && navItem("/trash", <Trash2 size={13} />, "Trash")}
+        {/* ── Bottom utility row ── */}
+        <div style={{ borderTop: "1px solid rgba(255,255,255,0.06)", padding: "8px 8px 14px", display: "flex", flexDirection: "column", alignItems: collapsed ? "center" : "stretch", gap: 1 }}>
 
-          {/* Help button — only visible when sidebar is expanded */}
+          {/* Settings */}
+          <Link href="/settings" className={navItemClass("/settings")} style={navItemStyle("/settings")}>
+            <ActiveBar href="/settings" />
+            <Settings size={15} style={{ flexShrink: 0, opacity: pathname === "/settings" ? 1 : 0.6 }} />
+            {!collapsed && "Settings"}
+          </Link>
+
+          {/* Trash */}
+          {!collapsed && (
+            <Link href="/trash" className={navItemClass("/trash")} style={navItemStyle("/trash")}>
+              <ActiveBar href="/trash" />
+              <Trash2 size={15} style={{ flexShrink: 0, opacity: pathname === "/trash" ? 1 : 0.6 }} />
+              Help & Shortcuts
+            </Link>
+          )}
+
+          {/* Help */}
           {!collapsed && (
             <button
               onClick={() => { setHelpTab("shortcuts"); setShowHelp(true) }}
-              title="Help & shortcuts"
-              className="flex items-center gap-2 px-2 py-[5px] rounded-md transition-colors text-[12px] font-medium w-full"
-              style={{ color: "var(--text-muted)" }}
-              onMouseEnter={e => { e.currentTarget.style.backgroundColor = "var(--bg-tertiary)"; e.currentTarget.style.color = "var(--text-primary)" }}
-              onMouseLeave={e => { e.currentTarget.style.backgroundColor = "transparent"; e.currentTarget.style.color = "var(--text-muted)" }}
+              style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 12px", borderRadius: 8, fontSize: 13.5, fontWeight: 500, letterSpacing: "-0.01em", color: "#7a7a82", background: "transparent", border: "none", cursor: "pointer", width: "100%", fontFamily: "inherit", transition: "all 0.1s" }}
+              onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = "rgba(255,255,255,0.05)"; (e.currentTarget as HTMLButtonElement).style.color = "#d8d7d1" }}
+              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "transparent"; (e.currentTarget as HTMLButtonElement).style.color = "#7a7a82" }}
             >
-              <span
-                className="flex items-center justify-center rounded border text-[10px] font-mono leading-none"
-                style={{
-                  width: "14px",
-                  height: "14px",
-                  borderColor: "var(--border)",
-                  color: "var(--text-muted)",
-                  flexShrink: 0,
-                }}
-              >
-                ?
-              </span>
+              <span style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 15, height: 15, borderRadius: 4, border: "1px solid rgba(255,255,255,0.12)", fontSize: 10, fontFamily: "monospace", color: "#4a4a52", flexShrink: 0 }}>?</span>
               Help & Shortcuts
             </button>
           )}
 
+          {/* Add Workspace */}
           {!collapsed && (
             <button
               onClick={() => openModal("workspace")}
-              className="flex items-center gap-2 px-2 py-[5px] rounded-md transition-colors text-[12px] font-medium w-full"
-              style={{ color: "var(--text-muted)" }}
-              onMouseEnter={e => { e.currentTarget.style.backgroundColor = "var(--bg-tertiary)"; e.currentTarget.style.color = "var(--text-primary)" }}
-              onMouseLeave={e => { e.currentTarget.style.backgroundColor = "transparent"; e.currentTarget.style.color = "var(--text-muted)" }}
+              style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 12px", borderRadius: 8, fontSize: 13.5, fontWeight: 500, letterSpacing: "-0.01em", color: "#7a7a82", background: "transparent", border: "none", cursor: "pointer", width: "100%", fontFamily: "inherit", transition: "all 0.1s" }}
+              onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = "rgba(255,255,255,0.05)"; (e.currentTarget as HTMLButtonElement).style.color = "#d8d7d1" }}
+              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "transparent"; (e.currentTarget as HTMLButtonElement).style.color = "#7a7a82" }}
             >
-              <Plus size={13} />
+              <Plus size={15} style={{ flexShrink: 0, opacity: 0.6 }} />
               Add Workspace
             </button>
           )}
+
+          {/* Log out */}
           {!collapsed ? (
             <button
               onClick={handleLogout}
-              className="flex items-center gap-2 px-2 py-[5px] rounded-md transition-colors text-[12px] font-medium w-full"
-              style={{ color: "var(--sidebar-item)" }}
-              onMouseEnter={e => { e.currentTarget.style.backgroundColor = "var(--bg-tertiary)"; e.currentTarget.style.color = "var(--text-primary)" }}
-              onMouseLeave={e => { e.currentTarget.style.backgroundColor = "transparent"; e.currentTarget.style.color = "var(--sidebar-item)" }}
+              style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 12px", borderRadius: 8, fontSize: 13.5, fontWeight: 500, letterSpacing: "-0.01em", color: "#7a7a82", background: "transparent", border: "none", cursor: "pointer", width: "100%", fontFamily: "inherit", transition: "all 0.1s" }}
+              onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = "rgba(255,255,255,0.05)"; (e.currentTarget as HTMLButtonElement).style.color = "#d8d7d1" }}
+              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "transparent"; (e.currentTarget as HTMLButtonElement).style.color = "#7a7a82" }}
             >
-              <LogOut size={13} />
+              <LogOut size={15} style={{ flexShrink: 0, opacity: 0.6 }} />
               Log out
             </button>
           ) : (
             <button
               onClick={handleLogout}
               title="Log out"
-              className="flex items-center justify-center p-1.5 rounded-md transition-colors"
-              style={{ color: "var(--text-secondary)" }}
-              onMouseEnter={e => { e.currentTarget.style.backgroundColor = "var(--bg-tertiary)"; e.currentTarget.style.color = "var(--text-primary)" }}
-              onMouseLeave={e => { e.currentTarget.style.backgroundColor = "transparent"; e.currentTarget.style.color = "var(--text-secondary)" }}
+              style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: 8, borderRadius: 8, color: "#444", background: "transparent", border: "none", cursor: "pointer", transition: "all 0.1s" }}
+              onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = "rgba(255,255,255,0.05)"; (e.currentTarget as HTMLButtonElement).style.color = "#888" }}
+              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "transparent"; (e.currentTarget as HTMLButtonElement).style.color = "#444" }}
             >
-              <LogOut size={13} />
+              <LogOut size={15} />
             </button>
           )}
         </div>
@@ -951,48 +966,35 @@ export default function Sidebar({ onNewNote, collapsed = false, onToggle }: Side
 
       {/* ── New doc / folder / workspace modal ── */}
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div className="absolute inset-0 bg-black/50 backdrop-blur-[2px]" onClick={() => setShowModal(false)} />
-          <div
-            className="relative rounded-xl shadow-2xl w-[320px] p-5 z-10"
-            style={{ backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border)" }}
-          >
-            <h2 className="text-[14px] font-semibold mb-4" style={{ color: "var(--text-primary)" }}>
+        <div style={{ position: "fixed", inset: 0, zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.6)", backdropFilter: "blur(2px)" }} onClick={() => setShowModal(false)} />
+          <div style={{ position: "relative", borderRadius: 14, boxShadow: "0 24px 64px rgba(0,0,0,0.5)", width: 320, padding: "22px 22px 18px", zIndex: 10, background: "#1e1e21", border: "1px solid rgba(255,255,255,0.08)", fontFamily: "inherit" }}>
+            <h2 style={{ fontSize: 14, fontWeight: 600, marginBottom: 16, color: "#f0efe9", letterSpacing: "-0.01em" }}>
               {modalType === "doc" ? "New Doc" : modalType === "folder" ? "New Folder" : "New Workspace"}
             </h2>
-            <div className="mb-1">
-              <label className="text-[11px] font-medium uppercase tracking-wider mb-1 block" style={{ color: "var(--text-muted)" }}>Name</label>
-              <input
-                ref={modalInputRef}
-                type="text"
-                value={modalName}
-                onChange={(e) => setModalName(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") handleModalConfirm()
-                  if (e.key === "Escape") setShowModal(false)
-                }}
-                className="w-full rounded-lg px-3 py-2 text-[13px] outline-none"
-                style={{
-                  backgroundColor: "var(--bg-tertiary)",
-                  border: "1px solid var(--border)",
-                  color: "var(--sidebar-item)",
-                }}
-              />
-            </div>
-            <div className="flex justify-end gap-2 mt-4">
+            <label style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em", color: "#3a3a42", display: "block", marginBottom: 6 }}>Name</label>
+            <input
+              ref={modalInputRef}
+              type="text"
+              value={modalName}
+              onChange={(e) => setModalName(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter") handleModalConfirm(); if (e.key === "Escape") setShowModal(false) }}
+              style={{ width: "100%", borderRadius: 9, padding: "9px 12px", fontSize: 13.5, outline: "none", background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", color: "#e0dfd9", fontFamily: "inherit" }}
+            />
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 16 }}>
               <button
                 onClick={() => setShowModal(false)}
-                className="px-3 py-1.5 rounded-lg text-[12px] font-medium transition-colors"
-                style={{ color: "var(--text-muted)" }}
-                onMouseEnter={e => (e.currentTarget.style.backgroundColor = "var(--bg-tertiary)")}
-                onMouseLeave={e => (e.currentTarget.style.backgroundColor = "transparent")}
+                style={{ padding: "7px 14px", borderRadius: 8, fontSize: 12.5, fontWeight: 500, color: "#5a5a62", background: "transparent", border: "none", cursor: "pointer", fontFamily: "inherit" }}
+                onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.05)")}
+                onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
               >
                 Cancel
               </button>
               <button
                 onClick={handleModalConfirm}
-                className="px-3 py-1.5 rounded-lg text-[12px] font-medium transition-colors"
-                style={{ backgroundColor: "var(--text-primary)", color: "var(--bg)" }}
+                style={{ padding: "7px 14px", borderRadius: 8, fontSize: 12.5, fontWeight: 600, color: "#fff", background: "#6b5ce7", border: "none", cursor: "pointer", fontFamily: "inherit" }}
+                onMouseEnter={e => (e.currentTarget.style.background = "#7c6ef0")}
+                onMouseLeave={e => (e.currentTarget.style.background = "#6b5ce7")}
               >
                 Create
               </button>
@@ -1003,23 +1005,12 @@ export default function Sidebar({ onNewNote, collapsed = false, onToggle }: Side
 
       {/* ── Help modal ── */}
       {showHelp && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div
-            className="absolute inset-0 bg-black/50 backdrop-blur-[2px]"
-            onClick={() => setShowHelp(false)}
-          />
-          <div
-            className="relative rounded-xl shadow-2xl w-[500px] max-w-[calc(100vw-32px)] z-10 overflow-hidden"
-            style={{ backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border)" }}
-          >
-            {/* Tab bar */}
-            <div className="flex border-b" style={{ borderColor: "var(--border)" }}>
+        <div style={{ position: "fixed", inset: 0, zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.6)", backdropFilter: "blur(2px)" }} onClick={() => setShowHelp(false)} />
+          <div style={{ position: "relative", borderRadius: 14, boxShadow: "0 24px 64px rgba(0,0,0,0.5)", width: 500, maxWidth: "calc(100vw - 32px)", zIndex: 10, overflow: "hidden", background: "#1e1e21", border: "1px solid rgba(255,255,255,0.08)", fontFamily: "inherit" }}>
+            <div style={{ display: "flex", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
               {(["shortcuts", "started", "tips", "new"] as const).map((tab) => (
-                <button
-                  key={tab}
-                  onClick={() => setHelpTab(tab)}
-                  className={helpTabClass(tab)}
-                >
+                <button key={tab} onClick={() => setHelpTab(tab)} className={helpTabClass(tab)}>
                   {tab === "shortcuts" && "Shortcuts"}
                   {tab === "started" && "Getting Started"}
                   {tab === "tips" && "Tips"}
@@ -1028,157 +1019,87 @@ export default function Sidebar({ onNewNote, collapsed = false, onToggle }: Side
               ))}
               <button
                 onClick={() => setShowHelp(false)}
-                className="ml-auto px-3 py-2 text-[12px] transition-colors"
-                style={{ color: "var(--text-muted)" }}
-                onMouseEnter={e => (e.currentTarget.style.color = "var(--text-primary)")}
-                onMouseLeave={e => (e.currentTarget.style.color = "var(--text-muted)")}
-              >
-                ✕
-              </button>
+                style={{ marginLeft: "auto", padding: "8px 12px", fontSize: 12, color: "#444", background: "none", border: "none", cursor: "pointer", transition: "color 0.1s" }}
+                onMouseEnter={e => (e.currentTarget.style.color = "#aaa")}
+                onMouseLeave={e => (e.currentTarget.style.color = "#444")}
+              >✕</button>
             </div>
 
-            {/* Panel content */}
-            <div className="overflow-y-auto" style={{ maxHeight: "380px" }}>
-
-              {/* Shortcuts */}
+            <div style={{ overflowY: "auto", maxHeight: 380 }}>
               {helpTab === "shortcuts" && (
-                <div className="p-5 space-y-5">
+                <div style={{ padding: "20px 20px", display: "flex", flexDirection: "column", gap: 20 }}>
                   {[
-                    {
-                      label: "Formatting",
-                      rows: [
-                        { action: "Bold", keys: ["⌘", "B"] },
-                        { action: "Italic", keys: ["⌘", "I"] },
-                        { action: "Strikethrough", keys: ["⌘", "⇧", "S"] },
-                        { action: "Inline code", keys: ["⌘", "E"] },
-                        { action: "Heading 1 / 2 / 3", keys: ["⌘", "⌥", "1–3"] },
-                      ],
-                    },
-                    {
-                      label: "Navigation",
-                      rows: [
-                        { action: "New doc", keys: ["⌘", "N"] },
-                        { action: "Search", keys: ["⌘", "K"] },
-                        { action: "Toggle sidebar", keys: ["⌘", "\\"] },
-                        { action: "Open help", keys: ["?"] },
-                      ],
-                    },
+                    { label: "Formatting", rows: [{ action: "Bold", keys: ["⌘","B"] }, { action: "Italic", keys: ["⌘","I"] }, { action: "Strikethrough", keys: ["⌘","⇧","S"] }, { action: "Inline code", keys: ["⌘","E"] }, { action: "Heading 1 / 2 / 3", keys: ["⌘","⌥","1–3"] }] },
+                    { label: "Navigation", rows: [{ action: "New doc", keys: ["⌘","N"] }, { action: "Search", keys: ["⌘","K"] }, { action: "Toggle sidebar", keys: ["⌘","\\"] }, { action: "Open help", keys: ["?"] }] },
                   ].map((section) => (
                     <div key={section.label}>
-                      <p className="text-[10px] font-semibold uppercase tracking-wider mb-2" style={{ color: "var(--text-muted)" }}>
-                        {section.label}
-                      </p>
-                      <div className="space-y-[1px]">
-                        {section.rows.map((row) => (
-                          <div
-                            key={row.action}
-                            className="flex items-center justify-between py-[6px] border-b"
-                            style={{ borderColor: "var(--border)" }}
-                          >
-                            <span className="text-[12px]" style={{ color: "var(--text-secondary)" }}>{row.action}</span>
-                            <div className="flex items-center gap-1">
-                              {row.keys.map((k) => (
-                                <kbd
-                                  key={k}
-                                  className="font-mono text-[11px] px-1.5 py-0.5 rounded"
-                                  style={{
-                                    backgroundColor: "var(--bg-tertiary)",
-                                    border: "1px solid var(--border)",
-                                    color: "var(--text-primary)",
-                                  }}
-                                >
-                                  {k}
-                                </kbd>
-                              ))}
-                            </div>
+                      <p style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: "#3a3a42", marginBottom: 8 }}>{section.label}</p>
+                      {section.rows.map((row) => (
+                        <div key={row.action} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "6px 0", borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
+                          <span style={{ fontSize: 12, color: "#7a7a82" }}>{row.action}</span>
+                          <div style={{ display: "flex", gap: 4 }}>
+                            {row.keys.map((k) => (
+                              <kbd key={k} style={{ fontFamily: "monospace", fontSize: 11, padding: "2px 6px", borderRadius: 5, background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", color: "#c0bfba" }}>{k}</kbd>
+                            ))}
                           </div>
-                        ))}
-                      </div>
+                        </div>
+                      ))}
                     </div>
                   ))}
                 </div>
               )}
 
-              {/* Getting Started */}
               {helpTab === "started" && (
-                <div className="p-5 space-y-1">
+                <div style={{ padding: "20px 20px" }}>
                   {[
                     { n: 1, title: "Create your first doc", desc: "Press ⌘N or tap + in the sidebar to create a new doc instantly." },
                     { n: 2, title: "Format as you write", desc: "Select any text to reveal the formatting toolbar. Use headings, bold, italic, and code blocks." },
                     { n: 3, title: "Find anything fast", desc: "Press ⌘K to search across all your docs by title or content. Results appear instantly." },
                     { n: 4, title: "Your docs save automatically", desc: "Every change is saved in the background. You'll see a quiet \"Saved\" indicator — no manual saving needed." },
                   ].map((step) => (
-                    <div key={step.n} className="flex gap-3 py-3 border-b" style={{ borderColor: "var(--border)" }}>
-                      <div
-                        className="flex items-center justify-center rounded-full text-[10px] font-mono shrink-0 mt-0.5"
-                        style={{
-                          width: "20px", height: "20px",
-                          border: "1px solid var(--border)",
-                          color: "var(--text-muted)",
-                        }}
-                      >
-                        {step.n}
-                      </div>
+                    <div key={step.n} style={{ display: "flex", gap: 12, padding: "12px 0", borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
+                      <div style={{ width: 20, height: 20, borderRadius: "50%", border: "1px solid rgba(255,255,255,0.08)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontFamily: "monospace", color: "#3a3a42", flexShrink: 0, marginTop: 2 }}>{step.n}</div>
                       <div>
-                        <p className="text-[12px] font-medium mb-1" style={{ color: "var(--text-primary)" }}>{step.title}</p>
-                        <p className="text-[12px] leading-relaxed" style={{ color: "var(--text-muted)" }}>{step.desc}</p>
+                        <p style={{ fontSize: 12, fontWeight: 500, color: "#e0dfd9", marginBottom: 4 }}>{step.title}</p>
+                        <p style={{ fontSize: 12, lineHeight: 1.6, color: "#4a4a52" }}>{step.desc}</p>
                       </div>
                     </div>
                   ))}
                 </div>
               )}
 
-              {/* Tips */}
               {helpTab === "tips" && (
-                <div className="p-5 space-y-1">
+                <div style={{ padding: "20px 20px" }}>
                   {[
                     { title: "Use headings to create structure", desc: "Break long docs into sections with H1, H2, and H3. Makes scanning much faster when you revisit later." },
                     { title: "Code blocks for technical notes", desc: "Wrap commands, snippets, or config values in a code block to keep them visually distinct and easy to copy." },
                     { title: "Keep one doc per topic", desc: "Short focused docs are easier to find and reference than one giant file. Use search to pull them up in seconds." },
                     { title: "Blockquotes for highlights", desc: "Use blockquotes to call out key decisions, quotes from meetings, or anything you want to stand out at a glance." },
                   ].map((tip) => (
-                    <div key={tip.title} className="py-3 border-b" style={{ borderColor: "var(--border)" }}>
-                      <p className="text-[12px] font-medium mb-1" style={{ color: "var(--text-primary)" }}>{tip.title}</p>
-                      <p className="text-[12px] leading-relaxed" style={{ color: "var(--text-muted)" }}>{tip.desc}</p>
+                    <div key={tip.title} style={{ padding: "12px 0", borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
+                      <p style={{ fontSize: 12, fontWeight: 500, color: "#e0dfd9", marginBottom: 4 }}>{tip.title}</p>
+                      <p style={{ fontSize: 12, lineHeight: 1.6, color: "#4a4a52" }}>{tip.desc}</p>
                     </div>
                   ))}
                 </div>
               )}
 
-              {/* What's New */}
               {helpTab === "new" && (
-                <div className="p-5 space-y-1">
+                <div style={{ padding: "20px 20px" }}>
                   {[
-                    {
-                      version: "v0.4", date: "May 2026", tag: "Latest",
-                      items: ["Notes are scoped per user — your docs are private to your account", "Autosave with Saved status indicator in the editor", "Search bar with autocomplete on the dashboard"],
-                    },
-                    {
-                      version: "v0.3", date: "Apr 2026", tag: null,
-                      items: ["Rich text editor with full formatting toolbar", "Heading levels H1, H2, H3", "Code blocks and inline code"],
-                    },
-                    {
-                      version: "v0.2", date: "Mar 2026", tag: null,
-                      items: ["Auth system — signup, login, logout", "Sidebar with settings and user avatar"],
-                    },
+                    { version: "v0.4", date: "May 2026", tag: "Latest", items: ["Notes are scoped per user — your docs are private to your account", "Autosave with Saved status indicator in the editor", "Search bar with autocomplete on the dashboard"] },
+                    { version: "v0.3", date: "Apr 2026", tag: null, items: ["Rich text editor with full formatting toolbar", "Heading levels H1, H2, H3", "Code blocks and inline code"] },
+                    { version: "v0.2", date: "Mar 2026", tag: null, items: ["Auth system — signup, login, logout", "Sidebar with settings and user avatar"] },
                   ].map((release) => (
-                    <div key={release.version} className="py-3 border-b" style={{ borderColor: "var(--border)" }}>
-                      <div className="flex items-center gap-2 mb-2">
-                        <span className="text-[12px] font-mono font-medium" style={{ color: "var(--text-primary)" }}>{release.version}</span>
-                        <span className="text-[11px]" style={{ color: "var(--text-muted)" }}>{release.date}</span>
-                        {release.tag && (
-                          <span
-                            className="text-[10px] px-1.5 py-0.5 rounded"
-                            style={{ backgroundColor: "var(--bg-tertiary)", border: "1px solid var(--border)", color: "var(--text-secondary)" }}
-                          >
-                            {release.tag}
-                          </span>
-                        )}
+                    <div key={release.version} style={{ padding: "12px 0", borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                        <span style={{ fontSize: 12, fontFamily: "monospace", fontWeight: 500, color: "#e0dfd9" }}>{release.version}</span>
+                        <span style={{ fontSize: 11, color: "#3a3a42" }}>{release.date}</span>
+                        {release.tag && <span style={{ fontSize: 10, padding: "2px 6px", borderRadius: 4, background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.08)", color: "#7a7a82" }}>{release.tag}</span>}
                       </div>
                       {release.items.map((item) => (
-                        <p key={item} className="text-[12px] leading-relaxed pl-3 relative" style={{ color: "var(--text-muted)" }}>
-                          <span className="absolute left-0" style={{ color: "var(--border)" }}>–</span>
-                          {item}
+                        <p key={item} style={{ fontSize: 12, lineHeight: 1.6, color: "#4a4a52", paddingLeft: 12, position: "relative" }}>
+                          <span style={{ position: "absolute", left: 0, color: "#2a2a32" }}>–</span>{item}
                         </p>
                       ))}
                     </div>
@@ -1187,13 +1108,12 @@ export default function Sidebar({ onNewNote, collapsed = false, onToggle }: Side
               )}
             </div>
 
-            {/* Footer */}
-            <div className="px-5 py-3 border-t flex items-center gap-1.5" style={{ borderColor: "var(--border)" }}>
-              <span className="text-[11px]" style={{ color: "var(--text-muted)" }}>Press</span>
-              <kbd className="font-mono text-[10px] px-1.5 py-0.5 rounded" style={{ backgroundColor: "var(--bg-tertiary)", border: "1px solid var(--border)", color: "var(--text-primary)" }}>?</kbd>
-              <span className="text-[11px]" style={{ color: "var(--text-muted)" }}>or</span>
-              <kbd className="font-mono text-[10px] px-1.5 py-0.5 rounded" style={{ backgroundColor: "var(--bg-tertiary)", border: "1px solid var(--border)", color: "var(--text-primary)" }}>Esc</kbd>
-              <span className="text-[11px]" style={{ color: "var(--text-muted)" }}>to close</span>
+            <div style={{ padding: "10px 20px", borderTop: "1px solid rgba(255,255,255,0.06)", display: "flex", alignItems: "center", gap: 6 }}>
+              <span style={{ fontSize: 11, color: "#3a3a42" }}>Press</span>
+              <kbd style={{ fontFamily: "monospace", fontSize: 10, padding: "2px 6px", borderRadius: 5, background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", color: "#c0bfba" }}>?</kbd>
+              <span style={{ fontSize: 11, color: "#3a3a42" }}>or</span>
+              <kbd style={{ fontFamily: "monospace", fontSize: 10, padding: "2px 6px", borderRadius: 5, background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", color: "#c0bfba" }}>Esc</kbd>
+              <span style={{ fontSize: 11, color: "#3a3a42" }}>to close</span>
             </div>
           </div>
         </div>
