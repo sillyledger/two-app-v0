@@ -12,7 +12,7 @@ interface Doc {
   content: string
   type: string
   created_at: string
-  is_favorite: boolean
+  is_starred: boolean
 }
 
 interface Folder {
@@ -91,13 +91,13 @@ export default function HomePage() {
 
   const handleToggleFavorite = async (doc: Doc, e: React.MouseEvent) => {
     e.stopPropagation()
-    const newValue = !doc.is_favorite
-    setDocs(prev => prev.map(d => d.uuid === doc.uuid ? { ...d, is_favorite: newValue } : d))
-    await fetch(`/api/docs/${doc.uuid}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ is_favorite: newValue }),
-    })
+    const newValue = !doc.is_starred
+setDocs(prev => prev.map(d => d.uuid === doc.uuid ? { ...d, is_starred: newValue } : d))
+await fetch(`/api/docs/${doc.uuid}`, {
+  method: "PUT",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ is_starred: newValue }),
+})
   }
 
   const handleRename = async () => {
@@ -144,7 +144,7 @@ export default function HomePage() {
   ]
 
   const visibleDocs = activeTab === "favorites"
-    ? docs.filter(d => d.is_favorite)
+    ? docs.filter(d => d.is_starred)
     : docs
 
   const btnBase: React.CSSProperties = {
@@ -297,16 +297,16 @@ export default function HomePage() {
                     {/* Star button */}
                     <button
                       onClick={e => handleToggleFavorite(doc, e)}
-                      title={doc.is_favorite ? "Remove from favorites" : "Add to favorites"}
+                      title={doc.is_starred ? "Remove from favorites" : "Add to favorites"}
                       className="transition-opacity"
                       style={{
-                        color: doc.is_favorite ? "#EF9F27" : "var(--text-muted)",
-                        opacity: doc.is_favorite ? 1 : 0,
+                        color: doc.is_starred ? "#EF9F27" : "var(--text-muted)",
+opacity: doc.is_starred ? 1 : 0,
                       }}
                       onMouseEnter={e => (e.currentTarget.style.opacity = "1")}
                       onMouseLeave={e => (e.currentTarget.style.opacity = doc.is_favorite ? "1" : "0")}
                     >
-                      <Star size={13} fill={doc.is_favorite ? "#EF9F27" : "none"} />
+                      <Star size={13} fill={doc.is_starred ? "#EF9F27" : "none"} />
                     </button>
                   </div>
 
