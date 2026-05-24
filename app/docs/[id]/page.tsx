@@ -142,6 +142,7 @@ export default function DocPage() {
   const titleRef = useRef<HTMLTextAreaElement>(null)
   const editorFocusRef = useRef<(() => void) | null>(null)
   const [lastSaved, setLastSaved] = useState<string | null>(null)
+  const [isFavorite, setIsFavorite] = useState(false)
   const [docLabels, setDocLabels] = useState<Label[]>([])
   const [allLabels, setAllLabels] = useState<Label[]>([])
   const [labelPickerOpen, setLabelPickerOpen] = useState(false)
@@ -255,6 +256,7 @@ export default function DocPage() {
         setIsPublic(data.is_public ?? false)
         setPriority((data.priority as Priority) ?? null)
         setLastSaved(data.updated_at ?? null)
+        setIsFavorite(data.is_favorite ?? false)
         if (data.folder_id && data.folder_name) {
           setFolder({ id: data.folder_id, name: data.folder_name })
         }
@@ -409,7 +411,15 @@ export default function DocPage() {
     const newDoc = await res.json()
     router.push(`/docs/${newDoc.uuid}`)
   }
-
+const handleToggleFavorite = async () => {
+  const newValue = !isFavorite
+  setIsFavorite(newValue)
+  await fetch(`/api/docs/${docId}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ is_favorite: newValue }),
+  })
+}
   const handleDelete = async () => {
     await fetch(`/api/docs/${docId}`, { method: 'DELETE' })
     router.push('/')
@@ -481,6 +491,8 @@ export default function DocPage() {
           sidebarWidth={sidebarWidth}
           wideMode={wideMode}
           onToggleWide={toggleWideMode}
+          isFavorite={isFavorite}
+onToggleFavorite={isLoggedIn ? handleToggleFavorite : undefined}
         />
 
         <button
