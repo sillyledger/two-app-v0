@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { Share2, MoreHorizontal, Copy, Download, Trash2, Globe, Lock, FolderInput, AlignCenter, AlignJustify, ChevronRight } from "lucide-react"
+import { Share2, MoreHorizontal, Copy, Download, Trash2, Globe, Lock, FolderInput, AlignCenter, AlignJustify } from "lucide-react"
 import { useState, useRef, useEffect } from "react"
 
 interface Folder {
@@ -200,10 +200,10 @@ export default function DocTopbar({
         </div>
 
         {/* Right */}
-        <div className="flex items-center gap-2 shrink-0 ml-4">
+        <div className="flex items-center gap-1 shrink-0 ml-4">
 
           {/* Autosave indicator */}
-          <div className="flex items-center gap-1.5 h-5">
+          <div className="flex items-center gap-1.5 h-5 mr-1">
             {saveStatus === "saving" && (
               <>
                 <span className="w-1.5 h-1.5 rounded-full bg-yellow-400/80 animate-pulse" />
@@ -241,8 +241,50 @@ export default function DocTopbar({
             </button>
           )}
 
+          {/* Move to folder — visible button */}
+          {onDelete && (
+            <button
+              onClick={openMoveModal}
+              title="Move to folder"
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[12px] font-medium transition-colors"
+              style={{ color: "var(--text-muted)" }}
+              onMouseEnter={e => {
+                e.currentTarget.style.backgroundColor = "var(--bg-tertiary)"
+                e.currentTarget.style.color = "var(--text-primary)"
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.backgroundColor = "transparent"
+                e.currentTarget.style.color = "var(--text-muted)"
+              }}
+            >
+              <FolderInput size={13} />
+              Move
+            </button>
+          )}
+
+          {/* Delete — visible button */}
+          {onDelete && (
+            <button
+              onClick={() => setShowDeleteModal(true)}
+              title="Delete doc"
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[12px] font-medium transition-colors"
+              style={{ color: "var(--text-muted)" }}
+              onMouseEnter={e => {
+                e.currentTarget.style.backgroundColor = "rgba(239,68,68,0.1)"
+                e.currentTarget.style.color = "#f87171"
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.backgroundColor = "transparent"
+                e.currentTarget.style.color = "var(--text-muted)"
+              }}
+            >
+              <Trash2 size={13} />
+              Delete
+            </button>
+          )}
+
           {/* Share button + popup */}
-          <div className="relative" ref={shareRef}>
+          <div className="relative ml-1" ref={shareRef}>
             <button
               onClick={() => setShareOpen((v) => !v)}
               className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[12px] font-medium transition-colors"
@@ -320,7 +362,7 @@ export default function DocTopbar({
             )}
           </div>
 
-          {/* ··· menu */}
+          {/* ··· menu — Copy & Export only */}
           <div className="relative" ref={menuRef}>
             <button
               onClick={() => setMenuOpen((v) => !v)}
@@ -362,26 +404,6 @@ export default function DocTopbar({
                 >
                   <Download size={12} style={{ color: "var(--text-muted)" }} />
                   Export as Markdown
-                </button>
-                <button
-                  onClick={openMoveModal}
-                  className="flex items-center gap-2 w-full px-3 py-2 text-[12px] transition-colors"
-                  style={{ color: "var(--text-secondary)" }}
-                  onMouseEnter={e => (e.currentTarget.style.backgroundColor = "var(--bg-tertiary)")}
-                  onMouseLeave={e => (e.currentTarget.style.backgroundColor = "transparent")}
-                >
-                  <FolderInput size={12} style={{ color: "var(--text-muted)" }} />
-                  Move doc
-                </button>
-                <div className="my-1 border-t" style={{ borderColor: "var(--border)" }} />
-                <button
-                  onClick={() => { setMenuOpen(false); setShowDeleteModal(true) }}
-                  className="flex items-center gap-2 w-full px-3 py-2 text-[12px] text-red-400 hover:text-red-300 transition-colors"
-                  onMouseEnter={e => (e.currentTarget.style.backgroundColor = "var(--bg-tertiary)")}
-                  onMouseLeave={e => (e.currentTarget.style.backgroundColor = "transparent")}
-                >
-                  <Trash2 size={12} />
-                  Delete doc
                 </button>
               </div>
             )}
