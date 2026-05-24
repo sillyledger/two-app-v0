@@ -25,8 +25,8 @@ export async function POST(request: Request) {
       const verificationToken = crypto.randomBytes(32).toString('hex')
 
       const result = await sql`
-        INSERT INTO users (email, password, email_verified, verification_token)
-        VALUES (${email}, ${hashedPassword}, false, ${verificationToken})
+        INSERT INTO users (email, password, email_verified, verification_token, theme)
+        VALUES (${email}, ${hashedPassword}, false, ${verificationToken}, 'dark')
         RETURNING *
       `
 
