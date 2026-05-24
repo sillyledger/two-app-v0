@@ -256,7 +256,7 @@ export default function DocPage() {
         setIsPublic(data.is_public ?? false)
         setPriority((data.priority as Priority) ?? null)
         setLastSaved(data.updated_at ?? null)
-        setIsFavorite(data.is_favorite ?? false)
+        setIsFavorite(data.is_starred ?? false)
         if (data.folder_id && data.folder_name) {
           setFolder({ id: data.folder_id, name: data.folder_name })
         }
