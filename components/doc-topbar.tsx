@@ -165,7 +165,6 @@ export default function DocTopbar({
           left: sidebarWidth,
           right: 0,
           backgroundColor: "var(--bg)",
-          borderBottom: "1px solid var(--border)",
         }}
       >
         {/* Left — Breadcrumbs */}
