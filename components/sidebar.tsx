@@ -31,9 +31,11 @@ const MUTED = "#6a6a74"
 const BORDER = "1px solid rgba(255,255,255,0.07)"
 const FONT = "'DM Sans', system-ui, sans-serif"
 
-export default function Sidebar({ onNewNote, collapsed = false, onToggle }: SidebarProps = {}) {
+export default function Sidebar({ onNewNote, onToggle }: SidebarProps = {}) {
   const pathname = usePathname()
   const router = useRouter()
+  const [collapsed, setCollapsed] = useState(false)
+  useEffect(() => { const saved = localStorage.getItem("sidebar-collapsed"); if (saved === "true") setCollapsed(true) }, [])
   const [myDocsOpen, setMyDocsOpen] = useState(true)
   const [unfiledOpen, setUnfiledOpen] = useState(true)
   const [sharedOpen, setSharedOpen] = useState(true)
@@ -309,7 +311,7 @@ if (e.key === "?" && !showModal && !isTyping && !e.shiftKey) setShowHelp(v => !v
         {collapsed ? (
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "16px 0 12px", gap: 12, borderBottom: BORDER, flexShrink: 0 }}>
             <AvatarBubble />
-            <button onClick={() => { localStorage.setItem("sidebar-collapsed", "false"); onToggle?.() }}
+            <button onClick={() => { const next = !collapsed; localStorage.setItem("sidebar-collapsed", String(next)); setCollapsed(next); onToggle?.() }}
               style={{ background: "none", border: "none", cursor: "pointer", color: MUTED, padding: 4, display: "flex" }}
               onMouseEnter={e => (e.currentTarget.style.color = "#ccc")} onMouseLeave={e => (e.currentTarget.style.color = MUTED)}>
               <PanelLeftOpen size={16} />
@@ -319,7 +321,7 @@ if (e.key === "?" && !showModal && !isTyping && !e.shiftKey) setShowHelp(v => !v
           <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "18px 14px 16px", borderBottom: BORDER, flexShrink: 0 }}>
             <AvatarBubble />
             <span style={{ fontSize: 15, fontWeight: 600, color: "#eeede7", letterSpacing: "-0.02em", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{userName || "…"}</span>
-            <button onClick={() => { localStorage.setItem("sidebar-collapsed", "false"); onToggle?.() }}
+            <button onClick={() => { const next = !collapsed; localStorage.setItem("sidebar-collapsed", String(next)); setCollapsed(next); onToggle?.() }}
               style={{ background: "none", border: "none", cursor: "pointer", color: MUTED, padding: 4, flexShrink: 0, display: "flex" }}
               onMouseEnter={e => (e.currentTarget.style.color = "#ccc")} onMouseLeave={e => (e.currentTarget.style.color = MUTED)}>
               <PanelLeftClose size={15} />
