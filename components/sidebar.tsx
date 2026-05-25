@@ -520,7 +520,7 @@ export default function Sidebar({ onNewNote, collapsed = false, onToggle }: Side
           {!collapsed && (
             <BotBtn icon={<span style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 16, height: 16, borderRadius: 4, border: "1px solid rgba(255,255,255,0.12)", fontSize: 10, fontFamily: "monospace", color: "#4a4a56" }}>?</span>} label="Help & Shortcuts" onClick={() => { setHelpTab("shortcuts"); setShowHelp(true) }} />
           )}
-          {!collapsed && <BotBtn icon={<Plus size={16} />} label="Add Workspace" onClick={() => openModal("workspace")} />}
+
           <BotBtn icon={<LogOut size={16} />} label="Log out" onClick={handleLogout} />
         </div>
       </aside>
