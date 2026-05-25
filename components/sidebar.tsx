@@ -83,6 +83,13 @@ if (e.key === "?" && !showModal && !isTyping && !e.shiftKey) setShowHelp(v => !v
     document.addEventListener("keydown", handler)
     return () => document.removeEventListener("keydown", handler)
   }, [showModal])
+  useEffect(() => {
+    const handler = () => {
+      if (workspaceId) fetchDocsForWorkspace(workspaceId, true)
+    }
+    window.addEventListener("sb-refresh", handler)
+    return () => window.removeEventListener("sb-refresh", handler)
+  }, [workspaceId])
 
   const fetchDocsForWorkspace = (wsId: string, isPrimary: boolean) => {
     fetch(`/api/docs?workspace_id=${wsId}`).then(r => r.json()).then(data => {
