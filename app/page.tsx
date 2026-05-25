@@ -393,14 +393,13 @@ export default function HomePage() {
             </p>
             <div className="flex flex-col gap-2">
               
-                href="https://two.so/#pricing"
-                target="_blank"
-                rel="noopener noreferrer"
+                <button
+                onClick={() => { setLimitModalOpen(false); window.open("https://two.so/#pricing", "_blank") }}
                 className="w-full py-2.5 rounded-xl text-sm font-medium text-center"
-                style={{ backgroundColor: "#534AB7", color: "#fff" }}
+                style={{ backgroundColor: "#534AB7", color: "#fff", border: "none", cursor: "pointer" }}
               >
-                See pricing plans &#8594;
-              </a>
+                See pricing plans
+              </button>
               <button
                 onClick={() => setLimitModalOpen(false)}
                 className="w-full py-2.5 rounded-xl text-sm"
