@@ -440,7 +440,7 @@ export default function DocPage() {
     return null
   }, [])
 
-  const sidebarWidth = collapsed ? '52px' : '210px'
+  const sidebarWidth = collapsed ? '56px' : '256px'
   const wordCount = getWordCount(content)
   const charCount = getCharCount(content)
   const activePriority = PRIORITIES.find(p => p.value === priority) ?? PRIORITIES[0]
