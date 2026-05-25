@@ -77,7 +77,8 @@ export default function Sidebar({ onNewNote, collapsed = false, onToggle }: Side
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.key === "Escape") setShowHelp(false)
-      if (e.key === "?" && !showModal) setShowHelp(v => !v)
+      const isTyping = (e.target as HTMLElement)?.tagName === "INPUT" || (e.target as HTMLElement)?.tagName === "TEXTAREA" || (e.target as HTMLElement)?.isContentEditable
+if (e.key === "?" && !showModal && !isTyping) setShowHelp(v => !v)
     }
     document.addEventListener("keydown", handler)
     return () => document.removeEventListener("keydown", handler)
