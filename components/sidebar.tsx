@@ -314,7 +314,7 @@ if (e.key === "?" && !showModal && !isTyping && !e.shiftKey) setShowHelp(v => !v
           <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "18px 14px 16px", borderBottom: BORDER, flexShrink: 0 }}>
             <AvatarBubble />
             <span style={{ fontSize: 15, fontWeight: 600, color: "#eeede7", letterSpacing: "-0.02em", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{userName || "…"}</span>
-            <button onClick={() => { localStorage.setItem("sidebar-collapsed", "true"); onToggle?.() }}
+            <button onClick={() => { localStorage.setItem("sidebar-collapsed", "false"); onToggle?.() }}
               style={{ background: "none", border: "none", cursor: "pointer", color: MUTED, padding: 4, flexShrink: 0, display: "flex" }}
               onMouseEnter={e => (e.currentTarget.style.color = "#ccc")} onMouseLeave={e => (e.currentTarget.style.color = MUTED)}>
               <PanelLeftClose size={15} />
