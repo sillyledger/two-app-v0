@@ -34,8 +34,7 @@ const FONT = "'DM Sans', system-ui, sans-serif"
 export default function Sidebar({ onNewNote, onToggle }: SidebarProps = {}) {
   const pathname = usePathname()
   const router = useRouter()
-  const [collapsed, setCollapsed] = useState(false)
-  useEffect(() => { const saved = localStorage.getItem("sidebar-collapsed"); if (saved === "true") setCollapsed(true) }, [])
+  const [collapsed, setCollapsed] = useState(() => typeof window !== "undefined" ? localStorage.getItem("sidebar-collapsed") === "true" : false)
   const [myDocsOpen, setMyDocsOpen] = useState(true)
   const [unfiledOpen, setUnfiledOpen] = useState(true)
   const [sharedOpen, setSharedOpen] = useState(true)
