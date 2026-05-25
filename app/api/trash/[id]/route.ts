@@ -3,7 +3,8 @@ import { cookies } from 'next/headers'
 import { verifyToken } from '@/lib/auth'
 import { sql } from '@/lib/db'
 
-export async function PUT(request: Request, { params }: { params: { id: string } }) {
+export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
   const cookieStore = await cookies()
   const token = cookieStore.get('auth-token')
   if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -21,7 +22,8 @@ export async function PUT(request: Request, { params }: { params: { id: string }
   }
 }
 
-export async function DELETE(request: Request, { params }: { params: { id: string } }) {
+export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
   const cookieStore = await cookies()
   const token = cookieStore.get('auth-token')
   if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
