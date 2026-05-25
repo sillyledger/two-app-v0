@@ -399,7 +399,7 @@ export default function HomePage() {
                 className="w-full py-2.5 rounded-xl text-sm font-medium text-center"
                 style={{ backgroundColor: "#534AB7", color: "#fff" }}
               >
-                See pricing plans →
+                See pricing plans &#8594;
               </a>
               <button
                 onClick={() => setLimitModalOpen(false)}
