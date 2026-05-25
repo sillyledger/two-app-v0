@@ -40,12 +40,12 @@ export async function POST(request: Request) {
   if (!payload) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   try {
-    const { title, due_date, doc_id, doc_title } = await request.json()
+    const { title, due_date, doc_id, doc_title, priority } = await request.json()
     if (!title || !doc_id) return NextResponse.json({ error: 'Missing fields' }, { status: 400 })
 
     const result = await sql`
-      INSERT INTO tasks (user_id, title, due_date, doc_id, doc_title)
-      VALUES (${payload.userId}, ${title}, ${due_date ?? null}, ${doc_id}, ${doc_title ?? ''})
+      INSERT INTO tasks (user_id, title, due_date, doc_id, doc_title, priority)
+VALUES (${payload.userId}, ${title}, ${due_date ?? null}, ${doc_id}, ${doc_title ?? ''}, ${priority ?? 'medium'})
       RETURNING *
     `
     return NextResponse.json(result[0], { status: 201 })
