@@ -338,34 +338,32 @@ export default function Sidebar({ onNewNote, collapsed = false, onToggle }: Side
               {/* ── Divider ── */}
               <div style={{ height: 1, background: "rgba(255,255,255,0.06)", margin: "10px 4px" }} />
 
-              {/* ── My Workspace header (replaces PRIVATE label) ── */}
+              {/* ── My Workspace header ── */}
               <div
+                style={{ display: "flex", alignItems: "center", padding: "6px 12px 4px", cursor: "pointer" }}
                 onClick={() => { if (!renamingWorkspace) setMyDocsOpen(v => !v) }}
-                style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 12px", borderRadius: 9, marginBottom: 2, cursor: "pointer", fontSize: 13.5, fontWeight: 500, color: ITEM_COLOR, transition: "background 0.12s" }}
-                onMouseEnter={e => (e.currentTarget.style.background = HOVER_BG)}
-                onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
               >
-                <span style={{ opacity: 0.5, fontSize: 16, flexShrink: 0 }}>☁</span>
+                {/* Left arrow — same pattern as Shared Workspaces */}
+                <span style={{ fontSize: 9, color: MUTED, marginRight: 6, display: "inline-block", transform: myDocsOpen ? "rotate(90deg)" : "rotate(0deg)", transition: "transform 0.18s", flexShrink: 0 }}>▶</span>
+                <span style={{ opacity: 0.5, fontSize: 15, flexShrink: 0, marginRight: 8 }}>☁</span>
                 {renamingWorkspace
                   ? <input ref={workspaceInputRef} value={workspaceRenameValue} onChange={e => setWorkspaceRenameValue(e.target.value)} onBlur={commitWorkspaceRename} onKeyDown={e => { if (e.key === "Enter") commitWorkspaceRename(); if (e.key === "Escape") cancelWorkspaceRename() }} onClick={e => e.stopPropagation()}
                       style={{ flex: 1, minWidth: 0, borderRadius: 6, padding: "2px 8px", fontSize: 13, outline: "none", background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.12)", color: "#e0dfd9", fontFamily: FONT }} />
-                  : <span onDoubleClick={e => { e.stopPropagation(); startRenamingWorkspace() }} title="Double-click to rename" style={{ flex: 1, userSelect: "none" }}>{workspaceName}</span>
+                  : <span onDoubleClick={e => { e.stopPropagation(); startRenamingWorkspace() }} title="Double-click to rename" style={{ flex: 1, fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: MUTED, userSelect: "none" }}>{workspaceName}</span>
                 }
-                <div style={{ display: "flex", alignItems: "center", gap: 4, flexShrink: 0 }}>
-                  <div style={{ position: "relative" }} ref={pickerRef}>
-                    <button onClick={e => { e.stopPropagation(); setShowPicker(v => !v) }} disabled={creating}
-                      style={{ background: "none", border: "none", cursor: "pointer", color: MUTED, padding: 2, display: "flex" }}
-                      onMouseEnter={e => (e.currentTarget.style.color = "#888")} onMouseLeave={e => (e.currentTarget.style.color = MUTED)}>
-                      <Plus size={13} />
-                    </button>
-                    {showPicker && (
-                      <div style={dropdownStyle}>
-                        <button style={dropdownBtn()} onClick={() => openModal("doc", workspaceId ?? undefined)} onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.06)")} onMouseLeave={e => (e.currentTarget.style.background = "transparent")}><FileText size={12} style={{ color: "#555" }} /> New Doc</button>
-                        <button style={dropdownBtn()} onClick={() => openModal("folder", workspaceId ?? undefined)} onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.06)")} onMouseLeave={e => (e.currentTarget.style.background = "transparent")}><FolderOpen size={12} style={{ color: "#555" }} /> New Folder</button>
-                      </div>
-                    )}
-                  </div>
-                  <span style={{ fontSize: 9, opacity: 0.3, display: "inline-block", transform: myDocsOpen ? "rotate(0deg)" : "rotate(-90deg)", transition: "transform 0.18s" }}>▼</span>
+                {/* + button — right side, well separated */}
+                <div style={{ position: "relative", marginLeft: 8, flexShrink: 0 }} ref={pickerRef}>
+                  <button onClick={e => { e.stopPropagation(); setShowPicker(v => !v) }} disabled={creating}
+                    style={{ background: "none", border: "none", cursor: "pointer", color: MUTED, padding: 2, display: "flex" }}
+                    onMouseEnter={e => (e.currentTarget.style.color = "#888")} onMouseLeave={e => (e.currentTarget.style.color = MUTED)}>
+                    <Plus size={13} />
+                  </button>
+                  {showPicker && (
+                    <div style={dropdownStyle}>
+                      <button style={dropdownBtn()} onClick={() => openModal("doc", workspaceId ?? undefined)} onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.06)")} onMouseLeave={e => (e.currentTarget.style.background = "transparent")}><FileText size={12} style={{ color: "#555" }} /> New Doc</button>
+                      <button style={dropdownBtn()} onClick={() => openModal("folder", workspaceId ?? undefined)} onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.06)")} onMouseLeave={e => (e.currentTarget.style.background = "transparent")}><FolderOpen size={12} style={{ color: "#555" }} /> New Folder</button>
+                    </div>
+                  )}
                 </div>
               </div>
 
