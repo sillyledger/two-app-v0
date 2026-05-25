@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
-import { Trash2, FileText, RotateCcw, X } from "lucide-react"
+import { RotateCcw, Trash2 } from "lucide-react"
 import Sidebar from "@/components/sidebar"
 
 interface Doc {
@@ -12,21 +12,26 @@ interface Doc {
   deleted_at: string
 }
 
+const FONT = "'DM Sans', system-ui, sans-serif"
+const MUTED = "#6a6a74"
+
 function formatDate(dateStr: string) {
   if (!dateStr) return ""
   const date = new Date(dateStr)
   if (isNaN(date.getTime())) return ""
-  return date.toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  })
+  return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
 }
 
 export default function TrashPage() {
   const router = useRouter()
   const [docs, setDocs] = useState<Doc[]>([])
   const [loading, setLoading] = useState(true)
+  const [collapsed, setCollapsed] = useState(false)
+
+  useEffect(() => {
+    const saved = localStorage.getItem("sidebar-collapsed")
+    if (saved === "true") setCollapsed(true)
+  }, [])
 
   useEffect(() => {
     fetch("/api/auth/me").then((res) => {
@@ -54,75 +59,112 @@ export default function TrashPage() {
     setDocs((prev) => prev.filter((d) => d.id !== id))
   }
 
+  const handleEmptyTrash = async () => {
+    if (!window.confirm("Permanently delete all items in Trash? This cannot be undone.")) return
+    await Promise.all(docs.map((d) => fetch(`/api/trash/${d.id}`, { method: "DELETE" })))
+    setDocs([])
+  }
+
   return (
-    <div className="flex h-screen bg-[#1a1a1a] overflow-hidden">
-      <Sidebar />
+    <div style={{ display: "flex", minHeight: "100vh", backgroundColor: "#111113", fontFamily: FONT }}>
+      <Sidebar
+        collapsed={collapsed}
+        onToggle={() => {
+          const next = !collapsed
+          setCollapsed(next)
+          localStorage.setItem("sidebar-collapsed", String(next))
+        }}
+      />
 
-      <main className="flex-1 overflow-y-auto">
-        <div className="max-w-4xl mx-auto px-8 py-8">
+      <main style={{ flex: 1, overflowY: "auto" }}>
+        <div style={{ maxWidth: 760, margin: "0 auto", padding: "48px 40px" }}>
 
-          <div className="flex items-center gap-3 mb-8">
-            <Trash2 size={22} className="text-[#555]" />
-            <h1 className="text-2xl font-bold text-[#e8e8e8]">Trash</h1>
+          {/* Header */}
+          <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 36 }}>
+            <div>
+              <h1 style={{ fontSize: 28, fontWeight: 700, color: "#eeede7", margin: "0 0 4px", letterSpacing: "-0.02em" }}>Trash</h1>
+              <p style={{ fontSize: 13, color: MUTED, margin: 0 }}>Deleted docs are removed permanently after 30 days</p>
+            </div>
+            {docs.length > 0 && (
+              <button
+                onClick={handleEmptyTrash}
+                style={{ fontSize: 12, fontWeight: 500, color: "#e05252", background: "rgba(224,82,82,0.08)", border: "1px solid rgba(224,82,82,0.18)", borderRadius: 8, padding: "7px 14px", cursor: "pointer", fontFamily: FONT, marginTop: 4 }}
+                onMouseEnter={e => (e.currentTarget.style.background = "rgba(224,82,82,0.14)")}
+                onMouseLeave={e => (e.currentTarget.style.background = "rgba(224,82,82,0.08)")}
+              >
+                Empty Trash
+              </button>
+            )}
           </div>
 
-          {loading ? (
-            <div className="space-y-1">
+          {/* Loading */}
+          {loading && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
               {Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="h-12 rounded-lg bg-[#2a2a2a] animate-pulse" />
+                <div key={i} style={{ height: 44, borderRadius: 10, background: "rgba(255,255,255,0.04)" }} />
               ))}
             </div>
-          ) : docs.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-64">
-              <Trash2 size={36} className="mb-3 text-[#333]" />
-              <p className="text-[15px] font-medium text-[#666] mb-1">Trash is empty</p>
-              <p className="text-[13px] text-[#444]">Deleted docs will appear here</p>
+          )}
+
+          {/* Empty state */}
+          {!loading && docs.length === 0 && (
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: 240 }}>
+              <Trash2 size={32} style={{ color: "#2a2a32", marginBottom: 12 }} />
+              <p style={{ fontSize: 14, fontWeight: 500, color: "#4a4a52", margin: "0 0 4px" }}>Trash is empty</p>
+              <p style={{ fontSize: 13, color: MUTED, margin: 0 }}>Deleted docs will appear here</p>
             </div>
-          ) : (
-            <div className="border border-[#2a2a2a] rounded-xl overflow-hidden">
-              <div className="grid grid-cols-[1fr_140px_80px] items-center px-4 py-2 border-b border-[#2a2a2a] bg-[#1f1f1f]">
-                <span className="text-[11px] font-semibold uppercase tracking-wider text-[#444]">Name</span>
-                <span className="text-[11px] font-semibold uppercase tracking-wider text-[#444]">Deleted</span>
+          )}
+
+          {/* Doc list */}
+          {!loading && docs.length > 0 && (
+            <>
+              {/* Column headers */}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 140px 80px", padding: "6px 12px", marginBottom: 4 }}>
+                <span style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em", color: "#4a4a52" }}>Name</span>
+                <span style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em", color: "#4a4a52" }}>Deleted</span>
                 <span />
               </div>
 
-              {docs.map((doc, i) => (
+              {/* Rows */}
+              {docs.map((doc) => (
                 <div
                   key={doc.id}
-                  className={`group grid grid-cols-[1fr_140px_80px] items-center px-4 py-3 transition-colors hover:bg-[#232323] ${
-                    i !== docs.length - 1 ? "border-b border-[#222]" : ""
-                  }`}
+                  style={{ display: "grid", gridTemplateColumns: "1fr 140px 80px", alignItems: "center", padding: "11px 12px", borderRadius: 10, background: "transparent", transition: "background 0.12s" }}
+                  onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.04)")}
+                  onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
                 >
-                  <div className="flex items-center gap-3 min-w-0">
-                    <FileText size={14} className="text-[#444] shrink-0" />
-                    <p className="text-[13px] font-medium text-[#888] truncate">
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
+                    <span style={{ fontSize: 13, opacity: 0.4, flexShrink: 0, lineHeight: 1 }}>▣</span>
+                    <span style={{ fontSize: 13.5, color: "#b0afb8", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                       {doc.title || "Untitled"}
-                    </p>
+                    </span>
                   </div>
 
-                  <span className="text-[12px] text-[#555]">
-                    {formatDate(doc.deleted_at)}
-                  </span>
+                  <span style={{ fontSize: 12, color: "#4a4a52" }}>{formatDate(doc.deleted_at)}</span>
 
-                  <div className="flex items-center gap-1 justify-end">
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, justifyContent: "flex-end" }}>
                     <button
                       onClick={() => handleRestore(doc.id)}
                       title="Restore"
-                      className="p-1.5 rounded hover:bg-[#2a2a2a] text-[#555] hover:text-[#e8e8e8] transition-colors"
+                      style={{ background: "none", border: "none", cursor: "pointer", color: MUTED, padding: 4, borderRadius: 6, display: "flex" }}
+                      onMouseEnter={e => (e.currentTarget.style.color = "#e8e7e1")}
+                      onMouseLeave={e => (e.currentTarget.style.color = MUTED)}
                     >
                       <RotateCcw size={13} />
                     </button>
                     <button
                       onClick={() => handlePermanentDelete(doc.id)}
                       title="Delete permanently"
-                      className="p-1.5 rounded hover:bg-[#2a2a2a] text-[#555] hover:text-red-400 transition-colors"
+                      style={{ background: "none", border: "none", cursor: "pointer", color: MUTED, padding: 4, borderRadius: 6, display: "flex" }}
+                      onMouseEnter={e => (e.currentTarget.style.color = "#e05252")}
+                      onMouseLeave={e => (e.currentTarget.style.color = MUTED)}
                     >
-                      <X size={13} />
+                      <Trash2 size={13} />
                     </button>
                   </div>
                 </div>
               ))}
-            </div>
+            </>
           )}
 
         </div>
