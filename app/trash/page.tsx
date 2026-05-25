@@ -52,6 +52,8 @@ export default function TrashPage() {
   const handleRestore = async (id: string) => {
     await fetch(`/api/trash/${id}`, { method: "PUT" })
     setDocs((prev) => prev.filter((d) => d.id !== id))
+    sessionStorage.removeItem("sb_docs")
+    window.dispatchEvent(new Event("sb-refresh"))
   }
 
   const handlePermanentDelete = async (id: string) => {
