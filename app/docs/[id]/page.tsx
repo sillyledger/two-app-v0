@@ -475,31 +475,6 @@ export default function DocPage() {
         }}
       />
 
-      {/* ── Floating sidebar open button — only shows when sidebar is collapsed ── */}
-      {/* This fixes the PWA bug where the toggle button gets hidden under the breadcrumbs */}
-      {isLoggedIn && collapsed && (
-        <button
-          onClick={() => { localStorage.setItem("sidebar-collapsed", "false"); setCollapsed(false) }}
-          style={{
-            position: 'fixed',
-            top: 10,
-            left: 10,
-            zIndex: 100,
-            background: 'none',
-            border: 'none',
-            cursor: 'pointer',
-            color: '#6a6a74',
-            padding: 6,
-            display: 'flex',
-            borderRadius: 6,
-          }}
-          onMouseEnter={e => (e.currentTarget.style.color = '#ccc')}
-          onMouseLeave={e => (e.currentTarget.style.color = '#6a6a74')}
-        >
-          <PanelLeftOpen size={16} />
-        </button>
-      )}
-
       {isLoggedIn && (
         <Sidebar onNewNote={handleNewDoc} collapsed={collapsed} onToggle={() => setCollapsed((v) => !v)} />
       )}
