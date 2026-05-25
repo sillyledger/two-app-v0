@@ -179,6 +179,11 @@ if (e.key === "?" && !showModal && !isTyping && !e.shiftKey) setShowHelp(v => !v
   }
   const deleteFolder = async (folderId: string) => {
     setFolderMenuId(null)
+    const folder = folders.find(f => f.id === folderId)
+    const confirmed = window.confirm(
+      `Delete "${folder?.name}"?\n\nAll docs inside will be moved to Trash and can be recovered within 30 days.`
+    )
+    if (!confirmed) return
     const updated = folders.filter(f => f.id !== folderId); setFolders(updated); cacheSet("sb_folders", updated)
     try { await fetch(`/api/folders/${folderId}`, { method: "DELETE" }) } catch {}
   }
