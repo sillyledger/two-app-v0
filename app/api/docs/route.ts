@@ -74,7 +74,7 @@ export async function POST(request: Request) {
           AND deleted_at IS NULL
       `
       const docCount = parseInt(countResult[0].count, 10)
-      if (docCount >= 1) {
+      if (docCount >= 30) {
         return NextResponse.json(
           { error: 'free_limit_reached' },
           { status: 403 }
