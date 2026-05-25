@@ -94,8 +94,6 @@ export default function SettingsPage() {
     setTheme(t)
     localStorage.setItem('theme', t)
     applyTheme(t)
-
-    // If system, also listen for OS changes while user is on this page
     if (t === 'system') {
       const mq = window.matchMedia('(prefers-color-scheme: dark)')
       const handler = (e: MediaQueryListEvent) => {
@@ -547,6 +545,7 @@ export default function SettingsPage() {
 
                 <p className="text-[11px] font-semibold uppercase tracking-wider mb-3" style={{ color: "var(--text-muted)" }}>Plans</p>
 
+                {/* Free */}
                 <div
                   className="rounded-xl p-5 mb-3 flex items-center justify-between"
                   style={{ backgroundColor: "var(--bg-tertiary)", border: "1px solid var(--border)" }}
@@ -556,7 +555,7 @@ export default function SettingsPage() {
                       <span className="text-[14px] font-semibold" style={{ color: "var(--text-primary)" }}>Free</span>
                       <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{ backgroundColor: "var(--bg-secondary)", color: "var(--text-muted)", border: "1px solid var(--border)" }}>Current plan</span>
                     </div>
-                    <p className="text-[12px]" style={{ color: "var(--text-muted)" }}>Personal use · Unlimited notes · 5MB storage</p>
+                    <p className="text-[12px]" style={{ color: "var(--text-muted)" }}>30 docs · 1 private workspace · 1GB storage</p>
                   </div>
                   <div className="text-right">
                     <span className="text-[22px] font-bold" style={{ color: "var(--text-primary)" }}>$0</span>
@@ -564,30 +563,60 @@ export default function SettingsPage() {
                   </div>
                 </div>
 
+                {/* Pro */}
                 <div
-                  className="rounded-xl p-5 flex items-center justify-between"
-                  style={{ backgroundColor: "var(--bg-secondary)", border: "1px solid #7C3AED40" }}
+                  className="rounded-xl p-5 mb-3 flex items-center justify-between"
+                  style={{ backgroundColor: "var(--bg-secondary)", border: "1px solid #534AB740" }}
                 >
                   <div>
                     <div className="flex items-center gap-2 mb-1">
-                      <span className="text-[14px] font-semibold" style={{ color: "var(--text-primary)" }}>Team</span>
-                      <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[#7C3AED20] text-[#a78bfa]" style={{ border: "1px solid #7C3AED40" }}>Upgrade</span>
+                      <span className="text-[14px] font-semibold" style={{ color: "var(--text-primary)" }}>Pro</span>
+                      <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{ backgroundColor: "#534AB720", color: "#a78bfa", border: "1px solid #534AB740" }}>Upgrade</span>
                     </div>
-                    <p className="text-[12px]" style={{ color: "var(--text-muted)" }}>Shared workspaces · Priority support · Unlimited storage</p>
+                    <p className="text-[12px]" style={{ color: "var(--text-muted)" }}>Unlimited docs · Unlimited workspaces · 10GB storage · Priority support</p>
                   </div>
                   <div className="text-right">
                     <div>
-                      <span className="text-[22px] font-bold" style={{ color: "var(--text-primary)" }}>$12</span>
+                      <span className="text-[22px] font-bold" style={{ color: "var(--text-primary)" }}>$6</span>
                       <span className="text-[12px] ml-1" style={{ color: "var(--text-muted)" }}>/mo</span>
                     </div>
                     <button
-                      className="mt-2 px-3 py-1.5 rounded-lg text-[12px] font-medium transition-colors text-[#a78bfa]"
-                      style={{ backgroundColor: "#7C3AED20", border: "1px solid #7C3AED40" }}
+                      onClick={() => window.open("https://two.so/#pricing", "_blank")}
+                      className="mt-2 px-3 py-1.5 rounded-lg text-[12px] font-medium transition-colors"
+                      style={{ backgroundColor: "#534AB7", color: "#fff", border: "none", cursor: "pointer" }}
                     >
                       Upgrade
                     </button>
                   </div>
                 </div>
+
+                {/* Founding Member */}
+                <div
+                  className="rounded-xl p-5 flex items-center justify-between"
+                  style={{ backgroundColor: "var(--bg-secondary)", border: "1px solid #BA751740" }}
+                >
+                  <div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-[14px] font-semibold" style={{ color: "var(--text-primary)" }}>Founding Member</span>
+                      <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{ backgroundColor: "#BA751720", color: "#f59e0b", border: "1px solid #BA751740" }}>500 slots</span>
+                    </div>
+                    <p className="text-[12px]" style={{ color: "var(--text-muted)" }}>Everything in Pro · Lifetime access · No subscription ever</p>
+                  </div>
+                  <div className="text-right">
+                    <div>
+                      <span className="text-[22px] font-bold" style={{ color: "var(--text-primary)" }}>$49</span>
+                      <span className="text-[12px] ml-1" style={{ color: "var(--text-muted)" }}>one-time</span>
+                    </div>
+                    <button
+                      onClick={() => window.open("https://two.so/#pricing", "_blank")}
+                      className="mt-2 px-3 py-1.5 rounded-lg text-[12px] font-medium transition-colors"
+                      style={{ backgroundColor: "#BA7517", color: "#fff", border: "none", cursor: "pointer" }}
+                    >
+                      Get lifetime
+                    </button>
+                  </div>
+                </div>
+
               </div>
             )}
 
