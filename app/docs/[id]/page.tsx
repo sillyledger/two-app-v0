@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation'
 import Sidebar from '@/components/sidebar'
 import Editor from '@/components/editor'
 import DocTopbar from '@/components/doc-topbar'
-import { CalendarDays, SignalLow, SignalMedium, SignalHigh, Minus, PanelRight, X, FileText, User, Clock, Plus, Check, Send, Trash2, Circle, CheckCircle2, Pencil } from 'lucide-react'
+import { CalendarDays, SignalLow, SignalMedium, SignalHigh, Minus, PanelRight, X, FileText, User, Clock, Plus, Check, Send, Trash2, Circle, CheckCircle2, Pencil, PanelLeftOpen } from 'lucide-react'
 import type { Doc } from '@/lib/db'
 
 interface Folder {
@@ -411,15 +411,17 @@ export default function DocPage() {
     const newDoc = await res.json()
     router.push(`/docs/${newDoc.uuid}`)
   }
-const handleToggleFavorite = async () => {
-  const newValue = !isFavorite
-  setIsFavorite(newValue)
-  await fetch(`/api/docs/${docId}`, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ is_starred: newValue }),
-  })
-}
+
+  const handleToggleFavorite = async () => {
+    const newValue = !isFavorite
+    setIsFavorite(newValue)
+    await fetch(`/api/docs/${docId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ is_starred: newValue }),
+    })
+  }
+
   const handleDelete = async () => {
     await fetch(`/api/docs/${docId}`, { method: 'DELETE' })
     router.push('/')
@@ -473,6 +475,31 @@ const handleToggleFavorite = async () => {
         }}
       />
 
+      {/* ── Floating sidebar open button — only shows when sidebar is collapsed ── */}
+      {/* This fixes the PWA bug where the toggle button gets hidden under the breadcrumbs */}
+      {isLoggedIn && collapsed && (
+        <button
+          onClick={() => { localStorage.setItem("sidebar-collapsed", "false"); setCollapsed(false) }}
+          style={{
+            position: 'fixed',
+            top: 10,
+            left: 10,
+            zIndex: 100,
+            background: 'none',
+            border: 'none',
+            cursor: 'pointer',
+            color: '#6a6a74',
+            padding: 6,
+            display: 'flex',
+            borderRadius: 6,
+          }}
+          onMouseEnter={e => (e.currentTarget.style.color = '#ccc')}
+          onMouseLeave={e => (e.currentTarget.style.color = '#6a6a74')}
+        >
+          <PanelLeftOpen size={16} />
+        </button>
+      )}
+
       {isLoggedIn && (
         <Sidebar onNewNote={handleNewDoc} collapsed={collapsed} onToggle={() => setCollapsed((v) => !v)} />
       )}
@@ -492,7 +519,7 @@ const handleToggleFavorite = async () => {
           wideMode={wideMode}
           onToggleWide={toggleWideMode}
           isFavorite={isFavorite}
-onToggleFavorite={isLoggedIn ? handleToggleFavorite : undefined}
+          onToggleFavorite={isLoggedIn ? handleToggleFavorite : undefined}
         />
 
         <button
@@ -800,7 +827,6 @@ onToggleFavorite={isLoggedIn ? handleToggleFavorite : undefined}
               <div className="my-3 border-t" style={{ borderColor: 'var(--border)' }} />
               <p className="text-[10px] font-medium uppercase tracking-wider mb-2" style={{ color: 'var(--text-muted)' }}>Labels</p>
 
-              {/* All labels list with edit/delete */}
               <div className="flex flex-col gap-0.5 mb-2">
                 {allLabels.map(label => {
                   const isOn = docLabels.some(l => l.id === label.id)
@@ -904,7 +930,6 @@ onToggleFavorite={isLoggedIn ? handleToggleFavorite : undefined}
                 <p className="text-[11px] mb-2" style={{ color: 'var(--text-muted)' }}>No labels yet.</p>
               )}
 
-              {/* Create new label */}
               <div className="relative" ref={labelPickerRef}>
                 <button
                   onClick={() => { setLabelPickerOpen(v => !v); setCreatingLabel(false) }}
