@@ -328,10 +328,10 @@ export default function Sidebar({ onNewNote, collapsed = false, onToggle }: Side
         <div className="sb-scroll">
 
           {/* Primary nav */}
-          <NavItem href="/" icon={<Home size={16} />} label="Home" />
-          <NavItem href="/planner" icon={<CheckSquare size={16} />} label="Planner" />
-          <NavItem href="/activity" icon={<Activity size={16} />} label="Activity" />
-          <NavItem href="/library" icon={<Layers size={16} />} label="Library" />
+          <NavItem href="/" icon={<span style={{fontSize:17,lineHeight:1}}>⌂</span>} label="Home" />
+          <NavItem href="/planner" icon={<span style={{fontSize:15,lineHeight:1}}>◎</span>} label="Planner" />
+          <NavItem href="/activity" icon={<span style={{fontSize:15,lineHeight:1}}>⟳</span>} label="Activity" />
+          <NavItem href="/library" icon={<span style={{fontSize:15,lineHeight:1}}>◫</span>} label="Library" />
 
           {!collapsed && (
             <>
@@ -360,14 +360,19 @@ export default function Sidebar({ onNewNote, collapsed = false, onToggle }: Side
               {myDocsOpen && (
                 <>
                   {/* My Docs header row */}
-                  <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 12px", borderRadius: 9, marginBottom: 2, cursor: "default", fontSize: 13.5, fontWeight: 500, color: ITEM_COLOR }}>
+                  <div
+                    onClick={() => { if (!renamingWorkspace) setMyDocsOpen(v => !v) }}
+                    style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 12px", borderRadius: 9, marginBottom: 2, cursor: "pointer", fontSize: 13.5, fontWeight: 500, color: ITEM_COLOR, transition: "background 0.12s" }}
+                    onMouseEnter={e => (e.currentTarget.style.background = HOVER_BG)}
+                    onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
+                  >
                     {renamingWorkspace
-                      ? <input ref={workspaceInputRef} value={workspaceRenameValue} onChange={e => setWorkspaceRenameValue(e.target.value)} onBlur={commitWorkspaceRename} onKeyDown={e => { if (e.key === "Enter") commitWorkspaceRename(); if (e.key === "Escape") cancelWorkspaceRename() }}
+                      ? <input ref={workspaceInputRef} value={workspaceRenameValue} onChange={e => setWorkspaceRenameValue(e.target.value)} onBlur={commitWorkspaceRename} onKeyDown={e => { if (e.key === "Enter") commitWorkspaceRename(); if (e.key === "Escape") cancelWorkspaceRename() }} onClick={e => e.stopPropagation()}
                           style={{ flex: 1, minWidth: 0, borderRadius: 6, padding: "2px 8px", fontSize: 13, outline: "none", background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.12)", color: "#e0dfd9", fontFamily: FONT }} />
                       : <>
                           <span style={{ opacity: 0.5, fontSize: 16, flexShrink: 0 }}>☁</span>
-                          <span onDoubleClick={startRenamingWorkspace} title="Double-click to rename" style={{ flex: 1, userSelect: "none" }}>{workspaceName}</span>
-                          <span style={{ fontSize: 9, opacity: 0.3, marginLeft: "auto" }}>▼</span>
+                          <span onDoubleClick={e => { e.stopPropagation(); startRenamingWorkspace() }} title="Double-click to rename" style={{ flex: 1, userSelect: "none" }}>{workspaceName}</span>
+                          <span style={{ fontSize: 9, opacity: 0.3, marginLeft: "auto", display: "inline-block", transform: myDocsOpen ? "rotate(0deg)" : "rotate(-90deg)", transition: "transform 0.18s" }}>▼</span>
                         </>
                     }
                   </div>
