@@ -48,6 +48,7 @@ export default function HomePage() {
   const [collapsed, setCollapsed] = useState(false)
   const [sidebarReady, setSidebarReady] = useState(false)
   const [templateModalOpen, setTemplateModalOpen] = useState(false)
+  const [limitModalOpen, setLimitModalOpen] = useState(false)
 
   useEffect(() => {
     const saved = localStorage.getItem("sidebar-collapsed")
@@ -89,15 +90,29 @@ export default function HomePage() {
     return () => document.removeEventListener("mousedown", handleClick)
   }, [openMenuId])
 
+  const handleNewDoc = async () => {
+    // Check if user has hit the free limit before opening template modal
+    const res = await fetch("/api/docs", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ title: "", content: "", color: "" }) })
+    if (res.status === 403) {
+      const data = await res.json()
+      if (data.error === "free_limit_reached") {
+        setLimitModalOpen(true)
+        return
+      }
+    }
+    // If no limit hit, open template modal as normal
+    setTemplateModalOpen(true)
+  }
+
   const handleToggleFavorite = async (doc: Doc, e: React.MouseEvent) => {
     e.stopPropagation()
     const newValue = !doc.is_starred
-setDocs(prev => prev.map(d => d.uuid === doc.uuid ? { ...d, is_starred: newValue } : d))
-await fetch(`/api/docs/${doc.uuid}`, {
-  method: "PUT",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({ is_starred: newValue }),
-})
+    setDocs(prev => prev.map(d => d.uuid === doc.uuid ? { ...d, is_starred: newValue } : d))
+    await fetch(`/api/docs/${doc.uuid}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ is_starred: newValue }),
+    })
   }
 
   const handleRename = async () => {
@@ -197,7 +212,7 @@ await fetch(`/api/docs/${doc.uuid}`, {
                 Templates
               </button>
               <button
-                onClick={() => setTemplateModalOpen(true)}
+                onClick={handleNewDoc}
                 style={{
                   ...btnBase,
                   backgroundColor: "var(--text-primary)",
@@ -294,17 +309,16 @@ await fetch(`/api/docs/${doc.uuid}`, {
 
                   <div className="flex items-center justify-between px-5 py-3" style={{ borderTop: "1px solid var(--border)" }}>
                     <p className="text-[12px]" style={{ color: "var(--text-muted)" }}>{formatDate(doc.created_at)}</p>
-                    {/* Star button */}
                     <button
                       onClick={e => handleToggleFavorite(doc, e)}
                       title={doc.is_starred ? "Remove from favorites" : "Add to favorites"}
                       className="transition-opacity"
                       style={{
                         color: doc.is_starred ? "#EF9F27" : "var(--text-muted)",
-opacity: doc.is_starred ? 1 : 0,
+                        opacity: doc.is_starred ? 1 : 0,
                       }}
                       onMouseEnter={e => (e.currentTarget.style.opacity = "1")}
-                      onMouseLeave={e => (e.currentTarget.style.opacity = doc.is_favorite ? "1" : "0")}
+                      onMouseLeave={e => (e.currentTarget.style.opacity = doc.is_starred ? "1" : "0")}
                     >
                       <Star size={13} fill={doc.is_starred ? "#EF9F27" : "none"} />
                     </button>
@@ -365,6 +379,39 @@ opacity: doc.is_starred ? 1 : 0,
       </main>
 
       <TemplatePickerModal open={templateModalOpen} onClose={() => setTemplateModalOpen(false)} />
+
+      {/* Free limit modal */}
+      {limitModalOpen && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+          <div className="rounded-2xl p-8 w-96 shadow-2xl" style={{ backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border)" }}>
+            <div style={{ width: 40, height: 40, borderRadius: "10px", background: "#534AB7", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "16px" }}>
+              <Plus size={20} color="#fff" />
+            </div>
+            <h2 className="font-semibold text-lg mb-2" style={{ color: "var(--text-primary)" }}>You&apos;ve reached the free plan limit</h2>
+            <p className="text-sm mb-6 leading-relaxed" style={{ color: "var(--text-muted)" }}>
+              Free accounts can hold up to 30 docs. Upgrade to Pro for unlimited docs, workspaces, and more — starting at $6/month.
+            </p>
+            <div className="flex flex-col gap-2">
+              
+                href="https://two.so/#pricing"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full py-2.5 rounded-xl text-sm font-medium text-center"
+                style={{ backgroundColor: "#534AB7", color: "#fff" }}
+              >
+                See pricing plans →
+              </a>
+              <button
+                onClick={() => setLimitModalOpen(false)}
+                className="w-full py-2.5 rounded-xl text-sm"
+                style={{ color: "var(--text-muted)" }}
+              >
+                Maybe later
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Rename modal */}
       {renamingDoc && (
