@@ -338,45 +338,39 @@ export default function Sidebar({ onNewNote, collapsed = false, onToggle }: Side
               {/* ── Divider ── */}
               <div style={{ height: 1, background: "rgba(255,255,255,0.06)", margin: "10px 4px" }} />
 
-              {/* ── PRIVATE section ── */}
-              <div style={{ display: "flex", alignItems: "center", padding: "6px 12px 4px", cursor: "pointer" }} onClick={() => setMyDocsOpen(v => !v)}>
-                <span style={{ fontSize: 9, color: MUTED, marginRight: 5, display: "inline-block", transform: myDocsOpen ? "rotate(90deg)" : "rotate(0)", transition: "transform 0.18s" }}>▶</span>
-                <span style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: MUTED, flex: 1 }}>Private</span>
-                <div style={{ position: "relative" }} ref={pickerRef}>
-                  <button onClick={e => { e.stopPropagation(); setShowPicker(v => !v) }} disabled={creating}
-                    style={{ background: "none", border: "none", cursor: "pointer", color: MUTED, padding: 2, display: "flex" }}
-                    onMouseEnter={e => (e.currentTarget.style.color = "#888")} onMouseLeave={e => (e.currentTarget.style.color = MUTED)}>
-                    <Plus size={13} />
-                  </button>
-                  {showPicker && (
-                    <div style={dropdownStyle}>
-                      <button style={dropdownBtn()} onClick={() => openModal("doc", workspaceId ?? undefined)} onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.06)")} onMouseLeave={e => (e.currentTarget.style.background = "transparent")}><FileText size={12} style={{ color: "#555" }} /> New Doc</button>
-                      <button style={dropdownBtn()} onClick={() => openModal("folder", workspaceId ?? undefined)} onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.06)")} onMouseLeave={e => (e.currentTarget.style.background = "transparent")}><FolderOpen size={12} style={{ color: "#555" }} /> New Folder</button>
-                    </div>
-                  )}
+              {/* ── My Workspace header (replaces PRIVATE label) ── */}
+              <div
+                onClick={() => { if (!renamingWorkspace) setMyDocsOpen(v => !v) }}
+                style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 12px", borderRadius: 9, marginBottom: 2, cursor: "pointer", fontSize: 13.5, fontWeight: 500, color: ITEM_COLOR, transition: "background 0.12s" }}
+                onMouseEnter={e => (e.currentTarget.style.background = HOVER_BG)}
+                onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
+              >
+                <span style={{ opacity: 0.5, fontSize: 16, flexShrink: 0 }}>☁</span>
+                {renamingWorkspace
+                  ? <input ref={workspaceInputRef} value={workspaceRenameValue} onChange={e => setWorkspaceRenameValue(e.target.value)} onBlur={commitWorkspaceRename} onKeyDown={e => { if (e.key === "Enter") commitWorkspaceRename(); if (e.key === "Escape") cancelWorkspaceRename() }} onClick={e => e.stopPropagation()}
+                      style={{ flex: 1, minWidth: 0, borderRadius: 6, padding: "2px 8px", fontSize: 13, outline: "none", background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.12)", color: "#e0dfd9", fontFamily: FONT }} />
+                  : <span onDoubleClick={e => { e.stopPropagation(); startRenamingWorkspace() }} title="Double-click to rename" style={{ flex: 1, userSelect: "none" }}>{workspaceName}</span>
+                }
+                <div style={{ display: "flex", alignItems: "center", gap: 4, flexShrink: 0 }}>
+                  <div style={{ position: "relative" }} ref={pickerRef}>
+                    <button onClick={e => { e.stopPropagation(); setShowPicker(v => !v) }} disabled={creating}
+                      style={{ background: "none", border: "none", cursor: "pointer", color: MUTED, padding: 2, display: "flex" }}
+                      onMouseEnter={e => (e.currentTarget.style.color = "#888")} onMouseLeave={e => (e.currentTarget.style.color = MUTED)}>
+                      <Plus size={13} />
+                    </button>
+                    {showPicker && (
+                      <div style={dropdownStyle}>
+                        <button style={dropdownBtn()} onClick={() => openModal("doc", workspaceId ?? undefined)} onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.06)")} onMouseLeave={e => (e.currentTarget.style.background = "transparent")}><FileText size={12} style={{ color: "#555" }} /> New Doc</button>
+                        <button style={dropdownBtn()} onClick={() => openModal("folder", workspaceId ?? undefined)} onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.06)")} onMouseLeave={e => (e.currentTarget.style.background = "transparent")}><FolderOpen size={12} style={{ color: "#555" }} /> New Folder</button>
+                      </div>
+                    )}
+                  </div>
+                  <span style={{ fontSize: 9, opacity: 0.3, display: "inline-block", transform: myDocsOpen ? "rotate(0deg)" : "rotate(-90deg)", transition: "transform 0.18s" }}>▼</span>
                 </div>
               </div>
 
               {myDocsOpen && (
                 <>
-                  {/* My Docs header row */}
-                  <div
-                    onClick={() => { if (!renamingWorkspace) setMyDocsOpen(v => !v) }}
-                    style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 12px", borderRadius: 9, marginBottom: 2, cursor: "pointer", fontSize: 13.5, fontWeight: 500, color: ITEM_COLOR, transition: "background 0.12s" }}
-                    onMouseEnter={e => (e.currentTarget.style.background = HOVER_BG)}
-                    onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
-                  >
-                    {renamingWorkspace
-                      ? <input ref={workspaceInputRef} value={workspaceRenameValue} onChange={e => setWorkspaceRenameValue(e.target.value)} onBlur={commitWorkspaceRename} onKeyDown={e => { if (e.key === "Enter") commitWorkspaceRename(); if (e.key === "Escape") cancelWorkspaceRename() }} onClick={e => e.stopPropagation()}
-                          style={{ flex: 1, minWidth: 0, borderRadius: 6, padding: "2px 8px", fontSize: 13, outline: "none", background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.12)", color: "#e0dfd9", fontFamily: FONT }} />
-                      : <>
-                          <span style={{ opacity: 0.5, fontSize: 16, flexShrink: 0 }}>☁</span>
-                          <span onDoubleClick={e => { e.stopPropagation(); startRenamingWorkspace() }} title="Double-click to rename" style={{ flex: 1, userSelect: "none" }}>{workspaceName}</span>
-                          <span style={{ fontSize: 9, opacity: 0.3, marginLeft: "auto", display: "inline-block", transform: myDocsOpen ? "rotate(0deg)" : "rotate(-90deg)", transition: "transform 0.18s" }}>▼</span>
-                        </>
-                    }
-                  </div>
-
                   {/* Folders */}
                   {folders.map(folder => {
                     const isActive = pathname === `/folders/${folder.id}`
@@ -432,8 +426,7 @@ export default function Sidebar({ onNewNote, collapsed = false, onToggle }: Side
                         onMouseEnter={e => { if (!isActive) { e.currentTarget.style.background = HOVER_BG; e.currentTarget.style.color = "#a0a0aa" } }}
                         onMouseLeave={e => { if (!isActive) { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#4a4a54" } }}
                       >
-                        <span className="sb-group-btn" style={{ opacity: 0, fontSize: 11, color: MUTED, cursor: "grab", userSelect: "none", flexShrink: 0, transition: "opacity 0.1s" }}>⠿</span>
-                        <span style={{ width: 5, height: 5, borderRadius: "50%", background: isActive ? "#6b5ce7" : "#3a3a44", flexShrink: 0, display: "inline-block" }} />
+                        <span style={{ fontSize: 13, opacity: isActive ? 1 : 0.45, flexShrink: 0, lineHeight: 1 }}>▣</span>
                         <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{doc.title || "Untitled"}</span>
                       </div>
                     )
