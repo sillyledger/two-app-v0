@@ -59,7 +59,31 @@ export async function POST(request: Request) {
   if (!payload) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   try {
+    // Get user's current plan
+    const userResult = await sql`
+      SELECT plan FROM users WHERE id = ${payload.userId}
+    `
+    const user = userResult[0]
+    const plan = user?.plan ?? 'free'
+
+    // Enforce 30-doc limit for free users
+    if (plan === 'free') {
+      const countResult = await sql`
+        SELECT COUNT(*) AS count FROM docs
+        WHERE user_id = ${payload.userId}
+          AND deleted_at IS NULL
+      `
+      const docCount = parseInt(countResult[0].count, 10)
+      if (docCount >= 30) {
+        return NextResponse.json(
+          { error: 'free_limit_reached' },
+          { status: 403 }
+        )
+      }
+    }
+
     const { title, content, color, type = 'doc', folder_id = null, workspace_id = null } = await request.json()
+
     const result = await sql`
       INSERT INTO docs (title, content, color, type, user_id, folder_id, workspace_id, uuid)
       VALUES (
@@ -74,6 +98,7 @@ export async function POST(request: Request) {
       )
       RETURNING *
     `
+
     return NextResponse.json(result[0], { status: 201 })
   } catch (error) {
     console.error('Failed to create doc:', error)
