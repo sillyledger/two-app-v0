@@ -230,11 +230,11 @@ export default function PlannerPage() {
               style={{
                 display: 'flex', alignItems: 'center', gap: 6,
                 padding: '8px 14px', borderRadius: 9, fontSize: 13, fontWeight: 600,
-                color: '#fff', background: '#6b5ce7', border: 'none', cursor: 'pointer',
+                color: '#111111', background: '#ffffff', border: 'none', cursor: 'pointer',
                 fontFamily: FONT, marginTop: 6,
               }}
-              onMouseEnter={e => (e.currentTarget.style.background = '#7c6ef0')}
-              onMouseLeave={e => (e.currentTarget.style.background = '#6b5ce7')}
+              onMouseEnter={e => (e.currentTarget.style.background = '#e8e8e8')}
+onMouseLeave={e => (e.currentTarget.style.background = '#ffffff')}
             >
               <Plus size={14} />
               Add Task
