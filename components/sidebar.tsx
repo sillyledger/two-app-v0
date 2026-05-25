@@ -24,10 +24,10 @@ function cacheSet(key: string, value: unknown) {
 const SB = "#161618"
 const ACTIVE_BG = "rgba(107,92,231,0.18)"
 const ACTIVE_COLOR = "#c4b8ff"
-const ITEM_COLOR = "#7a7a84"
-const HOVER_BG = "rgba(255,255,255,0.055)"
-const HOVER_COLOR = "#d0cfc9"
-const MUTED = "#3a3a44"
+const ITEM_COLOR = "#b0afb8"
+const HOVER_BG = "rgba(255,255,255,0.07)"
+const HOVER_COLOR = "#e8e7e1"
+const MUTED = "#6a6a74"
 const BORDER = "1px solid rgba(255,255,255,0.07)"
 const FONT = "'DM Sans', system-ui, sans-serif"
 
@@ -35,6 +35,7 @@ export default function Sidebar({ onNewNote, collapsed = false, onToggle }: Side
   const pathname = usePathname()
   const router = useRouter()
   const [myDocsOpen, setMyDocsOpen] = useState(true)
+  const [unfiledOpen, setUnfiledOpen] = useState(true)
   const [sharedOpen, setSharedOpen] = useState(true)
   const [searchQuery, setSearchQuery] = useState("")
   const [userName, setUserName] = useState(() => cacheGet<string>("sb_userName") ?? "")
@@ -360,8 +361,8 @@ export default function Sidebar({ onNewNote, collapsed = false, onToggle }: Side
                   </button>
                   {showPicker && (
                     <div style={dropdownStyle}>
-                      <button style={dropdownBtn()} onClick={() => openModal("doc", workspaceId ?? undefined)} onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.06)")} onMouseLeave={e => (e.currentTarget.style.background = "transparent")}><FileText size={12} style={{ color: "#555" }} /> New Doc</button>
-                      <button style={dropdownBtn()} onClick={() => openModal("folder", workspaceId ?? undefined)} onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.06)")} onMouseLeave={e => (e.currentTarget.style.background = "transparent")}><FolderOpen size={12} style={{ color: "#555" }} /> New Folder</button>
+                      <button style={dropdownBtn()} onClick={() => openModal("doc", workspaceId ?? undefined)} onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.06)")} onMouseLeave={e => (e.currentTarget.style.background = "transparent")}><span style={{fontSize:13}}>▣</span> New Doc</button>
+                      <button style={dropdownBtn()} onClick={() => openModal("folder", workspaceId ?? undefined)} onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.06)")} onMouseLeave={e => (e.currentTarget.style.background = "transparent")}><FolderOpen size={12} style={{ color: "#888" }} /> New Folder</button>
                     </div>
                   )}
                 </div>
@@ -406,13 +407,17 @@ export default function Sidebar({ onNewNote, collapsed = false, onToggle }: Side
                     )
                   })}
 
-                  {/* Unfiled label */}
+                  {/* Unfiled label — collapsible */}
                   {docs.length > 0 && (
-                    <p style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", padding: "10px 12px 4px", color: "#2e2e38", userSelect: "none" }}>Unfiled</p>
+                    <div onClick={() => setUnfiledOpen(v => !v)}
+                      style={{ display: "flex", alignItems: "center", gap: 5, padding: "10px 12px 4px", cursor: "pointer", userSelect: "none" }}>
+                      <span style={{ fontSize: 9, color: MUTED, display: "inline-block", transform: unfiledOpen ? "rotate(90deg)" : "rotate(0)", transition: "transform 0.18s" }}>▶</span>
+                      <span style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: MUTED }}>Unfiled</span>
+                    </div>
                   )}
 
                   {/* Unfiled docs */}
-                  {docs.map(doc => {
+                  {unfiledOpen && docs.map(doc => {
                     const isActive = pathname === `/docs/${doc.uuid}`
                     return (
                       <div key={doc.uuid} draggable
@@ -420,11 +425,11 @@ export default function Sidebar({ onNewNote, collapsed = false, onToggle }: Side
                         onDragEnd={() => { setDraggingDocId(null); setDragOverFolderId(null) }}
                         onClick={() => router.push(`/docs/${doc.uuid}`)}
                         className="sb-group"
-                        style={{ display: "flex", alignItems: "center", gap: 9, padding: "6px 10px 6px 20px", borderRadius: 7, fontSize: 13, cursor: "pointer", opacity: draggingDocId === doc.uuid ? 0.4 : 1, color: isActive ? ACTIVE_COLOR : "#4a4a54", background: isActive ? ACTIVE_BG : "transparent", transition: "all 0.12s", marginBottom: 1 }}
-                        onMouseEnter={e => { if (!isActive) { e.currentTarget.style.background = HOVER_BG; e.currentTarget.style.color = "#a0a0aa" } }}
-                        onMouseLeave={e => { if (!isActive) { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#4a4a54" } }}
+                        style={{ display: "flex", alignItems: "center", gap: 9, padding: "6px 10px 6px 20px", borderRadius: 7, fontSize: 13.5, cursor: "pointer", opacity: draggingDocId === doc.uuid ? 0.4 : 1, color: isActive ? ACTIVE_COLOR : ITEM_COLOR, background: isActive ? ACTIVE_BG : "transparent", transition: "all 0.12s", marginBottom: 1 }}
+                        onMouseEnter={e => { if (!isActive) { e.currentTarget.style.background = HOVER_BG; e.currentTarget.style.color = HOVER_COLOR } }}
+                        onMouseLeave={e => { if (!isActive) { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = ITEM_COLOR } }}
                       >
-                        <span style={{ fontSize: 13, opacity: isActive ? 1 : 0.45, flexShrink: 0, lineHeight: 1 }}>▣</span>
+                        <span style={{ fontSize: 13, opacity: isActive ? 1 : 0.5, flexShrink: 0, lineHeight: 1 }}>▣</span>
                         <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{doc.title || "Untitled"}</span>
                       </div>
                     )
