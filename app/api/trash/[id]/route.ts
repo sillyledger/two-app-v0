@@ -10,11 +10,10 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
   if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   const payload = await verifyToken(token.value)
   if (!payload) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-
   try {
     await sql`
       UPDATE docs SET deleted_at = NULL
-      WHERE id = ${params.id} AND user_id = ${payload.userId}
+      WHERE id = ${parseInt(id)} AND user_id = ${payload.userId}
     `
     return NextResponse.json({ success: true })
   } catch (error) {
@@ -29,11 +28,10 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
   if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   const payload = await verifyToken(token.value)
   if (!payload) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-
   try {
     await sql`
       DELETE FROM docs
-      WHERE id = ${params.id} AND user_id = ${payload.userId}
+      WHERE id = ${parseInt(id)} AND user_id = ${payload.userId}
     `
     return NextResponse.json({ success: true })
   } catch (error) {
