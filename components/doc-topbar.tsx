@@ -348,8 +348,8 @@ export default function DocTopbar({
               <MoreHorizontal size={15} />
             </button>
             {menuOpen && (
-              className="fixed top-0 z-40 h-[44px] flex items-center px-4 transition-all duration-200" style={{ backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border)" }}>
-                <button
+              <div className="absolute right-0 top-9 z-50 rounded-lg shadow-xl w-[190px] py-1 overflow-hidden" style={{ backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border)" }}>
+                            <button
                   onClick={handleCopyDoc}
                   className="flex items-center gap-2.5 w-full px-3 py-2 text-[12px] transition-colors"
                   style={{ color: "var(--text-secondary)" }}
