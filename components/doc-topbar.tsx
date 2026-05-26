@@ -45,12 +45,7 @@ function htmlToMarkdown(html: string): string {
     .replace(/<hr\s*\/?>/gi, '\n---\n\n')
     .replace(/<a[^>]*href="([^"]*)"[^>]*>(.*?)<\/a>/gi, '[$2]($1)')
     .replace(/<[^>]+>/g, '')
-    .replace(/&amp;/g, '&')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
-    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&nbsp;/g, ' ')
     .replace(/\n{3,}/g, '\n\n')
     .trim()
 }
@@ -65,6 +60,40 @@ function downloadFile(filename: string, content: string, mimeType: string) {
   URL.revokeObjectURL(url)
 }
 
+function htmlToBlocks(html: string): Array<{ type: string; text: string }> {
+  const blocks: Array<{ type: string; text: string }> = []
+
+  // Strip inline tags but keep text, then parse block by block
+  const stripInline = (s: string) =>
+    s.replace(/<[^>]+>/g, '')
+     .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+     .replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&nbsp;/g, ' ')
+     .trim()
+
+  // Process li first — strip inner <p> tags inside li
+  let processed = html.replace(/<li[^>]*>([\s\S]*?)<\/li>/gi, (_, inner) => {
+    return `<li>${inner.replace(/<\/?p[^>]*>/gi, ' ')}</li>`
+  })
+
+  // Now extract blocks in order using a combined regex
+  const blockRe = /<(h[123]|p|li|blockquote|hr)[^>]*>([\s\S]*?)<\/\1>|<hr[^>]*\/?>/gi
+  let match
+  while ((match = blockRe.exec(processed)) !== null) {
+    const tag = match[1]?.toLowerCase() || 'hr'
+    const inner = stripInline(match[2] || '')
+    if (!inner && tag !== 'hr') continue
+    if (tag === 'h1') blocks.push({ type: 'h1', text: inner })
+    else if (tag === 'h2') blocks.push({ type: 'h2', text: inner })
+    else if (tag === 'h3') blocks.push({ type: 'h3', text: inner })
+    else if (tag === 'li') blocks.push({ type: 'li', text: inner })
+    else if (tag === 'blockquote') blocks.push({ type: 'bq', text: inner })
+    else if (tag === 'hr') blocks.push({ type: 'hr', text: '' })
+    else if (inner) blocks.push({ type: 'p', text: inner })
+  }
+
+  return blocks
+}
+
 async function exportAsPDF(docTitle: string, content: string) {
   const { jsPDF } = await import('jspdf')
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
@@ -75,92 +104,58 @@ async function exportAsPDF(docTitle: string, content: string) {
   const maxWidth = pageWidth - margin * 2
   let y = margin
 
-  // Parse HTML into structured blocks using the DOM
-  const parser = new DOMParser()
-  const parsed = parser.parseFromString(content, 'text/html')
-
-  interface Block {
-    type: 'h1' | 'h2' | 'h3' | 'p' | 'li' | 'blockquote' | 'hr' | 'blank'
-    text: string
-  }
-
-  const blocks: Block[] = []
-
-  function extractBlocks(el: Element) {
-    for (const node of Array.from(el.childNodes)) {
-      if (node.nodeType === Node.TEXT_NODE) {
-        const t = node.textContent?.trim()
-        if (t) blocks.push({ type: 'p', text: t })
-        continue
-      }
-      if (node.nodeType !== Node.ELEMENT_NODE) continue
-      const elem = node as Element
-      const tag = elem.tagName.toLowerCase()
-      const text = elem.textContent?.trim() || ''
-
-      if (tag === 'h1') blocks.push({ type: 'h1', text })
-      else if (tag === 'h2') blocks.push({ type: 'h2', text })
-      else if (tag === 'h3') blocks.push({ type: 'h3', text })
-      else if (tag === 'hr') blocks.push({ type: 'hr', text: '' })
-      else if (tag === 'blockquote') blocks.push({ type: 'blockquote', text })
-      else if (tag === 'li') blocks.push({ type: 'li', text })
-      else if (tag === 'ul' || tag === 'ol') extractBlocks(elem)
-      else if (tag === 'p') {
-        if (text) blocks.push({ type: 'p', text })
-        else blocks.push({ type: 'blank', text: '' })
-      }
-      else if (['div', 'section', 'article'].includes(tag)) extractBlocks(elem)
-      else if (text) blocks.push({ type: 'p', text })
-    }
-  }
-
-  extractBlocks(parsed.body)
+  const addPage = () => { doc.addPage(); y = margin }
+  const checkY = (needed: number) => { if (y + needed > pageHeight - margin) addPage() }
 
   // Title
   doc.setFont('helvetica', 'bold')
   doc.setFontSize(22)
   doc.setTextColor(0, 0, 0)
   const titleLines = doc.splitTextToSize(docTitle || 'Untitled', maxWidth)
+  checkY(titleLines.length * 10)
   doc.text(titleLines, margin, y)
   y += titleLines.length * 10 + 4
-
   doc.setDrawColor(200, 200, 200)
   doc.line(margin, y, pageWidth - margin, y)
   y += 8
 
-  for (const block of blocks) {
-    if (y > pageHeight - margin) { doc.addPage(); y = margin }
+  const blocks = htmlToBlocks(content)
 
+  for (const block of blocks) {
     if (block.type === 'h1') {
+      checkY(12)
       doc.setFont('helvetica', 'bold'); doc.setFontSize(16); doc.setTextColor(0, 0, 0)
       const w = doc.splitTextToSize(block.text, maxWidth)
-      doc.text(w, margin, y); y += w.length * 8 + 3
+      doc.text(w, margin, y); y += w.length * 8 + 4
     } else if (block.type === 'h2') {
+      checkY(10)
       doc.setFont('helvetica', 'bold'); doc.setFontSize(13); doc.setTextColor(0, 0, 0)
       const w = doc.splitTextToSize(block.text, maxWidth)
-      doc.text(w, margin, y); y += w.length * 7 + 2
+      doc.text(w, margin, y); y += w.length * 7 + 3
     } else if (block.type === 'h3') {
+      checkY(8)
       doc.setFont('helvetica', 'bold'); doc.setFontSize(11); doc.setTextColor(0, 0, 0)
       const w = doc.splitTextToSize(block.text, maxWidth)
       doc.text(w, margin, y); y += w.length * 6 + 2
     } else if (block.type === 'li') {
+      checkY(6)
       doc.setFont('helvetica', 'normal'); doc.setFontSize(10); doc.setTextColor(30, 30, 30)
       const w = doc.splitTextToSize('• ' + block.text, maxWidth - 6)
-      doc.text(w, margin + 4, y); y += w.length * 5 + 1
-    } else if (block.type === 'blockquote') {
+      doc.text(w, margin + 4, y); y += w.length * 5.5 + 1
+    } else if (block.type === 'bq') {
+      checkY(6)
       doc.setFont('helvetica', 'italic'); doc.setFontSize(10); doc.setTextColor(100, 100, 100)
       const w = doc.splitTextToSize(block.text, maxWidth - 8)
-      doc.text(w, margin + 6, y); y += w.length * 5 + 2
-      doc.setTextColor(30, 30, 30)
+      doc.text(w, margin + 6, y); y += w.length * 5.5 + 2
     } else if (block.type === 'hr') {
+      checkY(6)
       doc.setDrawColor(200, 200, 200)
-      doc.line(margin, y, pageWidth - margin, y); y += 5
-    } else if (block.type === 'blank') {
-      y += 3
+      doc.line(margin, y, pageWidth - margin, y); y += 6
     } else {
+      checkY(6)
       doc.setFont('helvetica', 'normal'); doc.setFontSize(10); doc.setTextColor(30, 30, 30)
       const w = doc.splitTextToSize(block.text, maxWidth)
-      doc.text(w, margin, y); y += w.length * 5 + 2
+      doc.text(w, margin, y); y += w.length * 5.5 + 2
     }
   }
 
@@ -291,7 +286,6 @@ export default function DocTopbar({
         </div>
 
         <div className="flex items-center gap-1 shrink-0 ml-2">
-
           <div className="flex items-center gap-1.5 h-5 mr-1">
             {saveStatus === "saving" && (
               <>
@@ -308,56 +302,39 @@ export default function DocTopbar({
           </div>
 
           {onToggleWide && (
-            <button
-              onClick={onToggleWide}
-              title={wideMode ? "Narrow view" : "Wide view"}
+            <button onClick={onToggleWide} title={wideMode ? "Narrow view" : "Wide view"}
               className="flex items-center justify-center w-7 h-7 rounded-md transition-colors text-[15px]"
               style={{ color: wideMode ? "var(--text-primary)" : "var(--text-muted)", backgroundColor: wideMode ? "var(--bg-tertiary)" : "transparent" }}
               onMouseEnter={e => { e.currentTarget.style.backgroundColor = "var(--bg-tertiary)"; e.currentTarget.style.color = "var(--text-primary)" }}
               onMouseLeave={e => { e.currentTarget.style.backgroundColor = wideMode ? "var(--bg-tertiary)" : "transparent"; e.currentTarget.style.color = wideMode ? "var(--text-primary)" : "var(--text-muted)" }}
-            >
-              ↔
-            </button>
+            >↔</button>
           )}
 
           {onToggleFavorite && (
-            <button
-              onClick={onToggleFavorite}
-              title={isFavorite ? "Remove from favorites" : "Add to favorites"}
+            <button onClick={onToggleFavorite} title={isFavorite ? "Remove from favorites" : "Add to favorites"}
               className="flex items-center justify-center w-7 h-7 rounded-md transition-colors"
               style={{ color: isFavorite ? "#EF9F27" : "var(--text-muted)" }}
               onMouseEnter={e => (e.currentTarget.style.color = "#EF9F27")}
               onMouseLeave={e => (e.currentTarget.style.color = isFavorite ? "#EF9F27" : "var(--text-muted)")}
-            >
-              <Star size={14} fill={isFavorite ? "#EF9F27" : "none"} />
-            </button>
+            ><Star size={14} fill={isFavorite ? "#EF9F27" : "none"} /></button>
           )}
 
           {onDelete && (
-            <button
-              onClick={openMoveModal}
-              title="Move to folder"
+            <button onClick={openMoveModal} title="Move to folder"
               className="flex items-center justify-center w-7 h-7 rounded-md transition-colors"
               style={{ color: "var(--text-muted)" }}
               onMouseEnter={e => { e.currentTarget.style.backgroundColor = "var(--bg-tertiary)"; e.currentTarget.style.color = "var(--text-primary)" }}
               onMouseLeave={e => { e.currentTarget.style.backgroundColor = "transparent"; e.currentTarget.style.color = "var(--text-muted)" }}
-            >
-              <FolderInput size={14} />
-            </button>
+            ><FolderInput size={14} /></button>
           )}
 
           <div className="relative ml-1" ref={shareRef}>
-            <button
-              onClick={() => setShareOpen(v => !v)}
+            <button onClick={() => setShareOpen(v => !v)}
               className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[12px] font-medium transition-colors"
               style={{ color: "var(--text-muted)" }}
               onMouseEnter={e => { e.currentTarget.style.backgroundColor = "var(--bg-tertiary)"; e.currentTarget.style.color = "var(--text-primary)" }}
               onMouseLeave={e => { e.currentTarget.style.backgroundColor = "transparent"; e.currentTarget.style.color = "var(--text-muted)" }}
-            >
-              <Share2 size={12} />
-              Share
-            </button>
-
+            ><Share2 size={12} />Share</button>
             {shareOpen && (
               <div className="absolute right-0 top-[42px] z-50 rounded-xl shadow-2xl w-[300px] p-4" style={{ backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border)" }}>
                 <p className="text-[13px] font-semibold mb-1" style={{ color: "var(--text-primary)" }}>Share this doc</p>
@@ -370,94 +347,52 @@ export default function DocTopbar({
                       <p className="text-[10px]" style={{ color: "var(--text-muted)" }}>{publicEnabled ? "Link sharing is on" : "Only you can access"}</p>
                     </div>
                   </div>
-                  <button
-                    onClick={handleTogglePublic}
-                    className={`relative w-9 h-5 rounded-full transition-colors duration-200 shrink-0 ${publicEnabled ? 'bg-emerald-500' : 'bg-[#333]'}`}
-                  >
+                  <button onClick={handleTogglePublic} className={`relative w-9 h-5 rounded-full transition-colors duration-200 shrink-0 ${publicEnabled ? 'bg-emerald-500' : 'bg-[#333]'}`}>
                     <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform duration-200 ${publicEnabled ? 'translate-x-4' : 'translate-x-0'}`} />
                   </button>
                 </div>
-                <button
-                  onClick={handleCopyLink}
-                  disabled={!publicEnabled}
+                <button onClick={handleCopyLink} disabled={!publicEnabled}
                   className="flex items-center justify-center gap-2 w-full py-2 rounded-lg text-[12px] font-medium transition-colors"
                   style={{ backgroundColor: publicEnabled ? "var(--bg-tertiary)" : "var(--bg-secondary)", color: publicEnabled ? "var(--text-secondary)" : "var(--text-muted)", cursor: publicEnabled ? "pointer" : "not-allowed" }}
-                >
-                  <Copy size={12} />
-                  {linkCopied ? "Copied!" : "Copy link"}
-                </button>
+                ><Copy size={12} />{linkCopied ? "Copied!" : "Copy link"}</button>
               </div>
             )}
           </div>
 
           {onToggleDetail && (
-            <button
-              onClick={onToggleDetail}
-              title={detailOpen ? "Close details" : "Open details"}
+            <button onClick={onToggleDetail} title={detailOpen ? "Close details" : "Open details"}
               className="flex items-center justify-center w-7 h-7 rounded-md transition-colors"
               style={{ color: detailOpen ? "var(--text-primary)" : "var(--text-muted)", backgroundColor: detailOpen ? "var(--bg-tertiary)" : "transparent" }}
               onMouseEnter={e => { e.currentTarget.style.backgroundColor = "var(--bg-tertiary)"; e.currentTarget.style.color = "var(--text-primary)" }}
               onMouseLeave={e => { e.currentTarget.style.backgroundColor = detailOpen ? "var(--bg-tertiary)" : "transparent"; e.currentTarget.style.color = detailOpen ? "var(--text-primary)" : "var(--text-muted)" }}
-            >
-              <PanelRight size={14} />
-            </button>
+            ><PanelRight size={14} /></button>
           )}
 
           <div className="relative" ref={menuRef}>
-            <button
-              onClick={() => setMenuOpen(v => !v)}
+            <button onClick={() => setMenuOpen(v => !v)}
               className="flex items-center justify-center w-7 h-7 rounded-md transition-colors"
               style={{ color: "var(--text-muted)" }}
               onMouseEnter={e => { e.currentTarget.style.backgroundColor = "var(--bg-tertiary)"; e.currentTarget.style.color = "var(--text-primary)" }}
               onMouseLeave={e => { e.currentTarget.style.backgroundColor = "transparent"; e.currentTarget.style.color = "var(--text-muted)" }}
-            >
-              <MoreHorizontal size={15} />
-            </button>
+            ><MoreHorizontal size={15} /></button>
             {menuOpen && (
               <div className="absolute right-0 top-9 z-50 rounded-lg shadow-xl w-[190px] py-1 overflow-hidden" style={{ backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border)" }}>
-                <button
-                  onClick={handleCopyDoc}
-                  className="flex items-center gap-2.5 w-full px-3 py-2 text-[12px] transition-colors"
-                  style={{ color: "var(--text-secondary)" }}
-                  onMouseEnter={e => (e.currentTarget.style.backgroundColor = "var(--bg-tertiary)")}
-                  onMouseLeave={e => (e.currentTarget.style.backgroundColor = "transparent")}
-                >
-                  <Copy size={12} style={{ color: "var(--text-muted)" }} /> Copy doc
-                </button>
-                <button
-                  onClick={handleExportMarkdown}
-                  className="flex items-center gap-2.5 w-full px-3 py-2 text-[12px] transition-colors"
-                  style={{ color: "var(--text-secondary)" }}
-                  onMouseEnter={e => (e.currentTarget.style.backgroundColor = "var(--bg-tertiary)")}
-                  onMouseLeave={e => (e.currentTarget.style.backgroundColor = "transparent")}
-                >
-                  <Download size={12} style={{ color: "var(--text-muted)" }} /> Export as Markdown
-                </button>
-                <button
-                  onClick={handleExportPDF}
-                  className="flex items-center gap-2.5 w-full px-3 py-2 text-[12px] transition-colors"
-                  style={{ color: "var(--text-secondary)" }}
-                  onMouseEnter={e => (e.currentTarget.style.backgroundColor = "var(--bg-tertiary)")}
-                  onMouseLeave={e => (e.currentTarget.style.backgroundColor = "transparent")}
-                >
-                  <FileText size={12} style={{ color: "var(--text-muted)" }} /> Export as PDF
-                </button>
-
+                <button onClick={handleCopyDoc} className="flex items-center gap-2.5 w-full px-3 py-2 text-[12px] transition-colors" style={{ color: "var(--text-secondary)" }}
+                  onMouseEnter={e => (e.currentTarget.style.backgroundColor = "var(--bg-tertiary)")} onMouseLeave={e => (e.currentTarget.style.backgroundColor = "transparent")}
+                ><Copy size={12} style={{ color: "var(--text-muted)" }} /> Copy doc</button>
+                <button onClick={handleExportMarkdown} className="flex items-center gap-2.5 w-full px-3 py-2 text-[12px] transition-colors" style={{ color: "var(--text-secondary)" }}
+                  onMouseEnter={e => (e.currentTarget.style.backgroundColor = "var(--bg-tertiary)")} onMouseLeave={e => (e.currentTarget.style.backgroundColor = "transparent")}
+                ><Download size={12} style={{ color: "var(--text-muted)" }} /> Export as Markdown</button>
+                <button onClick={handleExportPDF} className="flex items-center gap-2.5 w-full px-3 py-2 text-[12px] transition-colors" style={{ color: "var(--text-secondary)" }}
+                  onMouseEnter={e => (e.currentTarget.style.backgroundColor = "var(--bg-tertiary)")} onMouseLeave={e => (e.currentTarget.style.backgroundColor = "transparent")}
+                ><FileText size={12} style={{ color: "var(--text-muted)" }} /> Export as PDF</button>
                 <div className="my-1 mx-2" style={{ borderTop: "1px solid var(--border)" }} />
-
-                <button
-                  onClick={() => { setMenuOpen(false); setShowDeleteModal(true) }}
-                  className="flex items-center gap-2.5 w-full px-3 py-2 text-[12px] transition-colors"
-                  style={{ color: "#f87171" }}
-                  onMouseEnter={e => (e.currentTarget.style.backgroundColor = "rgba(239,68,68,0.08)")}
-                  onMouseLeave={e => (e.currentTarget.style.backgroundColor = "transparent")}
-                >
-                  <Trash2 size={12} /> Delete doc
-                </button>
+                <button onClick={() => { setMenuOpen(false); setShowDeleteModal(true) }} className="flex items-center gap-2.5 w-full px-3 py-2 text-[12px] transition-colors" style={{ color: "#f87171" }}
+                  onMouseEnter={e => (e.currentTarget.style.backgroundColor = "rgba(239,68,68,0.08)")} onMouseLeave={e => (e.currentTarget.style.backgroundColor = "transparent")}
+                ><Trash2 size={12} /> Delete doc</button>
               </div>
             )}
           </div>
-
         </div>
       </header>
 
@@ -482,8 +417,7 @@ export default function DocTopbar({
               <div className="flex flex-col gap-1 mb-4 max-h-48 overflow-y-auto">
                 {folders.map(f => (
                   <button key={f.id} onClick={() => handleMove(f.id)} className="text-left px-3 py-2 rounded-lg text-sm transition-colors" style={{ color: "var(--text-secondary)" }}
-                    onMouseEnter={e => (e.currentTarget.style.backgroundColor = "var(--bg-tertiary)")}
-                    onMouseLeave={e => (e.currentTarget.style.backgroundColor = "transparent")}
+                    onMouseEnter={e => (e.currentTarget.style.backgroundColor = "var(--bg-tertiary)")} onMouseLeave={e => (e.currentTarget.style.backgroundColor = "transparent")}
                   >📁 {f.name}</button>
                 ))}
               </div>
@@ -503,8 +437,7 @@ export default function DocTopbar({
             <p className="text-[12px] mb-5" style={{ color: "var(--text-muted)" }}>This doc will be permanently deleted. This cannot be undone.</p>
             <div className="flex justify-end gap-2">
               <button onClick={() => setShowDeleteModal(false)} className="px-3 py-1.5 rounded-lg text-[12px] font-medium transition-colors" style={{ color: "var(--text-muted)" }}
-                onMouseEnter={e => (e.currentTarget.style.backgroundColor = "var(--bg-tertiary)")}
-                onMouseLeave={e => (e.currentTarget.style.backgroundColor = "transparent")}
+                onMouseEnter={e => (e.currentTarget.style.backgroundColor = "var(--bg-tertiary)")} onMouseLeave={e => (e.currentTarget.style.backgroundColor = "transparent")}
               >Cancel</button>
               <button onClick={() => { setShowDeleteModal(false); onDelete?.() }} className="px-3 py-1.5 rounded-lg text-[12px] font-medium bg-red-500/90 text-white hover:bg-red-500 transition-colors">
                 Delete
