@@ -19,6 +19,7 @@ import {
   Minus,
   Table,
   ImageIcon,
+  Info,
 } from "lucide-react"
 import {
   forwardRef,
@@ -83,6 +84,19 @@ const COMMANDS = [
     description: "Checklist with checkboxes",
     icon: ListTodo,
     command: (editor: any) => editor.chain().focus().toggleTaskList().run(),
+  },
+  {
+    title: "Callout",
+    description: "Highlighted tip, info, or warning box",
+    icon: Info,
+    command: (editor: any) => {
+      const { selection } = editor.state
+      editor.chain().focus().insertContentAt(selection.anchor, {
+        type: "callout",
+        attrs: { calloutType: "tip" },
+        content: [{ type: "paragraph" }],
+      }).run()
+    },
   },
   {
     title: "Blockquote",
