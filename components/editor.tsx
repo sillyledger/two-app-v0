@@ -539,20 +539,20 @@ export default function Editor({ content, onChange, onReady, onImageUpload, onIn
           cursor: pointer;
         }
         .editor-content ul[data-type="taskList"] li > label input[type="checkbox"] {
-  width: 15px;
-  height: 15px;
-  border-radius: 4px;
-  border: 1.5px solid rgba(128,128,128,0.4);
-  background: transparent;
-  appearance: none;
-  -webkit-appearance: none;
-  cursor: pointer;
-  position: relative;
-  transition: background 0.15s, border-color 0.15s;
-}
+          width: 15px;
+          height: 15px;
+          border-radius: 4px;
+          border: 1.5px solid rgba(128,128,128,0.5);
+          background: transparent;
+          appearance: none;
+          -webkit-appearance: none;
+          cursor: pointer;
+          position: relative;
+          transition: background 0.15s, border-color 0.15s;
+        }
         .editor-content ul[data-type="taskList"] li > label input[type="checkbox"]:checked {
-          background: rgba(255,255,255,0.15);
-          border-color: rgba(255,255,255,0.4);
+          background: rgba(128,128,128,0.2);
+          border-color: rgba(128,128,128,0.6);
         }
         .editor-content ul[data-type="taskList"] li > label input[type="checkbox"]:checked::after {
           content: "";
@@ -561,7 +561,7 @@ export default function Editor({ content, onChange, onReady, onImageUpload, onIn
           top: 1px;
           width: 5px;
           height: 8px;
-          border: 1.5px solid rgba(255,255,255,0.8);
+          border: 1.5px solid rgba(80,80,80,0.9);
           border-top: none;
           border-left: none;
           transform: rotate(45deg);
