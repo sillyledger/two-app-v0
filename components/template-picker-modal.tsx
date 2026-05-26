@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { X, FileText, Users, BookOpen, Layers, Calendar } from "lucide-react"
+import { X, FileText, Users, BookOpen, Layers, Calendar, Target } from "lucide-react"
 
 interface Props {
   open: boolean
@@ -32,7 +32,7 @@ const TEMPLATES = [
     description: "Structure your ideas into a compelling article.",
     icon: BookOpen,
     accentColor: "#5DCAA5",
-    content: `<h1>Blog Post Title</h1><p><em>A short one-line summary of what this post is about.</em></p><h2>Introduction</h2><p>Hook your reader here. What problem are you solving or what story are you telling?</p><h2>Main Point 1</h2><p></p><h2>Main Point 2</h2><p></p><h2>Main Point 3</h2><p></p><h2>Conclusion</h2><p>Wrap up your key takeaways and add a call to action.</p>`,
+    content: `<h1>Post title</h1><p><strong>Category:</strong> &nbsp; &nbsp;<strong>Read time:</strong> &nbsp;min</p><div data-callout="tip"><p>A great post makes one strong point and supports it three ways. Write your hook first — if it doesn't grab you, it won't grab anyone else either.</p></div><h2>Hook</h2><blockquote><p>Open with a question, a surprising fact, or a short story that pulls the reader in. Replace this with your actual opening.</p></blockquote><h2>Section 1 — the problem or context</h2><p>Set up the situation. What does the reader need to understand before your main argument lands?</p><h2>Section 2 — your main point</h2><p>This is the core of the post. Be direct. One strong idea, well explained, beats three vague ones.</p><h2>Section 3 — evidence, examples, or how-to</h2><p>Back up your point. Use a specific example, a story, data, or a step-by-step if this is a how-to post.</p><hr /><h2>Conclusion</h2><p>Restate the key takeaway in one sentence. Then add a call to action — what should the reader do, think, or feel next?</p><div data-callout="note"><p>Before publishing: check the title is under 60 characters, add a meta description, and confirm all links work.</p></div>`,
   },
   {
     id: "product-brief",
@@ -49,6 +49,14 @@ const TEMPLATES = [
     icon: Calendar,
     accentColor: "#EF9F27",
     content: `<h1>Weekly Review</h1><p><strong>Week of:</strong> </p><div data-callout="tip"><p>Block 30 minutes every Friday to fill this in. Honest reflection — not just what looked good — is what makes it useful.</p></div><h2>Wins this week</h2><ul data-type="taskList"><li data-checked="true"><label><input type="checkbox" checked /></label><div><p>Win 1 — what went well and why?</p></div></li><li data-checked="true"><label><input type="checkbox" checked /></label><div><p>Win 2</p></div></li></ul><h2>What didn't go well</h2><p>Be honest here. What slipped, what was blocked, what took longer than expected?</p><h2>What did I learn?</h2><p>One or two sentences on the most useful thing you figured out this week.</p><h2>Next week priorities</h2><ul data-type="taskList"><li data-checked="false"><label><input type="checkbox" /></label><div><p>Priority 1 — the most important thing</p></div></li><li data-checked="false"><label><input type="checkbox" /></label><div><p>Priority 2</p></div></li><li data-checked="false"><label><input type="checkbox" /></label><div><p>Priority 3</p></div></li></ul><h2>Metrics snapshot</h2><table><tbody><tr><th><p>Metric</p></th><th><p>Last week</p></th><th><p>This week</p></th></tr><tr><td><p>Metric 1</p></td><td><p></p></td><td><p></p></td></tr><tr><td><p>Metric 2</p></td><td><p></p></td><td><p></p></td></tr><tr><td><p>Metric 3</p></td><td><p></p></td><td><p></p></td></tr></tbody></table><div data-callout="note"><p>Reflection: Any broader thoughts on the week — energy levels, focus, blockers, or patterns you're noticing?</p></div>`,
+  },
+  {
+    id: "okr-tracker",
+    label: "OKR Tracker",
+    description: "Set objectives, track key results, measure progress.",
+    icon: Target,
+    accentColor: "#1D9E75",
+    content: `<h1>OKR Tracker</h1><p><strong>Quarter:</strong> &nbsp; &nbsp;<strong>Team / Owner:</strong> </p><div data-callout="info"><p>Objectives are qualitative goals that inspire. Key Results are measurable outcomes that prove you got there. Aim for 3 objectives, each with 2–4 key results. Update numbers weekly.</p></div><h2>Objective 1</h2><p><em>Write your objective here — make it ambitious and inspiring.</em></p><table><tbody><tr><th><p>Key result</p></th><th><p>Current</p></th><th><p>Target</p></th><th><p>% complete</p></th></tr><tr><td><p>Key result 1 — describe the measurable outcome</p></td><td><p>0</p></td><td><p>100</p></td><td><p>0%</p></td></tr><tr><td><p>Key result 2</p></td><td><p>0</p></td><td><p>100</p></td><td><p>0%</p></td></tr><tr><td><p>Key result 3</p></td><td><p>0</p></td><td><p>100</p></td><td><p>0%</p></td></tr></tbody></table><h2>Objective 2</h2><p><em>Write your second objective here.</em></p><table><tbody><tr><th><p>Key result</p></th><th><p>Current</p></th><th><p>Target</p></th><th><p>% complete</p></th></tr><tr><td><p>Key result 1 — describe the measurable outcome</p></td><td><p>0</p></td><td><p>100</p></td><td><p>0%</p></td></tr><tr><td><p>Key result 2</p></td><td><p>0</p></td><td><p>100</p></td><td><p>0%</p></td></tr><tr><td><p>Key result 3</p></td><td><p>0</p></td><td><p>100</p></td><td><p>0%</p></td></tr></tbody></table><h2>Objective 3</h2><p><em>Write your third objective here.</em></p><table><tbody><tr><th><p>Key result</p></th><th><p>Current</p></th><th><p>Target</p></th><th><p>% complete</p></th></tr><tr><td><p>Key result 1 — describe the measurable outcome</p></td><td><p>0</p></td><td><p>100</p></td><td><p>0%</p></td></tr><tr><td><p>Key result 2</p></td><td><p>0</p></td><td><p>100</p></td><td><p>0%</p></td></tr></tbody></table><div data-callout="tip"><p>Review OKRs every Monday. Update the Current column, recalculate % complete, and flag anything that's off track early — don't wait until end of quarter.</p></div>`,
   },
 ]
 
@@ -85,10 +93,7 @@ export default function TemplatePickerModal({ open, onClose }: Props) {
       className="fixed inset-0 z-50 flex items-center justify-center"
       style={{ backgroundColor: "rgba(0,0,0,0.6)" }}
     >
-      {/* Backdrop click to close */}
       <div className="absolute inset-0" onClick={onClose} />
-
-      {/* Modal */}
       <div
         className="relative z-10 rounded-2xl shadow-2xl w-full max-w-2xl mx-4"
         style={{
@@ -96,7 +101,6 @@ export default function TemplatePickerModal({ open, onClose }: Props) {
           border: "1px solid var(--border)",
         }}
       >
-        {/* Header */}
         <div
           className="flex items-center justify-between px-6 py-5"
           style={{ borderBottom: "1px solid var(--border)" }}
@@ -129,7 +133,6 @@ export default function TemplatePickerModal({ open, onClose }: Props) {
           </button>
         </div>
 
-        {/* Template grid */}
         <div className="p-6 grid grid-cols-3 gap-3">
           {TEMPLATES.map((template) => {
             const Icon = template.icon
