@@ -90,6 +90,18 @@ export default function SettingsPage() {
       .catch(() => router.push('/login'))
   }, [])
 
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const Paddle = (window as any).Paddle
+      if (Paddle) {
+        Paddle.Environment.set('production')
+        Paddle.Initialize({ token: 'live_5d79c55970d6730fce490b94bc1' })
+        clearInterval(interval)
+      }
+    }, 300)
+    return () => clearInterval(interval)
+  }, [])
+
   const handleTheme = (t: Theme) => {
     setTheme(t)
     localStorage.setItem('theme', t)
@@ -582,17 +594,13 @@ export default function SettingsPage() {
                     </div>
                     <button
                       onClick={() => {
-  const Paddle = (window as any).Paddle
-  if (Paddle) {
-    Paddle.Environment.set('production')
-    Paddle.Initialize({ token: 'live_5d79c55970d6730fce490b94bc1' })
-    Paddle.Checkout.open({ items: [{ priceId: 'pri_01ksjx3b0n6pg6fw44hbq9r03p', quantity: 1 }] })
-  }
-}}
-className="mt-2 px-3 py-1.5 rounded-lg text-[12px] font-medium transition-colors"
-style={{ backgroundColor: "#534AB7", color: "#fff", border: "none", cursor: "pointer" }}
->
-  Upgrade
+                        const Paddle = (window as any).Paddle
+                        Paddle?.Checkout.open({ items: [{ priceId: 'pri_01ksjx3b0n6pg6fw44hbq9r03p', quantity: 1 }] })
+                      }}
+                      className="mt-2 px-3 py-1.5 rounded-lg text-[12px] font-medium transition-colors"
+                      style={{ backgroundColor: "#534AB7", color: "#fff", border: "none", cursor: "pointer" }}
+                    >
+                      Upgrade
                     </button>
                   </div>
                 </div>
@@ -616,17 +624,13 @@ style={{ backgroundColor: "#534AB7", color: "#fff", border: "none", cursor: "poi
                     </div>
                     <button
                       onClick={() => {
-  const Paddle = (window as any).Paddle
-  if (Paddle) {
-    Paddle.Environment.set('production')
-    Paddle.Initialize({ token: 'live_5d79c55970d6730fce490b94bc1' })
-    Paddle.Checkout.open({ items: [{ priceId: 'pri_01ksjx6e6xtrmq324ama45zyr0', quantity: 1 }] })
-  }
-}}
-className="mt-2 px-3 py-1.5 rounded-lg text-[12px] font-medium transition-colors"
-style={{ backgroundColor: "#BA7517", color: "#fff", border: "none", cursor: "pointer" }}
->
-  Get lifetime
+                        const Paddle = (window as any).Paddle
+                        Paddle?.Checkout.open({ items: [{ priceId: 'pri_01ksjx6e6xtrmq324ama45zyr0', quantity: 1 }] })
+                      }}
+                      className="mt-2 px-3 py-1.5 rounded-lg text-[12px] font-medium transition-colors"
+                      style={{ backgroundColor: "#BA7517", color: "#fff", border: "none", cursor: "pointer" }}
+                    >
+                      Get lifetime
                     </button>
                   </div>
                 </div>
