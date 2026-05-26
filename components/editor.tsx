@@ -236,32 +236,51 @@ export default function Editor({ content, onChange, onReady, onImageUpload, onIn
       const isInTable = editor.isActive("table") || editor.isActive("tableCell") || editor.isActive("tableHeader")
 
       if (isInTable) {
-        setBubbleVisible(false)
-        const { from } = editor.state.selection
-        const domNode = editor.view.nodeDOM(from) as HTMLElement | null
-        if (domNode) {
-          let el: HTMLElement | null = domNode
-          while (el && el.tagName !== "TABLE") {
-            el = el.parentElement
-          }
-          if (el) {
-            const tableRect = el.getBoundingClientRect()
-            // Use fixed viewport coordinates so toolbar sits right above the table
-            setTableToolbar({
-              top: tableRect.top - 44,
-              left: tableRect.left,
-            })
-            setTableAddRow({
-              top: tableRect.bottom + 4,
-              left: tableRect.left,
-              width: tableRect.width,
-            })
-            return
-          }
-        }
-        setTableToolbar(null)
-        return
+  setBubbleVisible(false)
+  // Try multiple ways to find the table DOM element
+  let tableEl: HTMLElement | null = null
+
+  // Method 1: via nodeDOM
+  const { from } = editor.state.selection
+  const domNode = editor.view.nodeDOM(from) as HTMLElement | null
+  if (domNode) {
+    let el: HTMLElement | null = domNode
+    while (el && el.tagName !== "TABLE") {
+      el = el.parentElement
+    }
+    if (el) tableEl = el
+  }
+
+  // Method 2: fallback via DOM selection
+  if (!tableEl) {
+    const sel = window.getSelection()
+    if (sel && sel.rangeCount > 0) {
+      let el = sel.getRangeAt(0).commonAncestorContainer as HTMLElement | null
+      if (el && el.nodeType === Node.TEXT_NODE) el = el.parentElement
+      while (el && el.tagName !== "TABLE") {
+        el = el.parentElement
       }
+      if (el) tableEl = el
+    }
+  }
+
+  if (tableEl) {
+    const tableRect = tableEl.getBoundingClientRect()
+    setTableToolbar({
+      top: tableRect.top - 44,
+      left: tableRect.left,
+    })
+    setTableAddRow({
+      top: tableRect.bottom + 4,
+      left: tableRect.left,
+      width: tableRect.width,
+    })
+  } else {
+    setTableToolbar(null)
+    setTableAddRow(null)
+  }
+  return
+}
 
       setTableToolbar(null)
       setTableAddRow(null)
