@@ -231,7 +231,7 @@ export default function DocTopbar({
         </div>
 
         {/* Right */}
-        <div className="flex items-center gap-1 shrink-0 ml-4">
+        <div className="flex items-center gap-1 shrink-0 ml-2 overflow-visible">
 
           {/* Autosave indicator */}
           <div className="flex items-center gap-1.5 h-5 mr-1">
