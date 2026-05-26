@@ -1,6 +1,6 @@
 "use client"
 
-import { useEditor, EditorContent, Extension } from "@tiptap/react"
+import { useEditor, EditorContent, Extension, Node, ReactNodeViewRenderer, NodeViewWrapper, NodeViewContent } from "@tiptap/react"
 import StarterKit from "@tiptap/starter-kit"
 import Link from "@tiptap/extension-link"
 import Typography from "@tiptap/extension-typography"
@@ -42,6 +42,74 @@ import { useCallback, useState, useRef, useEffect } from "react"
 import { useRouter } from "next/navigation"
 
 const lowlight = createLowlight(common)
+
+const CALLOUT_TYPES = ["tip", "info", "warning", "note"] as const
+type CalloutType = typeof CALLOUT_TYPES[number]
+
+const CALLOUT_EMOJI: Record<CalloutType, string> = {
+  tip: "💡",
+  info: "ℹ️",
+  warning: "⚠️",
+  note: "📝",
+}
+
+function CalloutNodeView({ node, updateAttributes, editable }: any) {
+  const calloutType: CalloutType = (CALLOUT_TYPES.includes(node.attrs.calloutType) ? node.attrs.calloutType : "tip") as CalloutType
+
+  const cycleType = () => {
+    if (!editable) return
+    const idx = CALLOUT_TYPES.indexOf(calloutType)
+    const next = CALLOUT_TYPES[(idx + 1) % CALLOUT_TYPES.length]
+    updateAttributes({ calloutType: next })
+  }
+
+  return (
+    <NodeViewWrapper>
+      <div data-callout={calloutType} style={{ display: "flex", alignItems: "flex-start", gap: "10px" }}>
+        <span
+          className="callout-emoji"
+          contentEditable={false}
+          onClick={cycleType}
+          title={editable ? "Click to change type" : undefined}
+        >
+          {CALLOUT_EMOJI[calloutType]}
+        </span>
+        <NodeViewContent className="callout-content" />
+      </div>
+    </NodeViewWrapper>
+  )
+}
+
+const CalloutNode = Node.create({
+  name: "callout",
+  group: "block",
+  content: "block+",
+  defining: true,
+
+  addAttributes() {
+    return {
+      calloutType: {
+        default: "tip",
+        parseHTML: (element) => element.getAttribute("data-callout") || "tip",
+        renderHTML: (attributes) => ({
+          "data-callout": attributes.calloutType,
+        }),
+      },
+    }
+  },
+
+  parseHTML() {
+    return [{ tag: "div[data-callout]" }]
+  },
+
+  renderHTML({ HTMLAttributes }) {
+    return ["div", HTMLAttributes, 0]
+  },
+
+  addNodeView() {
+    return ReactNodeViewRenderer(CalloutNodeView)
+  },
+})
 
 const LinkKeyboardFix = Extension.create({
   name: "linkKeyboardFix",
@@ -215,6 +283,7 @@ export default function Editor({ content, onChange, onReady, onImageUpload, onIn
       TaskItem.configure({
         nested: true,
       }),
+      CalloutNode,
       Typography,
       Placeholder.configure({
         placeholder: "Start writing, or press / for commands…",
@@ -760,6 +829,46 @@ export default function Editor({ content, onChange, onReady, onImageUpload, onIn
         .hljs-addition { color: #b5cea8; }
         .hljs-emphasis { font-style: italic; }
         .hljs-strong { font-weight: bold; }
+        /* ── Callout styles ── */
+        .editor-content div[data-callout] {
+          display: flex;
+          align-items: flex-start;
+          gap: 10px;
+          border-radius: 8px;
+          padding: 12px 16px;
+          margin: 1em 0;
+          border: 1px solid transparent;
+        }
+        .editor-content div[data-callout="tip"] {
+          background: rgba(234, 179, 8, 0.08);
+          border-color: rgba(234, 179, 8, 0.25);
+        }
+        .editor-content div[data-callout="info"] {
+          background: rgba(59, 130, 246, 0.08);
+          border-color: rgba(59, 130, 246, 0.25);
+        }
+        .editor-content div[data-callout="warning"] {
+          background: rgba(249, 115, 22, 0.08);
+          border-color: rgba(249, 115, 22, 0.25);
+        }
+        .editor-content div[data-callout="note"] {
+          background: rgba(168, 85, 247, 0.08);
+          border-color: rgba(168, 85, 247, 0.25);
+        }
+        .callout-emoji {
+          font-size: 1.1em;
+          flex-shrink: 0;
+          line-height: 1.5;
+          cursor: pointer;
+          user-select: none;
+        }
+        .callout-content {
+          flex: 1;
+          min-width: 0;
+        }
+        .callout-content p {
+          margin: 0 !important;
+        }
       `}</style>
 
       {uploading && (
