@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { Share2, MoreHorizontal, Copy, Download, Trash2, Globe, Lock, FolderInput, Star, FileText, PanelRightClose, PanelRightOpen } from "lucide-react"
+import { Share2, MoreHorizontal, Copy, Download, Trash2, Globe, Lock, FolderInput, Star, FileText, ChevronsLeftRight, ChevronsRightLeft } from "lucide-react"
 import { useState, useRef, useEffect } from "react"
 
 interface Folder {
@@ -259,7 +259,7 @@ export default function DocTopbar({
               onMouseEnter={e => { e.currentTarget.style.backgroundColor = "var(--bg-tertiary)"; e.currentTarget.style.color = "var(--text-primary)" }}
               onMouseLeave={e => { e.currentTarget.style.backgroundColor = wideMode ? "var(--bg-tertiary)" : "transparent"; e.currentTarget.style.color = wideMode ? "var(--text-primary)" : "var(--text-muted)" }}
             >
-              {wideMode ? <PanelRightClose size={14} /> : <PanelRightOpen size={14} />}
+              {wideMode ? <ChevronsRightLeft size={14} /> : <ChevronsLeftRight size={14} />}
             </button>
           )}
 
