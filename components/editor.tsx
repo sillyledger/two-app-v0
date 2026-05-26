@@ -244,22 +244,22 @@ export default function Editor({ content, onChange, onReady, onImageUpload, onIn
           while (el && el.tagName !== "TABLE") {
             el = el.parentElement
           }
-          if (el && containerRef.current) {
+          if (el) {
             const tableRect = el.getBoundingClientRect()
-            const containerRect = containerRef.current.getBoundingClientRect()
+            // Use fixed viewport coordinates so toolbar sits right above the table
             setTableToolbar({
-              top: tableRect.top - containerRect.top - 44,
-              left: 0,
+              top: tableRect.top - 44,
+              left: tableRect.left,
             })
             setTableAddRow({
-              top: tableRect.bottom - containerRect.top + 4,
-              left: tableRect.left - containerRect.left,
+              top: tableRect.bottom + 4,
+              left: tableRect.left,
               width: tableRect.width,
             })
             return
           }
         }
-        setTableToolbar({ top: -44, left: 0 })
+        setTableToolbar(null)
         return
       }
 
@@ -746,7 +746,7 @@ export default function Editor({ content, onChange, onReady, onImageUpload, onIn
       {tableToolbar && editable && (
         <div
           ref={tableToolbarRef}
-          className="absolute z-50 flex items-center gap-0.5 rounded-lg border border-white/10 bg-[#2a2a2a] px-1.5 py-1 shadow-xl"
+          className="fixed z-50 flex items-center gap-0.5 rounded-lg border border-white/10 bg-[#2a2a2a] px-1.5 py-1 shadow-xl"
           style={{ top: tableToolbar.top, left: tableToolbar.left }}
           onMouseDown={(e) => e.preventDefault()}
         >
@@ -799,7 +799,7 @@ export default function Editor({ content, onChange, onReady, onImageUpload, onIn
 
       {tableAddRow && editable && (
         <div
-          className="absolute z-40 flex items-center justify-center"
+          className="fixed z-40 flex items-center justify-center"
           style={{ top: tableAddRow.top, left: tableAddRow.left, width: tableAddRow.width }}
         >
           <button
