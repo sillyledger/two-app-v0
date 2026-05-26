@@ -180,3 +180,65 @@ html.light .ProseMirror th {
   width: 100%;
   max-width: 100%;
 }
+
+/* ── Callout / info box styles ── */
+.ProseMirror div[data-callout] {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin: 1em 0;
+  border: 1px solid transparent;
+}
+
+.ProseMirror div[data-callout="tip"] {
+  background: rgba(234, 179, 8, 0.08);
+  border-color: rgba(234, 179, 8, 0.25);
+}
+.ProseMirror div[data-callout="info"] {
+  background: rgba(59, 130, 246, 0.08);
+  border-color: rgba(59, 130, 246, 0.25);
+}
+.ProseMirror div[data-callout="warning"] {
+  background: rgba(249, 115, 22, 0.08);
+  border-color: rgba(249, 115, 22, 0.25);
+}
+.ProseMirror div[data-callout="note"] {
+  background: rgba(168, 85, 247, 0.08);
+  border-color: rgba(168, 85, 247, 0.25);
+}
+
+.ProseMirror div[data-callout] .callout-emoji {
+  font-size: 1.1em;
+  flex-shrink: 0;
+  line-height: 1.5;
+  cursor: pointer;
+  user-select: none;
+}
+
+.ProseMirror div[data-callout] .callout-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.ProseMirror div[data-callout] .callout-content p {
+  margin: 0;
+}
+
+html.light .ProseMirror div[data-callout="tip"] {
+  background: rgba(234, 179, 8, 0.07);
+  border-color: rgba(234, 179, 8, 0.3);
+}
+html.light .ProseMirror div[data-callout="info"] {
+  background: rgba(59, 130, 246, 0.07);
+  border-color: rgba(59, 130, 246, 0.3);
+}
+html.light .ProseMirror div[data-callout="warning"] {
+  background: rgba(249, 115, 22, 0.07);
+  border-color: rgba(249, 115, 22, 0.3);
+}
+html.light .ProseMirror div[data-callout="note"] {
+  background: rgba(168, 85, 247, 0.07);
+  border-color: rgba(168, 85, 247, 0.3);
+}
