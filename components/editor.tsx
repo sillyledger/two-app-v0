@@ -236,51 +236,49 @@ export default function Editor({ content, onChange, onReady, onImageUpload, onIn
       const isInTable = editor.isActive("table") || editor.isActive("tableCell") || editor.isActive("tableHeader")
 
       if (isInTable) {
-  setBubbleVisible(false)
-  // Try multiple ways to find the table DOM element
-  let tableEl: HTMLElement | null = null
+        setBubbleVisible(false)
 
-  // Method 1: via nodeDOM
-  const { from } = editor.state.selection
-  const domNode = editor.view.nodeDOM(from) as HTMLElement | null
-  if (domNode) {
-    let el: HTMLElement | null = domNode
-    while (el && el.tagName !== "TABLE") {
-      el = el.parentElement
-    }
-    if (el) tableEl = el
-  }
+        let tableEl: HTMLElement | null = null
 
-  // Method 2: fallback via DOM selection
-  if (!tableEl) {
-    const sel = window.getSelection()
-    if (sel && sel.rangeCount > 0) {
-      let el = sel.getRangeAt(0).commonAncestorContainer as HTMLElement | null
-      if (el && el.nodeType === Node.TEXT_NODE) el = el.parentElement
-      while (el && el.tagName !== "TABLE") {
-        el = el.parentElement
+        const { from } = editor.state.selection
+        const domNode = editor.view.nodeDOM(from) as HTMLElement | null
+        if (domNode) {
+          let el: HTMLElement | null = domNode
+          while (el && el.tagName !== "TABLE") {
+            el = el.parentElement
+          }
+          if (el) tableEl = el
+        }
+
+        if (!tableEl) {
+          const sel = window.getSelection()
+          if (sel && sel.rangeCount > 0) {
+            let el = sel.getRangeAt(0).commonAncestorContainer as HTMLElement | null
+            if (el && el.nodeType === Node.TEXT_NODE) el = el.parentElement
+            while (el && el.tagName !== "TABLE") {
+              el = el.parentElement
+            }
+            if (el) tableEl = el
+          }
+        }
+
+        if (tableEl) {
+          const tableRect = tableEl.getBoundingClientRect()
+          setTableToolbar({
+            top: tableRect.top - 44,
+            left: tableRect.left,
+          })
+          setTableAddRow({
+            top: tableRect.bottom + 4,
+            left: tableRect.left,
+            width: tableRect.width,
+          })
+        } else {
+          setTableToolbar(null)
+          setTableAddRow(null)
+        }
+        return
       }
-      if (el) tableEl = el
-    }
-  }
-
-  if (tableEl) {
-    const tableRect = tableEl.getBoundingClientRect()
-    setTableToolbar({
-      top: tableRect.top - 44,
-      left: tableRect.left,
-    })
-    setTableAddRow({
-      top: tableRect.bottom + 4,
-      left: tableRect.left,
-      width: tableRect.width,
-    })
-  } else {
-    setTableToolbar(null)
-    setTableAddRow(null)
-  }
-  return
-}
 
       setTableToolbar(null)
       setTableAddRow(null)
@@ -622,16 +620,22 @@ export default function Editor({ content, onChange, onReady, onImageUpload, onIn
           border: 1px solid var(--border);
           display: table;
           min-width: 400px;
+          table-layout: fixed;
         }
         .editor-content td,
         .editor-content th {
           border: 1px solid var(--border);
-          padding: 8px 12px;
-          min-width: 120px;
+          padding: 6px 12px;
+          min-width: 160px;
+          max-width: 320px;
           vertical-align: top;
           font-size: 0.9em;
           position: relative;
           box-sizing: border-box;
+          word-break: break-word;
+          overflow-wrap: break-word;
+          white-space: normal;
+          line-height: 1.4;
         }
         .editor-content th {
           background: var(--bg-tertiary);
@@ -645,6 +649,11 @@ export default function Editor({ content, onChange, onReady, onImageUpload, onIn
         }
         .editor-content tr:hover td {
           background: var(--bg-tertiary);
+        }
+        .editor-content td p,
+        .editor-content th p {
+          margin: 0;
+          padding: 0;
         }
         .editor-content .selectedCell:after {
           content: "";
