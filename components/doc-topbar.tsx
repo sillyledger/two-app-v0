@@ -72,32 +72,33 @@ function exportAsPDF(docTitle: string, content: string) {
   <meta charset="utf-8" />
   <title>${docTitle}</title>
   <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 15px; line-height: 1.7; color: #111; max-width: 720px; margin: 60px auto; padding: 0 40px; }
-    h1 { font-size: 2em; font-weight: 700; margin-bottom: 0.4em; }
-    h2 { font-size: 1.4em; font-weight: 600; margin-top: 1.6em; }
-    h3 { font-size: 1.1em; font-weight: 600; margin-top: 1.4em; }
+    h1 { font-size: 2em; font-weight: 700; margin-bottom: 0.4em; margin-top: 0.8em; }
+    h2 { font-size: 1.4em; font-weight: 600; margin-top: 1.6em; margin-bottom: 0.4em; }
+    h3 { font-size: 1.1em; font-weight: 600; margin-top: 1.4em; margin-bottom: 0.3em; }
     p { margin: 0.8em 0; }
     code { background: #f0f0f0; padding: 2px 5px; border-radius: 3px; font-size: 0.9em; }
-    pre { background: #f4f4f4; padding: 16px; border-radius: 6px; overflow-x: auto; }
-    blockquote { border-left: 3px solid #ccc; margin: 0; padding-left: 16px; color: #555; }
+    pre { background: #f4f4f4; padding: 16px; border-radius: 6px; overflow-x: auto; margin: 1em 0; }
+    blockquote { border-left: 3px solid #ccc; margin: 1em 0; padding-left: 16px; color: #555; }
     hr { border: none; border-top: 1px solid #ddd; margin: 2em 0; }
     a { color: #0070f3; }
-    ul, ol { padding-left: 1.5em; }
+    ul, ol { padding-left: 1.5em; margin: 0.8em 0; }
     li { margin: 0.3em 0; }
+    @media print { body { margin: 0; padding: 40px; max-width: 100%; } @page { margin: 1.5cm; } }
   </style>
+  <script>window.onload = function() { window.print(); }<\/script>
 </head>
 <body>
   <h1>${docTitle}</h1>
   ${content}
 </body>
 </html>`
-  const blob = new Blob([htmlDoc], { type: 'application/octet-stream' })
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url
-  a.download = `${docTitle.trim() || 'untitled'}.html`
-  a.click()
-  URL.revokeObjectURL(url)
+  const newWin = window.open('', '_blank')
+  if (newWin) {
+    newWin.document.write(htmlDoc)
+    newWin.document.close()
+  }
 }
 
 export default function DocTopbar({
