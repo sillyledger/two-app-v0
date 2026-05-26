@@ -53,6 +53,15 @@ export default function RootLayout({
                   }
                 } catch(e) {}
               })();
+              window.addEventListener('load', function() {
+                var interval = setInterval(function() {
+                  if (window.Paddle) {
+                    clearInterval(interval);
+                    window.Paddle.Environment.set('production');
+                    window.Paddle.Initialize({ token: 'live_5d79c55970d6730fce490b94bc1' });
+                  }
+                }, 100);
+              });
             `,
           }}
         />
