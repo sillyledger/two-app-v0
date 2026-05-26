@@ -12,6 +12,7 @@ import {
   Strikethrough,
   List,
   ListOrdered,
+  ListTodo,
   Quote,
   Code,
   Code2,
@@ -78,6 +79,12 @@ const COMMANDS = [
     command: (editor: any) => editor.chain().focus().toggleOrderedList().run(),
   },
   {
+    title: "Task List",
+    description: "Checklist with checkboxes",
+    icon: ListTodo,
+    command: (editor: any) => editor.chain().focus().toggleTaskList().run(),
+  },
+  {
     title: "Blockquote",
     description: "Indented quote block",
     icon: Quote,
@@ -113,9 +120,9 @@ const COMMANDS = [
     description: "Upload an image from your device",
     icon: ImageIcon,
     command: (_editor: any) => {
-  const input = document.querySelector('input[accept="image/jpeg,image/png,image/gif,image/webp"]') as HTMLInputElement | null
-  if (input) input.click()
-},
+      const input = document.querySelector('input[accept="image/jpeg,image/png,image/gif,image/webp"]') as HTMLInputElement | null
+      if (input) input.click()
+    },
   },
 ]
 
