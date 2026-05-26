@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { Share2, MoreHorizontal, Copy, Download, Trash2, Globe, Lock, FolderInput, AlignCenter, AlignJustify, Star } from "lucide-react"
+import { Share2, MoreHorizontal, Copy, Download, Trash2, Globe, Lock, FolderInput, Star, FileText, PanelRightClose, PanelRightOpen } from "lucide-react"
 import { useState, useRef, useEffect } from "react"
 
 interface Folder {
@@ -63,6 +63,51 @@ function downloadFile(filename: string, content: string, mimeType: string) {
   URL.revokeObjectURL(url)
 }
 
+function exportAsPDF(docTitle: string, content: string) {
+  const markdownContent = htmlToMarkdown(content)
+  const htmlDoc = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>${docTitle}</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-size: 15px;
+      line-height: 1.7;
+      color: #111;
+      max-width: 720px;
+      margin: 60px auto;
+      padding: 0 40px;
+    }
+    h1 { font-size: 2em; font-weight: 700; margin-bottom: 0.4em; }
+    h2 { font-size: 1.4em; font-weight: 600; margin-top: 1.6em; }
+    h3 { font-size: 1.1em; font-weight: 600; margin-top: 1.4em; }
+    p { margin: 0.8em 0; }
+    code { background: #f0f0f0; padding: 2px 5px; border-radius: 3px; font-size: 0.9em; }
+    pre { background: #f4f4f4; padding: 16px; border-radius: 6px; overflow-x: auto; }
+    blockquote { border-left: 3px solid #ccc; margin: 0; padding-left: 16px; color: #555; }
+    hr { border: none; border-top: 1px solid #ddd; margin: 2em 0; }
+    a { color: #0070f3; }
+    ul, ol { padding-left: 1.5em; }
+    li { margin: 0.3em 0; }
+  </style>
+</head>
+<body>
+  <h1>${docTitle}</h1>
+  ${content}
+</body>
+</html>`
+
+  const blob = new Blob([htmlDoc], { type: 'application/octet-stream' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `${docTitle.trim() || 'untitled'}.html`
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
 export default function DocTopbar({
   docTitle,
   folder,
@@ -105,6 +150,11 @@ export default function DocTopbar({
     setMenuOpen(false)
     const md = `# ${docTitle}\n\n${htmlToMarkdown(content)}`
     downloadFile(`${docTitle.trim() || 'untitled'}.md`, md, 'text/markdown')
+  }
+
+  const handleExportPDF = () => {
+    setMenuOpen(false)
+    exportAsPDF(docTitle, content)
   }
 
   const handleCopyDoc = () => {
@@ -209,7 +259,7 @@ export default function DocTopbar({
               onMouseEnter={e => { e.currentTarget.style.backgroundColor = "var(--bg-tertiary)"; e.currentTarget.style.color = "var(--text-primary)" }}
               onMouseLeave={e => { e.currentTarget.style.backgroundColor = wideMode ? "var(--bg-tertiary)" : "transparent"; e.currentTarget.style.color = wideMode ? "var(--text-primary)" : "var(--text-muted)" }}
             >
-              {wideMode ? <AlignCenter size={14} /> : <AlignJustify size={14} />}
+              {wideMode ? <PanelRightClose size={14} /> : <PanelRightOpen size={14} />}
             </button>
           )}
 
@@ -227,33 +277,17 @@ export default function DocTopbar({
             </button>
           )}
 
-          {/* Move to folder — visible button */}
+          {/* Move to folder */}
           {onDelete && (
             <button
               onClick={openMoveModal}
               title="Move to folder"
-              className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[12px] font-medium transition-colors"
+              className="flex items-center justify-center w-7 h-7 rounded-md transition-colors"
               style={{ color: "var(--text-muted)" }}
               onMouseEnter={e => { e.currentTarget.style.backgroundColor = "var(--bg-tertiary)"; e.currentTarget.style.color = "var(--text-primary)" }}
               onMouseLeave={e => { e.currentTarget.style.backgroundColor = "transparent"; e.currentTarget.style.color = "var(--text-muted)" }}
             >
-              <FolderInput size={13} />
-              Move
-            </button>
-          )}
-
-          {/* Delete — visible button */}
-          {onDelete && (
-            <button
-              onClick={() => setShowDeleteModal(true)}
-              title="Delete doc"
-              className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[12px] font-medium transition-colors"
-              style={{ color: "var(--text-muted)" }}
-              onMouseEnter={e => { e.currentTarget.style.backgroundColor = "rgba(239,68,68,0.1)"; e.currentTarget.style.color = "#f87171" }}
-              onMouseLeave={e => { e.currentTarget.style.backgroundColor = "transparent"; e.currentTarget.style.color = "var(--text-muted)" }}
-            >
-              <Trash2 size={13} />
-              Delete
+              <FolderInput size={14} />
             </button>
           )}
 
@@ -302,7 +336,7 @@ export default function DocTopbar({
             )}
           </div>
 
-          {/* ··· menu — Copy & Export only */}
+          {/* ··· menu */}
           <div className="relative" ref={menuRef}>
             <button
               onClick={() => setMenuOpen(v => !v)}
@@ -314,10 +348,10 @@ export default function DocTopbar({
               <MoreHorizontal size={15} />
             </button>
             {menuOpen && (
-              <div className="absolute right-0 top-9 z-50 rounded-lg shadow-xl w-[180px] py-1 overflow-hidden" style={{ backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border)" }}>
+              <div className="absolute right-0 top-9 z-50 rounded-lg shadow-xl w-[190px] py-1 overflow-hidden" style={{ backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border)" }}>
                 <button
                   onClick={handleCopyDoc}
-                  className="flex items-center gap-2 w-full px-3 py-2 text-[12px] transition-colors"
+                  className="flex items-center gap-2.5 w-full px-3 py-2 text-[12px] transition-colors"
                   style={{ color: "var(--text-secondary)" }}
                   onMouseEnter={e => (e.currentTarget.style.backgroundColor = "var(--bg-tertiary)")}
                   onMouseLeave={e => (e.currentTarget.style.backgroundColor = "transparent")}
@@ -326,16 +360,39 @@ export default function DocTopbar({
                 </button>
                 <button
                   onClick={handleExportMarkdown}
-                  className="flex items-center gap-2 w-full px-3 py-2 text-[12px] transition-colors"
+                  className="flex items-center gap-2.5 w-full px-3 py-2 text-[12px] transition-colors"
                   style={{ color: "var(--text-secondary)" }}
                   onMouseEnter={e => (e.currentTarget.style.backgroundColor = "var(--bg-tertiary)")}
                   onMouseLeave={e => (e.currentTarget.style.backgroundColor = "transparent")}
                 >
                   <Download size={12} style={{ color: "var(--text-muted)" }} /> Export as Markdown
                 </button>
+                <button
+                  onClick={handleExportPDF}
+                  className="flex items-center gap-2.5 w-full px-3 py-2 text-[12px] transition-colors"
+                  style={{ color: "var(--text-secondary)" }}
+                  onMouseEnter={e => (e.currentTarget.style.backgroundColor = "var(--bg-tertiary)")}
+                  onMouseLeave={e => (e.currentTarget.style.backgroundColor = "transparent")}
+                >
+                  <FileText size={12} style={{ color: "var(--text-muted)" }} /> Export as PDF
+                </button>
+
+                {/* Divider before danger zone */}
+                <div className="my-1 mx-2" style={{ borderTop: "1px solid var(--border)" }} />
+
+                <button
+                  onClick={() => { setMenuOpen(false); setShowDeleteModal(true) }}
+                  className="flex items-center gap-2.5 w-full px-3 py-2 text-[12px] transition-colors"
+                  style={{ color: "#f87171" }}
+                  onMouseEnter={e => (e.currentTarget.style.backgroundColor = "rgba(239,68,68,0.08)")}
+                  onMouseLeave={e => (e.currentTarget.style.backgroundColor = "transparent")}
+                >
+                  <Trash2 size={12} /> Delete doc
+                </button>
               </div>
             )}
           </div>
+
         </div>
       </header>
 
