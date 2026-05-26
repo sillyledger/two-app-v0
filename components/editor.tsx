@@ -11,6 +11,8 @@ import TableRow from "@tiptap/extension-table-row"
 import TableHeader from "@tiptap/extension-table-header"
 import TableCell from "@tiptap/extension-table-cell"
 import Image from "@tiptap/extension-image"
+import TaskList from "@tiptap/extension-task-list"
+import TaskItem from "@tiptap/extension-task-item"
 import { SlashCommands } from "./slash-commands"
 import { common, createLowlight } from "lowlight"
 import {
@@ -20,6 +22,7 @@ import {
   Code,
   List,
   ListOrdered,
+  ListTodo,
   Quote,
   Code2,
   Link as LinkIcon,
@@ -40,7 +43,6 @@ import { useRouter } from "next/navigation"
 
 const lowlight = createLowlight(common)
 
-// Breaks out of link mark on Space, and removes link mark cleanly on Backspace
 const LinkKeyboardFix = Extension.create({
   name: "linkKeyboardFix",
   addKeyboardShortcuts() {
@@ -57,7 +59,6 @@ const LinkKeyboardFix = Extension.create({
         const { selection } = editor.state
         const { empty, anchor } = selection
         if (!empty || anchor === 0) return false
-        // If cursor is right after a link, remove the link mark before deleting
         if (editor.isActive("link")) {
           const { from } = selection
           editor.chain()
@@ -65,7 +66,7 @@ const LinkKeyboardFix = Extension.create({
             .unsetMark("link")
             .setTextSelection(from)
             .run()
-          return false // let default backspace delete the character
+          return false
         }
         return false
       },
@@ -120,34 +121,32 @@ export default function Editor({ content, onChange, onReady, onImageUpload, onIn
   }, [onImageUpload])
 
   const doImageUpload = useCallback(async (file: File) => {
-  if (uploadingRef.current) return
-  if (!onImageUploadRef.current) return
-  uploadingRef.current = true
-  setUploading(true)
+    if (uploadingRef.current) return
+    if (!onImageUploadRef.current) return
+    uploadingRef.current = true
+    setUploading(true)
 
-  // Show image instantly using a local blob URL
-  const blobUrl = URL.createObjectURL(file)
-  editorRef.current?.chain().focus().setImage({ src: blobUrl }).run()
+    const blobUrl = URL.createObjectURL(file)
+    editorRef.current?.chain().focus().setImage({ src: blobUrl }).run()
 
-  try {
-    const realUrl = await onImageUploadRef.current(file)
-    if (realUrl && editorRef.current) {
-      // Swap the blob URL for the real R2 URL in the editor content
-      const { state, dispatch } = editorRef.current.view
-      const { tr, doc } = state
-      doc.descendants((node, pos) => {
-        if (node.type.name === 'image' && node.attrs.src === blobUrl) {
-          tr.setNodeMarkup(pos, undefined, { ...node.attrs, src: realUrl })
-        }
-      })
-      dispatch(tr)
+    try {
+      const realUrl = await onImageUploadRef.current(file)
+      if (realUrl && editorRef.current) {
+        const { state, dispatch } = editorRef.current.view
+        const { tr, doc } = state
+        doc.descendants((node, pos) => {
+          if (node.type.name === 'image' && node.attrs.src === blobUrl) {
+            tr.setNodeMarkup(pos, undefined, { ...node.attrs, src: realUrl })
+          }
+        })
+        dispatch(tr)
+      }
+    } finally {
+      URL.revokeObjectURL(blobUrl)
+      uploadingRef.current = false
+      setUploading(false)
     }
-  } finally {
-    URL.revokeObjectURL(blobUrl)
-    uploadingRef.current = false
-    setUploading(false)
-  }
-}, [])
+  }, [])
 
   useEffect(() => {
     const saved = localStorage.getItem("font-size-px")
@@ -212,6 +211,10 @@ export default function Editor({ content, onChange, onReady, onImageUpload, onIn
       TableRow,
       TableHeader,
       TableCell,
+      TaskList,
+      TaskItem.configure({
+        nested: true,
+      }),
       Typography,
       Placeholder.configure({
         placeholder: "Start writing, or press / for commands…",
@@ -349,6 +352,7 @@ export default function Editor({ content, onChange, onReady, onImageUpload, onIn
       setEditorReady(true)
     },
   })
+
   useEffect(() => {
     if (editor && onInsertImageReady) {
       onInsertImageReady((url: string) => {
@@ -517,6 +521,58 @@ export default function Editor({ content, onChange, onReady, onImageUpload, onIn
           border-radius: 8px;
           margin: 1em 0;
           display: block;
+        }
+        .editor-content ul[data-type="taskList"] {
+          list-style: none;
+          padding-left: 0;
+          margin: 0.5em 0;
+        }
+        .editor-content ul[data-type="taskList"] li {
+          display: flex;
+          align-items: flex-start;
+          gap: 0.6em;
+          margin: 0.3em 0;
+        }
+        .editor-content ul[data-type="taskList"] li > label {
+          margin-top: 0.2em;
+          flex-shrink: 0;
+          cursor: pointer;
+        }
+        .editor-content ul[data-type="taskList"] li > label input[type="checkbox"] {
+          width: 15px;
+          height: 15px;
+          border-radius: 4px;
+          border: 1.5px solid rgba(255,255,255,0.25);
+          background: transparent;
+          appearance: none;
+          -webkit-appearance: none;
+          cursor: pointer;
+          position: relative;
+          transition: background 0.15s, border-color 0.15s;
+        }
+        .editor-content ul[data-type="taskList"] li > label input[type="checkbox"]:checked {
+          background: rgba(255,255,255,0.15);
+          border-color: rgba(255,255,255,0.4);
+        }
+        .editor-content ul[data-type="taskList"] li > label input[type="checkbox"]:checked::after {
+          content: "";
+          position: absolute;
+          left: 3px;
+          top: 1px;
+          width: 5px;
+          height: 8px;
+          border: 1.5px solid rgba(255,255,255,0.8);
+          border-top: none;
+          border-left: none;
+          transform: rotate(45deg);
+        }
+        .editor-content ul[data-type="taskList"] li > div {
+          flex: 1;
+          min-width: 0;
+        }
+        .editor-content ul[data-type="taskList"] li[data-checked="true"] > div p {
+          text-decoration: line-through;
+          opacity: 0.45;
         }
         .tableWrapper {
           overflow-x: auto;
@@ -810,9 +866,8 @@ export default function Editor({ content, onChange, onReady, onImageUpload, onIn
                   const urlToRemove = linkPopup?.url
                   setLinkPopup(null)
                   if (!urlToRemove) return
-                  // Find the link in the doc by scanning all marks and select + unset it
                   const { state } = editor
-                  const { doc, tr } = state
+                  const { doc } = state
                   let found = false
                   doc.descendants((node, pos) => {
                     if (found) return false
@@ -915,6 +970,7 @@ export default function Editor({ content, onChange, onReady, onImageUpload, onIn
           <div className="mx-1 h-4 w-px bg-white/10" />
           <BubbleButton onClick={() => editor.chain().focus().toggleBulletList().run()} active={editor.isActive("bulletList")} title="Bullet List"><List size={14} /></BubbleButton>
           <BubbleButton onClick={() => editor.chain().focus().toggleOrderedList().run()} active={editor.isActive("orderedList")} title="Numbered List"><ListOrdered size={14} /></BubbleButton>
+          <BubbleButton onClick={() => editor.chain().focus().toggleTaskList().run()} active={editor.isActive("taskList")} title="Task List"><ListTodo size={14} /></BubbleButton>
           <BubbleButton onClick={() => editor.chain().focus().toggleBlockquote().run()} active={editor.isActive("blockquote")} title="Quote"><Quote size={14} /></BubbleButton>
           <BubbleButton onClick={() => editor.chain().focus().toggleCodeBlock().run()} active={editor.isActive("codeBlock")} title="Code Block"><Code2 size={14} /></BubbleButton>
           <div className="mx-1 h-4 w-px bg-white/10" />
