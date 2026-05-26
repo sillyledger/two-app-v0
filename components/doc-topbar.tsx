@@ -75,66 +75,92 @@ async function exportAsPDF(docTitle: string, content: string) {
   const maxWidth = pageWidth - margin * 2
   let y = margin
 
-  const plainText = htmlToMarkdown(content)
-  const lines = plainText.split('\n')
+  // Parse HTML into structured blocks using the DOM
+  const parser = new DOMParser()
+  const parsed = parser.parseFromString(content, 'text/html')
 
+  interface Block {
+    type: 'h1' | 'h2' | 'h3' | 'p' | 'li' | 'blockquote' | 'hr' | 'blank'
+    text: string
+  }
+
+  const blocks: Block[] = []
+
+  function extractBlocks(el: Element) {
+    for (const node of Array.from(el.childNodes)) {
+      if (node.nodeType === Node.TEXT_NODE) {
+        const t = node.textContent?.trim()
+        if (t) blocks.push({ type: 'p', text: t })
+        continue
+      }
+      if (node.nodeType !== Node.ELEMENT_NODE) continue
+      const elem = node as Element
+      const tag = elem.tagName.toLowerCase()
+      const text = elem.textContent?.trim() || ''
+
+      if (tag === 'h1') blocks.push({ type: 'h1', text })
+      else if (tag === 'h2') blocks.push({ type: 'h2', text })
+      else if (tag === 'h3') blocks.push({ type: 'h3', text })
+      else if (tag === 'hr') blocks.push({ type: 'hr', text: '' })
+      else if (tag === 'blockquote') blocks.push({ type: 'blockquote', text })
+      else if (tag === 'li') blocks.push({ type: 'li', text })
+      else if (tag === 'ul' || tag === 'ol') extractBlocks(elem)
+      else if (tag === 'p') {
+        if (text) blocks.push({ type: 'p', text })
+        else blocks.push({ type: 'blank', text: '' })
+      }
+      else if (['div', 'section', 'article'].includes(tag)) extractBlocks(elem)
+      else if (text) blocks.push({ type: 'p', text })
+    }
+  }
+
+  extractBlocks(parsed.body)
+
+  // Title
   doc.setFont('helvetica', 'bold')
   doc.setFontSize(22)
+  doc.setTextColor(0, 0, 0)
   const titleLines = doc.splitTextToSize(docTitle || 'Untitled', maxWidth)
   doc.text(titleLines, margin, y)
-  y += titleLines.length * 10 + 6
+  y += titleLines.length * 10 + 4
 
-  doc.setDrawColor(220, 220, 220)
+  doc.setDrawColor(200, 200, 200)
   doc.line(margin, y, pageWidth - margin, y)
   y += 8
 
-  for (const line of lines) {
-    if (y > pageHeight - margin) {
-      doc.addPage()
-      y = margin
-    }
+  for (const block of blocks) {
+    if (y > pageHeight - margin) { doc.addPage(); y = margin }
 
-    if (line.startsWith('# ')) {
-      doc.setFont('helvetica', 'bold')
-      doc.setFontSize(16)
-      const wrapped = doc.splitTextToSize(line.replace(/^# /, ''), maxWidth)
-      doc.text(wrapped, margin, y)
-      y += wrapped.length * 7 + 4
-    } else if (line.startsWith('## ')) {
-      doc.setFont('helvetica', 'bold')
-      doc.setFontSize(13)
-      const wrapped = doc.splitTextToSize(line.replace(/^## /, ''), maxWidth)
-      doc.text(wrapped, margin, y)
-      y += wrapped.length * 6 + 3
-    } else if (line.startsWith('### ')) {
-      doc.setFont('helvetica', 'bold')
-      doc.setFontSize(11)
-      const wrapped = doc.splitTextToSize(line.replace(/^### /, ''), maxWidth)
-      doc.text(wrapped, margin, y)
-      y += wrapped.length * 6 + 2
-    } else if (line.startsWith('- ') || line.startsWith('* ')) {
-      doc.setFont('helvetica', 'normal')
-      doc.setFontSize(10)
-      const wrapped = doc.splitTextToSize('• ' + line.replace(/^[-*] /, ''), maxWidth - 4)
-      doc.text(wrapped, margin + 4, y)
-      y += wrapped.length * 5 + 1
-    } else if (line.startsWith('> ')) {
-      doc.setFont('helvetica', 'italic')
-      doc.setFontSize(10)
-      doc.setTextColor(100, 100, 100)
-      const wrapped = doc.splitTextToSize(line.replace(/^> /, ''), maxWidth - 6)
-      doc.text(wrapped, margin + 6, y)
-      doc.setTextColor(0, 0, 0)
-      y += wrapped.length * 5 + 1
-    } else if (line.trim() === '' || line.trim() === '---') {
+    if (block.type === 'h1') {
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(16); doc.setTextColor(0, 0, 0)
+      const w = doc.splitTextToSize(block.text, maxWidth)
+      doc.text(w, margin, y); y += w.length * 8 + 3
+    } else if (block.type === 'h2') {
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(13); doc.setTextColor(0, 0, 0)
+      const w = doc.splitTextToSize(block.text, maxWidth)
+      doc.text(w, margin, y); y += w.length * 7 + 2
+    } else if (block.type === 'h3') {
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(11); doc.setTextColor(0, 0, 0)
+      const w = doc.splitTextToSize(block.text, maxWidth)
+      doc.text(w, margin, y); y += w.length * 6 + 2
+    } else if (block.type === 'li') {
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(10); doc.setTextColor(30, 30, 30)
+      const w = doc.splitTextToSize('• ' + block.text, maxWidth - 6)
+      doc.text(w, margin + 4, y); y += w.length * 5 + 1
+    } else if (block.type === 'blockquote') {
+      doc.setFont('helvetica', 'italic'); doc.setFontSize(10); doc.setTextColor(100, 100, 100)
+      const w = doc.splitTextToSize(block.text, maxWidth - 8)
+      doc.text(w, margin + 6, y); y += w.length * 5 + 2
+      doc.setTextColor(30, 30, 30)
+    } else if (block.type === 'hr') {
+      doc.setDrawColor(200, 200, 200)
+      doc.line(margin, y, pageWidth - margin, y); y += 5
+    } else if (block.type === 'blank') {
       y += 3
     } else {
-      doc.setFont('helvetica', 'normal')
-      doc.setFontSize(10)
-      doc.setTextColor(30, 30, 30)
-      const wrapped = doc.splitTextToSize(line, maxWidth)
-      doc.text(wrapped, margin, y)
-      y += wrapped.length * 5 + 1
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(10); doc.setTextColor(30, 30, 30)
+      const w = doc.splitTextToSize(block.text, maxWidth)
+      doc.text(w, margin, y); y += w.length * 5 + 2
     }
   }
 
