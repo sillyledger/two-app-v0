@@ -542,7 +542,7 @@ export default function Editor({ content, onChange, onReady, onImageUpload, onIn
           width: 15px;
           height: 15px;
           border-radius: 4px;
-          border: 1.5px solid rgba(128,128,128,0.5);
+          border: 1.5px solid rgba(80,80,80,0.7);
           background: transparent;
           appearance: none;
           -webkit-appearance: none;
