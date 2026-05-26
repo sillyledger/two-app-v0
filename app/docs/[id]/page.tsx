@@ -495,21 +495,9 @@ export default function DocPage() {
           onToggleWide={toggleWideMode}
           isFavorite={isFavorite}
           onToggleFavorite={isLoggedIn ? handleToggleFavorite : undefined}
+          detailOpen={detailOpen}
+          onToggleDetail={() => setDetailOpen(v => !v)}
         />
-
-        <button
-          onClick={() => setDetailOpen((v) => !v)}
-          title={detailOpen ? 'Close details' : 'Open details'}
-          className="fixed top-[10px] right-4 z-40 flex items-center justify-center w-7 h-7 rounded-md transition-colors"
-          style={{
-            color: detailOpen ? 'var(--text-primary)' : 'var(--text-muted)',
-            backgroundColor: detailOpen ? 'var(--bg-tertiary)' : 'transparent',
-          }}
-          onMouseEnter={e => { e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)'; e.currentTarget.style.color = 'var(--text-primary)' }}
-          onMouseLeave={e => { e.currentTarget.style.backgroundColor = detailOpen ? 'var(--bg-tertiary)' : 'transparent'; e.currentTarget.style.color = detailOpen ? 'var(--text-primary)' : 'var(--text-muted)' }}
-        >
-          <PanelRight size={15} />
-        </button>
 
         <main className="flex-1 overflow-y-auto pt-[44px]">
           <div className={`mx-auto w-full px-16 pt-16 pb-32 transition-all duration-200 ${wideMode ? 'max-w-[1200px]' : 'max-w-[800px]'}`}>
