@@ -65,46 +65,80 @@ function downloadFile(filename: string, content: string, mimeType: string) {
   URL.revokeObjectURL(url)
 }
 
-function exportAsPDF(docTitle: string, content: string) {
-  const htmlDoc = `<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8" />
-  <title>${docTitle}</title>
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 15px; line-height: 1.7; color: #111; max-width: 720px; margin: 60px auto; padding: 0 40px; }
-    h1 { font-size: 2em; font-weight: 700; margin-bottom: 0.4em; margin-top: 0.8em; }
-    h2 { font-size: 1.4em; font-weight: 600; margin-top: 1.6em; margin-bottom: 0.4em; }
-    h3 { font-size: 1.1em; font-weight: 600; margin-top: 1.4em; margin-bottom: 0.3em; }
-    p { margin: 0.8em 0; }
-    code { background: #f0f0f0; padding: 2px 5px; border-radius: 3px; font-size: 0.9em; }
-    pre { background: #f4f4f4; padding: 16px; border-radius: 6px; overflow-x: auto; margin: 1em 0; }
-    blockquote { border-left: 3px solid #ccc; margin: 1em 0; padding-left: 16px; color: #555; }
-    hr { border: none; border-top: 1px solid #ddd; margin: 2em 0; }
-    a { color: #0070f3; }
-    ul, ol { padding-left: 1.5em; margin: 0.8em 0; }
-    li { margin: 0.3em 0; }
-    @media print { body { margin: 0; padding: 40px; max-width: 100%; } @page { margin: 1.5cm; } }
-  </style>
-</head>
-<body>
-  <h1>${docTitle}</h1>
-  <div style="margin-top: 1.5em">${content}</div>
-  <script>
-    setTimeout(function() { window.print(); }, 300);
-  <\/script>
-</body>
-</html>`
+async function exportAsPDF(docTitle: string, content: string) {
+  const { jsPDF } = await import('jspdf')
+  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
 
-  const blob = new Blob([htmlDoc], { type: 'text/html;charset=utf-8' })
-  const url = URL.createObjectURL(blob)
-  const newWin = window.open(url, '_blank')
-  if (!newWin) {
-    URL.revokeObjectURL(url)
-  } else {
-    setTimeout(() => URL.revokeObjectURL(url), 10000)
+  const pageWidth = doc.internal.pageSize.getWidth()
+  const pageHeight = doc.internal.pageSize.getHeight()
+  const margin = 20
+  const maxWidth = pageWidth - margin * 2
+  let y = margin
+
+  const plainText = htmlToMarkdown(content)
+  const lines = plainText.split('\n')
+
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(22)
+  const titleLines = doc.splitTextToSize(docTitle || 'Untitled', maxWidth)
+  doc.text(titleLines, margin, y)
+  y += titleLines.length * 10 + 6
+
+  doc.setDrawColor(220, 220, 220)
+  doc.line(margin, y, pageWidth - margin, y)
+  y += 8
+
+  for (const line of lines) {
+    if (y > pageHeight - margin) {
+      doc.addPage()
+      y = margin
+    }
+
+    if (line.startsWith('# ')) {
+      doc.setFont('helvetica', 'bold')
+      doc.setFontSize(16)
+      const wrapped = doc.splitTextToSize(line.replace(/^# /, ''), maxWidth)
+      doc.text(wrapped, margin, y)
+      y += wrapped.length * 7 + 4
+    } else if (line.startsWith('## ')) {
+      doc.setFont('helvetica', 'bold')
+      doc.setFontSize(13)
+      const wrapped = doc.splitTextToSize(line.replace(/^## /, ''), maxWidth)
+      doc.text(wrapped, margin, y)
+      y += wrapped.length * 6 + 3
+    } else if (line.startsWith('### ')) {
+      doc.setFont('helvetica', 'bold')
+      doc.setFontSize(11)
+      const wrapped = doc.splitTextToSize(line.replace(/^### /, ''), maxWidth)
+      doc.text(wrapped, margin, y)
+      y += wrapped.length * 6 + 2
+    } else if (line.startsWith('- ') || line.startsWith('* ')) {
+      doc.setFont('helvetica', 'normal')
+      doc.setFontSize(10)
+      const wrapped = doc.splitTextToSize('• ' + line.replace(/^[-*] /, ''), maxWidth - 4)
+      doc.text(wrapped, margin + 4, y)
+      y += wrapped.length * 5 + 1
+    } else if (line.startsWith('> ')) {
+      doc.setFont('helvetica', 'italic')
+      doc.setFontSize(10)
+      doc.setTextColor(100, 100, 100)
+      const wrapped = doc.splitTextToSize(line.replace(/^> /, ''), maxWidth - 6)
+      doc.text(wrapped, margin + 6, y)
+      doc.setTextColor(0, 0, 0)
+      y += wrapped.length * 5 + 1
+    } else if (line.trim() === '' || line.trim() === '---') {
+      y += 3
+    } else {
+      doc.setFont('helvetica', 'normal')
+      doc.setFontSize(10)
+      doc.setTextColor(30, 30, 30)
+      const wrapped = doc.splitTextToSize(line, maxWidth)
+      doc.text(wrapped, margin, y)
+      y += wrapped.length * 5 + 1
+    }
   }
+
+  doc.save(`${docTitle.trim() || 'untitled'}.pdf`)
 }
 
 export default function DocTopbar({
@@ -210,7 +244,6 @@ export default function DocTopbar({
         className="fixed top-0 z-40 h-[44px] flex items-center px-4 transition-all duration-200"
         style={{ left: sidebarWidth, right: 0, backgroundColor: "var(--bg)" }}
       >
-        {/* Left — Breadcrumbs */}
         <div className="flex items-center gap-0.5 min-w-0 flex-1">
           <Link href="/" className="text-[12px] font-medium truncate transition-colors" style={{ color: "var(--text-muted)" }}>
             Home
@@ -231,10 +264,8 @@ export default function DocTopbar({
           </span>
         </div>
 
-        {/* Right */}
         <div className="flex items-center gap-1 shrink-0 ml-2">
 
-          {/* Autosave indicator */}
           <div className="flex items-center gap-1.5 h-5 mr-1">
             {saveStatus === "saving" && (
               <>
@@ -250,7 +281,6 @@ export default function DocTopbar({
             )}
           </div>
 
-          {/* Wide/Narrow toggle */}
           {onToggleWide && (
             <button
               onClick={onToggleWide}
@@ -264,7 +294,6 @@ export default function DocTopbar({
             </button>
           )}
 
-          {/* Star / Favorite */}
           {onToggleFavorite && (
             <button
               onClick={onToggleFavorite}
@@ -278,7 +307,6 @@ export default function DocTopbar({
             </button>
           )}
 
-          {/* Move to folder */}
           {onDelete && (
             <button
               onClick={openMoveModal}
@@ -292,7 +320,6 @@ export default function DocTopbar({
             </button>
           )}
 
-          {/* Share button + popup */}
           <div className="relative ml-1" ref={shareRef}>
             <button
               onClick={() => setShareOpen(v => !v)}
@@ -337,7 +364,6 @@ export default function DocTopbar({
             )}
           </div>
 
-          {/* Detail panel toggle */}
           {onToggleDetail && (
             <button
               onClick={onToggleDetail}
@@ -351,7 +377,6 @@ export default function DocTopbar({
             </button>
           )}
 
-          {/* ··· menu */}
           <div className="relative" ref={menuRef}>
             <button
               onClick={() => setMenuOpen(v => !v)}
