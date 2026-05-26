@@ -26,6 +26,14 @@ interface DocTopbarProps {
   onToggleDetail?: () => void
 }
 
+function stripTags(html: string): string {
+  return html
+    .replace(/<[^>]+>/g, '')
+    .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&nbsp;/g, ' ')
+    .trim()
+}
+
 function htmlToMarkdown(html: string): string {
   return html
     .replace(/<h1[^>]*>(.*?)<\/h1>/gi, '# $1\n\n')
@@ -60,101 +68,79 @@ function downloadFile(filename: string, content: string, mimeType: string) {
   URL.revokeObjectURL(url)
 }
 
-function htmlToBlocks(html: string): Array<{ type: string; text: string }> {
-  const blocks: Array<{ type: string; text: string }> = []
-
-  // Strip inline tags but keep text, then parse block by block
-  const stripInline = (s: string) =>
-    s.replace(/<[^>]+>/g, '')
-     .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
-     .replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&nbsp;/g, ' ')
-     .trim()
-
-  // Process li first — strip inner <p> tags inside li
-  let processed = html.replace(/<li[^>]*>([\s\S]*?)<\/li>/gi, (_, inner) => {
-    return `<li>${inner.replace(/<\/?p[^>]*>/gi, ' ')}</li>`
-  })
-
-  // Now extract blocks in order using a combined regex
-  const blockRe = /<(h[123]|p|li|blockquote|hr)[^>]*>([\s\S]*?)<\/\1>|<hr[^>]*\/?>/gi
-  let match
-  while ((match = blockRe.exec(processed)) !== null) {
-    const tag = match[1]?.toLowerCase() || 'hr'
-    const inner = stripInline(match[2] || '')
-    if (!inner && tag !== 'hr') continue
-    if (tag === 'h1') blocks.push({ type: 'h1', text: inner })
-    else if (tag === 'h2') blocks.push({ type: 'h2', text: inner })
-    else if (tag === 'h3') blocks.push({ type: 'h3', text: inner })
-    else if (tag === 'li') blocks.push({ type: 'li', text: inner })
-    else if (tag === 'blockquote') blocks.push({ type: 'bq', text: inner })
-    else if (tag === 'hr') blocks.push({ type: 'hr', text: '' })
-    else if (inner) blocks.push({ type: 'p', text: inner })
-  }
-
-  return blocks
-}
-
-async function exportAsPDF(docTitle: string, content: string) {
+async function exportAsPDF(docTitle: string, html: string) {
   const { jsPDF } = await import('jspdf')
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
-
   const pageWidth = doc.internal.pageSize.getWidth()
   const pageHeight = doc.internal.pageSize.getHeight()
   const margin = 20
   const maxWidth = pageWidth - margin * 2
   let y = margin
 
-  const addPage = () => { doc.addPage(); y = margin }
-  const checkY = (needed: number) => { if (y + needed > pageHeight - margin) addPage() }
+  const checkY = (needed: number) => {
+    if (y + needed > pageHeight - margin) { doc.addPage(); y = margin }
+  }
 
   // Title
   doc.setFont('helvetica', 'bold')
   doc.setFontSize(22)
   doc.setTextColor(0, 0, 0)
   const titleLines = doc.splitTextToSize(docTitle || 'Untitled', maxWidth)
-  checkY(titleLines.length * 10)
   doc.text(titleLines, margin, y)
   y += titleLines.length * 10 + 4
   doc.setDrawColor(200, 200, 200)
   doc.line(margin, y, pageWidth - margin, y)
   y += 8
 
-  const blocks = htmlToBlocks(content)
+  // Parse HTML — handle <li><p>text</p></li> pattern from Tiptap
+  // First normalize: unwrap <p> inside <li>
+  let normalized = html
+    .replace(/<li[^>]*>\s*<p[^>]*>([\s\S]*?)<\/p>\s*<\/li>/gi, '<li>$1</li>')
+    .replace(/<br[^>]*>/gi, '\n')
 
-  for (const block of blocks) {
-    if (block.type === 'h1') {
+  // Now extract blocks in sequence
+  const blockRegex = /<(h1|h2|h3|li|blockquote|p|hr)[^>]*>([\s\S]*?)<\/\1>|<hr[^>]*>/gi
+  let match
+  while ((match = blockRegex.exec(normalized)) !== null) {
+    const tag = (match[1] || 'hr').toLowerCase()
+    const raw = match[2] || ''
+    const text = stripTags(raw).replace(/\n+/g, ' ').trim()
+    if (!text && tag !== 'hr') continue
+
+    if (tag === 'h1') {
       checkY(12)
       doc.setFont('helvetica', 'bold'); doc.setFontSize(16); doc.setTextColor(0, 0, 0)
-      const w = doc.splitTextToSize(block.text, maxWidth)
+      const w = doc.splitTextToSize(text, maxWidth)
       doc.text(w, margin, y); y += w.length * 8 + 4
-    } else if (block.type === 'h2') {
+    } else if (tag === 'h2') {
       checkY(10)
       doc.setFont('helvetica', 'bold'); doc.setFontSize(13); doc.setTextColor(0, 0, 0)
-      const w = doc.splitTextToSize(block.text, maxWidth)
+      const w = doc.splitTextToSize(text, maxWidth)
       doc.text(w, margin, y); y += w.length * 7 + 3
-    } else if (block.type === 'h3') {
+    } else if (tag === 'h3') {
       checkY(8)
       doc.setFont('helvetica', 'bold'); doc.setFontSize(11); doc.setTextColor(0, 0, 0)
-      const w = doc.splitTextToSize(block.text, maxWidth)
+      const w = doc.splitTextToSize(text, maxWidth)
       doc.text(w, margin, y); y += w.length * 6 + 2
-    } else if (block.type === 'li') {
+    } else if (tag === 'li') {
       checkY(6)
       doc.setFont('helvetica', 'normal'); doc.setFontSize(10); doc.setTextColor(30, 30, 30)
-      const w = doc.splitTextToSize('• ' + block.text, maxWidth - 6)
+      const w = doc.splitTextToSize('• ' + text, maxWidth - 6)
       doc.text(w, margin + 4, y); y += w.length * 5.5 + 1
-    } else if (block.type === 'bq') {
+    } else if (tag === 'blockquote') {
       checkY(6)
       doc.setFont('helvetica', 'italic'); doc.setFontSize(10); doc.setTextColor(100, 100, 100)
-      const w = doc.splitTextToSize(block.text, maxWidth - 8)
+      const w = doc.splitTextToSize(text, maxWidth - 8)
       doc.text(w, margin + 6, y); y += w.length * 5.5 + 2
-    } else if (block.type === 'hr') {
+      doc.setTextColor(30, 30, 30)
+    } else if (tag === 'hr') {
       checkY(6)
       doc.setDrawColor(200, 200, 200)
       doc.line(margin, y, pageWidth - margin, y); y += 6
-    } else {
+    } else if (tag === 'p') {
       checkY(6)
       doc.setFont('helvetica', 'normal'); doc.setFontSize(10); doc.setTextColor(30, 30, 30)
-      const w = doc.splitTextToSize(block.text, maxWidth)
+      const w = doc.splitTextToSize(text, maxWidth)
       doc.text(w, margin, y); y += w.length * 5.5 + 2
     }
   }
@@ -334,7 +320,7 @@ export default function DocTopbar({
               style={{ color: "var(--text-muted)" }}
               onMouseEnter={e => { e.currentTarget.style.backgroundColor = "var(--bg-tertiary)"; e.currentTarget.style.color = "var(--text-primary)" }}
               onMouseLeave={e => { e.currentTarget.style.backgroundColor = "transparent"; e.currentTarget.style.color = "var(--text-muted)" }}
-            ><Share2 size={12} />Share</button>
+            ><Share2 size={12} /> Share</button>
             {shareOpen && (
               <div className="absolute right-0 top-[42px] z-50 rounded-xl shadow-2xl w-[300px] p-4" style={{ backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border)" }}>
                 <p className="text-[13px] font-semibold mb-1" style={{ color: "var(--text-primary)" }}>Share this doc</p>
