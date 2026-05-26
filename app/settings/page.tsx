@@ -581,11 +581,11 @@ export default function SettingsPage() {
                       <span className="text-[12px] ml-1" style={{ color: "var(--text-muted)" }}>/mo</span>
                     </div>
                     <button
-                      onClick={() => window.open("https://two.so/#pricing", "_blank")}
-                      className="mt-2 px-3 py-1.5 rounded-lg text-[12px] font-medium transition-colors"
-                      style={{ backgroundColor: "#534AB7", color: "#fff", border: "none", cursor: "pointer" }}
-                    >
-                      Upgrade
+                      onClick={() => window.open("https://buy.paddle.com/product/pri_01ksjx3b0n6pg6fw44hbq9r03p", "_blank")}
+className="mt-2 px-3 py-1.5 rounded-lg text-[12px] font-medium transition-colors"
+style={{ backgroundColor: "#534AB7", color: "#fff", border: "none", cursor: "pointer" }}
+>
+  Upgrade
                     </button>
                   </div>
                 </div>
@@ -608,11 +608,11 @@ export default function SettingsPage() {
                       <span className="text-[12px] ml-1" style={{ color: "var(--text-muted)" }}>one-time</span>
                     </div>
                     <button
-                      onClick={() => window.open("https://two.so/#pricing", "_blank")}
-                      className="mt-2 px-3 py-1.5 rounded-lg text-[12px] font-medium transition-colors"
-                      style={{ backgroundColor: "#BA7517", color: "#fff", border: "none", cursor: "pointer" }}
-                    >
-                      Get lifetime
+                      onClick={() => window.open("https://buy.paddle.com/product/pri_01ksjx6e6xtrmq324ama45zyr0", "_blank")}
+className="mt-2 px-3 py-1.5 rounded-lg text-[12px] font-medium transition-colors"
+style={{ backgroundColor: "#BA7517", color: "#fff", border: "none", cursor: "pointer" }}
+>
+  Get lifetime
                     </button>
                   </div>
                 </div>
