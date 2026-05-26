@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { Share2, MoreHorizontal, Copy, Download, Trash2, Globe, Lock, FolderInput, Star, FileText, ChevronsLeftRight, ChevronsRightLeft } from "lucide-react"
+import { Share2, MoreHorizontal, Copy, Download, Trash2, Globe, Lock, FolderInput, Star, FileText, PanelRight } from "lucide-react"
 import { useState, useRef, useEffect } from "react"
 
 interface Folder {
@@ -22,6 +22,8 @@ interface DocTopbarProps {
   onToggleWide?: () => void
   isFavorite?: boolean
   onToggleFavorite?: () => void
+  detailOpen?: boolean
+  onToggleDetail?: () => void
 }
 
 function htmlToMarkdown(html: string): string {
@@ -64,22 +66,13 @@ function downloadFile(filename: string, content: string, mimeType: string) {
 }
 
 function exportAsPDF(docTitle: string, content: string) {
-  const markdownContent = htmlToMarkdown(content)
   const htmlDoc = `<!DOCTYPE html>
 <html>
 <head>
   <meta charset="utf-8" />
   <title>${docTitle}</title>
   <style>
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      font-size: 15px;
-      line-height: 1.7;
-      color: #111;
-      max-width: 720px;
-      margin: 60px auto;
-      padding: 0 40px;
-    }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 15px; line-height: 1.7; color: #111; max-width: 720px; margin: 60px auto; padding: 0 40px; }
     h1 { font-size: 2em; font-weight: 700; margin-bottom: 0.4em; }
     h2 { font-size: 1.4em; font-weight: 600; margin-top: 1.6em; }
     h3 { font-size: 1.1em; font-weight: 600; margin-top: 1.4em; }
@@ -98,7 +91,6 @@ function exportAsPDF(docTitle: string, content: string) {
   ${content}
 </body>
 </html>`
-
   const blob = new Blob([htmlDoc], { type: 'application/octet-stream' })
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
@@ -121,6 +113,8 @@ export default function DocTopbar({
   onToggleWide,
   isFavorite = false,
   onToggleFavorite,
+  detailOpen = false,
+  onToggleDetail,
 }: DocTopbarProps) {
   const [menuOpen, setMenuOpen] = useState(false)
   const [shareOpen, setShareOpen] = useState(false)
@@ -231,7 +225,7 @@ export default function DocTopbar({
         </div>
 
         {/* Right */}
-        <div className="flex items-center gap-1 shrink-0 ml-2 overflow-visible">
+        <div className="flex items-center gap-1 shrink-0 ml-2">
 
           {/* Autosave indicator */}
           <div className="flex items-center gap-1.5 h-5 mr-1">
@@ -254,12 +248,12 @@ export default function DocTopbar({
             <button
               onClick={onToggleWide}
               title={wideMode ? "Narrow view" : "Wide view"}
-              className="flex items-center justify-center w-7 h-7 rounded-md transition-colors"
+              className="flex items-center justify-center w-7 h-7 rounded-md transition-colors text-[15px]"
               style={{ color: wideMode ? "var(--text-primary)" : "var(--text-muted)", backgroundColor: wideMode ? "var(--bg-tertiary)" : "transparent" }}
               onMouseEnter={e => { e.currentTarget.style.backgroundColor = "var(--bg-tertiary)"; e.currentTarget.style.color = "var(--text-primary)" }}
               onMouseLeave={e => { e.currentTarget.style.backgroundColor = wideMode ? "var(--bg-tertiary)" : "transparent"; e.currentTarget.style.color = wideMode ? "var(--text-primary)" : "var(--text-muted)" }}
             >
-              {wideMode ? <ChevronsRightLeft size={14} /> : <ChevronsLeftRight size={14} />}
+              ↔
             </button>
           )}
 
@@ -336,6 +330,20 @@ export default function DocTopbar({
             )}
           </div>
 
+          {/* Detail panel toggle */}
+          {onToggleDetail && (
+            <button
+              onClick={onToggleDetail}
+              title={detailOpen ? "Close details" : "Open details"}
+              className="flex items-center justify-center w-7 h-7 rounded-md transition-colors"
+              style={{ color: detailOpen ? "var(--text-primary)" : "var(--text-muted)", backgroundColor: detailOpen ? "var(--bg-tertiary)" : "transparent" }}
+              onMouseEnter={e => { e.currentTarget.style.backgroundColor = "var(--bg-tertiary)"; e.currentTarget.style.color = "var(--text-primary)" }}
+              onMouseLeave={e => { e.currentTarget.style.backgroundColor = detailOpen ? "var(--bg-tertiary)" : "transparent"; e.currentTarget.style.color = detailOpen ? "var(--text-primary)" : "var(--text-muted)" }}
+            >
+              <PanelRight size={14} />
+            </button>
+          )}
+
           {/* ··· menu */}
           <div className="relative" ref={menuRef}>
             <button
@@ -349,7 +357,7 @@ export default function DocTopbar({
             </button>
             {menuOpen && (
               <div className="absolute right-0 top-9 z-50 rounded-lg shadow-xl w-[190px] py-1 overflow-hidden" style={{ backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border)" }}>
-                            <button
+                <button
                   onClick={handleCopyDoc}
                   className="flex items-center gap-2.5 w-full px-3 py-2 text-[12px] transition-colors"
                   style={{ color: "var(--text-secondary)" }}
@@ -377,7 +385,6 @@ export default function DocTopbar({
                   <FileText size={12} style={{ color: "var(--text-muted)" }} /> Export as PDF
                 </button>
 
-                {/* Divider before danger zone */}
                 <div className="my-1 mx-2" style={{ borderTop: "1px solid var(--border)" }} />
 
                 <button
