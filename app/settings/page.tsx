@@ -581,7 +581,14 @@ export default function SettingsPage() {
                       <span className="text-[12px] ml-1" style={{ color: "var(--text-muted)" }}>/mo</span>
                     </div>
                     <button
-                      onClick={() => window.open("https://buy.paddle.com/product/pri_01ksjx3b0n6pg6fw44hbq9r03p", "_blank")}
+                      onClick={() => {
+  const Paddle = (window as any).Paddle
+  if (Paddle) {
+    Paddle.Environment.set('production')
+    Paddle.Initialize({ token: 'live_5d79c55970d6730fce490b94bc1' })
+    Paddle.Checkout.open({ items: [{ priceId: 'pri_01ksjx3b0n6pg6fw44hbq9r03p', quantity: 1 }] })
+  }
+}}
 className="mt-2 px-3 py-1.5 rounded-lg text-[12px] font-medium transition-colors"
 style={{ backgroundColor: "#534AB7", color: "#fff", border: "none", cursor: "pointer" }}
 >
@@ -608,7 +615,14 @@ style={{ backgroundColor: "#534AB7", color: "#fff", border: "none", cursor: "poi
                       <span className="text-[12px] ml-1" style={{ color: "var(--text-muted)" }}>one-time</span>
                     </div>
                     <button
-                      onClick={() => window.open("https://buy.paddle.com/product/pri_01ksjx6e6xtrmq324ama45zyr0", "_blank")}
+                      onClick={() => {
+  const Paddle = (window as any).Paddle
+  if (Paddle) {
+    Paddle.Environment.set('production')
+    Paddle.Initialize({ token: 'live_5d79c55970d6730fce490b94bc1' })
+    Paddle.Checkout.open({ items: [{ priceId: 'pri_01ksjx6e6xtrmq324ama45zyr0', quantity: 1 }] })
+  }
+}}
 className="mt-2 px-3 py-1.5 rounded-lg text-[12px] font-medium transition-colors"
 style={{ backgroundColor: "#BA7517", color: "#fff", border: "none", cursor: "pointer" }}
 >
