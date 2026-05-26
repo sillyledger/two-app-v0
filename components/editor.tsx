@@ -539,17 +539,17 @@ export default function Editor({ content, onChange, onReady, onImageUpload, onIn
           cursor: pointer;
         }
         .editor-content ul[data-type="taskList"] li > label input[type="checkbox"] {
-          width: 15px;
-          height: 15px;
-          border-radius: 4px;
-          border: 1.5px solid rgba(255,255,255,0.25);
-          background: transparent;
-          appearance: none;
-          -webkit-appearance: none;
-          cursor: pointer;
-          position: relative;
-          transition: background 0.15s, border-color 0.15s;
-        }
+  width: 15px;
+  height: 15px;
+  border-radius: 4px;
+  border: 1.5px solid rgba(128,128,128,0.4);
+  background: transparent;
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+  position: relative;
+  transition: background 0.15s, border-color 0.15s;
+}
         .editor-content ul[data-type="taskList"] li > label input[type="checkbox"]:checked {
           background: rgba(255,255,255,0.15);
           border-color: rgba(255,255,255,0.4);
