@@ -87,17 +87,23 @@ function exportAsPDF(docTitle: string, content: string) {
     li { margin: 0.3em 0; }
     @media print { body { margin: 0; padding: 40px; max-width: 100%; } @page { margin: 1.5cm; } }
   </style>
-  <script>window.onload = function() { window.print(); }<\/script>
 </head>
 <body>
   <h1>${docTitle}</h1>
-  ${content}
+  <div style="margin-top: 1.5em">${content}</div>
+  <script>
+    setTimeout(function() { window.print(); }, 300);
+  <\/script>
 </body>
 </html>`
-  const newWin = window.open('', '_blank')
-  if (newWin) {
-    newWin.document.write(htmlDoc)
-    newWin.document.close()
+
+  const blob = new Blob([htmlDoc], { type: 'text/html;charset=utf-8' })
+  const url = URL.createObjectURL(blob)
+  const newWin = window.open(url, '_blank')
+  if (!newWin) {
+    URL.revokeObjectURL(url)
+  } else {
+    setTimeout(() => URL.revokeObjectURL(url), 10000)
   }
 }
 
