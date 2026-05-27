@@ -1,9 +1,12 @@
 'use client'
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, Suspense } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 
-export default function SignupPage() {
+function SignupContent() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const plan = searchParams.get('plan') ?? ''
+
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -17,7 +20,7 @@ export default function SignupPage() {
     const res = await fetch('/api/auth', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password, action: 'signup' }),
+      body: JSON.stringify({ email, password, action: 'signup', plan }),
     })
     const data = await res.json()
 
@@ -41,7 +44,15 @@ export default function SignupPage() {
         {/* Card */}
         <div style={{ backgroundColor: '#1e1e20', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '16px', padding: '32px' }}>
           <h1 style={{ margin: '0 0 6px', fontSize: '20px', fontWeight: '600', color: '#e8e8e8' }}>Create your account</h1>
-          <p style={{ margin: '0 0 24px', fontSize: '14px', color: '#a0a0a0' }}>A better place to think and write.</p>
+          <p style={{ margin: '0 0 24px', fontSize: '14px', color: '#a0a0a0' }}>
+            {plan === 'pro' ? 'Start your 14-day free Pro trial.' : 'A better place to think and write.'}
+          </p>
+
+          {plan === 'pro' && (
+            <div style={{ marginBottom: '20px', padding: '10px 12px', borderRadius: '8px', backgroundColor: 'rgba(83,74,183,0.15)', border: '1px solid rgba(83,74,183,0.3)', fontSize: '13px', color: '#a89ff0' }}>
+              ✦ 14-day Pro trial — no credit card required
+            </div>
+          )}
 
           {error && (
             <p style={{ marginBottom: '16px', padding: '12px', borderRadius: '8px', backgroundColor: 'rgba(220,38,38,0.1)', border: '1px solid rgba(220,38,38,0.2)', fontSize: '13px', color: '#f87171' }}>
@@ -82,9 +93,9 @@ export default function SignupPage() {
             <button
               type="submit"
               disabled={loading}
-              style={{ width: '100%', padding: '11px', backgroundColor: '#e8e8e8', color: '#161618', border: 'none', borderRadius: '8px', fontSize: '14px', fontWeight: '600', cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.6 : 1 }}
+              style={{ width: '100%', padding: '11px', backgroundColor: plan === 'pro' ? '#534AB7' : '#e8e8e8', color: plan === 'pro' ? '#ffffff' : '#161618', border: 'none', borderRadius: '8px', fontSize: '14px', fontWeight: '600', cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.6 : 1 }}
             >
-              {loading ? 'Creating account...' : 'Create account'}
+              {loading ? 'Creating account...' : plan === 'pro' ? 'Start free trial' : 'Create account'}
             </button>
           </form>
 
@@ -95,12 +106,21 @@ export default function SignupPage() {
         </div>
 
         <p style={{ marginTop: '24px', textAlign: 'center', fontSize: '12px', color: '#606060', lineHeight: '1.8' }}>
-  By signing up you agree to our<br />
-  <a href="https://www.two.so/terms-of-service" target="_blank" rel="noopener noreferrer" style={{ color: '#a0a0a0', textDecoration: 'underline' }}>Terms of Service</a>
-  {' '}and{' '}
-  <a href="https://www.two.so/privacy-policy" target="_blank" rel="noopener noreferrer" style={{ color: '#a0a0a0', textDecoration: 'underline' }}>Privacy Policy</a>
-</p>
+          By signing up you agree to our<br />
+          <a href="https://www.two.so/terms-of-service" target="_blank" rel="noopener noreferrer" style={{ color: '#a0a0a0', textDecoration: 'underline' }}>Terms of Service</a>
+          {' '}and{' '}
+          <a href="https://www.two.so/privacy-policy" target="_blank" rel="noopener noreferrer" style={{ color: '#a0a0a0', textDecoration: 'underline' }}>Privacy Policy</a>
+        </p>
+
       </div>
     </div>
+  )
+}
+
+export default function SignupPage() {
+  return (
+    <Suspense>
+      <SignupContent />
+    </Suspense>
   )
 }
