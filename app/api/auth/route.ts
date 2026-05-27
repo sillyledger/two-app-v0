@@ -9,9 +9,49 @@ import crypto from 'crypto'
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 
+async function startPaddleTrial(email: string, userId: string) {
+  try {
+    const paddleEnv = process.env.PADDLE_ENVIRONMENT === 'production'
+      ? 'https://api.paddle.com'
+      : 'https://sandbox-api.paddle.com'
+
+    const response = await fetch(`${paddleEnv}/subscriptions`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${process.env.PADDLE_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        items: [{
+          price_id: process.env.PADDLE_PRO_PRICE_ID,
+          quantity: 1,
+        }],
+        customer: {
+          email,
+        },
+        trial_period_days: 14,
+        custom_data: {
+          user_id: userId,
+        },
+      }),
+    })
+
+    if (!response.ok) {
+      const err = await response.text()
+      console.error('Paddle trial error:', err)
+      return false
+    }
+
+    return true
+  } catch (err) {
+    console.error('Paddle trial exception:', err)
+    return false
+  }
+}
+
 export async function POST(request: Request) {
   try {
-    const { email, password, action } = await request.json()
+    const { email, password, action, plan } = await request.json()
 
     if (action === 'signup') {
       const existing = await sql`
@@ -33,6 +73,15 @@ export async function POST(request: Request) {
       const user = result[0]
       await getOrCreateWorkspace(user.id, email.split('@')[0])
 
+      // Start Paddle Pro trial if they came from the Pro plan button
+      if (plan === 'pro') {
+        await startPaddleTrial(email, String(user.id))
+        await sql`
+          UPDATE users SET plan = 'pro', trial_ends_at = NOW() + INTERVAL '14 days'
+          WHERE id = ${user.id}
+        `
+      }
+
       const verifyUrl = `${process.env.APP_URL}/api/verify?token=${verificationToken}`
 
       await resend.emails.send({
@@ -53,11 +102,11 @@ export async function POST(request: Request) {
       await resend.emails.send({
         from: 'TWO <noreply@two.so>',
         to: 'two@strevius.com',
-        subject: `New TWO signup: ${email}`,
+        subject: `New TWO signup: ${email}${plan === 'pro' ? ' (Pro trial)' : ''}`,
         html: `
           <div style="font-family: -apple-system, BlinkMacSystemFont, 'Inter', sans-serif; max-width: 480px; margin: 0 auto; padding: 40px 24px;">
             <h1 style="font-size: 24px; font-weight: 700; color: #1a1a1a; margin-bottom: 8px;">New signup 🎉</h1>
-            <p style="font-size: 15px; color: #555; margin-bottom: 8px;"><strong>${email}</strong> just signed up for TWO.</p>
+            <p style="font-size: 15px; color: #555; margin-bottom: 8px;"><strong>${email}</strong> just signed up for TWO${plan === 'pro' ? ' and started a Pro trial' : ''}.</p>
             <p style="font-size: 13px; color: #999;">${new Date().toUTCString()}</p>
           </div>
         `,
