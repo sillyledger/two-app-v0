@@ -52,7 +52,7 @@ function htmlToMarkdown(html: string): string {
     .replace(/<p[^>]*>(.*?)<\/p>/gi, '$1\n\n')
     .replace(/<hr\s*\/?>/gi, '\n---\n\n')
     .replace(/<a[^>]*href="([^"]*)"[^>]*>(.*?)<\/a>/gi, '[$2]($1)')
-    .replace(/<img[^>]*alt="([^"]*)"[^>]*>/gi, '![$1](image)\n\n')
+    .replace(/<img[^>]*src="([^"]*)"[^>]*alt="([^"]*)"[^>]*>|<img[^>]*alt="([^"]*)"[^>]*src="([^"]*)"[^>]*>/gi, (_, src1, alt1, alt2, src2) => `![${alt1 || alt2 || ''}](${src1 || src2 || ''})\n\n`)
     .replace(/<[^>]+>/g, '')
     .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&nbsp;/g, ' ')
     .replace(/\n{3,}/g, '\n\n')
