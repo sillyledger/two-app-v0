@@ -88,7 +88,8 @@ async function loadImageAsBase64(src: string): Promise<{ dataUrl: string; width:
       }
     }
     img.onerror = () => resolve(null)
-    img.src = src
+    // Route through our proxy to avoid CORS issues with R2
+    img.src = `/api/proxy-image?url=${encodeURIComponent(src)}`
   })
 }
 
