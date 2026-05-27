@@ -73,7 +73,6 @@ export async function POST(request: Request) {
       const user = result[0]
       await getOrCreateWorkspace(user.id, email.split('@')[0])
 
-      // Start Paddle Pro trial if they came from the Pro plan button
       if (plan === 'pro') {
         await startPaddleTrial(email, String(user.id))
         await sql`
@@ -98,7 +97,6 @@ export async function POST(request: Request) {
         `,
       })
 
-      // Notify founder of new signup
       await resend.emails.send({
         from: 'TWO <noreply@two.so>',
         to: 'two@strevius.com',
@@ -131,6 +129,16 @@ export async function POST(request: Request) {
 
       if (!user.email_verified) {
         return NextResponse.json({ error: 'Please verify your email before logging in. Check your inbox.' }, { status: 403 })
+      }
+
+      // Auto-downgrade if Pro trial has expired
+      if (user.plan === 'pro' && user.trial_ends_at) {
+        const trialExpired = new Date(user.trial_ends_at) < new Date()
+        if (trialExpired) {
+          await sql`
+            UPDATE users SET plan = 'free', trial_ends_at = NULL WHERE id = ${user.id}
+          `
+        }
       }
 
       const token = await createToken(user.id, user.email)
