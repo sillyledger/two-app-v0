@@ -49,6 +49,8 @@ export default function SettingsPage() {
   const [defaultWidth, setDefaultWidth] = useState<'narrow' | 'wide'>('narrow')
   const [timezone, setTimezone] = useState('UTC+8')
   const [dateFormat, setDateFormat] = useState('MMM D, YYYY')
+  const [plan, setPlan] = useState<string>('free')
+  const [trialEndsAt, setTrialEndsAt] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -82,6 +84,8 @@ export default function SettingsPage() {
           setName(data.user.name || '')
           setEmail(data.user.email || '')
           setAvatarUrl(data.user.avatar_url || null)
+          setPlan(data.user.plan || 'free')
+          setTrialEndsAt(data.user.trial_ends_at || null)
         } else {
           router.push('/login')
         }
@@ -555,17 +559,42 @@ export default function SettingsPage() {
                 <h2 className="text-[15px] font-semibold mb-1" style={{ color: "var(--text-primary)" }}>Billing</h2>
                 <p className="text-[12px] mb-6" style={{ color: "var(--text-muted)" }}>Manage your plan.</p>
 
+                {/* Trial banner */}
+                {plan === 'pro' && trialEndsAt && (
+                  <div className="rounded-xl p-4 mb-5 flex items-center gap-3" style={{ backgroundColor: "rgba(83,74,183,0.1)", border: "1px solid rgba(83,74,183,0.3)" }}>
+                    <span style={{ fontSize: '18px' }}>✦</span>
+                    <div>
+                      <p className="text-[13px] font-semibold" style={{ color: "#a78bfa" }}>Pro trial active</p>
+                      <p className="text-[12px]" style={{ color: "var(--text-muted)" }}>
+                        Your trial ends on {new Date(trialEndsAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}. Add a payment method to keep Pro.
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => {
+                        const Paddle = (window as any).Paddle
+                        Paddle?.Checkout.open({ items: [{ priceId: 'pri_01ksjx3b0n6pg6fw44hbq9r03p', quantity: 1 }] })
+                      }}
+                      className="ml-auto px-3 py-1.5 rounded-lg text-[12px] font-medium shrink-0"
+                      style={{ backgroundColor: "#534AB7", color: "#fff", border: "none", cursor: "pointer" }}
+                    >
+                      Add card
+                    </button>
+                  </div>
+                )}
+
                 <p className="text-[11px] font-semibold uppercase tracking-wider mb-3" style={{ color: "var(--text-muted)" }}>Plans</p>
 
                 {/* Free */}
                 <div
                   className="rounded-xl p-5 mb-3 flex items-center justify-between"
-                  style={{ backgroundColor: "var(--bg-tertiary)", border: "1px solid var(--border)" }}
+                  style={{ backgroundColor: "var(--bg-tertiary)", border: `1px solid ${plan === 'free' ? 'var(--text-muted)' : 'var(--border)'}` }}
                 >
                   <div>
                     <div className="flex items-center gap-2 mb-1">
                       <span className="text-[14px] font-semibold" style={{ color: "var(--text-primary)" }}>Free</span>
-                      <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{ backgroundColor: "var(--bg-secondary)", color: "var(--text-muted)", border: "1px solid var(--border)" }}>Current plan</span>
+                      {plan === 'free' && (
+                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{ backgroundColor: "var(--bg-secondary)", color: "var(--text-muted)", border: "1px solid var(--border)" }}>Current plan</span>
+                      )}
                     </div>
                     <p className="text-[12px]" style={{ color: "var(--text-muted)" }}>30 docs · 1 private workspace · 1GB storage</p>
                   </div>
@@ -578,12 +607,18 @@ export default function SettingsPage() {
                 {/* Pro */}
                 <div
                   className="rounded-xl p-5 mb-3 flex items-center justify-between"
-                  style={{ backgroundColor: "var(--bg-secondary)", border: "1px solid #534AB740" }}
+                  style={{ backgroundColor: "var(--bg-secondary)", border: `1px solid ${plan === 'pro' ? '#534AB7' : '#534AB740'}` }}
                 >
                   <div>
                     <div className="flex items-center gap-2 mb-1">
                       <span className="text-[14px] font-semibold" style={{ color: "var(--text-primary)" }}>Pro</span>
-                      <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{ backgroundColor: "#534AB720", color: "#a78bfa", border: "1px solid #534AB740" }}>Upgrade</span>
+                      {plan === 'pro' ? (
+                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{ backgroundColor: "#534AB720", color: "#a78bfa", border: "1px solid #534AB740" }}>
+                          {trialEndsAt ? 'Trial active' : 'Current plan'}
+                        </span>
+                      ) : (
+                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{ backgroundColor: "#534AB720", color: "#a78bfa", border: "1px solid #534AB740" }}>Upgrade</span>
+                      )}
                     </div>
                     <p className="text-[12px]" style={{ color: "var(--text-muted)" }}>Unlimited docs · Unlimited workspaces · 10GB storage · Priority support</p>
                   </div>
@@ -592,28 +627,34 @@ export default function SettingsPage() {
                       <span className="text-[22px] font-bold" style={{ color: "var(--text-primary)" }}>$6</span>
                       <span className="text-[12px] ml-1" style={{ color: "var(--text-muted)" }}>/mo</span>
                     </div>
-                    <button
-                      onClick={() => {
-                        const Paddle = (window as any).Paddle
-                        Paddle?.Checkout.open({ items: [{ priceId: 'pri_01ksjx3b0n6pg6fw44hbq9r03p', quantity: 1 }] })
-                      }}
-                      className="mt-2 px-3 py-1.5 rounded-lg text-[12px] font-medium transition-colors"
-                      style={{ backgroundColor: "#534AB7", color: "#fff", border: "none", cursor: "pointer" }}
-                    >
-                      Upgrade
-                    </button>
+                    {plan !== 'pro' && (
+                      <button
+                        onClick={() => {
+                          const Paddle = (window as any).Paddle
+                          Paddle?.Checkout.open({ items: [{ priceId: 'pri_01ksjx3b0n6pg6fw44hbq9r03p', quantity: 1 }] })
+                        }}
+                        className="mt-2 px-3 py-1.5 rounded-lg text-[12px] font-medium transition-colors"
+                        style={{ backgroundColor: "#534AB7", color: "#fff", border: "none", cursor: "pointer" }}
+                      >
+                        Upgrade
+                      </button>
+                    )}
                   </div>
                 </div>
 
                 {/* Founding Member */}
                 <div
                   className="rounded-xl p-5 flex items-center justify-between"
-                  style={{ backgroundColor: "var(--bg-secondary)", border: "1px solid #BA751740" }}
+                  style={{ backgroundColor: "var(--bg-secondary)", border: `1px solid ${plan === 'founding' ? '#BA7517' : '#BA751740'}` }}
                 >
                   <div>
                     <div className="flex items-center gap-2 mb-1">
                       <span className="text-[14px] font-semibold" style={{ color: "var(--text-primary)" }}>Founding Member</span>
-                      <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{ backgroundColor: "#BA751720", color: "#f59e0b", border: "1px solid #BA751740" }}>500 slots</span>
+                      {plan === 'founding' ? (
+                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{ backgroundColor: "#BA751720", color: "#f59e0b", border: "1px solid #BA751740" }}>Current plan</span>
+                      ) : (
+                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{ backgroundColor: "#BA751720", color: "#f59e0b", border: "1px solid #BA751740" }}>500 slots</span>
+                      )}
                     </div>
                     <p className="text-[12px]" style={{ color: "var(--text-muted)" }}>Everything in Pro · Lifetime access · No subscription ever</p>
                   </div>
@@ -622,16 +663,18 @@ export default function SettingsPage() {
                       <span className="text-[22px] font-bold" style={{ color: "var(--text-primary)" }}>$49</span>
                       <span className="text-[12px] ml-1" style={{ color: "var(--text-muted)" }}>one-time</span>
                     </div>
-                    <button
-                      onClick={() => {
-                        const Paddle = (window as any).Paddle
-                        Paddle?.Checkout.open({ items: [{ priceId: 'pri_01ksjx6e6xtrmq324ama45zyr0', quantity: 1 }] })
-                      }}
-                      className="mt-2 px-3 py-1.5 rounded-lg text-[12px] font-medium transition-colors"
-                      style={{ backgroundColor: "#BA7517", color: "#fff", border: "none", cursor: "pointer" }}
-                    >
-                      Get lifetime
-                    </button>
+                    {plan !== 'founding' && (
+                      <button
+                        onClick={() => {
+                          const Paddle = (window as any).Paddle
+                          Paddle?.Checkout.open({ items: [{ priceId: 'pri_01ksjx6e6xtrmq324ama45zyr0', quantity: 1 }] })
+                        }}
+                        className="mt-2 px-3 py-1.5 rounded-lg text-[12px] font-medium transition-colors"
+                        style={{ backgroundColor: "#BA7517", color: "#fff", border: "none", cursor: "pointer" }}
+                      >
+                        Get lifetime
+                      </button>
+                    )}
                   </div>
                 </div>
 
