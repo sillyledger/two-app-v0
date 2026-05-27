@@ -25,7 +25,13 @@ function SignupContent() {
     const data = await res.json()
 
     if (res.ok) {
-      router.push(`/verify-email?email=${encodeURIComponent(email)}`)
+      if (plan === 'founding') {
+        // Redirect to Paddle checkout for one-time $49 payment
+        const paddleUrl = `https://buy.paddle.com/product/pri_01ksjx6e6xtrmq324ama45zyr0?email=${encodeURIComponent(email)}`
+        window.location.href = paddleUrl
+      } else {
+        router.push(`/verify-email?email=${encodeURIComponent(email)}`)
+      }
     } else {
       setError(data.error || 'Signup failed')
     }
@@ -45,12 +51,18 @@ function SignupContent() {
         <div style={{ backgroundColor: '#1e1e20', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '16px', padding: '32px' }}>
           <h1 style={{ margin: '0 0 6px', fontSize: '20px', fontWeight: '600', color: '#e8e8e8' }}>Create your account</h1>
           <p style={{ margin: '0 0 24px', fontSize: '14px', color: '#a0a0a0' }}>
-            {plan === 'pro' ? 'Start your 14-day free Pro trial.' : 'A better place to think and write.'}
+            {plan === 'pro' ? 'Start your 14-day free Pro trial.' : plan === 'founding' ? 'Get lifetime access to TWO Pro.' : 'A better place to think and write.'}
           </p>
 
           {plan === 'pro' && (
             <div style={{ marginBottom: '20px', padding: '10px 12px', borderRadius: '8px', backgroundColor: 'rgba(83,74,183,0.15)', border: '1px solid rgba(83,74,183,0.3)', fontSize: '13px', color: '#a89ff0' }}>
               ✦ 14-day Pro trial — no credit card required
+            </div>
+          )}
+
+          {plan === 'founding' && (
+            <div style={{ marginBottom: '20px', padding: '10px 12px', borderRadius: '8px', backgroundColor: 'rgba(186,117,23,0.15)', border: '1px solid rgba(186,117,23,0.3)', fontSize: '13px', color: '#f59e0b' }}>
+              ✦ Founding Member — lifetime access for $49, one-time
             </div>
           )}
 
@@ -93,9 +105,20 @@ function SignupContent() {
             <button
               type="submit"
               disabled={loading}
-              style={{ width: '100%', padding: '11px', backgroundColor: plan === 'pro' ? '#534AB7' : '#e8e8e8', color: plan === 'pro' ? '#ffffff' : '#161618', border: 'none', borderRadius: '8px', fontSize: '14px', fontWeight: '600', cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.6 : 1 }}
+              style={{
+                width: '100%',
+                padding: '11px',
+                backgroundColor: plan === 'pro' ? '#534AB7' : plan === 'founding' ? '#BA7517' : '#e8e8e8',
+                color: plan === 'pro' || plan === 'founding' ? '#ffffff' : '#161618',
+                border: 'none',
+                borderRadius: '8px',
+                fontSize: '14px',
+                fontWeight: '600',
+                cursor: loading ? 'not-allowed' : 'pointer',
+                opacity: loading ? 0.6 : 1
+              }}
             >
-              {loading ? 'Creating account...' : plan === 'pro' ? 'Start free trial' : 'Create account'}
+              {loading ? 'Creating account...' : plan === 'pro' ? 'Start free trial' : plan === 'founding' ? 'Continue to payment →' : 'Create account'}
             </button>
           </form>
 
