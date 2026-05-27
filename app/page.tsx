@@ -170,7 +170,7 @@ export default function HomePage() {
     ? docs.filter(d => d.is_starred)
     : docs
 
-  const FREE_LIMIT = 3
+  const FREE_LIMIT = 30
 
   const btnBase: React.CSSProperties = {
     height: "36px",
