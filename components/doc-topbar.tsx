@@ -52,6 +52,7 @@ function htmlToMarkdown(html: string): string {
     .replace(/<p[^>]*>(.*?)<\/p>/gi, '$1\n\n')
     .replace(/<hr\s*\/?>/gi, '\n---\n\n')
     .replace(/<a[^>]*href="([^"]*)"[^>]*>(.*?)<\/a>/gi, '[$2]($1)')
+    .replace(/<img[^>]*alt="([^"]*)"[^>]*>/gi, '![$1](image)\n\n')
     .replace(/<[^>]+>/g, '')
     .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&nbsp;/g, ' ')
     .replace(/\n{3,}/g, '\n\n')
@@ -66,6 +67,29 @@ function downloadFile(filename: string, content: string, mimeType: string) {
   a.download = filename
   a.click()
   URL.revokeObjectURL(url)
+}
+
+async function loadImageAsBase64(src: string): Promise<{ dataUrl: string; width: number; height: number } | null> {
+  return new Promise((resolve) => {
+    const img = new window.Image()
+    img.crossOrigin = 'anonymous'
+    img.onload = () => {
+      try {
+        const canvas = document.createElement('canvas')
+        canvas.width = img.naturalWidth || img.width
+        canvas.height = img.naturalHeight || img.height
+        const ctx = canvas.getContext('2d')
+        if (!ctx) { resolve(null); return }
+        ctx.drawImage(img, 0, 0)
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.85)
+        resolve({ dataUrl, width: canvas.width, height: canvas.height })
+      } catch {
+        resolve(null)
+      }
+    }
+    img.onerror = () => resolve(null)
+    img.src = src
+  })
 }
 
 async function exportAsPDF(docTitle: string, html: string) {
@@ -92,57 +116,156 @@ async function exportAsPDF(docTitle: string, html: string) {
   doc.line(margin, y, pageWidth - margin, y)
   y += 8
 
-  // Parse HTML — handle <li><p>text</p></li> pattern from Tiptap
-  // First normalize: unwrap <p> inside <li>
-  let normalized = html
-    .replace(/<li[^>]*>\s*<p[^>]*>([\s\S]*?)<\/p>\s*<\/li>/gi, '<li>$1</li>')
-    .replace(/<br[^>]*>/gi, '\n')
+  // Parse HTML into DOM so we can walk nodes in order (preserves images)
+  const parser = new DOMParser()
+  const domDoc = parser.parseFromString(html, 'text/html')
+  const body = domDoc.body
 
-  // Now extract blocks in sequence
-  const blockRegex = /<(h1|h2|h3|li|blockquote|p|hr)[^>]*>([\s\S]*?)<\/\1>|<hr[^>]*>/gi
-  let match
-  while ((match = blockRegex.exec(normalized)) !== null) {
-    const tag = (match[1] || 'hr').toLowerCase()
-    const raw = match[2] || ''
-    const text = stripTags(raw).replace(/\n+/g, ' ').trim()
-    if (!text && tag !== 'hr') continue
+  // Flatten all block-level children into a processable list
+  async function processNode(node: Element) {
+    const tag = node.tagName?.toLowerCase()
 
-    if (tag === 'h1') {
-      checkY(12)
-      doc.setFont('helvetica', 'bold'); doc.setFontSize(16); doc.setTextColor(0, 0, 0)
-      const w = doc.splitTextToSize(text, maxWidth)
-      doc.text(w, margin, y); y += w.length * 8 + 4
-    } else if (tag === 'h2') {
-      checkY(10)
-      doc.setFont('helvetica', 'bold'); doc.setFontSize(13); doc.setTextColor(0, 0, 0)
-      const w = doc.splitTextToSize(text, maxWidth)
-      doc.text(w, margin, y); y += w.length * 7 + 3
-    } else if (tag === 'h3') {
-      checkY(8)
-      doc.setFont('helvetica', 'bold'); doc.setFontSize(11); doc.setTextColor(0, 0, 0)
-      const w = doc.splitTextToSize(text, maxWidth)
-      doc.text(w, margin, y); y += w.length * 6 + 2
-    } else if (tag === 'li') {
-      checkY(6)
-      doc.setFont('helvetica', 'normal'); doc.setFontSize(10); doc.setTextColor(30, 30, 30)
-      const w = doc.splitTextToSize('• ' + text, maxWidth - 6)
-      doc.text(w, margin + 4, y); y += w.length * 5.5 + 1
-    } else if (tag === 'blockquote') {
-      checkY(6)
-      doc.setFont('helvetica', 'italic'); doc.setFontSize(10); doc.setTextColor(100, 100, 100)
-      const w = doc.splitTextToSize(text, maxWidth - 8)
-      doc.text(w, margin + 6, y); y += w.length * 5.5 + 2
-      doc.setTextColor(30, 30, 30)
-    } else if (tag === 'hr') {
+    if (tag === 'img') {
+      const src = node.getAttribute('src') || ''
+      if (src) {
+        const imgData = await loadImageAsBase64(src)
+        if (imgData) {
+          // Scale image to fit page width while keeping aspect ratio
+          const aspectRatio = imgData.height / imgData.width
+          const imgW = Math.min(maxWidth, 120) // max 120mm wide
+          const imgH = imgW * aspectRatio
+          checkY(imgH + 4)
+          try {
+            doc.addImage(imgData.dataUrl, 'JPEG', margin, y, imgW, imgH)
+            y += imgH + 4
+          } catch {
+            // If image fails, skip it silently
+          }
+        }
+      }
+      return
+    }
+
+    if (tag === 'ul' || tag === 'ol') {
+      const items = node.querySelectorAll(':scope > li')
+      for (const li of Array.from(items)) {
+        // Handle <p> inside <li> (Tiptap wraps content in <p>)
+        const liText = stripTags(li.innerHTML).replace(/\n+/g, ' ').trim()
+        if (liText) {
+          checkY(6)
+          doc.setFont('helvetica', 'normal')
+          doc.setFontSize(10)
+          doc.setTextColor(30, 30, 30)
+          const prefix = tag === 'ol' ? '  ' : '• '
+          const w = doc.splitTextToSize(prefix + liText, maxWidth - 6)
+          doc.text(w, margin + 4, y)
+          y += w.length * 5.5 + 1
+        }
+        // Check for nested images inside li
+        const imgs = li.querySelectorAll('img')
+        for (const img of Array.from(imgs)) {
+          await processNode(img)
+        }
+      }
+      return
+    }
+
+    if (tag === 'blockquote') {
+      const text = stripTags(node.innerHTML).replace(/\n+/g, ' ').trim()
+      if (text) {
+        checkY(6)
+        doc.setFont('helvetica', 'italic')
+        doc.setFontSize(10)
+        doc.setTextColor(100, 100, 100)
+        const w = doc.splitTextToSize(text, maxWidth - 8)
+        doc.text(w, margin + 6, y)
+        y += w.length * 5.5 + 2
+        doc.setTextColor(30, 30, 30)
+      }
+      return
+    }
+
+    if (tag === 'hr') {
       checkY(6)
       doc.setDrawColor(200, 200, 200)
-      doc.line(margin, y, pageWidth - margin, y); y += 6
-    } else if (tag === 'p') {
-      checkY(6)
-      doc.setFont('helvetica', 'normal'); doc.setFontSize(10); doc.setTextColor(30, 30, 30)
-      const w = doc.splitTextToSize(text, maxWidth)
-      doc.text(w, margin, y); y += w.length * 5.5 + 2
+      doc.line(margin, y, pageWidth - margin, y)
+      y += 6
+      return
     }
+
+    if (tag === 'h1') {
+      const text = stripTags(node.innerHTML).replace(/\n+/g, ' ').trim()
+      if (text) {
+        checkY(12)
+        doc.setFont('helvetica', 'bold')
+        doc.setFontSize(16)
+        doc.setTextColor(0, 0, 0)
+        const w = doc.splitTextToSize(text, maxWidth)
+        doc.text(w, margin, y)
+        y += w.length * 8 + 4
+      }
+      return
+    }
+
+    if (tag === 'h2') {
+      const text = stripTags(node.innerHTML).replace(/\n+/g, ' ').trim()
+      if (text) {
+        checkY(10)
+        doc.setFont('helvetica', 'bold')
+        doc.setFontSize(13)
+        doc.setTextColor(0, 0, 0)
+        const w = doc.splitTextToSize(text, maxWidth)
+        doc.text(w, margin, y)
+        y += w.length * 7 + 3
+      }
+      return
+    }
+
+    if (tag === 'h3') {
+      const text = stripTags(node.innerHTML).replace(/\n+/g, ' ').trim()
+      if (text) {
+        checkY(8)
+        doc.setFont('helvetica', 'bold')
+        doc.setFontSize(11)
+        doc.setTextColor(0, 0, 0)
+        const w = doc.splitTextToSize(text, maxWidth)
+        doc.text(w, margin, y)
+        y += w.length * 6 + 2
+      }
+      return
+    }
+
+    if (tag === 'p') {
+      // Check if this <p> directly contains an image
+      const imgs = node.querySelectorAll('img')
+      if (imgs.length > 0) {
+        for (const img of Array.from(imgs)) {
+          await processNode(img)
+        }
+        return
+      }
+      const text = stripTags(node.innerHTML).replace(/\n+/g, ' ').trim()
+      if (text) {
+        checkY(6)
+        doc.setFont('helvetica', 'normal')
+        doc.setFontSize(10)
+        doc.setTextColor(30, 30, 30)
+        const w = doc.splitTextToSize(text, maxWidth)
+        doc.text(w, margin, y)
+        y += w.length * 5.5 + 2
+      }
+      return
+    }
+
+    // For any other container elements, recurse into children
+    for (const child of Array.from(node.children)) {
+      await processNode(child as Element)
+    }
+  }
+
+  // Walk all top-level children of body
+  for (const child of Array.from(body.children)) {
+    await processNode(child as Element)
   }
 
   doc.save(`${docTitle.trim() || 'untitled'}.pdf`)
