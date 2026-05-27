@@ -27,8 +27,7 @@ function SignupContent() {
     if (res.ok) {
       if (plan === 'founding') {
         // Redirect to Paddle checkout for one-time $49 payment
-        const paddleUrl = `https://buy.paddle.com/product/pri_01ksjx6e6xtrmq324ama45zyr0?email=${encodeURIComponent(email)}`
-        window.location.href = paddleUrl
+        router.push(`/checkout?plan=founding&email=${encodeURIComponent(email)}`)
       } else {
         router.push(`/verify-email?email=${encodeURIComponent(email)}`)
       }
