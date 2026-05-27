@@ -1,86 +1,65 @@
 'use client'
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { Suspense } from 'react'
+import { useSearchParams } from 'next/navigation'
 
-export default function SignupPage() {
-  const router = useRouter()
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [error, setError] = useState('')
-  const [loading, setLoading] = useState(false)
-
-  const handleSignup = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setLoading(true)
-    setError('')
-
-    const res = await fetch('/api/auth', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password, action: 'signup' }),
-    })
-    const data = await res.json()
-
-    if (res.ok) {
-      router.push(`/verify-email?email=${encodeURIComponent(email)}`)
-    } else {
-      setError(data.error || 'Signup failed')
-    }
-    setLoading(false)
-  }
+function VerifyEmailContent() {
+  const searchParams = useSearchParams()
+  const email = searchParams.get('email') ?? ''
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#f0f0ef]">
-      <div className="w-full max-w-md rounded-2xl bg-white p-8 shadow-sm">
-        <h1 className="mb-2 text-2xl font-bold text-gray-900">Create your account</h1>
-        <p className="mb-6 text-sm text-gray-500">Start taking notes with TWO</p>
+    <div style={{ minHeight: '100vh', backgroundColor: '#161618', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'inherit' }}>
+      <div style={{ width: '100%', maxWidth: '400px', padding: '0 24px' }}>
 
-        {error && (
-          <p className="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-600">
-            {error}
+        {/* Wordmark */}
+        <div style={{ textAlign: 'center', marginBottom: '32px' }}>
+          <span style={{ fontSize: '28px', fontWeight: '700', letterSpacing: '-0.5px', color: '#e8e8e8' }}>TWO</span>
+        </div>
+
+        {/* Card */}
+        <div style={{ backgroundColor: '#1e1e20', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '16px', padding: '32px', textAlign: 'center' }}>
+
+          {/* Icon */}
+          <div style={{ width: '48px', height: '48px', borderRadius: '12px', backgroundColor: 'rgba(83,74,183,0.15)', border: '1px solid rgba(83,74,183,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px', fontSize: '22px' }}>
+            ✉️
+          </div>
+
+          <h1 style={{ margin: '0 0 8px', fontSize: '20px', fontWeight: '600', color: '#e8e8e8' }}>Check your inbox</h1>
+          <p style={{ margin: '0 0 16px', fontSize: '14px', color: '#a0a0a0', lineHeight: '1.6' }}>
+            We sent a verification link to
           </p>
-        )}
 
-        <form onSubmit={handleSignup} className="space-y-4">
-          <div>
-            <label className="mb-1 block text-sm font-medium text-gray-900">Email</label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full rounded-lg border border-gray-200 px-4 py-2 text-sm text-gray-900 outline-none focus:border-gray-400"
-              placeholder="you@example.com"
-              required
-            />
-          </div>
-          <div>
-            <label className="mb-1 block text-sm font-medium text-gray-900">Password</label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full rounded-lg border border-gray-200 px-4 py-2 text-sm text-gray-900 outline-none focus:border-gray-400"
-              placeholder="••••••••"
-              required
-              minLength={8}
-            />
-          </div>
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full rounded-lg bg-black py-2 text-sm font-medium text-white hover:bg-black/90 disabled:opacity-50"
-          >
-            {loading ? 'Creating account...' : 'Create account'}
-          </button>
-        </form>
+          {email && (
+            <p style={{ margin: '0 0 20px', fontSize: '14px', fontWeight: '600', color: '#e8e8e8' }}>
+              {email}
+            </p>
+          )}
 
-        <p className="mt-4 text-center text-sm text-gray-500">
-          Already have an account?{' '}
-          <a href="/login" className="font-medium text-black underline">
-            Log in
-          </a>
+          <p style={{ margin: '0 0 28px', fontSize: '13px', color: '#606060', lineHeight: '1.6' }}>
+            Click the link in the email to activate your account. It expires in 24 hours.
+          </p>
+
+          <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '20px' }}>
+            <p style={{ margin: '0', fontSize: '13px', color: '#606060' }}>
+              Already verified?{' '}
+              <a href="/login" style={{ color: '#e8e8e8', textDecoration: 'underline' }}>Log in</a>
+            </p>
+          </div>
+        </div>
+
+        <p style={{ marginTop: '24px', textAlign: 'center', fontSize: '12px', color: '#606060' }}>
+          Wrong email?{' '}
+          <a href="/signup" style={{ color: '#a0a0a0', textDecoration: 'underline' }}>Sign up again</a>
         </p>
+
       </div>
     </div>
+  )
+}
+
+export default function VerifyEmailPage() {
+  return (
+    <Suspense>
+      <VerifyEmailContent />
+    </Suspense>
   )
 }
