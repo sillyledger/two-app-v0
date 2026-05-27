@@ -95,8 +95,11 @@ export default function SignupPage() {
         </div>
 
         <p style={{ marginTop: '24px', textAlign: 'center', fontSize: '12px', color: '#606060' }}>
-          By signing up you agree to our Terms & Privacy Policy
-        </p>
+  By signing up you agree to our{' '}
+  <a href="https://www.two.so/terms-of-service" target="_blank" rel="noopener noreferrer" style={{ color: '#a0a0a0', textDecoration: 'underline' }}>Terms of Service</a>
+  {' '}and{' '}
+  <a href="https://www.two.so/privacy-policy" target="_blank" rel="noopener noreferrer" style={{ color: '#a0a0a0', textDecoration: 'underline' }}>Privacy Policy</a>
+</p>
       </div>
     </div>
   )
