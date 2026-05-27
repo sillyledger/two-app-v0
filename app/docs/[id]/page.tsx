@@ -484,20 +484,21 @@ export default function DocPage() {
         style={{ marginRight: detailOpen ? '280px' : '0' }}
       >
         <DocTopbar
-          docTitle={title}
-          folder={folder}
-          saveStatus={saveStatus}
-          onDelete={isLoggedIn ? handleDelete : undefined}
-          docId={docId}
-          isPublic={isPublic}
-          sidebarWidth={sidebarWidth}
-          wideMode={wideMode}
-          onToggleWide={toggleWideMode}
-          isFavorite={isFavorite}
-          onToggleFavorite={isLoggedIn ? handleToggleFavorite : undefined}
-          detailOpen={detailOpen}
-          onToggleDetail={() => setDetailOpen(v => !v)}
-        />
+  docTitle={title}
+  folder={folder}
+  saveStatus={saveStatus}
+  content={content}
+  onDelete={isLoggedIn ? handleDelete : undefined}
+  docId={docId}
+  isPublic={isPublic}
+  sidebarWidth={sidebarWidth}
+  wideMode={wideMode}
+  onToggleWide={toggleWideMode}
+  isFavorite={isFavorite}
+  onToggleFavorite={isLoggedIn ? handleToggleFavorite : undefined}
+  detailOpen={detailOpen}
+  onToggleDetail={() => setDetailOpen(v => !v)}
+/>
 
         <main className="flex-1 overflow-y-auto pt-[44px]">
           <div className={`mx-auto w-full px-16 pt-16 pb-32 transition-all duration-200 ${wideMode ? 'max-w-[1200px]' : 'max-w-[800px]'}`}>
