@@ -94,8 +94,8 @@ export default function SignupPage() {
           </p>
         </div>
 
-        <p style={{ marginTop: '24px', textAlign: 'center', fontSize: '12px', color: '#606060' }}>
-  By signing up you agree to our{' '}
+        <p style={{ marginTop: '24px', textAlign: 'center', fontSize: '12px', color: '#606060', lineHeight: '1.8' }}>
+  By signing up you agree to our<br />
   <a href="https://www.two.so/terms-of-service" target="_blank" rel="noopener noreferrer" style={{ color: '#a0a0a0', textDecoration: 'underline' }}>Terms of Service</a>
   {' '}and{' '}
   <a href="https://www.two.so/privacy-policy" target="_blank" rel="noopener noreferrer" style={{ color: '#a0a0a0', textDecoration: 'underline' }}>Privacy Policy</a>
