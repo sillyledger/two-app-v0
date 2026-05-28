@@ -2,14 +2,13 @@
 
 import { useEffect, useRef, useState, useCallback } from "react"
 import { useRouter } from "next/navigation"
-import { X, Plus, Search, FileText } from "lucide-react"
+import { X, Plus, Search, FileText, FilePlus } from "lucide-react"
 import { useTabStore } from "@/hooks/use-tab-store"
 
 interface DocItem {
   uuid: string
   title: string
   folder_name?: string | null
-  updated_at?: string | null
 }
 
 interface TabBarProps {
@@ -21,33 +20,29 @@ export default function TabBar({ sidebarWidth = "0px" }: TabBarProps) {
   const { tabs, activeId, openTab, switchTab, closeTab } = useTabStore()
   const activeRef = useRef<HTMLButtonElement>(null)
 
-  // Picker state
   const [pickerOpen, setPickerOpen] = useState(false)
   const [query, setQuery] = useState("")
   const [docs, setDocs] = useState<DocItem[]>([])
   const [loading, setLoading] = useState(false)
+  const [creating, setCreating] = useState(false)
   const pickerRef = useRef<HTMLDivElement>(null)
   const searchRef = useRef<HTMLInputElement>(null)
 
-  // Scroll active tab into view
   useEffect(() => {
     activeRef.current?.scrollIntoView({ block: "nearest", inline: "nearest", behavior: "smooth" })
   }, [activeId])
 
-  // Close picker on outside click
   useEffect(() => {
     if (!pickerOpen) return
     const handler = (e: MouseEvent) => {
       if (pickerRef.current && !pickerRef.current.contains(e.target as Node)) {
-        setPickerOpen(false)
-        setQuery("")
+        setPickerOpen(false); setQuery("")
       }
     }
     document.addEventListener("mousedown", handler)
     return () => document.removeEventListener("mousedown", handler)
   }, [pickerOpen])
 
-  // Close picker on Escape
   useEffect(() => {
     if (!pickerOpen) return
     const handler = (e: KeyboardEvent) => {
@@ -57,13 +52,12 @@ export default function TabBar({ sidebarWidth = "0px" }: TabBarProps) {
     return () => document.removeEventListener("keydown", handler)
   }, [pickerOpen])
 
-  // Fetch docs when picker opens
   useEffect(() => {
     if (!pickerOpen) return
     setLoading(true)
     fetch("/api/docs")
       .then(r => r.json())
-      .then(data => { setDocs(Array.isArray(data) ? data : []) })
+      .then(data => setDocs(Array.isArray(data) ? data : []))
       .catch(() => setDocs([]))
       .finally(() => setLoading(false))
     setTimeout(() => searchRef.current?.focus(), 50)
@@ -76,8 +70,24 @@ export default function TabBar({ sidebarWidth = "0px" }: TabBarProps) {
   const handleOpenDoc = useCallback((doc: DocItem) => {
     openTab(doc.uuid, doc.title || "Untitled")
     router.push(`/docs/${doc.uuid}`)
-    setPickerOpen(false)
-    setQuery("")
+    setPickerOpen(false); setQuery("")
+  }, [openTab, router])
+
+  const handleNewDoc = useCallback(async () => {
+    setCreating(true)
+    try {
+      const res = await fetch("/api/docs", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: "Untitled", content: "", color: "yellow", type: "doc" }),
+      })
+      const doc = await res.json()
+      openTab(doc.uuid, "Untitled")
+      router.push(`/docs/${doc.uuid}`)
+      setPickerOpen(false); setQuery("")
+    } finally {
+      setCreating(false)
+    }
   }, [openTab, router])
 
   const handleSwitch = (id: string) => {
@@ -110,9 +120,19 @@ export default function TabBar({ sidebarWidth = "0px" }: TabBarProps) {
 
   return (
     <>
-      {/* Tab bar */}
+      <style>{`
+        .tabbar-wrap::-webkit-scrollbar { display: none; }
+        .tab-close { opacity: 0; transition: opacity 0.12s; }
+        .tab-btn:hover .tab-close,
+        .tab-btn-active .tab-close { opacity: 1; }
+        .tab-btn { border-top: 2px solid transparent !important; border-right: 1px solid var(--border) !important; border-left: none !important; border-bottom: none !important; }
+        .tab-btn-active { border-top: 2px solid #6b5ce7 !important; background-color: var(--bg-secondary) !important; color: var(--text-primary) !important; }
+        .tab-btn:not(.tab-btn-active):hover { background-color: var(--bg-tertiary) !important; color: var(--text-secondary) !important; }
+      `}</style>
+
+      {/* ── Tab bar ── */}
       <div
-        className="fixed z-30 flex items-end overflow-x-auto tabbar-scroll"
+        className="tabbar-wrap fixed z-30 flex items-end overflow-x-auto"
         style={{
           top: "44px",
           left: sidebarWidth,
@@ -124,13 +144,6 @@ export default function TabBar({ sidebarWidth = "0px" }: TabBarProps) {
           transition: "left 0.2s",
         }}
       >
-        <style>{`
-          .tabbar-scroll::-webkit-scrollbar { display: none; }
-          .tab-close { opacity: 0; transition: opacity 0.12s; }
-          .tab-btn:hover .tab-close { opacity: 1; }
-          .tab-btn-active .tab-close { opacity: 1; }
-        `}</style>
-
         {tabs.map((tab) => {
           const isActive = tab.id === activeId
           return (
@@ -142,12 +155,8 @@ export default function TabBar({ sidebarWidth = "0px" }: TabBarProps) {
               style={{
                 maxWidth: "180px",
                 minWidth: "80px",
-                color: isActive ? "var(--text-primary)" : "var(--text-muted)",
-                backgroundColor: isActive ? "var(--bg-secondary)" : "transparent",
-                borderRight: "1px solid var(--border)",
-                borderTop: isActive ? "2px solid #6b5ce7" : "2px solid transparent",
-                border: "none",
                 cursor: "pointer",
+                color: isActive ? "var(--text-primary)" : "var(--text-muted)",
               }}
             >
               <span className="truncate flex-1 text-left">{tab.title || "Untitled"}</span>
@@ -155,7 +164,7 @@ export default function TabBar({ sidebarWidth = "0px" }: TabBarProps) {
                 className="tab-close flex items-center justify-center w-4 h-4 rounded shrink-0"
                 onClick={(e) => handleClose(e, tab.id)}
                 style={{ color: "var(--text-muted)" }}
-                onMouseEnter={e => { e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.1)"; e.currentTarget.style.color = "var(--text-primary)" }}
+                onMouseEnter={e => { e.currentTarget.style.backgroundColor = "rgba(107,92,231,0.2)"; e.currentTarget.style.color = "#c4b8ff" }}
                 onMouseLeave={e => { e.currentTarget.style.backgroundColor = "transparent"; e.currentTarget.style.color = "var(--text-muted)" }}
               >
                 <X size={10} />
@@ -164,7 +173,7 @@ export default function TabBar({ sidebarWidth = "0px" }: TabBarProps) {
           )
         })}
 
-        {/* + button opens picker */}
+        {/* + button */}
         <button
           onClick={() => setPickerOpen(true)}
           title="Open another doc"
@@ -177,33 +186,12 @@ export default function TabBar({ sidebarWidth = "0px" }: TabBarProps) {
         </button>
       </div>
 
-      {/* Doc picker modal */}
+      {/* ── Doc picker modal ── */}
       {pickerOpen && (
-        <div
-          style={{
-            position: "fixed",
-            inset: 0,
-            zIndex: 60,
-            display: "flex",
-            alignItems: "flex-start",
-            justifyContent: "center",
-            paddingTop: "120px",
-            backgroundColor: "rgba(0,0,0,0.45)",
-          }}
-        >
-          <div
-            ref={pickerRef}
-            style={{
-              width: "520px",
-              maxWidth: "calc(100vw - 32px)",
-              borderRadius: "12px",
-              overflow: "hidden",
-              backgroundColor: "var(--bg-secondary)",
-              border: "1px solid var(--border)",
-              boxShadow: "0 24px 64px rgba(0,0,0,0.6)",
-            }}
-          >
-            {/* Search row */}
+        <div style={{ position: "fixed", inset: 0, zIndex: 60, display: "flex", alignItems: "flex-start", justifyContent: "center", paddingTop: "120px", backgroundColor: "rgba(0,0,0,0.45)" }}>
+          <div ref={pickerRef} style={{ width: "520px", maxWidth: "calc(100vw - 32px)", borderRadius: "12px", overflow: "hidden", backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border)", boxShadow: "0 24px 64px rgba(0,0,0,0.6)" }}>
+
+            {/* Search */}
             <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 16px", borderBottom: "1px solid var(--border)" }}>
               <Search size={14} style={{ color: "var(--text-muted)", flexShrink: 0 }} />
               <input
@@ -221,14 +209,31 @@ export default function TabBar({ sidebarWidth = "0px" }: TabBarProps) {
               )}
             </div>
 
+            {/* New doc button — always at top */}
+            <button
+              onClick={handleNewDoc}
+              disabled={creating}
+              style={{ display: "flex", alignItems: "center", gap: 10, width: "100%", padding: "10px 16px", background: "transparent", border: "none", borderBottom: "1px solid var(--border)", cursor: creating ? "wait" : "pointer", transition: "background 0.1s" }}
+              onMouseEnter={e => (e.currentTarget.style.backgroundColor = "var(--bg-tertiary)")}
+              onMouseLeave={e => (e.currentTarget.style.backgroundColor = "transparent")}
+            >
+              <div style={{ width: 26, height: 26, borderRadius: 6, backgroundColor: "rgba(107,92,231,0.15)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                <FilePlus size={14} style={{ color: "#a89cf7" }} />
+              </div>
+              <div style={{ textAlign: "left" }}>
+                <p style={{ fontSize: 13, fontWeight: 500, color: "var(--text-primary)", margin: 0 }}>
+                  {creating ? "Creating…" : "New blank doc"}
+                </p>
+                <p style={{ fontSize: 11, color: "var(--text-muted)", margin: 0 }}>Open a fresh doc in this tab</p>
+              </div>
+            </button>
+
             {/* Doc list */}
-            <div style={{ maxHeight: "360px", overflowY: "auto", padding: "6px 0" }}>
-              {loading && (
-                <p style={{ padding: "16px", fontSize: 13, color: "var(--text-muted)", textAlign: "center" }}>Loading...</p>
-              )}
+            <div style={{ maxHeight: "320px", overflowY: "auto", padding: "6px 0" }}>
+              {loading && <p style={{ padding: "16px", fontSize: 13, color: "var(--text-muted)", textAlign: "center" }}>Loading...</p>}
               {!loading && filteredDocs.length === 0 && (
                 <p style={{ padding: "16px", fontSize: 13, color: "var(--text-muted)", textAlign: "center" }}>
-                  {query ? "No docs match that search" : "No docs found"}
+                  {query ? `No docs matching "${query}"` : "No docs found"}
                 </p>
               )}
               {!loading && filteredDocs.map(doc => {
@@ -237,12 +242,7 @@ export default function TabBar({ sidebarWidth = "0px" }: TabBarProps) {
                   <button
                     key={doc.uuid}
                     onClick={() => handleOpenDoc(doc)}
-                    style={{
-                      display: "flex", alignItems: "center", gap: 10,
-                      width: "100%", padding: "9px 16px",
-                      background: "transparent", border: "none", cursor: "pointer", textAlign: "left",
-                      transition: "background 0.1s",
-                    }}
+                    style={{ display: "flex", alignItems: "center", gap: 10, width: "100%", padding: "9px 16px", background: "transparent", border: "none", cursor: "pointer", textAlign: "left", transition: "background 0.1s" }}
                     onMouseEnter={e => (e.currentTarget.style.backgroundColor = "var(--bg-tertiary)")}
                     onMouseLeave={e => (e.currentTarget.style.backgroundColor = "transparent")}
                   >
@@ -250,12 +250,8 @@ export default function TabBar({ sidebarWidth = "0px" }: TabBarProps) {
                     <span style={{ flex: 1, fontSize: 13, color: "var(--text-primary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                       {doc.title || "Untitled"}
                     </span>
-                    {doc.folder_name && (
-                      <span style={{ fontSize: 11, color: "var(--text-muted)", flexShrink: 0 }}>{doc.folder_name}</span>
-                    )}
-                    {isAlreadyOpen && (
-                      <span style={{ fontSize: 10, color: "var(--text-muted)", flexShrink: 0, opacity: 0.5, marginLeft: 4 }}>open</span>
-                    )}
+                    {doc.folder_name && <span style={{ fontSize: 11, color: "var(--text-muted)", flexShrink: 0 }}>{doc.folder_name}</span>}
+                    {isAlreadyOpen && <span style={{ fontSize: 10, color: "var(--text-muted)", flexShrink: 0, opacity: 0.5, marginLeft: 4 }}>open</span>}
                   </button>
                 )
               })}
