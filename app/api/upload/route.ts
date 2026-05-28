@@ -1,15 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { verifyToken } from '@/lib/auth'
-
-export const runtime = 'edge'
+import { sql } from '@/lib/db'
 
 export async function POST(request: NextRequest) {
   try {
     const cookieStore = await cookies()
     const token = cookieStore.get('auth-token')?.value
     if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    await verifyToken(token)
+    const payload = await verifyToken(token)
+    if (!payload) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const formData = await request.formData()
     const file = formData.get('file') as File
@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
     // Sign the request manually using AWS Signature V4
     const url = `${endpoint}/${bucket}/${filename}`
     const now = new Date()
-    const dateStr = now.toISOString().replace(/[:-]|\.\d{3}/g, '').slice(0, 15) + 'Z'
+    const dateStr = now.toISOString().replace(/[:-]|\\.\\d{3}/g, '').slice(0, 15) + 'Z'
     const dateShort = dateStr.slice(0, 8)
 
     const arrayBuffer = await file.arrayBuffer()
@@ -86,6 +86,13 @@ export async function POST(request: NextRequest) {
       const text = await uploadRes.text()
       return NextResponse.json({ error: 'Upload failed', detail: text }, { status: 500 })
     }
+
+    // Track storage usage — add this file's size to the user's total
+    await sql`
+      UPDATE users
+      SET storage_used = COALESCE(storage_used, 0) + ${file.size}
+      WHERE id = ${payload.userId}
+    `
 
     const publicUrl = `${process.env.R2_PUBLIC_URL}/${filename}`
     return NextResponse.json({ url: publicUrl })
