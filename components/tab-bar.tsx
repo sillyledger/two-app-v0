@@ -97,7 +97,7 @@ export default function TabBar({ sidebarWidth = "0px" }: TabBarProps) {
 
   const handleSwitch = (id: string) => {
     switchTab(id)
-    // No router.push — the doc page watches activeId and re-fetches in place
+    router.push(`/docs/${id}`)
   }
 
   const handleClose = (e: React.MouseEvent, id: string) => {
