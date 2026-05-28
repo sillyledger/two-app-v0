@@ -68,10 +68,15 @@ export default function TabBar({ sidebarWidth = "0px" }: TabBarProps) {
   )
 
   const handleOpenDoc = useCallback((doc: DocItem) => {
+    const alreadyOpen = tabs.some(t => t.id === doc.uuid)
     openTab(doc.uuid, doc.title || "Untitled")
-    router.push(`/docs/${doc.uuid}`)
+    if (!alreadyOpen) {
+      // First time opening this doc — navigate so the URL updates
+      router.push(`/docs/${doc.uuid}`)
+    }
+    // If already open, switchTab (called inside openTab) is enough
     setPickerOpen(false); setQuery("")
-  }, [openTab, router])
+  }, [openTab, router, tabs])
 
   const handleNewDoc = useCallback(async () => {
     setCreating(true)
@@ -92,7 +97,7 @@ export default function TabBar({ sidebarWidth = "0px" }: TabBarProps) {
 
   const handleSwitch = (id: string) => {
     switchTab(id)
-    router.push(`/docs/${id}`)
+    // No router.push — the doc page watches activeId and re-fetches in place
   }
 
   const handleClose = (e: React.MouseEvent, id: string) => {
