@@ -116,8 +116,12 @@ function getInitials(name: string, email: string): string {
 
 export default function DocPage() {
   const params = useParams()
-  const docId = Array.isArray(params.id) ? params.id[0] : (params.id as string)
+  const urlDocId = Array.isArray(params.id) ? params.id[0] : (params.id as string)
   const router = useRouter()
+  const { activeId: tabActiveId } = useTabStore()
+  // Use the tab store's active ID when switching tabs (avoids full page reload)
+  // Fall back to the URL param for direct navigation / first load
+  const docId = tabActiveId || urlDocId
   const [collapsed, setCollapsed] = useState(false)
 
   useEffect(() => {
