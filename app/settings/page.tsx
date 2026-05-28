@@ -586,7 +586,7 @@ export default function SettingsPage() {
                     <button
                       onClick={() => {
                         const Paddle = (window as any).Paddle
-                        Paddle?.Checkout.open({ items: [{ priceId: 'pri_01ksjx3b0n6pg6fw44hbq9r03p', quantity: 1 }] })
+                        Paddle?.Checkout.open({ items: [{ priceId: 'pri_01ksjx3b0n6pg6fw44hbq9r03p', quantity: 1 }], settings: { successUrl: 'https://app.two.so/welcome' } })
                       }}
                       className="ml-auto px-3 py-1.5 rounded-lg text-[12px] font-medium shrink-0"
                       style={{ backgroundColor: "#534AB7", color: "#fff", border: "none", cursor: "pointer" }}
@@ -636,9 +636,9 @@ export default function SettingsPage() {
                     {plan !== 'pro' && (
                       <button
                         onClick={() => {
-                          const Paddle = (window as any).Paddle
-                          Paddle?.Checkout.open({ items: [{ priceId: 'pri_01ksjx3b0n6pg6fw44hbq9r03p', quantity: 1 }] })
-                        }}
+  const Paddle = (window as any).Paddle
+  Paddle?.Checkout.open({ items: [{ priceId: 'pri_01ksjx3b0n6pg6fw44hbq9r03p', quantity: 1 }], settings: { successUrl: 'https://app.two.so/welcome' } })
+}}
                         className="mt-2 px-3 py-1.5 rounded-lg text-[12px] font-medium transition-colors"
                         style={{ backgroundColor: "#534AB7", color: "#fff", border: "none", cursor: "pointer" }}
                       >
@@ -669,7 +669,7 @@ export default function SettingsPage() {
                       <button
                         onClick={() => {
                           const Paddle = (window as any).Paddle
-                          Paddle?.Checkout.open({ items: [{ priceId: 'pri_01ksjx6e6xtrmq324ama45zyr0', quantity: 1 }] })
+                          Paddle?.Checkout.open({ items: [{ priceId: 'pri_01ksjx6e6xtrmq324ama45zyr0', quantity: 1 }], settings: { successUrl: 'https://app.two.so/welcome' } })
                         }}
                         className="mt-2 px-3 py-1.5 rounded-lg text-[12px] font-medium transition-colors"
                         style={{ backgroundColor: "#BA7517", color: "#fff", border: "none", cursor: "pointer" }}
