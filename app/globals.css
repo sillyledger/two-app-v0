@@ -15,6 +15,17 @@
   --pre-bg: #111111;
   --blockquote-border: #3a3a3a;
   --sidebar-item: #e8e8e8;
+  --sb-bg: #161618;
+  --sb-active-bg: rgba(107,92,231,0.18);
+  --sb-active-color: #c4b8ff;
+  --sb-item-color: #b0afb8;
+  --sb-hover-bg: rgba(255,255,255,0.07);
+  --sb-hover-color: #e8e7e1;
+  --sb-muted: #6a6a74;
+  --sb-border: rgba(255,255,255,0.07);
+  --sb-dropdown-bg: #242428;
+  --sb-dropdown-border: rgba(255,255,255,0.09);
+  --sb-dropdown-text: #8a8a92;
 }
 
 html.light {
@@ -29,6 +40,17 @@ html.light {
   --pre-bg: #1a1a1a;
   --blockquote-border: #d1d5db;
   --sidebar-item: #1a1a1a;
+  --sb-bg: #f0efed;
+  --sb-active-bg: rgba(107,92,231,0.12);
+  --sb-active-color: #5b47cc;
+  --sb-item-color: #4a4a55;
+  --sb-hover-bg: rgba(0,0,0,0.05);
+  --sb-hover-color: #1a1a1a;
+  --sb-muted: #888890;
+  --sb-border: rgba(0,0,0,0.07);
+  --sb-dropdown-bg: #e8e7e4;
+  --sb-dropdown-border: rgba(0,0,0,0.09);
+  --sb-dropdown-text: #555560;
 }
 
 /* ── App base ── */
