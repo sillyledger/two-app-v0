@@ -1,10 +1,10 @@
 'use client'
 import { useEffect, useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { Sun, Moon, Monitor, Camera, User, Palette, FileText, Lock, X, CreditCard, Settings2 } from 'lucide-react'
+import { Sun, Moon, Monitor, Camera, User, Palette, FileText, Lock, X, CreditCard, Settings2, HardDrive } from 'lucide-react'
 import Sidebar from '@/components/sidebar'
 
-type Section = 'account' | 'appearance' | 'preferences' | 'editor' | 'security' | 'billing'
+type Section = 'account' | 'appearance' | 'preferences' | 'editor' | 'security' | 'billing' | 'storage'
 type Theme = 'dark' | 'light' | 'system'
 
 const NAV: { id: Section; label: string; icon: React.ReactNode }[] = [
@@ -14,6 +14,7 @@ const NAV: { id: Section; label: string; icon: React.ReactNode }[] = [
   { id: 'editor',      label: 'Editor',      icon: <FileText size={14} /> },
   { id: 'security',    label: 'Security',    icon: <Lock size={14} /> },
   { id: 'billing',     label: 'Billing',     icon: <CreditCard size={14} /> },
+  { id: 'storage',     label: 'Storage',     icon: <HardDrive size={14} /> },
 ]
 
 function applyTheme(t: Theme) {
@@ -25,6 +26,13 @@ function applyTheme(t: Theme) {
     document.documentElement.classList.remove('dark', 'light')
     document.documentElement.classList.add(t)
   }
+}
+
+function formatBytes(bytes: number): string {
+  if (bytes === 0) return '0 MB'
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
+  if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+  return `${(bytes / (1024 * 1024 * 1024)).toFixed(2)} GB`
 }
 
 export default function SettingsPage() {
@@ -51,6 +59,7 @@ export default function SettingsPage() {
   const [dateFormat, setDateFormat] = useState('MMM D, YYYY')
   const [plan, setPlan] = useState<string>('free')
   const [trialEndsAt, setTrialEndsAt] = useState<string | null>(null)
+  const [storageUsed, setStorageUsed] = useState<number>(0)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -86,6 +95,7 @@ export default function SettingsPage() {
           setAvatarUrl(data.user.avatar_url || null)
           setPlan(data.user.plan || 'free')
           setTrialEndsAt(data.user.trial_ends_at || null)
+          setStorageUsed(data.user.storage_used || 0)
         } else {
           router.push('/login')
         }
@@ -228,6 +238,11 @@ export default function SettingsPage() {
     { value: 'light',  label: 'Light',  icon: <Sun size={12} /> },
     { value: 'system', label: 'System', icon: <Monitor size={12} /> },
   ]
+
+  // Storage limits by plan (in bytes)
+  const storageLimit = plan === 'free' ? 1 * 1024 * 1024 * 1024 : 10 * 1024 * 1024 * 1024 // 1GB or 10GB
+  const storagePercent = Math.min(100, (storageUsed / storageLimit) * 100)
+  const storageBarColor = storagePercent > 90 ? '#ef4444' : storagePercent > 70 ? '#f59e0b' : '#534AB7'
 
   if (loading) return (
     <div className="flex h-screen" style={{ backgroundColor: "var(--bg)" }}>
@@ -559,7 +574,6 @@ export default function SettingsPage() {
                 <h2 className="text-[15px] font-semibold mb-1" style={{ color: "var(--text-primary)" }}>Billing</h2>
                 <p className="text-[12px] mb-6" style={{ color: "var(--text-muted)" }}>Manage your plan.</p>
 
-                {/* Trial banner */}
                 {plan === 'pro' && trialEndsAt && (
                   <div className="rounded-xl p-4 mb-5 flex items-center gap-3" style={{ backgroundColor: "rgba(83,74,183,0.1)", border: "1px solid rgba(83,74,183,0.3)" }}>
                     <span style={{ fontSize: '18px' }}>✦</span>
@@ -584,11 +598,7 @@ export default function SettingsPage() {
 
                 <p className="text-[11px] font-semibold uppercase tracking-wider mb-3" style={{ color: "var(--text-muted)" }}>Plans</p>
 
-                {/* Free */}
-                <div
-                  className="rounded-xl p-5 mb-3 flex items-center justify-between"
-                  style={{ backgroundColor: "var(--bg-tertiary)", border: `1px solid ${plan === 'free' ? 'var(--text-muted)' : 'var(--border)'}` }}
-                >
+                <div className="rounded-xl p-5 mb-3 flex items-center justify-between" style={{ backgroundColor: "var(--bg-tertiary)", border: `1px solid ${plan === 'free' ? 'var(--text-muted)' : 'var(--border)'}` }}>
                   <div>
                     <div className="flex items-center gap-2 mb-1">
                       <span className="text-[14px] font-semibold" style={{ color: "var(--text-primary)" }}>Free</span>
@@ -604,11 +614,7 @@ export default function SettingsPage() {
                   </div>
                 </div>
 
-                {/* Pro */}
-                <div
-                  className="rounded-xl p-5 mb-3 flex items-center justify-between"
-                  style={{ backgroundColor: "var(--bg-secondary)", border: `1px solid ${plan === 'pro' ? '#534AB7' : '#534AB740'}` }}
-                >
+                <div className="rounded-xl p-5 mb-3 flex items-center justify-between" style={{ backgroundColor: "var(--bg-secondary)", border: `1px solid ${plan === 'pro' ? '#534AB7' : '#534AB740'}` }}>
                   <div>
                     <div className="flex items-center gap-2 mb-1">
                       <span className="text-[14px] font-semibold" style={{ color: "var(--text-primary)" }}>Pro</span>
@@ -642,11 +648,7 @@ export default function SettingsPage() {
                   </div>
                 </div>
 
-                {/* Founding Member */}
-                <div
-                  className="rounded-xl p-5 flex items-center justify-between"
-                  style={{ backgroundColor: "var(--bg-secondary)", border: `1px solid ${plan === 'founding' ? '#BA7517' : '#BA751740'}` }}
-                >
+                <div className="rounded-xl p-5 flex items-center justify-between" style={{ backgroundColor: "var(--bg-secondary)", border: `1px solid ${plan === 'founding' ? '#BA7517' : '#BA751740'}` }}>
                   <div>
                     <div className="flex items-center gap-2 mb-1">
                       <span className="text-[14px] font-semibold" style={{ color: "var(--text-primary)" }}>Founding Member</span>
@@ -677,7 +679,62 @@ export default function SettingsPage() {
                     )}
                   </div>
                 </div>
+              </div>
+            )}
 
+            {/* STORAGE */}
+            {section === 'storage' && (
+              <div>
+                <h2 className="text-[15px] font-semibold mb-1" style={{ color: "var(--text-primary)" }}>Storage</h2>
+                <p className="text-[12px] mb-6" style={{ color: "var(--text-muted)" }}>Track your image and file storage usage.</p>
+
+                {/* Usage card */}
+                <div className="rounded-xl p-5 mb-4" style={{ backgroundColor: "var(--bg-tertiary)", border: "1px solid var(--border)" }}>
+                  <div className="flex items-end justify-between mb-3">
+                    <div>
+                      <p className="text-[13px] font-semibold" style={{ color: "var(--text-primary)" }}>Storage used</p>
+                      <p className="text-[11px] mt-0.5" style={{ color: "var(--text-muted)" }}>Images uploaded to your docs</p>
+                    </div>
+                    <p className="text-[13px] font-medium" style={{ color: "var(--text-secondary)" }}>
+                      {formatBytes(storageUsed)} <span style={{ color: "var(--text-muted)" }}>/ {plan === 'free' ? '1 GB' : '10 GB'}</span>
+                    </p>
+                  </div>
+
+                  {/* Progress bar */}
+                  <div className="w-full h-2 rounded-full overflow-hidden" style={{ backgroundColor: "var(--bg-secondary)" }}>
+                    <div
+                      className="h-full rounded-full transition-all duration-500"
+                      style={{ width: `${storagePercent}%`, backgroundColor: storageBarColor }}
+                    />
+                  </div>
+
+                  <p className="text-[11px] mt-2" style={{ color: "var(--text-muted)" }}>
+                    {storagePercent < 1 ? 'Less than 1%' : `${storagePercent.toFixed(1)}%`} used
+                  </p>
+                </div>
+
+                {/* Plan context */}
+                <div className="rounded-xl p-4" style={{ backgroundColor: "var(--bg-tertiary)", border: "1px solid var(--border)" }}>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-[12px] font-medium" style={{ color: "var(--text-secondary)" }}>
+                        {plan === 'free' ? 'Free plan · 1 GB storage' : plan === 'pro' ? 'Pro plan · 10 GB storage' : 'Founding Member · 10 GB storage'}
+                      </p>
+                      <p className="text-[11px] mt-0.5" style={{ color: "var(--text-muted)" }}>
+                        {plan === 'free' ? 'Upgrade to Pro for 10x more storage.' : 'You have plenty of storage available.'}
+                      </p>
+                    </div>
+                    {plan === 'free' && (
+                      <button
+                        onClick={() => setSection('billing')}
+                        className="px-3 py-1.5 rounded-lg text-[12px] font-medium shrink-0 ml-4"
+                        style={{ backgroundColor: "#534AB7", color: "#fff" }}
+                      >
+                        Upgrade
+                      </button>
+                    )}
+                  </div>
+                </div>
               </div>
             )}
 
