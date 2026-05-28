@@ -5,6 +5,8 @@ import { useParams, useRouter } from 'next/navigation'
 import Sidebar from '@/components/sidebar'
 import Editor from '@/components/editor'
 import DocTopbar from '@/components/doc-topbar'
+import TabBar from '@/components/tab-bar'
+import { useTabStore } from '@/hooks/use-tab-store'
 import { CalendarDays, SignalLow, SignalMedium, SignalHigh, Minus, PanelRight, X, FileText, User, Clock, Plus, Check, Send, Trash2, Circle, CheckCircle2, Pencil, PanelLeftOpen } from 'lucide-react'
 import type { Doc } from '@/lib/db'
 
@@ -252,6 +254,7 @@ export default function DocPage() {
         if (data.error) { router.push('/'); return }
         setDoc(data)
         setTitle(data.title)
+        updateTabTitle(docId, data.title || 'Untitled')
         setContent(data.content || '')
         setIsPublic(data.is_public ?? false)
         setPriority((data.priority as Priority) ?? null)
@@ -441,6 +444,7 @@ export default function DocPage() {
   }, [])
 
   const sidebarWidth = collapsed ? '56px' : '256px'
+  const { tabs, updateTabTitle } = useTabStore()
   const wordCount = getWordCount(content)
   const charCount = getCharCount(content)
   const activePriority = PRIORITIES.find(p => p.value === priority) ?? PRIORITIES[0]
@@ -499,13 +503,14 @@ export default function DocPage() {
   detailOpen={detailOpen}
   onToggleDetail={() => setDetailOpen(v => !v)}
 />
+        <TabBar sidebarWidth={sidebarWidth} />
 
-        <main className="flex-1 overflow-y-auto pt-[44px]">
+        <main className="flex-1 overflow-y-auto" style={{ paddingTop: tabs.length > 0 ? '80px' : '44px' }}>
           <div className={`mx-auto w-full px-16 pt-16 pb-32 transition-all duration-200 ${wideMode ? 'max-w-[1200px]' : 'max-w-[800px]'}`}>
             <textarea
               ref={titleRef}
               value={title}
-              onChange={(e) => { if (!isLoggedIn) return; setTitle(e.target.value); resizeTitle() }}
+              onChange={(e) => { if (!isLoggedIn) return; setTitle(e.target.value); resizeTitle(); updateTabTitle(docId, e.target.value || 'Untitled') }}
               onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); editorFocusRef.current?.() } }}
               placeholder="Untitled"
               rows={1}
