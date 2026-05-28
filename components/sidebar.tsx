@@ -22,14 +22,14 @@ function cacheSet(key: string, value: unknown) {
   try { sessionStorage.setItem(key, JSON.stringify(value)) } catch {}
 }
 
-const SB = "#161618"
-const ACTIVE_BG = "rgba(107,92,231,0.18)"
-const ACTIVE_COLOR = "#c4b8ff"
-const ITEM_COLOR = "#b0afb8"
-const HOVER_BG = "rgba(255,255,255,0.07)"
-const HOVER_COLOR = "#e8e7e1"
-const MUTED = "#6a6a74"
-const BORDER = "1px solid rgba(255,255,255,0.07)"
+const SB = "var(--sb-bg)"
+const ACTIVE_BG = "var(--sb-active-bg)"
+const ACTIVE_COLOR = "var(--sb-active-color)"
+const ITEM_COLOR = "var(--sb-item-color)"
+const HOVER_BG = "var(--sb-hover-bg)"
+const HOVER_COLOR = "var(--sb-hover-color)"
+const MUTED = "var(--sb-muted)"
+const BORDER = "1px solid var(--sb-border)"
 const FONT = "'DM Sans', system-ui, sans-serif"
 
 export default function Sidebar({ onNewNote, onToggle }: SidebarProps = {}) {
