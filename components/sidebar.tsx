@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
+import { useTabStore } from "@/hooks/use-tab-store"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import {
@@ -34,6 +35,7 @@ const FONT = "'DM Sans', system-ui, sans-serif"
 export default function Sidebar({ onNewNote, onToggle }: SidebarProps = {}) {
   const pathname = usePathname()
   const router = useRouter()
+  const { openTab } = useTabStore()
   const [collapsed, setCollapsed] = useState(() => typeof window !== "undefined" ? localStorage.getItem("sidebar-collapsed") === "true" : false)
   const [myDocsOpen, setMyDocsOpen] = useState(true)
   const [unfiledOpen, setUnfiledOpen] = useState(true)
@@ -212,6 +214,7 @@ if (e.key === "?" && !showModal && !isTyping && !e.shiftKey) setShowHelp(v => !v
         const doc = await res.json()
         if (modalTargetWorkspaceId && modalTargetWorkspaceId !== workspaceId) fetchDocsForWorkspace(modalTargetWorkspaceId, false)
         else if (workspaceId) fetchDocsForWorkspace(workspaceId, true)
+        openTab(doc.uuid, modalName || "Untitled")
         router.push(`/docs/${doc.uuid}`)
       } finally { setCreating(false) }
     }
@@ -442,7 +445,7 @@ if (e.key === "?" && !showModal && !isTyping && !e.shiftKey) setShowHelp(v => !v
                       <div key={doc.uuid} draggable
                         onDragStart={e => { e.dataTransfer.setData("docId", String(doc.uuid)); e.dataTransfer.effectAllowed = "move"; setDraggingDocId(doc.uuid) }}
                         onDragEnd={() => { setDraggingDocId(null); setDragOverFolderId(null) }}
-                        onClick={() => router.push(`/docs/${doc.uuid}`)}
+                        onClick={() => { openTab(doc.uuid, doc.title || "Untitled"); router.push(`/docs/${doc.uuid}`) }}
                         className="sb-group"
                         style={{ display: "flex", alignItems: "center", gap: 9, padding: "6px 10px 6px 20px", borderRadius: 7, fontSize: 13.5, cursor: "pointer", opacity: draggingDocId === doc.uuid ? 0.4 : 1, color: isActive ? ACTIVE_COLOR : ITEM_COLOR, background: isActive ? ACTIVE_BG : "transparent", transition: "all 0.12s", marginBottom: 1 }}
                         onMouseEnter={e => { if (!isActive) { e.currentTarget.style.background = HOVER_BG; e.currentTarget.style.color = HOVER_COLOR } }}
@@ -515,7 +518,7 @@ if (e.key === "?" && !showModal && !isTyping && !e.shiftKey) setShowHelp(v => !v
                         <div key={doc.uuid} style={{ display: "flex", alignItems: "center", gap: 9, padding: "6px 10px 6px 20px", borderRadius: 7, fontSize: 13, cursor: "pointer", color: "#4a4a54", marginBottom: 1, transition: "all 0.12s" }}
                           onMouseEnter={e => { e.currentTarget.style.background = HOVER_BG; e.currentTarget.style.color = "#a0a0aa" }}
                           onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#4a4a54" }}
-                          onClick={() => router.push(`/docs/${doc.uuid}`)}>
+                          onClick={() => { openTab(doc.uuid, doc.title || "Untitled"); router.push(`/docs/${doc.uuid}`) }}>
                           <span style={{ width: 5, height: 5, borderRadius: "50%", background: "#3a3a44", flexShrink: 0, display: "inline-block" }} />
                           <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{doc.title || "Untitled"}</span>
                         </div>
