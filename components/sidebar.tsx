@@ -227,11 +227,12 @@ if (e.key === "?" && !showModal && !isTyping && !e.shiftKey) setShowHelp(v => !v
     if (modalType === "workspace") {
   try {
     const res = await fetch("/api/workspaces", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: modalName }) })
-    const workspace = await res.json()
     if (!res.ok) {
-      alert(workspace?.error || "Could not create workspace.")
+      const errData = await res.json().catch(() => ({}))
+      alert(errData?.error || "Free plan is limited to 1 workspace.\n\nUpgrade to Pro for unlimited workspaces — go to Settings → Billing.")
       return
     }
+    const workspace = await res.json()
     const updated = [...workspaces, workspace]; setWorkspaces(updated); cacheSet("sb_workspaces", updated)
   } catch {}
 }
