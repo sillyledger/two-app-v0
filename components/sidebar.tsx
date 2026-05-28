@@ -225,12 +225,16 @@ if (e.key === "?" && !showModal && !isTyping && !e.shiftKey) setShowHelp(v => !v
       } catch {}
     }
     if (modalType === "workspace") {
-      try {
-        const res = await fetch("/api/workspaces", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: modalName }) })
-        const workspace = await res.json()
-        const updated = [...workspaces, workspace]; setWorkspaces(updated); cacheSet("sb_workspaces", updated)
-      } catch {}
+  try {
+    const res = await fetch("/api/workspaces", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: modalName }) })
+    const workspace = await res.json()
+    if (!res.ok) {
+      alert(workspace?.error || "Could not create workspace.")
+      return
     }
+    const updated = [...workspaces, workspace]; setWorkspaces(updated); cacheSet("sb_workspaces", updated)
+  } catch {}
+}
   }
   const toggleExtraWorkspace = (wsId: string) => {
     const isExpanding = !expandedWorkspaces[wsId]; setExpandedWorkspaces(prev => ({ ...prev, [wsId]: isExpanding }))
