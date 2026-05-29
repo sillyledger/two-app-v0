@@ -1,7 +1,9 @@
 import type { Metadata } from 'next'
 import { Geist, Geist_Mono, Instrument_Serif } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
+import { LiveblocksProvider } from '@liveblocks/react'
 import './globals.css'
+
 const _geist = Geist({ subsets: ["latin"] });
 const _geistMono = Geist_Mono({ subsets: ["latin"] });
 const instrumentSerif = Instrument_Serif({ 
@@ -10,6 +12,7 @@ const instrumentSerif = Instrument_Serif({
   style: ["normal", "italic"],
   variable: "--font-instrument-serif",
 });
+
 export const metadata: Metadata = {
   title: 'TWO — Write better. Think clearer.',
   description: 'Beautiful docs for individuals and small teams who live on Apple devices. Fast, focused, and nothing you don\'t need.',
@@ -19,6 +22,7 @@ export const metadata: Metadata = {
     apple: '/apple-icon.png',
   },
 }
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -67,7 +71,9 @@ export default function RootLayout({
         />
       </head>
       <body className="font-sans antialiased bg-background">
-        {children}
+        <LiveblocksProvider authEndpoint="/api/liveblocks-auth">
+          {children}
+        </LiveblocksProvider>
         {process.env.NODE_ENV === 'production' && <Analytics />}
       </body>
     </html>
