@@ -15,7 +15,6 @@ export async function GET(
   try {
     const { id } = await params
 
-    // First try to get the doc owned by this user
     const ownResult = await sql`
       SELECT docs.*, folders.name AS folder_name, folders.id AS folder_uuid
       FROM docs
@@ -24,12 +23,11 @@ export async function GET(
     `
     if (ownResult.length > 0) return NextResponse.json(ownResult[0])
 
-    // Otherwise check if user is an accepted member of the doc's workspace
     const sharedResult = await sql`
       SELECT docs.*, folders.name AS folder_name, folders.id AS folder_uuid
       FROM docs
       LEFT JOIN folders ON folders.id::text = docs.folder_id::text
-      INNER JOIN workspace_members wm ON wm.workspace_id = docs.workspace_id
+      INNER JOIN workspace_members wm ON wm.workspace_id::text = docs.workspace_id::text
       WHERE docs.uuid = ${id}
         AND docs.deleted_at IS NULL
         AND wm.user_id = ${payload.userId}
@@ -37,12 +35,11 @@ export async function GET(
     `
     if (sharedResult.length > 0) return NextResponse.json(sharedResult[0])
 
-    // Also check if user is the workspace owner (for docs created by members)
     const ownerResult = await sql`
       SELECT docs.*, folders.name AS folder_name, folders.id AS folder_uuid
       FROM docs
       LEFT JOIN folders ON folders.id::text = docs.folder_id::text
-      INNER JOIN workspaces w ON w.id = docs.workspace_id
+      INNER JOIN workspaces w ON w.id::text = docs.workspace_id::text
       WHERE docs.uuid = ${id}
         AND docs.deleted_at IS NULL
         AND w.user_id = ${payload.userId}
@@ -70,14 +67,13 @@ export async function PUT(
     const body = await request.json()
     const { title, content, color, is_starred, type, folder_id, priority } = body
 
-    // Check if user owns the doc OR is an editor/admin member of its workspace
     const accessCheck = await sql`
       SELECT docs.uuid FROM docs
-      LEFT JOIN workspace_members wm ON wm.workspace_id = docs.workspace_id
+      LEFT JOIN workspace_members wm ON wm.workspace_id::text = docs.workspace_id::text
         AND wm.user_id = ${payload.userId}
         AND wm.status = 'accepted'
         AND wm.role IN ('admin', 'editor')
-      LEFT JOIN workspaces w ON w.id = docs.workspace_id
+      LEFT JOIN workspaces w ON w.id::text = docs.workspace_id::text
         AND w.user_id = ${payload.userId}
       WHERE docs.uuid = ${id}
         AND docs.deleted_at IS NULL
