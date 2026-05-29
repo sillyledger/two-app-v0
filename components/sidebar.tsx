@@ -77,15 +77,24 @@ export default function Sidebar({ onNewNote, onToggle }: SidebarProps = {}) {
   const [showHelp, setShowHelp] = useState(false)
   const [helpTab, setHelpTab] = useState<"shortcuts" | "started" | "tips" | "new">("shortcuts")
 
+  // ── Invite modal state ──
+  const [showInviteModal, setShowInviteModal] = useState(false)
+  const [inviteWorkspaceId, setInviteWorkspaceId] = useState<string | null>(null)
+  const [inviteWorkspaceName, setInviteWorkspaceName] = useState("")
+  const [inviteRows, setInviteRows] = useState([{ email: "", role: "editor" }])
+  const [inviteSending, setInviteSending] = useState(false)
+  const [inviteError, setInviteError] = useState("")
+
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setShowHelp(false)
+      if (e.key === "Escape") { setShowHelp(false); setShowInviteModal(false) }
       const isTyping = (e.target as HTMLElement)?.tagName === "INPUT" || (e.target as HTMLElement)?.tagName === "TEXTAREA" || (e.target as HTMLElement)?.isContentEditable
-if (e.key === "?" && !showModal && !isTyping && !e.shiftKey) setShowHelp(v => !v)
+      if (e.key === "?" && !showModal && !isTyping && !e.shiftKey) setShowHelp(v => !v)
     }
     document.addEventListener("keydown", handler)
     return () => document.removeEventListener("keydown", handler)
   }, [showModal])
+
   useEffect(() => {
     const handler = () => {
       if (workspaceId) fetchDocsForWorkspace(workspaceId, true)
@@ -183,9 +192,7 @@ if (e.key === "?" && !showModal && !isTyping && !e.shiftKey) setShowHelp(v => !v
   const deleteFolder = async (folderId: string) => {
     setFolderMenuId(null)
     const folder = folders.find(f => f.id === folderId)
-    const confirmed = window.confirm(
-      `Delete "${folder?.name}"?\n\nAll docs inside will be moved to Trash and can be recovered within 30 days.`
-    )
+    const confirmed = window.confirm(`Delete "${folder?.name}"?\n\nAll docs inside will be moved to Trash and can be recovered within 30 days.`)
     if (!confirmed) return
     const updated = folders.filter(f => f.id !== folderId); setFolders(updated); cacheSet("sb_folders", updated)
     try { await fetch(`/api/folders/${folderId}`, { method: "DELETE" }) } catch {}
@@ -200,6 +207,48 @@ if (e.key === "?" && !showModal && !isTyping && !e.shiftKey) setShowHelp(v => !v
       if (res.ok) { if (workspaceId) fetchDocsForWorkspace(workspaceId, true); setDocs(prev => prev.filter(d => d.uuid !== docId)) }
     } catch {}
   }
+
+  // ── Invite modal helpers ──
+  const openInviteModal = (wsId: string, wsName: string) => {
+    setInviteWorkspaceId(wsId)
+    setInviteWorkspaceName(wsName)
+    setInviteRows([{ email: "", role: "editor" }])
+    setInviteError("")
+    setShowInviteModal(true)
+  }
+  const addInviteRow = () => {
+    if (inviteRows.length >= 2) return
+    setInviteRows(prev => [...prev, { email: "", role: "editor" }])
+  }
+  const updateInviteRow = (index: number, field: "email" | "role", value: string) => {
+    setInviteRows(prev => prev.map((row, i) => i === index ? { ...row, [field]: value } : row))
+  }
+  const handleSendInvites = async () => {
+    const filled = inviteRows.filter(r => r.email.trim())
+    if (filled.length === 0) { setShowInviteModal(false); return }
+    setInviteSending(true); setInviteError("")
+    try {
+      for (const row of filled) {
+        const res = await fetch("/api/workspaces/invite", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ workspaceId: inviteWorkspaceId, email: row.email.trim(), role: row.role }),
+        })
+        if (!res.ok) {
+          const data = await res.json()
+          setInviteError(data.error || "Failed to send invite.")
+          setInviteSending(false)
+          return
+        }
+      }
+      setShowInviteModal(false)
+    } catch {
+      setInviteError("Something went wrong. Please try again.")
+    } finally {
+      setInviteSending(false)
+    }
+  }
+
   const initial = userName ? userName.charAt(0).toUpperCase() : "?"
   const openModal = (type: "doc" | "folder" | "workspace", targetWsId?: string) => {
     setShowPicker(false); setModalType(type); setModalTargetWorkspaceId(targetWsId ?? activeWorkspaceId)
@@ -228,17 +277,18 @@ if (e.key === "?" && !showModal && !isTyping && !e.shiftKey) setShowHelp(v => !v
       } catch {}
     }
     if (modalType === "workspace") {
-  try {
-    const res = await fetch("/api/workspaces", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: modalName }) })
-    if (!res.ok) {
-      const errData = await res.json().catch(() => ({}))
-      alert(errData?.error || "Free plan is limited to 1 workspace.\n\nUpgrade to Pro for unlimited workspaces — go to Settings → Billing.")
-      return
+      try {
+        const res = await fetch("/api/workspaces", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: modalName, is_shared: true }) })
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}))
+          alert(errData?.error || "Free plan is limited to 1 workspace.\n\nUpgrade to Pro for unlimited workspaces — go to Settings → Billing.")
+          return
+        }
+        const workspace = await res.json()
+        const updated = [...workspaces, workspace]; setWorkspaces(updated); cacheSet("sb_workspaces", updated)
+        openInviteModal(workspace.id, workspace.name)
+      } catch {}
     }
-    const workspace = await res.json()
-    const updated = [...workspaces, workspace]; setWorkspaces(updated); cacheSet("sb_workspaces", updated)
-  } catch {}
-}
   }
   const toggleExtraWorkspace = (wsId: string) => {
     const isExpanding = !expandedWorkspaces[wsId]; setExpandedWorkspaces(prev => ({ ...prev, [wsId]: isExpanding }))
@@ -247,7 +297,6 @@ if (e.key === "?" && !showModal && !isTyping && !e.shiftKey) setShowHelp(v => !v
 
   const extraWorkspaces = workspaces.filter(w => w.id !== workspaceId)
 
-  // ── Shared styles ──
   const dropdownStyle: React.CSSProperties = {
     position: "absolute", right: 0, top: 30, zIndex: 50,
     borderRadius: 10, boxShadow: "0 8px 32px rgba(0,0,0,0.5)",
@@ -260,7 +309,6 @@ if (e.key === "?" && !showModal && !isTyping && !e.shiftKey) setShowHelp(v => !v
     background: "transparent", border: "none", cursor: "pointer", fontFamily: FONT, textAlign: "left",
   })
 
-  // ── Nav item (primary) ──
   const NavItem = ({ href, icon, label }: { href: string; icon: React.ReactNode; label: string }) => {
     const isActive = pathname === href
     const [hov, setHov] = useState(false)
@@ -276,7 +324,6 @@ if (e.key === "?" && !showModal && !isTyping && !e.shiftKey) setShowHelp(v => !v
     )
   }
 
-  // ── Bottom button ──
   const BotBtn = ({ icon, label, onClick }: { icon: React.ReactNode; label: string; onClick?: () => void }) => {
     const [hov, setHov] = useState(false)
     return (
@@ -289,7 +336,6 @@ if (e.key === "?" && !showModal && !isTyping && !e.shiftKey) setShowHelp(v => !v
     )
   }
 
-  // ── Avatar ──
   const AvatarBubble = () => (
     <div style={{ width: 30, height: 30, borderRadius: "50%", overflow: "hidden", flexShrink: 0 }}>
       {userAvatar
@@ -314,7 +360,7 @@ if (e.key === "?" && !showModal && !isTyping && !e.shiftKey) setShowHelp(v => !v
 
       <aside style={{ width: sidebarWidth, minWidth: sidebarWidth, height: "100vh", display: "flex", flexDirection: "column", position: "sticky", top: 0, overflow: "hidden", flexShrink: 0, background: SB, borderRight: BORDER, transition: "width 0.22s cubic-bezier(0.4,0,0.2,1), min-width 0.22s cubic-bezier(0.4,0,0.2,1)", fontFamily: FONT }}>
 
-        {/* ── Header ── */}
+        {/* Header */}
         {collapsed ? (
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "16px 0 12px", gap: 12, borderBottom: BORDER, flexShrink: 0 }}>
             <AvatarBubble />
@@ -336,7 +382,7 @@ if (e.key === "?" && !showModal && !isTyping && !e.shiftKey) setShowHelp(v => !v
           </div>
         )}
 
-        {/* ── Search ── */}
+        {/* Search */}
         {!collapsed && (
           <div style={{ padding: "12px 10px 6px", flexShrink: 0 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8, background: "rgba(255,255,255,0.05)", borderRadius: 9, padding: "8px 12px" }}>
@@ -347,10 +393,8 @@ if (e.key === "?" && !showModal && !isTyping && !e.shiftKey) setShowHelp(v => !v
           </div>
         )}
 
-        {/* ── Scrollable nav ── */}
+        {/* Scrollable nav */}
         <div className="sb-scroll">
-
-          {/* Primary nav */}
           <NavItem href="/" icon={<span style={{fontSize:17,lineHeight:1}}>⌂</span>} label="Home" />
           <NavItem href="/planner" icon={<span style={{fontSize:15,lineHeight:1}}>◎</span>} label="Planner" />
           <NavItem href="/activity" icon={<span style={{fontSize:15,lineHeight:1}}>⟳</span>} label="Activity" />
@@ -358,23 +402,16 @@ if (e.key === "?" && !showModal && !isTyping && !e.shiftKey) setShowHelp(v => !v
 
           {!collapsed && (
             <>
-              {/* ── Divider ── */}
               <div style={{ height: 1, background: "rgba(255,255,255,0.06)", margin: "10px 4px" }} />
 
-              {/* ── My Workspace header ── */}
-              <div
-                style={{ display: "flex", alignItems: "center", padding: "6px 12px 4px", cursor: "pointer" }}
-                onClick={() => { if (!renamingWorkspace) setMyDocsOpen(v => !v) }}
-              >
-                {/* Left arrow — same pattern as Shared Workspaces */}
+              {/* My Workspace */}
+              <div style={{ display: "flex", alignItems: "center", padding: "6px 12px 4px", cursor: "pointer" }} onClick={() => { if (!renamingWorkspace) setMyDocsOpen(v => !v) }}>
                 <span style={{ fontSize: 9, color: MUTED, marginRight: 6, display: "inline-block", transform: myDocsOpen ? "rotate(90deg)" : "rotate(0deg)", transition: "transform 0.18s", flexShrink: 0 }}>▶</span>
                 <span style={{ opacity: 0.5, fontSize: 15, flexShrink: 0, marginRight: 8 }}>☁</span>
                 {renamingWorkspace
-                  ? <input ref={workspaceInputRef} value={workspaceRenameValue} onChange={e => setWorkspaceRenameValue(e.target.value)} onBlur={commitWorkspaceRename} onKeyDown={e => { if (e.key === "Enter") commitWorkspaceRename(); if (e.key === "Escape") cancelWorkspaceRename() }} onClick={e => e.stopPropagation()}
-                      style={{ flex: 1, minWidth: 0, borderRadius: 6, padding: "2px 8px", fontSize: 13, outline: "none", background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.12)", color: "#e0dfd9", fontFamily: FONT }} />
+                  ? <input ref={workspaceInputRef} value={workspaceRenameValue} onChange={e => setWorkspaceRenameValue(e.target.value)} onBlur={commitWorkspaceRename} onKeyDown={e => { if (e.key === "Enter") commitWorkspaceRename(); if (e.key === "Escape") cancelWorkspaceRename() }} onClick={e => e.stopPropagation()} style={{ flex: 1, minWidth: 0, borderRadius: 6, padding: "2px 8px", fontSize: 13, outline: "none", background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.12)", color: "#e0dfd9", fontFamily: FONT }} />
                   : <span onDoubleClick={e => { e.stopPropagation(); startRenamingWorkspace() }} title="Double-click to rename" style={{ flex: 1, fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: MUTED, userSelect: "none" }}>{workspaceName}</span>
                 }
-                {/* + button — right side, well separated */}
                 <div style={{ position: "relative", marginLeft: 8, flexShrink: 0 }} ref={pickerRef}>
                   <button onClick={e => { e.stopPropagation(); setShowPicker(v => !v) }} disabled={creating}
                     style={{ background: "none", border: "none", cursor: "pointer", color: MUTED, padding: 2, display: "flex" }}
@@ -392,7 +429,6 @@ if (e.key === "?" && !showModal && !isTyping && !e.shiftKey) setShowHelp(v => !v
 
               {myDocsOpen && (
                 <>
-                  {/* Folders */}
                   {folders.map(folder => {
                     const isActive = pathname === `/folders/${folder.id}`
                     const isDragOver = dragOverFolderId === folder.id
@@ -429,16 +465,13 @@ if (e.key === "?" && !showModal && !isTyping && !e.shiftKey) setShowHelp(v => !v
                     )
                   })}
 
-                  {/* Unfiled label — collapsible */}
                   {docs.length > 0 && (
-                    <div onClick={() => setUnfiledOpen(v => !v)}
-                      style={{ display: "flex", alignItems: "center", gap: 5, padding: "10px 12px 4px", cursor: "pointer", userSelect: "none" }}>
+                    <div onClick={() => setUnfiledOpen(v => !v)} style={{ display: "flex", alignItems: "center", gap: 5, padding: "10px 12px 4px", cursor: "pointer", userSelect: "none" }}>
                       <span style={{ fontSize: 9, color: MUTED, display: "inline-block", transform: unfiledOpen ? "rotate(90deg)" : "rotate(0)", transition: "transform 0.18s" }}>▶</span>
                       <span style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: MUTED }}>Unfiled</span>
                     </div>
                   )}
 
-                  {/* Unfiled docs */}
                   {unfiledOpen && docs.map(doc => {
                     const isActive = pathname === `/docs/${doc.uuid}`
                     return (
@@ -463,10 +496,9 @@ if (e.key === "?" && !showModal && !isTyping && !e.shiftKey) setShowHelp(v => !v
                 </>
               )}
 
-              {/* ── Divider ── */}
               <div style={{ height: 1, background: "rgba(255,255,255,0.06)", margin: "10px 4px" }} />
 
-              {/* ── SHARED WORKSPACES ── */}
+              {/* Shared Workspaces */}
               <div style={{ display: "flex", alignItems: "center", padding: "6px 12px 4px", cursor: "pointer" }} onClick={() => setSharedOpen(v => !v)}>
                 <span style={{ fontSize: 9, color: MUTED, marginRight: 5, display: "inline-block", transform: sharedOpen ? "rotate(90deg)" : "rotate(0)", transition: "transform 0.18s" }}>▶</span>
                 <span style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: MUTED, flex: 1 }}>Shared Workspaces</span>
@@ -497,6 +529,7 @@ if (e.key === "?" && !showModal && !isTyping && !e.shiftKey) setShowHelp(v => !v
                           <div style={dropdownStyle}>
                             <button style={dropdownBtn()} onClick={e => { e.stopPropagation(); setWsMenuId(null); setWsRenameValue(ws.name); setRenamingWsId(ws.id) }} onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.06)")} onMouseLeave={e => (e.currentTarget.style.background = "transparent")}><Pencil size={12} style={{ color: "#555" }} /> Rename</button>
                             <button style={dropdownBtn()} onClick={e => { e.stopPropagation(); openModal("folder", ws.id); setWsMenuId(null) }} onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.06)")} onMouseLeave={e => (e.currentTarget.style.background = "transparent")}><FolderOpen size={12} style={{ color: "#555" }} /> New Folder</button>
+                            <button style={dropdownBtn()} onClick={e => { e.stopPropagation(); setWsMenuId(null); openInviteModal(ws.id, ws.name) }} onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.06)")} onMouseLeave={e => (e.currentTarget.style.background = "transparent")}><Plus size={12} style={{ color: "#555" }} /> Invite people</button>
                             <button style={dropdownBtn(true)} onClick={e => { e.stopPropagation(); deleteExtraWorkspace(ws.id) }} onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.06)")} onMouseLeave={e => (e.currentTarget.style.background = "transparent")}><Trash2 size={12} /> Delete</button>
                           </div>
                         )}
@@ -535,24 +568,23 @@ if (e.key === "?" && !showModal && !isTyping && !e.shiftKey) setShowHelp(v => !v
           )}
         </div>
 
-        {/* ── Bottom ── */}
+        {/* Bottom */}
         <div style={{ borderTop: BORDER, padding: "8px 8px 14px", flexShrink: 0 }}>
           <NavItem href="/settings" icon={<Settings size={16} />} label="Settings" />
           {!collapsed && <NavItem href="/trash" icon={<Trash2 size={16} />} label="Trash" />}
           {!collapsed && (
             <BotBtn icon={<span style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 16, height: 16, borderRadius: 4, border: "1px solid rgba(255,255,255,0.12)", fontSize: 10, fontFamily: "monospace", color: "#4a4a56" }}>?</span>} label="Help & Shortcuts" onClick={() => { setHelpTab("shortcuts"); setShowHelp(true) }} />
           )}
-
           <BotBtn icon={<LogOut size={16} />} label="Log out" onClick={handleLogout} />
         </div>
       </aside>
 
-      {/* ── Modal ── */}
+      {/* Create modal */}
       {showModal && (
         <div style={{ position: "fixed", inset: 0, zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center" }}>
           <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.65)", backdropFilter: "blur(3px)" }} onClick={() => setShowModal(false)} />
           <div style={{ position: "relative", borderRadius: 14, boxShadow: "0 24px 64px rgba(0,0,0,0.6)", width: 320, padding: "22px 22px 18px", zIndex: 10, background: "#1c1c1f", border: "1px solid rgba(255,255,255,0.09)", fontFamily: FONT }}>
-            <h2 style={{ fontSize: 14, fontWeight: 600, marginBottom: 16, color: "#eeede7", letterSpacing: "-0.01em" }}>{modalType === "doc" ? "New Doc" : modalType === "folder" ? "New Folder" : "New Workspace"}</h2>
+            <h2 style={{ fontSize: 14, fontWeight: 600, marginBottom: 16, color: "#eeede7", letterSpacing: "-0.01em" }}>{modalType === "doc" ? "New Doc" : modalType === "folder" ? "New Folder" : "New Shared Workspace"}</h2>
             <label style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em", color: MUTED, display: "block", marginBottom: 6 }}>Name</label>
             <input ref={modalInputRef} type="text" value={modalName} onChange={e => setModalName(e.target.value)} onKeyDown={e => { if (e.key === "Enter") handleModalConfirm(); if (e.key === "Escape") setShowModal(false) }}
               style={{ width: "100%", borderRadius: 9, padding: "9px 12px", fontSize: 13.5, outline: "none", background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", color: "#e0dfd9", fontFamily: FONT, boxSizing: "border-box" }} />
@@ -564,7 +596,73 @@ if (e.key === "?" && !showModal && !isTyping && !e.shiftKey) setShowHelp(v => !v
         </div>
       )}
 
-      {/* ── Help modal ── */}
+      {/* Invite modal */}
+      {showInviteModal && (
+        <div style={{ position: "fixed", inset: 0, zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.65)", backdropFilter: "blur(3px)" }} onClick={() => setShowInviteModal(false)} />
+          <div style={{ position: "relative", borderRadius: 14, boxShadow: "0 24px 64px rgba(0,0,0,0.6)", width: 380, padding: "24px 24px 20px", zIndex: 10, background: "#1c1c1f", border: "1px solid rgba(255,255,255,0.09)", fontFamily: FONT }}>
+
+            <p style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: MUTED, margin: "0 0 6px" }}>Step 2 of 2</p>
+            <h2 style={{ fontSize: 15, fontWeight: 600, color: "#eeede7", margin: "0 0 4px", letterSpacing: "-0.01em" }}>Invite people</h2>
+            <p style={{ fontSize: 13, color: "#555", margin: "0 0 20px" }}>You can add up to 2 collaborators on your Pro plan.</p>
+
+            {inviteRows.map((row, i) => (
+              <div key={i} style={{ display: "flex", gap: 8, marginBottom: 10 }}>
+                <input
+                  type="email"
+                  placeholder="colleague@company.com"
+                  value={row.email}
+                  onChange={e => updateInviteRow(i, "email", e.target.value)}
+                  style={{ flex: 1, background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 8, padding: "9px 12px", fontSize: 13, color: "#ccc", outline: "none", fontFamily: FONT }}
+                />
+                <div style={{ position: "relative" }}>
+                  <select
+                    value={row.role}
+                    onChange={e => updateInviteRow(i, "role", e.target.value)}
+                    style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 8, padding: "9px 28px 9px 10px", fontSize: 13, color: "#aaa", outline: "none", cursor: "pointer", appearance: "none", fontFamily: FONT }}
+                  >
+                    <option value="admin">Admin</option>
+                    <option value="editor">Editor</option>
+                    <option value="commenter">Commenter</option>
+                    <option value="viewer">Viewer</option>
+                  </select>
+                  <span style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", fontSize: 10, color: "#555", pointerEvents: "none" }}>▾</span>
+                </div>
+              </div>
+            ))}
+
+            {inviteRows.length < 2 && (
+              <button onClick={addInviteRow}
+                style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, padding: "7px 12px", fontSize: 13, color: "#666", cursor: "pointer", display: "flex", alignItems: "center", gap: 6, marginBottom: 16, fontFamily: FONT }}>
+                <Plus size={13} /> Add another person
+              </button>
+            )}
+
+            {inviteRows.length >= 2 && <div style={{ marginBottom: 16 }} />}
+
+            <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 8, padding: "10px 12px", marginBottom: 20 }}>
+              <p style={{ fontSize: 12, color: "#4a4a52", margin: 0, lineHeight: 1.6 }}>Invites expire after 7 days. Invitees will be asked to log in or create a free account when they accept.</p>
+            </div>
+
+            {inviteError && (
+              <p style={{ fontSize: 12, color: "#f87171", marginBottom: 12 }}>{inviteError}</p>
+            )}
+
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <button onClick={() => setShowInviteModal(false)}
+                style={{ padding: "9px 16px", borderRadius: 8, fontSize: 13, color: "#555", background: "transparent", border: "none", cursor: "pointer", fontFamily: FONT }}>
+                Skip for now
+              </button>
+              <button onClick={handleSendInvites} disabled={inviteSending}
+                style={{ padding: "9px 20px", borderRadius: 8, fontSize: 13, fontWeight: 600, color: "#fff", background: inviteSending ? "#4a3fa0" : "#6b5ce7", border: "none", cursor: inviteSending ? "default" : "pointer", fontFamily: FONT }}>
+                {inviteSending ? "Sending…" : "Send invites"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Help modal */}
       {showHelp && (
         <div style={{ position: "fixed", inset: 0, zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center" }}>
           <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.65)", backdropFilter: "blur(3px)" }} onClick={() => setShowHelp(false)} />
