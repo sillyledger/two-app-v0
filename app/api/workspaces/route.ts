@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { verifyToken } from '@/lib/auth'
 import { cookies } from 'next/headers'
-import { getAllWorkspaces, createWorkspace } from '@/lib/workspaces'
+import { getAllWorkspaces, createWorkspace, getSharedWorkspacesForUser } from '@/lib/workspaces'
 import { sql } from '@/lib/db'
 
 export async function GET() {
@@ -12,8 +12,10 @@ export async function GET() {
     const payload = await verifyToken(token)
     if (!payload?.userId) return NextResponse.json(null, { status: 401 })
 
-    const workspaces = await getAllWorkspaces(payload.userId)
-    return NextResponse.json(workspaces)
+    const owned = await getAllWorkspaces(payload.userId)
+    const shared = await getSharedWorkspacesForUser(payload.userId)
+
+    return NextResponse.json({ owned, shared })
   } catch (error) {
     console.error('Workspaces fetch error:', error)
     return NextResponse.json(null, { status: 500 })
@@ -31,10 +33,8 @@ export async function POST(request: Request) {
     const { name } = await request.json()
     if (!name?.trim()) return NextResponse.json({ error: 'Name required' }, { status: 400 })
 
-    // Check plan and enforce workspace limit for free users
     const userRows = await sql`SELECT plan FROM users WHERE id = ${payload.userId}`
     const plan = userRows[0]?.plan || 'free'
-
     if (plan === 'free') {
       const existing = await getAllWorkspaces(payload.userId)
       if (existing.length >= 1) {
