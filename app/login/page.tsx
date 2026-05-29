@@ -37,8 +37,9 @@ function LoginContent() {
     })
     const data = await res.json()
     if (res.ok) {
-      router.push('/')
-    } else {
+      const redirect = searchParams.get('redirect')
+      router.push(redirect || '/')
+    }
       setError(data.error || 'Login failed')
     }
     setLoading(false)
