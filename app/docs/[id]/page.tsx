@@ -9,8 +9,20 @@ import TabBar from '@/components/tab-bar'
 import { useTabStore } from '@/hooks/use-tab-store'
 import { CalendarDays, SignalLow, SignalMedium, SignalHigh, Minus, PanelRight, X, FileText, User, Clock, Plus, Check, Send, Trash2, Circle, CheckCircle2, Pencil, PanelLeftOpen } from 'lucide-react'
 import type { Doc } from '@/lib/db'
-import { RoomProvider, useStorage, useMutation } from '@/lib/liveblocks'
+import { RoomProvider, useStorage, useMutation } from '@liveblocks/react'
 import { LiveObject } from '@liveblocks/client'
+import { createClient } from '@liveblocks/client'
+
+const liveblocksClient = createClient({
+  authEndpoint: async (room) => {
+    const response = await fetch("/api/liveblocks-auth", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ room }),
+    })
+    return response.json()
+  },
+})
 
 interface Folder { id: string; name: string }
 interface User { id: number; email: string; name: string }
@@ -428,10 +440,11 @@ export default function DocPage() {
 
   const editorNode = isSharedDoc && isLoggedIn ? (
     <RoomProvider
-      id={docId}
-      initialPresence={{}}
-      initialStorage={{ content: new LiveObject({ html: content }) }}
-    >
+  id={docId}
+  client={liveblocksClient}
+  initialPresence={{}}
+  initialStorage={{ content: new LiveObject({ html: content }) }}
+>
       <CollaborativeDocInner
         docId={docId}
         doc={doc}
