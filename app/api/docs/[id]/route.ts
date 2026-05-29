@@ -14,16 +14,42 @@ export async function GET(
   if (!payload) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   try {
     const { id } = await params
-    const result = await sql`
+
+    // First try to get the doc owned by this user
+    const ownResult = await sql`
       SELECT docs.*, folders.name AS folder_name, folders.id AS folder_uuid
       FROM docs
       LEFT JOIN folders ON folders.id::text = docs.folder_id::text
       WHERE docs.uuid = ${id} AND docs.user_id = ${payload.userId} AND docs.deleted_at IS NULL
     `
-    if (result.length === 0) {
-      return NextResponse.json({ error: 'Doc not found' }, { status: 404 })
-    }
-    return NextResponse.json(result[0])
+    if (ownResult.length > 0) return NextResponse.json(ownResult[0])
+
+    // Otherwise check if user is an accepted member of the doc's workspace
+    const sharedResult = await sql`
+      SELECT docs.*, folders.name AS folder_name, folders.id AS folder_uuid
+      FROM docs
+      LEFT JOIN folders ON folders.id::text = docs.folder_id::text
+      INNER JOIN workspace_members wm ON wm.workspace_id = docs.workspace_id
+      WHERE docs.uuid = ${id}
+        AND docs.deleted_at IS NULL
+        AND wm.user_id = ${payload.userId}
+        AND wm.status = 'accepted'
+    `
+    if (sharedResult.length > 0) return NextResponse.json(sharedResult[0])
+
+    // Also check if user is the workspace owner (for docs created by members)
+    const ownerResult = await sql`
+      SELECT docs.*, folders.name AS folder_name, folders.id AS folder_uuid
+      FROM docs
+      LEFT JOIN folders ON folders.id::text = docs.folder_id::text
+      INNER JOIN workspaces w ON w.id = docs.workspace_id
+      WHERE docs.uuid = ${id}
+        AND docs.deleted_at IS NULL
+        AND w.user_id = ${payload.userId}
+    `
+    if (ownerResult.length > 0) return NextResponse.json(ownerResult[0])
+
+    return NextResponse.json({ error: 'Doc not found' }, { status: 404 })
   } catch (error) {
     console.error('Failed to fetch doc:', error)
     return NextResponse.json({ error: 'Failed to fetch doc' }, { status: 500 })
@@ -43,22 +69,41 @@ export async function PUT(
     const { id } = await params
     const body = await request.json()
     const { title, content, color, is_starred, type, folder_id, priority } = body
+
+    // Check if user owns the doc OR is an editor/admin member of its workspace
+    const accessCheck = await sql`
+      SELECT docs.uuid FROM docs
+      LEFT JOIN workspace_members wm ON wm.workspace_id = docs.workspace_id
+        AND wm.user_id = ${payload.userId}
+        AND wm.status = 'accepted'
+        AND wm.role IN ('admin', 'editor')
+      LEFT JOIN workspaces w ON w.id = docs.workspace_id
+        AND w.user_id = ${payload.userId}
+      WHERE docs.uuid = ${id}
+        AND docs.deleted_at IS NULL
+        AND (
+          docs.user_id = ${payload.userId}
+          OR wm.id IS NOT NULL
+          OR w.id IS NOT NULL
+        )
+    `
+    if (accessCheck.length === 0) {
+      return NextResponse.json({ error: 'Doc not found' }, { status: 404 })
+    }
+
     if (folder_id !== undefined) {
       const result = await sql`
         UPDATE docs
-        SET folder_id = ${folder_id},
-            updated_at = CURRENT_TIMESTAMP
-        WHERE uuid = ${id} AND user_id = ${payload.userId}
+        SET folder_id = ${folder_id}, updated_at = CURRENT_TIMESTAMP
+        WHERE uuid = ${id}
         RETURNING *
       `
-      if (result.length === 0) {
-        return NextResponse.json({ error: 'Doc not found' }, { status: 404 })
-      }
       return NextResponse.json(result[0])
     }
+
     const result = await sql`
-      UPDATE docs 
-      SET 
+      UPDATE docs
+      SET
         title = COALESCE(${title ?? null}, title),
         content = COALESCE(${content ?? null}, content),
         color = COALESCE(${color ?? null}, color),
@@ -66,7 +111,7 @@ export async function PUT(
         type = COALESCE(${type ?? null}, type),
         priority = COALESCE(${priority ?? null}, priority),
         updated_at = CURRENT_TIMESTAMP
-      WHERE uuid = ${id} AND user_id = ${payload.userId}
+      WHERE uuid = ${id}
       RETURNING *
     `
     if (result.length === 0) {
@@ -93,8 +138,7 @@ export async function PATCH(
     const { is_public } = await request.json()
     const result = await sql`
       UPDATE docs
-      SET is_public = ${is_public},
-          updated_at = CURRENT_TIMESTAMP
+      SET is_public = ${is_public}, updated_at = CURRENT_TIMESTAMP
       WHERE uuid = ${id} AND user_id = ${payload.userId}
       RETURNING *
     `
