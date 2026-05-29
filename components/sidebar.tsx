@@ -85,6 +85,12 @@ export default function Sidebar({ onNewNote, onToggle }: SidebarProps = {}) {
   const [inviteSending, setInviteSending] = useState(false)
   const [inviteError, setInviteError] = useState("")
 
+  const workspacesRef = useRef<Workspace[]>([])
+  const workspaceIdRef = useRef<string | null>(null)
+
+  useEffect(() => { workspacesRef.current = workspaces }, [workspaces])
+  useEffect(() => { workspaceIdRef.current = workspaceId }, [workspaceId])
+
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.key === "Escape") { setShowHelp(false); setShowInviteModal(false) }
@@ -103,15 +109,20 @@ export default function Sidebar({ onNewNote, onToggle }: SidebarProps = {}) {
     return () => window.removeEventListener("sb-refresh", handler)
   }, [workspaceId])
 
+  // ── Silent 30s polling for shared workspaces ──
   useEffect(() => {
     const interval = setInterval(() => {
-      Object.keys(expandedWorkspaces).forEach(wsId => {
-        fetchDocsForWorkspace(wsId, false)
-        fetchFoldersForWorkspace(wsId, false)
+      const current = workspacesRef.current
+      const primaryId = workspaceIdRef.current
+      current.forEach(ws => {
+        if (ws.id !== primaryId) {
+          fetchDocsForWorkspace(ws.id, false)
+          fetchFoldersForWorkspace(ws.id, false)
+        }
       })
     }, 30000)
     return () => clearInterval(interval)
-  }, [expandedWorkspaces])
+  }, [])
 
   const fetchDocsForWorkspace = (wsId: string, isPrimary: boolean) => {
     fetch(`/api/docs?workspace_id=${wsId}`).then(r => r.json()).then(data => {
@@ -151,6 +162,10 @@ export default function Sidebar({ onNewNote, onToggle }: SidebarProps = {}) {
       const shared = Array.isArray(data?.shared) ? data.shared : []
       const list = [...owned, ...shared]
       setWorkspaces(list); cacheSet("sb_workspaces", list)
+      list.forEach(ws => {
+        fetchDocsForWorkspace(ws.id, false)
+        fetchFoldersForWorkspace(ws.id, false)
+      })
     }).catch(() => {})
   }, [])
 
@@ -373,7 +388,6 @@ export default function Sidebar({ onNewNote, onToggle }: SidebarProps = {}) {
 
       <aside style={{ width: sidebarWidth, minWidth: sidebarWidth, height: "100vh", display: "flex", flexDirection: "column", position: "sticky", top: 0, overflow: "hidden", flexShrink: 0, background: SB, borderRight: BORDER, transition: "width 0.22s cubic-bezier(0.4,0,0.2,1), min-width 0.22s cubic-bezier(0.4,0,0.2,1)", fontFamily: FONT }}>
 
-        {/* Header */}
         {collapsed ? (
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "16px 0 12px", gap: 12, borderBottom: BORDER, flexShrink: 0 }}>
             <AvatarBubble />
@@ -395,7 +409,6 @@ export default function Sidebar({ onNewNote, onToggle }: SidebarProps = {}) {
           </div>
         )}
 
-        {/* Search */}
         {!collapsed && (
           <div style={{ padding: "12px 10px 6px", flexShrink: 0 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8, background: "rgba(255,255,255,0.05)", borderRadius: 9, padding: "8px 12px" }}>
@@ -406,7 +419,6 @@ export default function Sidebar({ onNewNote, onToggle }: SidebarProps = {}) {
           </div>
         )}
 
-        {/* Scrollable nav */}
         <div className="sb-scroll">
           <NavItem href="/" icon={<span style={{fontSize:17,lineHeight:1}}>⌂</span>} label="Home" />
           <NavItem href="/planner" icon={<span style={{fontSize:15,lineHeight:1}}>◎</span>} label="Planner" />
@@ -417,7 +429,6 @@ export default function Sidebar({ onNewNote, onToggle }: SidebarProps = {}) {
             <>
               <div style={{ height: 1, background: "rgba(255,255,255,0.06)", margin: "10px 4px" }} />
 
-              {/* My Workspace */}
               <div style={{ display: "flex", alignItems: "center", padding: "6px 12px 4px", cursor: "pointer" }} onClick={() => { if (!renamingWorkspace) setMyDocsOpen(v => !v) }}>
                 <span style={{ fontSize: 9, color: MUTED, marginRight: 6, display: "inline-block", transform: myDocsOpen ? "rotate(90deg)" : "rotate(0deg)", transition: "transform 0.18s", flexShrink: 0 }}>▶</span>
                 <span style={{ opacity: 0.5, fontSize: 15, flexShrink: 0, marginRight: 8 }}>☁</span>
@@ -511,7 +522,6 @@ export default function Sidebar({ onNewNote, onToggle }: SidebarProps = {}) {
 
               <div style={{ height: 1, background: "rgba(255,255,255,0.06)", margin: "10px 4px" }} />
 
-              {/* Shared Workspaces */}
               <div style={{ display: "flex", alignItems: "center", padding: "6px 12px 4px", cursor: "pointer" }} onClick={() => setSharedOpen(v => !v)}>
                 <span style={{ fontSize: 9, color: MUTED, marginRight: 5, display: "inline-block", transform: sharedOpen ? "rotate(90deg)" : "rotate(0)", transition: "transform 0.18s" }}>▶</span>
                 <span style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: MUTED, flex: 1 }}>Shared Workspaces</span>
@@ -581,7 +591,6 @@ export default function Sidebar({ onNewNote, onToggle }: SidebarProps = {}) {
           )}
         </div>
 
-        {/* Bottom */}
         <div style={{ borderTop: BORDER, padding: "8px 8px 14px", flexShrink: 0 }}>
           <NavItem href="/settings" icon={<Settings size={16} />} label="Settings" />
           {!collapsed && <NavItem href="/trash" icon={<Trash2 size={16} />} label="Trash" />}
@@ -592,7 +601,6 @@ export default function Sidebar({ onNewNote, onToggle }: SidebarProps = {}) {
         </div>
       </aside>
 
-      {/* Create modal */}
       {showModal && (
         <div style={{ position: "fixed", inset: 0, zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center" }}>
           <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.65)", backdropFilter: "blur(3px)" }} onClick={() => setShowModal(false)} />
@@ -609,31 +617,20 @@ export default function Sidebar({ onNewNote, onToggle }: SidebarProps = {}) {
         </div>
       )}
 
-      {/* Invite modal */}
       {showInviteModal && (
         <div style={{ position: "fixed", inset: 0, zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center" }}>
           <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.65)", backdropFilter: "blur(3px)" }} onClick={() => setShowInviteModal(false)} />
           <div style={{ position: "relative", borderRadius: 14, boxShadow: "0 24px 64px rgba(0,0,0,0.6)", width: 380, padding: "24px 24px 20px", zIndex: 10, background: "#1c1c1f", border: "1px solid rgba(255,255,255,0.09)", fontFamily: FONT }}>
-
             <p style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: MUTED, margin: "0 0 6px" }}>Step 2 of 2</p>
             <h2 style={{ fontSize: 15, fontWeight: 600, color: "#eeede7", margin: "0 0 4px", letterSpacing: "-0.01em" }}>Invite people</h2>
             <p style={{ fontSize: 13, color: "#555", margin: "0 0 20px" }}>You can add up to 2 collaborators on your Pro plan.</p>
-
             {inviteRows.map((row, i) => (
               <div key={i} style={{ display: "flex", gap: 8, marginBottom: 10 }}>
-                <input
-                  type="email"
-                  placeholder="colleague@company.com"
-                  value={row.email}
-                  onChange={e => updateInviteRow(i, "email", e.target.value)}
-                  style={{ flex: 1, background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 8, padding: "9px 12px", fontSize: 13, color: "#ccc", outline: "none", fontFamily: FONT }}
-                />
+                <input type="email" placeholder="colleague@company.com" value={row.email} onChange={e => updateInviteRow(i, "email", e.target.value)}
+                  style={{ flex: 1, background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 8, padding: "9px 12px", fontSize: 13, color: "#ccc", outline: "none", fontFamily: FONT }} />
                 <div style={{ position: "relative" }}>
-                  <select
-                    value={row.role}
-                    onChange={e => updateInviteRow(i, "role", e.target.value)}
-                    style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 8, padding: "9px 28px 9px 10px", fontSize: 13, color: "#aaa", outline: "none", cursor: "pointer", appearance: "none", fontFamily: FONT }}
-                  >
+                  <select value={row.role} onChange={e => updateInviteRow(i, "role", e.target.value)}
+                    style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 8, padding: "9px 28px 9px 10px", fontSize: 13, color: "#aaa", outline: "none", cursor: "pointer", appearance: "none", fontFamily: FONT }}>
                     <option value="admin">Admin</option>
                     <option value="editor">Editor</option>
                     <option value="commenter">Commenter</option>
@@ -643,31 +640,19 @@ export default function Sidebar({ onNewNote, onToggle }: SidebarProps = {}) {
                 </div>
               </div>
             ))}
-
             {inviteRows.length < 2 && (
-              <button onClick={addInviteRow}
-                style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, padding: "7px 12px", fontSize: 13, color: "#666", cursor: "pointer", display: "flex", alignItems: "center", gap: 6, marginBottom: 16, fontFamily: FONT }}>
+              <button onClick={addInviteRow} style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, padding: "7px 12px", fontSize: 13, color: "#666", cursor: "pointer", display: "flex", alignItems: "center", gap: 6, marginBottom: 16, fontFamily: FONT }}>
                 <Plus size={13} /> Add another person
               </button>
             )}
-
             {inviteRows.length >= 2 && <div style={{ marginBottom: 16 }} />}
-
             <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 8, padding: "10px 12px", marginBottom: 20 }}>
               <p style={{ fontSize: 12, color: "#4a4a52", margin: 0, lineHeight: 1.6 }}>Invites expire after 7 days. Invitees will be asked to log in or create a free account when they accept.</p>
             </div>
-
-            {inviteError && (
-              <p style={{ fontSize: 12, color: "#f87171", marginBottom: 12 }}>{inviteError}</p>
-            )}
-
+            {inviteError && <p style={{ fontSize: 12, color: "#f87171", marginBottom: 12 }}>{inviteError}</p>}
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <button onClick={() => setShowInviteModal(false)}
-                style={{ padding: "9px 16px", borderRadius: 8, fontSize: 13, color: "#555", background: "transparent", border: "none", cursor: "pointer", fontFamily: FONT }}>
-                Skip for now
-              </button>
-              <button onClick={handleSendInvites} disabled={inviteSending}
-                style={{ padding: "9px 20px", borderRadius: 8, fontSize: 13, fontWeight: 600, color: "#fff", background: inviteSending ? "#4a3fa0" : "#6b5ce7", border: "none", cursor: inviteSending ? "default" : "pointer", fontFamily: FONT }}>
+              <button onClick={() => setShowInviteModal(false)} style={{ padding: "9px 16px", borderRadius: 8, fontSize: 13, color: "#555", background: "transparent", border: "none", cursor: "pointer", fontFamily: FONT }}>Skip for now</button>
+              <button onClick={handleSendInvites} disabled={inviteSending} style={{ padding: "9px 20px", borderRadius: 8, fontSize: 13, fontWeight: 600, color: "#fff", background: inviteSending ? "#4a3fa0" : "#6b5ce7", border: "none", cursor: inviteSending ? "default" : "pointer", fontFamily: FONT }}>
                 {inviteSending ? "Sending…" : "Send invites"}
               </button>
             </div>
@@ -675,7 +660,6 @@ export default function Sidebar({ onNewNote, onToggle }: SidebarProps = {}) {
         </div>
       )}
 
-      {/* Help modal */}
       {showHelp && (
         <div style={{ position: "fixed", inset: 0, zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center" }}>
           <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.65)", backdropFilter: "blur(3px)" }} onClick={() => setShowHelp(false)} />
