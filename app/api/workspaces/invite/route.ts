@@ -36,7 +36,7 @@ export async function POST(request: Request) {
       SELECT plan FROM users WHERE id = ${session.userId}
     `
     const user = userRows[0]
-    if (!user || user.plan !== 'pro') {
+    if (!user || (user.plan !== 'pro' && user.plan !== 'founding')) {
       return NextResponse.json({ error: 'Pro plan required to invite members' }, { status: 403 })
     }
 
