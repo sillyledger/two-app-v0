@@ -75,7 +75,7 @@ export async function POST(request: Request) {
     const workspaceName = workspaceRows[0]?.name ?? 'a workspace'
 
     // Send invite email
-    const acceptUrl = `${process.env.APP_URL}/invite/accept?token=${token}`
+    const acceptUrl = `${process.env.APP_URL}/accept-invite?token=${token}`
     await resend.emails.send({
       from: 'TWO <noreply@two.so>',
       to: email,
