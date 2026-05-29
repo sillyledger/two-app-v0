@@ -7,22 +7,10 @@ import Editor from '@/components/editor'
 import DocTopbar from '@/components/doc-topbar'
 import TabBar from '@/components/tab-bar'
 import { useTabStore } from '@/hooks/use-tab-store'
-import { CalendarDays, SignalLow, SignalMedium, SignalHigh, Minus, PanelRight, X, FileText, User, Clock, Plus, Check, Send, Trash2, Circle, CheckCircle2, Pencil, PanelLeftOpen } from 'lucide-react'
+import { CalendarDays, SignalLow, SignalMedium, SignalHigh, Minus, FileText, User, Clock, Plus, Check, Send, Trash2, Circle, CheckCircle2, Pencil } from 'lucide-react'
 import type { Doc } from '@/lib/db'
 import { RoomProvider, useStorage, useMutation } from '@liveblocks/react'
 import { LiveObject } from '@liveblocks/client'
-import { createClient } from '@liveblocks/client'
-
-const liveblocksClient = createClient({
-  authEndpoint: async (room) => {
-    const response = await fetch("/api/liveblocks-auth", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ room }),
-    })
-    return response.json()
-  },
-})
 
 interface Folder { id: string; name: string }
 interface User { id: number; email: string; name: string }
@@ -88,53 +76,52 @@ function getInitials(name: string, email: string): string {
   return email?.[0]?.toUpperCase() ?? '?'
 }
 
-// ── Collaborative editor wrapper (only used for shared docs) ──
-function CollaborativeDocInner({
-  docId, doc, title, setTitle, content, setContent,
-  isLoggedIn, saveStatus, setSaveStatus, setLastSaved,
-  editorFocusRef, insertImageRef, handleImageUpload,
-  updateTabTitle, wideMode, tabs,
-}: any) {
-  const lbContent = useStorage((root) => root.content)
+// ── Collaborative editor — only mounted for shared docs ──
+function CollaborativeEditor({
+  content, isLoggedIn, editorFocusRef, insertImageRef, handleImageUpload,
+}: {
+  content: string
+  isLoggedIn: boolean
+  editorFocusRef: React.MutableRefObject<(() => void) | null>
+  insertImageRef: React.MutableRefObject<((url: string) => void) | null>
+  handleImageUpload: (file: File) => Promise<string | null>
+  setContent: (c: string) => void
+}) {
+  const lbContent = useStorage((root) => (root.content as any)?.html)
   const updateLbContent = useMutation(({ storage }, newContent: string) => {
-    storage.get('content').set('html', newContent)
+    const contentObj = storage.get('content') as any
+    if (contentObj) contentObj.set('html', newContent)
   }, [])
 
+  const [localContent, setLocalContent] = useState(content)
+  const prevLbRef = useRef<string | null>(null)
   const isFirstSync = useRef(true)
 
-  // On first load, if Liveblocks has content use it, otherwise seed it
   useEffect(() => {
-    if (!isFirstSync.current) return
-    if (lbContent === null) return
-    isFirstSync.current = false
-    const lbHtml = (lbContent as any)?.html
-    if (lbHtml && lbHtml !== content) {
-      setContent(lbHtml)
+    if (lbContent === undefined || lbContent === null) return
+    if (isFirstSync.current) {
+      isFirstSync.current = false
+      prevLbRef.current = lbContent
+      if (lbContent && lbContent !== localContent) {
+        setLocalContent(lbContent)
+      }
+      return
+    }
+    if (lbContent !== prevLbRef.current) {
+      prevLbRef.current = lbContent
+      setLocalContent(lbContent)
     }
   }, [lbContent])
 
   const handleChange = useCallback((newContent: string) => {
     if (!isLoggedIn) return
-    setContent(newContent)
+    setLocalContent(newContent)
     updateLbContent(newContent)
   }, [isLoggedIn, updateLbContent])
 
-  // When remote changes come in, update local content
-  const prevLbRef = useRef<string | null>(null)
-  useEffect(() => {
-    if (lbContent === null) return
-    const lbHtml = (lbContent as any)?.html
-    if (lbHtml === undefined) return
-    if (prevLbRef.current === null) { prevLbRef.current = lbHtml; return }
-    if (lbHtml !== prevLbRef.current) {
-      prevLbRef.current = lbHtml
-      setContent(lbHtml)
-    }
-  }, [lbContent])
-
   return (
     <Editor
-      content={content}
+      content={localContent}
       editable={isLoggedIn}
       onChange={handleChange}
       onReady={(focusFn) => { editorFocusRef.current = focusFn }}
@@ -281,8 +268,7 @@ export default function DocPage() {
         if (data.folder_id && data.folder_name) {
           setFolder({ id: data.folder_id, name: data.folder_name })
         }
-        // Check if this is a shared workspace doc
-        setIsSharedDoc(!!data.workspace_id && data.user_id !== String(currentUser?.id))
+        setIsSharedDoc(!!data.workspace_id)
       })
     } else {
       fetch(`/api/docs/public/${docId}`).then((res) => res.json()).then((data: Doc) => {
@@ -438,41 +424,32 @@ export default function DocPage() {
 
   if (!authChecked || !doc) return null
 
-  const editorNode = isSharedDoc && isLoggedIn ? (
-    <RoomProvider
-  id={docId}
-  client={liveblocksClient}
-  initialPresence={{}}
-  initialStorage={{ content: new LiveObject({ html: content }) }}
->
-      <CollaborativeDocInner
-        docId={docId}
-        doc={doc}
-        title={title}
-        setTitle={setTitle}
+  const editorNode = doc !== null && (
+    isSharedDoc && isLoggedIn ? (
+      <RoomProvider
+        id={docId}
+        initialPresence={{}}
+        initialStorage={{ content: new LiveObject({ html: content }) }}
+      >
+        <CollaborativeEditor
+          content={content}
+          isLoggedIn={isLoggedIn}
+          editorFocusRef={editorFocusRef}
+          insertImageRef={insertImageRef}
+          handleImageUpload={handleImageUpload}
+          setContent={setContent}
+        />
+      </RoomProvider>
+    ) : (
+      <Editor
         content={content}
-        setContent={setContent}
-        isLoggedIn={isLoggedIn}
-        saveStatus={saveStatus}
-        setSaveStatus={setSaveStatus}
-        setLastSaved={setLastSaved}
-        editorFocusRef={editorFocusRef}
-        insertImageRef={insertImageRef}
-        handleImageUpload={handleImageUpload}
-        updateTabTitle={updateTabTitle}
-        wideMode={wideMode}
-        tabs={tabs}
+        editable={isLoggedIn}
+        onChange={(newContent) => { if (!isLoggedIn) return; setContent(newContent) }}
+        onReady={(focusFn) => { editorFocusRef.current = focusFn }}
+        onImageUpload={handleImageUpload}
+        onInsertImageReady={(fn) => { insertImageRef.current = fn }}
       />
-    </RoomProvider>
-  ) : (
-    <Editor
-      content={content}
-      editable={isLoggedIn}
-      onChange={(newContent) => { if (!isLoggedIn) return; setContent(newContent) }}
-      onReady={(focusFn) => { editorFocusRef.current = focusFn }}
-      onImageUpload={handleImageUpload}
-      onInsertImageReady={(fn) => { insertImageRef.current = fn }}
-    />
+    )
   )
 
   return (
@@ -584,7 +561,7 @@ export default function DocPage() {
               )}
             </div>
 
-            {doc !== null && editorNode}
+            {editorNode}
 
             {wordCount > 0 && (
               <div className="mt-16 flex items-center gap-2 text-[11px] text-[#383838] select-none">
