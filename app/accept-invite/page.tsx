@@ -1,8 +1,7 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
-import { Suspense } from 'react'
 
 function AcceptInviteContent() {
   const searchParams = useSearchParams()
@@ -31,6 +30,11 @@ function AcceptInviteContent() {
       })
 
       const data = await res.json()
+
+      if (res.status === 401) {
+        router.push(`/login?redirect=/accept-invite%3Ftoken%3D${token}`)
+        return
+      }
 
       if (!res.ok) {
         setErrorMessage(data.error || 'Something went wrong.')
