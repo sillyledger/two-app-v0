@@ -39,7 +39,7 @@ function LoginContent() {
     if (res.ok) {
       const redirect = searchParams.get('redirect')
       router.push(redirect || '/')
-    }
+    } else {
       setError(data.error || 'Login failed')
     }
     setLoading(false)
@@ -49,12 +49,10 @@ function LoginContent() {
     <div style={{ minHeight: '100vh', backgroundColor: '#161618', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'inherit' }}>
       <div style={{ width: '100%', maxWidth: '400px', padding: '0 24px' }}>
 
-        {/* Wordmark */}
         <div style={{ textAlign: 'center', marginBottom: '32px' }}>
           <span style={{ fontSize: '28px', fontWeight: '700', letterSpacing: '-0.5px', color: '#e8e8e8' }}>TWO</span>
         </div>
 
-        {/* Card */}
         <div style={{ backgroundColor: '#1e1e20', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '16px', padding: '32px' }}>
           <h1 style={{ margin: '0 0 6px', fontSize: '20px', fontWeight: '600', color: '#e8e8e8' }}>Welcome back</h1>
           <p style={{ margin: '0 0 24px', fontSize: '14px', color: '#a0a0a0' }}>Log in to your TWO account</p>
