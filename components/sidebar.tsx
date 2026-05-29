@@ -137,7 +137,10 @@ export default function Sidebar({ onNewNote, onToggle }: SidebarProps = {}) {
       }
     }).catch(() => {})
     fetch("/api/workspaces").then(r => r.json()).then(data => {
-      const list = Array.isArray(data) ? data : []; setWorkspaces(list); cacheSet("sb_workspaces", list)
+      const owned = Array.isArray(data?.owned) ? data.owned : []
+      const shared = Array.isArray(data?.shared) ? data.shared : []
+      const list = [...owned, ...shared]
+      setWorkspaces(list); cacheSet("sb_workspaces", list)
     }).catch(() => {})
   }, [])
 
