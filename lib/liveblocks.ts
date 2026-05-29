@@ -12,16 +12,18 @@ const client = createClient({
   },
 })
 
-type Presence = {}
+type Presence = Record<string, never>
 type Storage = {
-  content: string
+  content: {
+    html: string
+  }
 }
 type UserMeta = {
   info: {
     name: string
   }
 }
-type RoomEvent = {}
+type RoomEvent = Record<string, never>
 
 export const {
   RoomProvider,
