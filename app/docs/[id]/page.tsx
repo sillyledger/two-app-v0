@@ -9,8 +9,21 @@ import TabBar from '@/components/tab-bar'
 import { useTabStore } from '@/hooks/use-tab-store'
 import { CalendarDays, SignalLow, SignalMedium, SignalHigh, Minus, FileText, User, Clock, Plus, Check, Send, Trash2, Circle, CheckCircle2, Pencil } from 'lucide-react'
 import type { Doc } from '@/lib/db'
-import { RoomProvider, useStorage, useMutation } from '@liveblocks/react'
-import { LiveObject } from '@liveblocks/client'
+import { RoomProvider, useStorage, useMutation, createRoomContext } from '@liveblocks/react'
+import { createClient, LiveObject } from '@liveblocks/client'
+
+const liveblocksClient = createClient({
+  authEndpoint: async (room) => {
+    const res = await fetch('/api/liveblocks-auth', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ room }),
+    })
+    return res.json()
+  },
+})
+
+const { RoomProvider: LBRoomProvider, useStorage: useLBStorage, useMutation: useLBMutation } = createRoomContext(liveblocksClient)
 
 interface Folder { id: string; name: string }
 interface User { id: number; email: string; name: string }
