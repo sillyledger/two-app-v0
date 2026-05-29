@@ -1,7 +1,6 @@
 import type { Metadata } from 'next'
 import { Geist, Geist_Mono, Instrument_Serif } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
-import { LiveblocksProvider } from '@liveblocks/react'
 import './globals.css'
 
 const _geist = Geist({ subsets: ["latin"] });
@@ -71,9 +70,7 @@ export default function RootLayout({
         />
       </head>
       <body className="font-sans antialiased bg-background">
-        <LiveblocksProvider authEndpoint="/api/liveblocks-auth">
-          {children}
-        </LiveblocksProvider>
+        {children}
         {process.env.NODE_ENV === 'production' && <Analytics />}
       </body>
     </html>
