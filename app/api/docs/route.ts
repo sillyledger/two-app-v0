@@ -15,36 +15,58 @@ export async function GET(request: Request) {
   const workspaceId = searchParams.get('workspace_id')
 
   try {
-    const docs = folderId
-      ? await sql`
-          SELECT docs.*, users.name AS author_name, users.email AS author_email
-          FROM docs
-          LEFT JOIN users ON docs.user_id = users.id
-          WHERE docs.user_id = ${payload.userId}
-            AND docs.folder_id = ${folderId}
-            AND docs.deleted_at IS NULL
-          ORDER BY docs.created_at DESC
-        `
-      : workspaceId
-      ? await sql`
-          SELECT docs.*, users.name AS author_name, users.email AS author_email
-          FROM docs
-          LEFT JOIN users ON docs.user_id = users.id
-          WHERE docs.user_id = ${payload.userId}
-            AND docs.workspace_id = ${workspaceId}
-            AND docs.deleted_at IS NULL
-          ORDER BY docs.created_at DESC
-        `
-      : await sql`
-          SELECT docs.*, users.name AS author_name, users.email AS author_email
-          FROM docs
-          LEFT JOIN users ON docs.user_id = users.id
-          WHERE docs.user_id = ${payload.userId}
-            AND docs.deleted_at IS NULL
-          ORDER BY docs.created_at DESC
-        `
+    if (folderId) {
+      const docs = await sql`
+        SELECT docs.*, users.name AS author_name, users.email AS author_email
+        FROM docs
+        LEFT JOIN users ON docs.user_id = users.id
+        WHERE docs.user_id = ${payload.userId}
+          AND docs.folder_id = ${folderId}
+          AND docs.deleted_at IS NULL
+        ORDER BY docs.created_at DESC
+      `
+      return NextResponse.json(docs)
+    }
 
+    if (workspaceId) {
+      // Check if user owns this workspace or is an accepted member
+      const ownerCheck = await sql`
+        SELECT id FROM workspaces WHERE id::text = ${workspaceId} AND user_id = ${payload.userId}
+      `
+      const memberCheck = await sql`
+        SELECT id FROM workspace_members
+        WHERE workspace_id::text = ${workspaceId}
+          AND user_id = ${payload.userId}
+          AND status = 'accepted'
+      `
+
+      if (ownerCheck.length === 0 && memberCheck.length === 0) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
+      }
+
+      // Return all docs in workspace regardless of who created them
+      const docs = await sql`
+        SELECT docs.*, users.name AS author_name, users.email AS author_email
+        FROM docs
+        LEFT JOIN users ON docs.user_id = users.id
+        WHERE docs.workspace_id::text = ${workspaceId}
+          AND docs.deleted_at IS NULL
+        ORDER BY docs.created_at DESC
+      `
+      return NextResponse.json(docs)
+    }
+
+    // Default: return only user's own docs
+    const docs = await sql`
+      SELECT docs.*, users.name AS author_name, users.email AS author_email
+      FROM docs
+      LEFT JOIN users ON docs.user_id = users.id
+      WHERE docs.user_id = ${payload.userId}
+        AND docs.deleted_at IS NULL
+      ORDER BY docs.created_at DESC
+    `
     return NextResponse.json(docs)
+
   } catch (error) {
     console.error('Failed to fetch docs:', error)
     return NextResponse.json({ error: 'Failed to fetch docs' }, { status: 500 })
@@ -59,14 +81,12 @@ export async function POST(request: Request) {
   if (!payload) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   try {
-    // Get user's current plan
     const userResult = await sql`
       SELECT plan FROM users WHERE id = ${payload.userId}
     `
     const user = userResult[0]
     const plan = user?.plan ?? 'free'
 
-    // Enforce 30-doc limit for free users
     if (plan === 'free') {
       const countResult = await sql`
         SELECT COUNT(*) AS count FROM docs
@@ -75,15 +95,11 @@ export async function POST(request: Request) {
       `
       const docCount = parseInt(countResult[0].count, 10)
       if (docCount >= 30) {
-        return NextResponse.json(
-          { error: 'free_limit_reached' },
-          { status: 403 }
-        )
+        return NextResponse.json({ error: 'free_limit_reached' }, { status: 403 })
       }
     }
 
     const { title, content, color, type = 'doc', folder_id = null, workspace_id = null } = await request.json()
-
     const result = await sql`
       INSERT INTO docs (title, content, color, type, user_id, folder_id, workspace_id, uuid)
       VALUES (
@@ -98,7 +114,6 @@ export async function POST(request: Request) {
       )
       RETURNING *
     `
-
     return NextResponse.json(result[0], { status: 201 })
   } catch (error) {
     console.error('Failed to create doc:', error)
