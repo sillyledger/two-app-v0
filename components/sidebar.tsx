@@ -103,6 +103,16 @@ export default function Sidebar({ onNewNote, onToggle }: SidebarProps = {}) {
     return () => window.removeEventListener("sb-refresh", handler)
   }, [workspaceId])
 
+  useEffect(() => {
+    const interval = setInterval(() => {
+      Object.keys(expandedWorkspaces).forEach(wsId => {
+        fetchDocsForWorkspace(wsId, false)
+        fetchFoldersForWorkspace(wsId, false)
+      })
+    }, 30000)
+    return () => clearInterval(interval)
+  }, [expandedWorkspaces])
+
   const fetchDocsForWorkspace = (wsId: string, isPrimary: boolean) => {
     fetch(`/api/docs?workspace_id=${wsId}`).then(r => r.json()).then(data => {
       const unfiled = Array.isArray(data) ? data.filter((d: any) => !d.folder_id) : []
