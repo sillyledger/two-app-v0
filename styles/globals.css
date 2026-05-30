@@ -146,5 +146,4 @@ body {
   height: 0;
 }
 
-[data-liveblocks-portal] { display: none !important; }
-.lb-root { display: none !important; }
+#liveblocks-badge { display: none !important; }
