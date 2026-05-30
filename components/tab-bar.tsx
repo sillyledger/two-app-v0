@@ -68,15 +68,10 @@ export default function TabBar({ sidebarWidth = "0px" }: TabBarProps) {
   )
 
   const handleOpenDoc = useCallback((doc: DocItem) => {
-    const alreadyOpen = tabs.some(t => t.id === doc.uuid)
     openTab(doc.uuid, doc.title || "Untitled")
-    if (!alreadyOpen) {
-      // First time opening this doc — navigate so the URL updates
-      router.push(`/docs/${doc.uuid}`)
-    }
-    // If already open, switchTab (called inside openTab) is enough
+    router.push(`/docs/${doc.uuid}`)
     setPickerOpen(false); setQuery("")
-  }, [openTab, router, tabs])
+  }, [openTab, router])
 
   const handleNewDoc = useCallback(async () => {
     setCreating(true)
