@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation"
 import { Plus, MoreHorizontal, Pencil, FolderInput, Trash2, LayoutTemplate, Star, Lock } from "lucide-react"
 import Sidebar from "@/components/sidebar"
 import TemplatePickerModal from "@/components/template-picker-modal"
+import { useTabStore } from "@/hooks/use-tab-store"
 
 interface Doc {
   id: string
@@ -45,6 +46,7 @@ type FilterTab = "recent" | "favorites" | "deleted"
 
 export default function HomePage() {
   const router = useRouter()
+  const { openTab } = useTabStore()
   const [collapsed, setCollapsed] = useState(false)
   const [sidebarReady, setSidebarReady] = useState(false)
   const [templateModalOpen, setTemplateModalOpen] = useState(false)
@@ -72,7 +74,6 @@ export default function HomePage() {
   const [deletingDoc, setDeletingDoc] = useState<Doc | null>(null)
 
   useEffect(() => {
-    // Fetch docs
     fetch("/api/docs")
       .then((r) => r.json())
       .then((data) => {
@@ -81,7 +82,6 @@ export default function HomePage() {
       })
       .catch(() => setLoading(false))
 
-    // Fetch plan
     fetch("/api/auth/me")
       .then((r) => r.json())
       .then((data) => {
@@ -313,7 +313,14 @@ export default function HomePage() {
                     <div style={{ height: "5px", backgroundColor: getAccent(index), width: "100%", flexShrink: 0 }} />
 
                     <button
-                      onClick={() => isLocked ? setLimitModalOpen(true) : router.push(`/docs/${doc.uuid}`)}
+                      onClick={() => {
+                        if (isLocked) {
+                          setLimitModalOpen(true)
+                        } else {
+                          openTab(doc.uuid, doc.title || "Untitled")
+                          router.push(`/docs/${doc.uuid}`)
+                        }
+                      }}
                       className="text-left px-5 pt-4 pb-3 flex flex-col flex-1 w-full"
                       style={{ cursor: isLocked ? "default" : "pointer" }}
                     >
@@ -346,7 +353,6 @@ export default function HomePage() {
                       )}
                     </div>
 
-                    {/* Three-dot menu — hidden for locked docs */}
                     {!isLocked && (
                       <div className="absolute top-7 right-4" ref={openMenuId === doc.uuid ? menuRef : null}>
                         <button
