@@ -145,3 +145,5 @@ body {
   pointer-events: none;
   height: 0;
 }
+
+[data-liveblocks-portal] iframe { display: none !important; }
