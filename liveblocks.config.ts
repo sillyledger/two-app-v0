@@ -10,8 +10,10 @@ type Presence = {
   color: string
 }
 
+type Storage = {}
+
 export const {
   RoomProvider,
   useOthers,
   useSelf,
-} = createRoomContext<Presence>(client)
+} = createRoomContext<Presence, Storage>(client)
