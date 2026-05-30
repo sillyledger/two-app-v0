@@ -35,10 +35,15 @@ function formatBytes(bytes: number): string {
   return `${(bytes / (1024 * 1024 * 1024)).toFixed(2)} GB`
 }
 
+const PRICE_PRO_MONTHLY = 'pri_01ksjx3b0n6pg6fw44hbq9r03p'
+const PRICE_PRO_ANNUAL  = 'pri_01ksxjysx4n6ewv4dq2mxn5kjr'
+const PRICE_FOUNDING    = 'pri_01ksjx6e6xtrmq324ama45zyr0'
+
 export default function SettingsPage() {
   const router = useRouter()
   const [section, setSection] = useState<Section>('account')
   const [collapsed, setCollapsed] = useState(false)
+  const [billingYearly, setBillingYearly] = useState(false)
 
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
@@ -226,6 +231,22 @@ export default function SettingsPage() {
     }
   }
 
+  const openProCheckout = () => {
+    const Paddle = (window as any).Paddle
+    Paddle?.Checkout.open({
+      items: [{ priceId: billingYearly ? PRICE_PRO_ANNUAL : PRICE_PRO_MONTHLY, quantity: 1 }],
+      settings: { successUrl: 'https://app.two.so/welcome' }
+    })
+  }
+
+  const openFoundingCheckout = () => {
+    const Paddle = (window as any).Paddle
+    Paddle?.Checkout.open({
+      items: [{ priceId: PRICE_FOUNDING, quantity: 1 }],
+      settings: { successUrl: 'https://app.two.so/welcome' }
+    })
+  }
+
   const initial = name ? name.charAt(0).toUpperCase() : '?'
 
   const inputClass = "w-full px-3 py-2 rounded-lg text-[13px] placeholder-[#555] focus:outline-none"
@@ -239,8 +260,7 @@ export default function SettingsPage() {
     { value: 'system', label: 'System', icon: <Monitor size={12} /> },
   ]
 
-  // Storage limits by plan (in bytes)
-  const storageLimit = plan === 'free' ? 1 * 1024 * 1024 * 1024 : 10 * 1024 * 1024 * 1024 // 1GB or 10GB
+  const storageLimit = plan === 'free' ? 1 * 1024 * 1024 * 1024 : 10 * 1024 * 1024 * 1024
   const storagePercent = Math.min(100, (storageUsed / storageLimit) * 100)
   const storageBarColor = storagePercent > 90 ? '#ef4444' : storagePercent > 70 ? '#f59e0b' : '#534AB7'
 
@@ -571,7 +591,37 @@ export default function SettingsPage() {
             {/* BILLING */}
             {section === 'billing' && (
               <div>
-                <h2 className="text-[15px] font-semibold mb-1" style={{ color: "var(--text-primary)" }}>Billing</h2>
+                <div className="flex items-center justify-between mb-1">
+                  <h2 className="text-[15px] font-semibold" style={{ color: "var(--text-primary)" }}>Billing</h2>
+                  {/* Monthly / Annual toggle — only show if not already on founding plan */}
+                  {plan !== 'founding' && (
+                    <div className="flex items-center gap-1 rounded-lg p-0.5" style={{ backgroundColor: "var(--bg-tertiary)", border: "1px solid var(--border)" }}>
+                      <button
+                        onClick={() => setBillingYearly(false)}
+                        className="px-3 py-1 rounded-md text-[12px] font-medium transition-colors"
+                        style={{
+                          backgroundColor: !billingYearly ? "var(--bg-secondary)" : "transparent",
+                          color: !billingYearly ? "var(--text-primary)" : "var(--text-muted)",
+                        }}
+                      >
+                        Monthly
+                      </button>
+                      <button
+                        onClick={() => setBillingYearly(true)}
+                        className="px-3 py-1 rounded-md text-[12px] font-medium transition-colors flex items-center gap-1.5"
+                        style={{
+                          backgroundColor: billingYearly ? "var(--bg-secondary)" : "transparent",
+                          color: billingYearly ? "var(--text-primary)" : "var(--text-muted)",
+                        }}
+                      >
+                        Yearly
+                        <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full" style={{ backgroundColor: "#16a34a20", color: "#4ade80" }}>
+                          −20%
+                        </span>
+                      </button>
+                    </div>
+                  )}
+                </div>
                 <p className="text-[12px] mb-6" style={{ color: "var(--text-muted)" }}>Manage your plan.</p>
 
                 {plan === 'pro' && trialEndsAt && (
@@ -584,10 +634,7 @@ export default function SettingsPage() {
                       </p>
                     </div>
                     <button
-                      onClick={() => {
-                        const Paddle = (window as any).Paddle
-                        Paddle?.Checkout.open({ items: [{ priceId: 'pri_01ksjx3b0n6pg6fw44hbq9r03p', quantity: 1 }], settings: { successUrl: 'https://app.two.so/welcome' } })
-                      }}
+                      onClick={openProCheckout}
                       className="ml-auto px-3 py-1.5 rounded-lg text-[12px] font-medium shrink-0"
                       style={{ backgroundColor: "#534AB7", color: "#fff", border: "none", cursor: "pointer" }}
                     >
@@ -598,6 +645,7 @@ export default function SettingsPage() {
 
                 <p className="text-[11px] font-semibold uppercase tracking-wider mb-3" style={{ color: "var(--text-muted)" }}>Plans</p>
 
+                {/* Free */}
                 <div className="rounded-xl p-5 mb-3 flex items-center justify-between" style={{ backgroundColor: "var(--bg-tertiary)", border: `1px solid ${plan === 'free' ? 'var(--text-muted)' : 'var(--border)'}` }}>
                   <div>
                     <div className="flex items-center gap-2 mb-1">
@@ -614,40 +662,46 @@ export default function SettingsPage() {
                   </div>
                 </div>
 
-                <div className="rounded-xl p-5 mb-3 flex items-center justify-between" style={{ backgroundColor: "var(--bg-secondary)", border: `1px solid ${plan === 'pro' ? '#534AB7' : '#534AB740'}` }}>
-                  <div>
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-[14px] font-semibold" style={{ color: "var(--text-primary)" }}>Pro</span>
-                      {plan === 'pro' ? (
-                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{ backgroundColor: "#534AB720", color: "#a78bfa", border: "1px solid #534AB740" }}>
-                          {trialEndsAt ? 'Trial active' : 'Current plan'}
+                {/* Pro */}
+                <div className="rounded-xl p-5 mb-3" style={{ backgroundColor: "var(--bg-secondary)", border: `1px solid ${plan === 'pro' ? '#534AB7' : '#534AB740'}` }}>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-[14px] font-semibold" style={{ color: "var(--text-primary)" }}>Pro</span>
+                        {plan === 'pro' ? (
+                          <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{ backgroundColor: "#534AB720", color: "#a78bfa", border: "1px solid #534AB740" }}>
+                            {trialEndsAt ? 'Trial active' : 'Current plan'}
+                          </span>
+                        ) : (
+                          <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{ backgroundColor: "#534AB720", color: "#a78bfa", border: "1px solid #534AB740" }}>Upgrade</span>
+                        )}
+                      </div>
+                      <p className="text-[12px]" style={{ color: "var(--text-muted)" }}>Unlimited docs · Unlimited workspaces · 10GB storage · Priority support</p>
+                    </div>
+                    <div className="text-right shrink-0 ml-4">
+                      <div>
+                        <span className="text-[22px] font-bold" style={{ color: "var(--text-primary)" }}>
+                          {billingYearly ? '$5' : '$6'}
                         </span>
-                      ) : (
-                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{ backgroundColor: "#534AB720", color: "#a78bfa", border: "1px solid #534AB740" }}>Upgrade</span>
+                        <span className="text-[12px] ml-1" style={{ color: "var(--text-muted)" }}>/mo</span>
+                      </div>
+                      {billingYearly && (
+                        <p className="text-[11px] mt-0.5" style={{ color: "var(--text-muted)" }}>Billed $60/year</p>
+                      )}
+                      {plan !== 'pro' && (
+                        <button
+                          onClick={openProCheckout}
+                          className="mt-2 px-3 py-1.5 rounded-lg text-[12px] font-medium transition-colors"
+                          style={{ backgroundColor: "#534AB7", color: "#fff", border: "none", cursor: "pointer" }}
+                        >
+                          {billingYearly ? 'Upgrade — $60/yr' : 'Upgrade'}
+                        </button>
                       )}
                     </div>
-                    <p className="text-[12px]" style={{ color: "var(--text-muted)" }}>Unlimited docs · Unlimited workspaces · 10GB storage · Priority support</p>
-                  </div>
-                  <div className="text-right">
-                    <div>
-                      <span className="text-[22px] font-bold" style={{ color: "var(--text-primary)" }}>$6</span>
-                      <span className="text-[12px] ml-1" style={{ color: "var(--text-muted)" }}>/mo</span>
-                    </div>
-                    {plan !== 'pro' && (
-                      <button
-                        onClick={() => {
-  const Paddle = (window as any).Paddle
-  Paddle?.Checkout.open({ items: [{ priceId: 'pri_01ksjx3b0n6pg6fw44hbq9r03p', quantity: 1 }], settings: { successUrl: 'https://app.two.so/welcome' } })
-}}
-                        className="mt-2 px-3 py-1.5 rounded-lg text-[12px] font-medium transition-colors"
-                        style={{ backgroundColor: "#534AB7", color: "#fff", border: "none", cursor: "pointer" }}
-                      >
-                        Upgrade
-                      </button>
-                    )}
                   </div>
                 </div>
 
+                {/* Founding Member */}
                 <div className="rounded-xl p-5 flex items-center justify-between" style={{ backgroundColor: "var(--bg-secondary)", border: `1px solid ${plan === 'founding' ? '#BA7517' : '#BA751740'}` }}>
                   <div>
                     <div className="flex items-center gap-2 mb-1">
@@ -660,17 +714,14 @@ export default function SettingsPage() {
                     </div>
                     <p className="text-[12px]" style={{ color: "var(--text-muted)" }}>Everything in Pro · Lifetime access · No subscription ever</p>
                   </div>
-                  <div className="text-right">
+                  <div className="text-right shrink-0 ml-4">
                     <div>
                       <span className="text-[22px] font-bold" style={{ color: "var(--text-primary)" }}>$49</span>
                       <span className="text-[12px] ml-1" style={{ color: "var(--text-muted)" }}>one-time</span>
                     </div>
                     {plan !== 'founding' && (
                       <button
-                        onClick={() => {
-                          const Paddle = (window as any).Paddle
-                          Paddle?.Checkout.open({ items: [{ priceId: 'pri_01ksjx6e6xtrmq324ama45zyr0', quantity: 1 }], settings: { successUrl: 'https://app.two.so/welcome' } })
-                        }}
+                        onClick={openFoundingCheckout}
                         className="mt-2 px-3 py-1.5 rounded-lg text-[12px] font-medium transition-colors"
                         style={{ backgroundColor: "#BA7517", color: "#fff", border: "none", cursor: "pointer" }}
                       >
@@ -688,7 +739,6 @@ export default function SettingsPage() {
                 <h2 className="text-[15px] font-semibold mb-1" style={{ color: "var(--text-primary)" }}>Storage</h2>
                 <p className="text-[12px] mb-6" style={{ color: "var(--text-muted)" }}>Track your image and file storage usage.</p>
 
-                {/* Usage card */}
                 <div className="rounded-xl p-5 mb-4" style={{ backgroundColor: "var(--bg-tertiary)", border: "1px solid var(--border)" }}>
                   <div className="flex items-end justify-between mb-3">
                     <div>
@@ -700,7 +750,6 @@ export default function SettingsPage() {
                     </p>
                   </div>
 
-                  {/* Progress bar */}
                   <div className="w-full h-2 rounded-full overflow-hidden" style={{ backgroundColor: "var(--bg-secondary)" }}>
                     <div
                       className="h-full rounded-full transition-all duration-500"
@@ -713,7 +762,6 @@ export default function SettingsPage() {
                   </p>
                 </div>
 
-                {/* Plan context */}
                 <div className="rounded-xl p-4" style={{ backgroundColor: "var(--bg-tertiary)", border: "1px solid var(--border)" }}>
                   <div className="flex items-center justify-between">
                     <div>
