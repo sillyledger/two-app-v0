@@ -264,7 +264,7 @@ const PRESENCE_COLORS = [
 
 function PresenceAvatars() {
   const others = useOthers()
-  if (others.length === 0) return null
+  const self = useSelf()
   const visible = others.slice(0, 4)
   const overflow = others.length - 4
 
