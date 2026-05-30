@@ -116,12 +116,8 @@ function getInitials(name: string, email: string): string {
 
 export default function DocPage() {
   const params = useParams()
-  const urlDocId = Array.isArray(params.id) ? params.id[0] : (params.id as string)
+  const docId = Array.isArray(params.id) ? params.id[0] : (params.id as string)
   const router = useRouter()
-  const { activeId: tabActiveId } = useTabStore()
-  // Use the tab store's active ID when switching tabs (avoids full page reload)
-  // Fall back to the URL param for direct navigation / first load
-  const docId = tabActiveId || urlDocId
   const [collapsed, setCollapsed] = useState(false)
 
   useEffect(() => {
@@ -163,7 +159,6 @@ export default function DocPage() {
   const imageInputRef = useRef<HTMLInputElement>(null)
   const insertImageRef = useRef<((url: string) => void) | null>(null)
 
-  // Label editing state
   const [editingLabelId, setEditingLabelId] = useState<number | null>(null)
   const [editingLabelName, setEditingLabelName] = useState('')
   const [editingLabelColor, setEditingLabelColor] = useState('')
@@ -253,6 +248,9 @@ export default function DocPage() {
 
   useEffect(() => {
     if (!authChecked) return
+    setDoc(null)
+    setTitle('')
+    setContent('')
     if (isLoggedIn) {
       fetch(`/api/docs/${docId}`).then((res) => res.json()).then((data: Doc) => {
         if (data.error) { router.push('/'); return }
@@ -266,6 +264,8 @@ export default function DocPage() {
         setIsFavorite(data.is_starred ?? false)
         if (data.folder_id && data.folder_name) {
           setFolder({ id: data.folder_id, name: data.folder_name })
+        } else {
+          setFolder(null)
         }
       })
     } else {
@@ -492,21 +492,21 @@ export default function DocPage() {
         style={{ marginRight: detailOpen ? '280px' : '0' }}
       >
         <DocTopbar
-  docTitle={title}
-  folder={folder}
-  saveStatus={saveStatus}
-  content={content}
-  onDelete={isLoggedIn ? handleDelete : undefined}
-  docId={docId}
-  isPublic={isPublic}
-  sidebarWidth={sidebarWidth}
-  wideMode={wideMode}
-  onToggleWide={toggleWideMode}
-  isFavorite={isFavorite}
-  onToggleFavorite={isLoggedIn ? handleToggleFavorite : undefined}
-  detailOpen={detailOpen}
-  onToggleDetail={() => setDetailOpen(v => !v)}
-/>
+          docTitle={title}
+          folder={folder}
+          saveStatus={saveStatus}
+          content={content}
+          onDelete={isLoggedIn ? handleDelete : undefined}
+          docId={docId}
+          isPublic={isPublic}
+          sidebarWidth={sidebarWidth}
+          wideMode={wideMode}
+          onToggleWide={toggleWideMode}
+          isFavorite={isFavorite}
+          onToggleFavorite={isLoggedIn ? handleToggleFavorite : undefined}
+          detailOpen={detailOpen}
+          onToggleDetail={() => setDetailOpen(v => !v)}
+        />
         <TabBar sidebarWidth={sidebarWidth} />
 
         <main className="flex-1 overflow-y-auto" style={{ paddingTop: tabs.length > 0 ? '80px' : '44px' }}>
@@ -552,7 +552,7 @@ export default function DocPage() {
                       {PRIORITIES.map((p) => (
                         <button key={String(p.value)} onClick={() => handlePriorityChange(p.value)}
                           className={`w-full flex items-center gap-2.5 px-3 py-1.5 text-xs transition-colors`}
-                        style={{ color: priority === p.value ? 'var(--text-primary)' : 'var(--text-secondary)' }}>
+                          style={{ color: priority === p.value ? 'var(--text-primary)' : 'var(--text-secondary)' }}>
                           <span className={p.color}>{p.icon}</span>
                           <span>{p.label}</span>
                           {priority === p.value && <span className="ml-auto text-[#555]">✓</span>}
