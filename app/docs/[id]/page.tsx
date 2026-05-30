@@ -9,6 +9,7 @@ import TabBar from '@/components/tab-bar'
 import { useTabStore } from '@/hooks/use-tab-store'
 import { CalendarDays, SignalLow, SignalMedium, SignalHigh, Minus, PanelRight, X, FileText, User, Clock, Plus, Check, Send, Trash2, Circle, CheckCircle2, Pencil, PanelLeftOpen } from 'lucide-react'
 import type { Doc } from '@/lib/db'
+import { RoomProvider } from '@/liveblocks.config'
 
 interface Folder {
   id: string
@@ -465,583 +466,588 @@ export default function DocPage() {
   if (!authChecked || !doc) return null
 
   return (
-    <div className="flex h-screen bg-background overflow-hidden">
-      <input
-        ref={imageInputRef}
-        type="file"
-        accept="image/jpeg,image/png,image/gif,image/webp"
-        className="hidden"
-        onChange={async (e) => {
-          const file = e.target.files?.[0]
-          if (file) {
-            const url = await handleImageUpload(file)
-            if (url && insertImageRef.current) {
-              insertImageRef.current(url)
+    <RoomProvider
+      id={docId}
+      initialPresence={{ name: currentUser?.name || currentUser?.email || 'Anonymous', color: '#888888' }}
+    >
+      <div className="flex h-screen bg-background overflow-hidden">
+        <input
+          ref={imageInputRef}
+          type="file"
+          accept="image/jpeg,image/png,image/gif,image/webp"
+          className="hidden"
+          onChange={async (e) => {
+            const file = e.target.files?.[0]
+            if (file) {
+              const url = await handleImageUpload(file)
+              if (url && insertImageRef.current) {
+                insertImageRef.current(url)
+              }
             }
-          }
-          e.target.value = ""
-        }}
-      />
-
-      {isLoggedIn && (
-        <Sidebar onNewNote={handleNewDoc} collapsed={collapsed} onToggle={() => setCollapsed((v) => !v)} />
-      )}
-
-      <div
-        className="flex-1 flex flex-col min-h-screen transition-all duration-300 ease-in-out min-w-0 overflow-hidden"
-        style={{ marginRight: detailOpen ? '280px' : '0' }}
-      >
-        <DocTopbar
-          docTitle={title}
-          folder={folder}
-          saveStatus={saveStatus}
-          content={content}
-          onDelete={isLoggedIn ? handleDelete : undefined}
-          docId={docId}
-          isPublic={isPublic}
-          sidebarWidth={sidebarWidth}
-          wideMode={wideMode}
-          onToggleWide={toggleWideMode}
-          isFavorite={isFavorite}
-          onToggleFavorite={isLoggedIn ? handleToggleFavorite : undefined}
-          detailOpen={detailOpen}
-          onToggleDetail={() => setDetailOpen(v => !v)}
+            e.target.value = ""
+          }}
         />
-        <TabBar sidebarWidth={sidebarWidth} />
 
-        <main className="flex-1 overflow-y-auto" style={{ paddingTop: tabs.length > 0 ? '80px' : '44px' }}>
-          <div className={`mx-auto w-full px-16 pt-16 pb-32 transition-all duration-200 ${wideMode ? 'max-w-[1200px]' : 'max-w-[800px]'}`}>
-            <textarea
-              ref={titleRef}
-              value={title}
-              onChange={(e) => { if (!isLoggedIn) return; setTitle(e.target.value); resizeTitle(); updateTabTitle(docId, e.target.value || 'Untitled') }}
-              onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); editorFocusRef.current?.() } }}
-              placeholder="Untitled"
-              rows={1}
-              readOnly={!isLoggedIn}
-              className="mb-5 block w-full resize-none overflow-hidden bg-transparent text-[2.375rem] font-bold leading-[1.2] tracking-tight text-foreground placeholder:text-muted-foreground/40 focus:outline-none"
-            />
+        {isLoggedIn && (
+          <Sidebar onNewNote={handleNewDoc} collapsed={collapsed} onToggle={() => setCollapsed((v) => !v)} />
+        )}
 
-            <div className="mb-8 flex items-center gap-2 flex-wrap">
-              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-white/5 border border-[var(--border)] text-xs text-[#888]">
-                <CalendarDays size={12} className="text-[#666]" />
-                <span>{formatDate(doc.created_at)}</span>
-              </div>
-              <span className="text-[#444] select-none">·</span>
-              {currentUser ? (
+        <div
+          className="flex-1 flex flex-col min-h-screen transition-all duration-300 ease-in-out min-w-0 overflow-hidden"
+          style={{ marginRight: detailOpen ? '280px' : '0' }}
+        >
+          <DocTopbar
+            docTitle={title}
+            folder={folder}
+            saveStatus={saveStatus}
+            content={content}
+            onDelete={isLoggedIn ? handleDelete : undefined}
+            docId={docId}
+            isPublic={isPublic}
+            sidebarWidth={sidebarWidth}
+            wideMode={wideMode}
+            onToggleWide={toggleWideMode}
+            isFavorite={isFavorite}
+            onToggleFavorite={isLoggedIn ? handleToggleFavorite : undefined}
+            detailOpen={detailOpen}
+            onToggleDetail={() => setDetailOpen(v => !v)}
+          />
+          <TabBar sidebarWidth={sidebarWidth} />
+
+          <main className="flex-1 overflow-y-auto" style={{ paddingTop: tabs.length > 0 ? '80px' : '44px' }}>
+            <div className={`mx-auto w-full px-16 pt-16 pb-32 transition-all duration-200 ${wideMode ? 'max-w-[1200px]' : 'max-w-[800px]'}`}>
+              <textarea
+                ref={titleRef}
+                value={title}
+                onChange={(e) => { if (!isLoggedIn) return; setTitle(e.target.value); resizeTitle(); updateTabTitle(docId, e.target.value || 'Untitled') }}
+                onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); editorFocusRef.current?.() } }}
+                placeholder="Untitled"
+                rows={1}
+                readOnly={!isLoggedIn}
+                className="mb-5 block w-full resize-none overflow-hidden bg-transparent text-[2.375rem] font-bold leading-[1.2] tracking-tight text-foreground placeholder:text-muted-foreground/40 focus:outline-none"
+              />
+
+              <div className="mb-8 flex items-center gap-2 flex-wrap">
                 <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-white/5 border border-[var(--border)] text-xs text-[#888]">
-                  <span>{currentUser.name || currentUser.email}</span>
+                  <CalendarDays size={12} className="text-[#666]" />
+                  <span>{formatDate(doc.created_at)}</span>
                 </div>
-              ) : (
-                <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-white/5 border border-[var(--border)] text-xs text-[#555]">
-                  <span>Unknown</span>
+                <span className="text-[#444] select-none">·</span>
+                {currentUser ? (
+                  <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-white/5 border border-[var(--border)] text-xs text-[#888]">
+                    <span>{currentUser.name || currentUser.email}</span>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-white/5 border border-[var(--border)] text-xs text-[#555]">
+                    <span>Unknown</span>
+                  </div>
+                )}
+                <span className="text-[#444] select-none">·</span>
+                {isLoggedIn && (
+                  <div className="relative" ref={headerPriorityRef}>
+                    <button
+                      onClick={() => setHeaderPriorityOpen((v) => !v)}
+                      className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-white/5 border border-[var(--border)] text-xs text-[#888] hover:bg-white/10 hover:text-[#aaa] transition-colors"
+                    >
+                      <span className={activePriority.color}>{activePriority.icon}</span>
+                      <span>{activePriority.label}</span>
+                    </button>
+                    {headerPriorityOpen && (
+                      <div className="absolute top-full mt-1.5 left-0 z-50 w-44 rounded-lg border border-[var(--border)] bg-[var(--bg-tertiary)] shadow-xl py-1">
+                        {PRIORITIES.map((p) => (
+                          <button key={String(p.value)} onClick={() => handlePriorityChange(p.value)}
+                            className={`w-full flex items-center gap-2.5 px-3 py-1.5 text-xs transition-colors`}
+                            style={{ color: priority === p.value ? 'var(--text-primary)' : 'var(--text-secondary)' }}>
+                            <span className={p.color}>{p.icon}</span>
+                            <span>{p.label}</span>
+                            {priority === p.value && <span className="ml-auto text-[#555]">✓</span>}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+                {docLabels.length > 0 && (
+                  <>
+                    <span className="text-[#444] select-none">·</span>
+                    {docLabels.map(label => (
+                      <div key={label.id} className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-white/5 border border-[var(--border)] text-xs text-[#888]">
+                        <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: label.color }} />
+                        <span>{label.name}</span>
+                      </div>
+                    ))}
+                  </>
+                )}
+              </div>
+
+              {doc !== null && (
+                <Editor
+                  content={content}
+                  editable={isLoggedIn}
+                  onChange={(newContent) => { if (!isLoggedIn) return; setContent(newContent) }}
+                  onReady={(focusFn) => { editorFocusRef.current = focusFn }}
+                  onImageUpload={handleImageUpload}
+                  onInsertImageReady={(fn) => { insertImageRef.current = fn }}
+                />
+              )}
+
+              {wordCount > 0 && (
+                <div className="mt-16 flex items-center gap-2 text-[11px] text-[#383838] select-none">
+                  <span>{wordCount.toLocaleString()} words</span>
+                  <span>·</span>
+                  <span>{charCount.toLocaleString()} characters</span>
                 </div>
               )}
-              <span className="text-[#444] select-none">·</span>
-              {isLoggedIn && (
-                <div className="relative" ref={headerPriorityRef}>
+            </div>
+          </main>
+        </div>
+
+        <div
+          className={`fixed top-0 right-0 h-full w-[280px] flex flex-col z-30 transition-transform duration-300 ease-in-out ${detailOpen ? 'translate-x-0' : 'translate-x-full'}`}
+          style={{ backgroundColor: 'var(--bg)', borderLeft: '1px solid var(--border)' }}
+        >
+          <div
+            className="flex-1 overflow-y-auto flex flex-col gap-1"
+            style={{ padding: '56px 16px 20px', color: 'var(--text-primary)' }}
+          >
+            {isLoggedIn && (
+              <>
+                <div className="flex items-center justify-between mb-3">
+                  <p className="text-[10px] font-medium uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>
+                    Tasks {tasks.length > 0 && `· ${tasks.length}`}
+                  </p>
                   <button
-                    onClick={() => setHeaderPriorityOpen((v) => !v)}
-                    className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-white/5 border border-[var(--border)] text-xs text-[#888] hover:bg-white/10 hover:text-[#aaa] transition-colors"
+                    onClick={() => { setAddingTask(true); setTimeout(() => newTaskInputRef.current?.focus(), 50) }}
+                    className="flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[11px] transition-colors"
+                    style={{ color: 'var(--text-muted)' }}
+                    onMouseEnter={e => { e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)'; e.currentTarget.style.color = 'var(--text-secondary)' }}
+                    onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = 'var(--text-muted)' }}
+                  >
+                    <Plus size={11} />
+                    Add
+                  </button>
+                </div>
+
+                {addingTask && (
+                  <div
+                    className="rounded-lg p-2.5 mb-3 flex flex-col gap-2"
+                    style={{ backgroundColor: 'var(--bg-tertiary)', border: '1px solid var(--border)' }}
+                  >
+                    <input
+                      ref={newTaskInputRef}
+                      value={newTaskTitle}
+                      onChange={e => setNewTaskTitle(e.target.value)}
+                      onKeyDown={e => {
+                        if (e.key === 'Enter') handleAddTask()
+                        if (e.key === 'Escape') { setAddingTask(false); setNewTaskTitle(''); setNewTaskDueDate('') }
+                      }}
+                      placeholder="Task title..."
+                      className="w-full bg-transparent text-[12px] focus:outline-none"
+                      style={{ color: 'var(--text-primary)' }}
+                    />
+                    <input
+                      type="date"
+                      value={newTaskDueDate}
+                      onChange={e => setNewTaskDueDate(e.target.value)}
+                      className="w-full rounded-md px-2 py-1 text-[11px] focus:outline-none"
+                      style={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border)', color: 'var(--text-secondary)', colorScheme: 'dark' }}
+                    />
+                    <div className="flex gap-2 justify-end">
+                      <button
+                        onClick={() => { setAddingTask(false); setNewTaskTitle(''); setNewTaskDueDate('') }}
+                        className="px-2 py-1 rounded-md text-[11px] transition-colors"
+                        style={{ color: 'var(--text-muted)' }}
+                        onMouseEnter={e => (e.currentTarget.style.color = 'var(--text-secondary)')}
+                        onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-muted)')}
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={handleAddTask}
+                        disabled={!newTaskTitle.trim()}
+                        className="px-2 py-1 rounded-md text-[11px] font-medium transition-colors disabled:opacity-30"
+                        style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-secondary)' }}
+                        onMouseEnter={e => (e.currentTarget.style.color = 'var(--text-primary)')}
+                        onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-secondary)')}
+                      >
+                        Add task
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {tasks.length === 0 && !addingTask && (
+                  <p className="text-[11px] mb-3" style={{ color: 'var(--text-muted)' }}>No tasks yet.</p>
+                )}
+
+                <div className="flex flex-col gap-0.5 mb-3">
+                  {tasks.map(task => (
+                    <div
+                      key={task.id}
+                      className="flex items-start gap-2 py-1.5 px-1 rounded-md"
+                      style={{ backgroundColor: hoveredTaskId === task.id ? 'var(--bg-tertiary)' : 'transparent' }}
+                      onMouseEnter={() => setHoveredTaskId(task.id)}
+                      onMouseLeave={() => setHoveredTaskId(null)}
+                    >
+                      <button
+                        onClick={() => handleToggleTask(task)}
+                        className="mt-[1px] shrink-0"
+                        style={{ color: 'var(--text-secondary)' }}
+                      >
+                        {task.completed ? <CheckCircle2 size={13} /> : <Circle size={13} />}
+                      </button>
+                      <div className="flex-1 min-w-0">
+                        <span
+                          style={{
+                            display: 'block',
+                            fontSize: '12px',
+                            lineHeight: '1.4',
+                            color: 'var(--text-primary)',
+                            textDecoration: task.completed ? 'line-through' : 'none',
+                            opacity: task.completed ? 0.5 : 1,
+                          }}
+                        >
+                          {task.title}
+                        </span>
+                        {task.due_date && (
+                          <span style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '10px', color: 'var(--text-muted)', marginTop: '2px' }}>
+                            <CalendarDays size={9} />
+                            {new Date(task.due_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' })}
+                          </span>
+                        )}
+                      </div>
+                      <button
+                        onClick={() => handleDeleteTask(task.id)}
+                        className="shrink-0 mt-[1px]"
+                        style={{ color: hoveredTaskId === task.id ? 'var(--text-muted)' : 'transparent' }}
+                        onMouseEnter={e => (e.currentTarget.style.color = '#e05252')}
+                        onMouseLeave={e => (e.currentTarget.style.color = hoveredTaskId === task.id ? 'var(--text-muted)' : 'transparent')}
+                      >
+                        <Trash2 size={11} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+                <div className="border-t mb-1" style={{ borderColor: 'var(--border)' }} />
+              </>
+            )}
+
+            <p className="text-[10px] font-medium uppercase tracking-wider mb-2 mt-3" style={{ color: 'var(--text-muted)' }}>Document</p>
+
+            <DetailRow label="Created" icon={<CalendarDays size={12} />}>
+              <span style={{ color: 'var(--text-primary)' }}>{formatDate(doc.created_at)}</span>
+            </DetailRow>
+            <DetailRow label="Author" icon={<User size={12} />}>
+              {currentUser ? (
+                <div className="flex items-center gap-1.5">
+                  <div className="w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-medium" style={{ backgroundColor: 'var(--bg-tertiary)', border: '1px solid var(--border)', color: 'var(--text-secondary)' }}>
+                    {getInitials(currentUser.name, currentUser.email)}
+                  </div>
+                  <span className="truncate" style={{ color: 'var(--text-primary)' }}>{currentUser.name || currentUser.email}</span>
+                </div>
+              ) : (
+                <span style={{ color: 'var(--text-muted)' }}>Unknown</span>
+              )}
+            </DetailRow>
+            <DetailRow label="Words" icon={<FileText size={12} />}>
+              <span style={{ color: 'var(--text-primary)' }}>{wordCount.toLocaleString()}</span>
+            </DetailRow>
+            <DetailRow label="Characters" icon={<Clock size={12} />}>
+              <span style={{ color: 'var(--text-primary)' }}>{charCount.toLocaleString()}</span>
+            </DetailRow>
+
+            <div className="my-3 border-t" style={{ borderColor: 'var(--border)' }} />
+            <p className="text-[10px] font-medium uppercase tracking-wider mb-2" style={{ color: 'var(--text-muted)' }}>Properties</p>
+
+            <div className="flex items-center justify-between py-1.5">
+              <span className="text-xs flex items-center gap-2" style={{ color: 'var(--text-secondary)' }}>Priority</span>
+              {isLoggedIn ? (
+                <div className="relative" ref={priorityRef}>
+                  <button
+                    onClick={() => setPriorityOpen((v) => !v)}
+                    className="flex items-center gap-1.5 px-2 py-1 rounded-md text-xs transition-colors"
+                    style={{ color: 'var(--text-secondary)' }}
+                    onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)')}
+                    onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
                   >
                     <span className={activePriority.color}>{activePriority.icon}</span>
                     <span>{activePriority.label}</span>
                   </button>
-                  {headerPriorityOpen && (
-                    <div className="absolute top-full mt-1.5 left-0 z-50 w-44 rounded-lg border border-[var(--border)] bg-[var(--bg-tertiary)] shadow-xl py-1">
+                  {priorityOpen && (
+                    <div className="absolute bottom-full right-0 mb-1 z-50 w-44 rounded-lg shadow-xl py-1" style={{ backgroundColor: 'var(--bg-tertiary)', border: '1px solid var(--border)' }}>
                       {PRIORITIES.map((p) => (
                         <button key={String(p.value)} onClick={() => handlePriorityChange(p.value)}
-                          className={`w-full flex items-center gap-2.5 px-3 py-1.5 text-xs transition-colors`}
-                          style={{ color: priority === p.value ? 'var(--text-primary)' : 'var(--text-secondary)' }}>
+                          className="w-full flex items-center gap-2.5 px-3 py-1.5 text-xs transition-colors"
+                          style={{ color: priority === p.value ? 'var(--text-primary)' : 'var(--text-muted)' }}
+                          onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--border)')}
+                          onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
+                        >
                           <span className={p.color}>{p.icon}</span>
                           <span>{p.label}</span>
-                          {priority === p.value && <span className="ml-auto text-[#555]">✓</span>}
+                          {priority === p.value && <span className="ml-auto">✓</span>}
                         </button>
                       ))}
                     </div>
                   )}
                 </div>
-              )}
-              {docLabels.length > 0 && (
-                <>
-                  <span className="text-[#444] select-none">·</span>
-                  {docLabels.map(label => (
-                    <div key={label.id} className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-white/5 border border-[var(--border)] text-xs text-[#888]">
-                      <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: label.color }} />
-                      <span>{label.name}</span>
-                    </div>
-                  ))}
-                </>
+              ) : (
+                <span className={`text-xs px-2 py-1 ${activePriority.color}`}>{activePriority.label}</span>
               )}
             </div>
 
-            {doc !== null && (
-              <Editor
-                content={content}
-                editable={isLoggedIn}
-                onChange={(newContent) => { if (!isLoggedIn) return; setContent(newContent) }}
-                onReady={(focusFn) => { editorFocusRef.current = focusFn }}
-                onImageUpload={handleImageUpload}
-                onInsertImageReady={(fn) => { insertImageRef.current = fn }}
-              />
-            )}
+            <div className="flex items-center justify-between py-1.5">
+              <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>Visibility</span>
+              <span className="text-xs px-2 py-1" style={{ color: 'var(--text-secondary)' }}>{isPublic ? 'Public' : 'Private'}</span>
+            </div>
 
-            {wordCount > 0 && (
-              <div className="mt-16 flex items-center gap-2 text-[11px] text-[#383838] select-none">
-                <span>{wordCount.toLocaleString()} words</span>
-                <span>·</span>
-                <span>{charCount.toLocaleString()} characters</span>
-              </div>
-            )}
-          </div>
-        </main>
-      </div>
+            {isLoggedIn && (
+              <>
+                <div className="my-3 border-t" style={{ borderColor: 'var(--border)' }} />
+                <p className="text-[10px] font-medium uppercase tracking-wider mb-2" style={{ color: 'var(--text-muted)' }}>Labels</p>
 
-      <div
-        className={`fixed top-0 right-0 h-full w-[280px] flex flex-col z-30 transition-transform duration-300 ease-in-out ${detailOpen ? 'translate-x-0' : 'translate-x-full'}`}
-        style={{ backgroundColor: 'var(--bg)', borderLeft: '1px solid var(--border)' }}
-      >
-        <div
-          className="flex-1 overflow-y-auto flex flex-col gap-1"
-          style={{ padding: '56px 16px 20px', color: 'var(--text-primary)' }}
-        >
-          {isLoggedIn && (
-            <>
-              <div className="flex items-center justify-between mb-3">
-                <p className="text-[10px] font-medium uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>
-                  Tasks {tasks.length > 0 && `· ${tasks.length}`}
-                </p>
-                <button
-                  onClick={() => { setAddingTask(true); setTimeout(() => newTaskInputRef.current?.focus(), 50) }}
-                  className="flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[11px] transition-colors"
-                  style={{ color: 'var(--text-muted)' }}
-                  onMouseEnter={e => { e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)'; e.currentTarget.style.color = 'var(--text-secondary)' }}
-                  onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = 'var(--text-muted)' }}
-                >
-                  <Plus size={11} />
-                  Add
-                </button>
-              </div>
-
-              {addingTask && (
-                <div
-                  className="rounded-lg p-2.5 mb-3 flex flex-col gap-2"
-                  style={{ backgroundColor: 'var(--bg-tertiary)', border: '1px solid var(--border)' }}
-                >
-                  <input
-                    ref={newTaskInputRef}
-                    value={newTaskTitle}
-                    onChange={e => setNewTaskTitle(e.target.value)}
-                    onKeyDown={e => {
-                      if (e.key === 'Enter') handleAddTask()
-                      if (e.key === 'Escape') { setAddingTask(false); setNewTaskTitle(''); setNewTaskDueDate('') }
-                    }}
-                    placeholder="Task title..."
-                    className="w-full bg-transparent text-[12px] focus:outline-none"
-                    style={{ color: 'var(--text-primary)' }}
-                  />
-                  <input
-                    type="date"
-                    value={newTaskDueDate}
-                    onChange={e => setNewTaskDueDate(e.target.value)}
-                    className="w-full rounded-md px-2 py-1 text-[11px] focus:outline-none"
-                    style={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border)', color: 'var(--text-secondary)', colorScheme: 'dark' }}
-                  />
-                  <div className="flex gap-2 justify-end">
-                    <button
-                      onClick={() => { setAddingTask(false); setNewTaskTitle(''); setNewTaskDueDate('') }}
-                      className="px-2 py-1 rounded-md text-[11px] transition-colors"
-                      style={{ color: 'var(--text-muted)' }}
-                      onMouseEnter={e => (e.currentTarget.style.color = 'var(--text-secondary)')}
-                      onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-muted)')}
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      onClick={handleAddTask}
-                      disabled={!newTaskTitle.trim()}
-                      className="px-2 py-1 rounded-md text-[11px] font-medium transition-colors disabled:opacity-30"
-                      style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-secondary)' }}
-                      onMouseEnter={e => (e.currentTarget.style.color = 'var(--text-primary)')}
-                      onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-secondary)')}
-                    >
-                      Add task
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {tasks.length === 0 && !addingTask && (
-                <p className="text-[11px] mb-3" style={{ color: 'var(--text-muted)' }}>No tasks yet.</p>
-              )}
-
-              <div className="flex flex-col gap-0.5 mb-3">
-                {tasks.map(task => (
-                  <div
-                    key={task.id}
-                    className="flex items-start gap-2 py-1.5 px-1 rounded-md"
-                    style={{ backgroundColor: hoveredTaskId === task.id ? 'var(--bg-tertiary)' : 'transparent' }}
-                    onMouseEnter={() => setHoveredTaskId(task.id)}
-                    onMouseLeave={() => setHoveredTaskId(null)}
-                  >
-                    <button
-                      onClick={() => handleToggleTask(task)}
-                      className="mt-[1px] shrink-0"
-                      style={{ color: 'var(--text-secondary)' }}
-                    >
-                      {task.completed ? <CheckCircle2 size={13} /> : <Circle size={13} />}
-                    </button>
-                    <div className="flex-1 min-w-0">
-                      <span
-                        style={{
-                          display: 'block',
-                          fontSize: '12px',
-                          lineHeight: '1.4',
-                          color: 'var(--text-primary)',
-                          textDecoration: task.completed ? 'line-through' : 'none',
-                          opacity: task.completed ? 0.5 : 1,
-                        }}
-                      >
-                        {task.title}
-                      </span>
-                      {task.due_date && (
-                        <span style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '10px', color: 'var(--text-muted)', marginTop: '2px' }}>
-                          <CalendarDays size={9} />
-                          {new Date(task.due_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' })}
-                        </span>
-                      )}
-                    </div>
-                    <button
-                      onClick={() => handleDeleteTask(task.id)}
-                      className="shrink-0 mt-[1px]"
-                      style={{ color: hoveredTaskId === task.id ? 'var(--text-muted)' : 'transparent' }}
-                      onMouseEnter={e => (e.currentTarget.style.color = '#e05252')}
-                      onMouseLeave={e => (e.currentTarget.style.color = hoveredTaskId === task.id ? 'var(--text-muted)' : 'transparent')}
-                    >
-                      <Trash2 size={11} />
-                    </button>
-                  </div>
-                ))}
-              </div>
-              <div className="border-t mb-1" style={{ borderColor: 'var(--border)' }} />
-            </>
-          )}
-
-          <p className="text-[10px] font-medium uppercase tracking-wider mb-2 mt-3" style={{ color: 'var(--text-muted)' }}>Document</p>
-
-          <DetailRow label="Created" icon={<CalendarDays size={12} />}>
-            <span style={{ color: 'var(--text-primary)' }}>{formatDate(doc.created_at)}</span>
-          </DetailRow>
-          <DetailRow label="Author" icon={<User size={12} />}>
-            {currentUser ? (
-              <div className="flex items-center gap-1.5">
-                <div className="w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-medium" style={{ backgroundColor: 'var(--bg-tertiary)', border: '1px solid var(--border)', color: 'var(--text-secondary)' }}>
-                  {getInitials(currentUser.name, currentUser.email)}
-                </div>
-                <span className="truncate" style={{ color: 'var(--text-primary)' }}>{currentUser.name || currentUser.email}</span>
-              </div>
-            ) : (
-              <span style={{ color: 'var(--text-muted)' }}>Unknown</span>
-            )}
-          </DetailRow>
-          <DetailRow label="Words" icon={<FileText size={12} />}>
-            <span style={{ color: 'var(--text-primary)' }}>{wordCount.toLocaleString()}</span>
-          </DetailRow>
-          <DetailRow label="Characters" icon={<Clock size={12} />}>
-            <span style={{ color: 'var(--text-primary)' }}>{charCount.toLocaleString()}</span>
-          </DetailRow>
-
-          <div className="my-3 border-t" style={{ borderColor: 'var(--border)' }} />
-          <p className="text-[10px] font-medium uppercase tracking-wider mb-2" style={{ color: 'var(--text-muted)' }}>Properties</p>
-
-          <div className="flex items-center justify-between py-1.5">
-            <span className="text-xs flex items-center gap-2" style={{ color: 'var(--text-secondary)' }}>Priority</span>
-            {isLoggedIn ? (
-              <div className="relative" ref={priorityRef}>
-                <button
-                  onClick={() => setPriorityOpen((v) => !v)}
-                  className="flex items-center gap-1.5 px-2 py-1 rounded-md text-xs transition-colors"
-                  style={{ color: 'var(--text-secondary)' }}
-                  onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)')}
-                  onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
-                >
-                  <span className={activePriority.color}>{activePriority.icon}</span>
-                  <span>{activePriority.label}</span>
-                </button>
-                {priorityOpen && (
-                  <div className="absolute bottom-full right-0 mb-1 z-50 w-44 rounded-lg shadow-xl py-1" style={{ backgroundColor: 'var(--bg-tertiary)', border: '1px solid var(--border)' }}>
-                    {PRIORITIES.map((p) => (
-                      <button key={String(p.value)} onClick={() => handlePriorityChange(p.value)}
-                        className="w-full flex items-center gap-2.5 px-3 py-1.5 text-xs transition-colors"
-                        style={{ color: priority === p.value ? 'var(--text-primary)' : 'var(--text-muted)' }}
-                        onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--border)')}
-                        onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
-                      >
-                        <span className={p.color}>{p.icon}</span>
-                        <span>{p.label}</span>
-                        {priority === p.value && <span className="ml-auto">✓</span>}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-            ) : (
-              <span className={`text-xs px-2 py-1 ${activePriority.color}`}>{activePriority.label}</span>
-            )}
-          </div>
-
-          <div className="flex items-center justify-between py-1.5">
-            <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>Visibility</span>
-            <span className="text-xs px-2 py-1" style={{ color: 'var(--text-secondary)' }}>{isPublic ? 'Public' : 'Private'}</span>
-          </div>
-
-          {isLoggedIn && (
-            <>
-              <div className="my-3 border-t" style={{ borderColor: 'var(--border)' }} />
-              <p className="text-[10px] font-medium uppercase tracking-wider mb-2" style={{ color: 'var(--text-muted)' }}>Labels</p>
-
-              <div className="flex flex-col gap-0.5 mb-2">
-                {allLabels.map(label => {
-                  const isOn = docLabels.some(l => l.id === label.id)
-                  const isEditing = editingLabelId === label.id
-                  return (
-                    <div key={label.id}>
-                      {isEditing ? (
-                        <div
-                          className="rounded-lg p-2 flex flex-col gap-2 mb-1"
-                          style={{ backgroundColor: 'var(--bg-tertiary)', border: '1px solid var(--border)' }}
-                        >
-                          <input
-                            autoFocus
-                            value={editingLabelName}
-                            onChange={e => setEditingLabelName(e.target.value)}
-                            onKeyDown={e => {
-                              if (e.key === 'Enter') handleEditLabel(label)
-                              if (e.key === 'Escape') setEditingLabelId(null)
-                            }}
-                            className="w-full bg-transparent text-[12px] focus:outline-none"
-                            style={{ color: 'var(--text-primary)' }}
-                          />
-                          <div className="flex flex-wrap gap-1">
-                            {LABEL_COLORS.map(c => (
+                <div className="flex flex-col gap-0.5 mb-2">
+                  {allLabels.map(label => {
+                    const isOn = docLabels.some(l => l.id === label.id)
+                    const isEditing = editingLabelId === label.id
+                    return (
+                      <div key={label.id}>
+                        {isEditing ? (
+                          <div
+                            className="rounded-lg p-2 flex flex-col gap-2 mb-1"
+                            style={{ backgroundColor: 'var(--bg-tertiary)', border: '1px solid var(--border)' }}
+                          >
+                            <input
+                              autoFocus
+                              value={editingLabelName}
+                              onChange={e => setEditingLabelName(e.target.value)}
+                              onKeyDown={e => {
+                                if (e.key === 'Enter') handleEditLabel(label)
+                                if (e.key === 'Escape') setEditingLabelId(null)
+                              }}
+                              className="w-full bg-transparent text-[12px] focus:outline-none"
+                              style={{ color: 'var(--text-primary)' }}
+                            />
+                            <div className="flex flex-wrap gap-1">
+                              {LABEL_COLORS.map(c => (
+                                <button
+                                  key={c}
+                                  onClick={() => setEditingLabelColor(c)}
+                                  className={`w-4 h-4 rounded-full transition-transform hover:scale-110 ${editingLabelColor === c ? 'ring-2 ring-offset-1' : ''}`}
+                                  style={{ backgroundColor: c }}
+                                />
+                              ))}
+                            </div>
+                            <div className="flex items-center justify-between">
                               <button
-                                key={c}
-                                onClick={() => setEditingLabelColor(c)}
-                                className={`w-4 h-4 rounded-full transition-transform hover:scale-110 ${editingLabelColor === c ? 'ring-2 ring-offset-1' : ''}`}
-                                style={{ backgroundColor: c }}
-                              />
-                            ))}
-                          </div>
-                          <div className="flex items-center justify-between">
-                            <button
-                              onClick={() => handleDeleteLabel(label.id)}
-                              className="text-[11px] transition-colors"
-                              style={{ color: '#e05252' }}
-                              onMouseEnter={e => (e.currentTarget.style.color = '#f87171')}
-                              onMouseLeave={e => (e.currentTarget.style.color = '#e05252')}
-                            >
-                              Delete label
-                            </button>
-                            <div className="flex gap-2">
-                              <button
-                                onClick={() => setEditingLabelId(null)}
-                                className="px-2 py-1 rounded-md text-[11px] transition-colors"
-                                style={{ color: 'var(--text-muted)' }}
-                                onMouseEnter={e => (e.currentTarget.style.color = 'var(--text-secondary)')}
-                                onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-muted)')}
+                                onClick={() => handleDeleteLabel(label.id)}
+                                className="text-[11px] transition-colors"
+                                style={{ color: '#e05252' }}
+                                onMouseEnter={e => (e.currentTarget.style.color = '#f87171')}
+                                onMouseLeave={e => (e.currentTarget.style.color = '#e05252')}
                               >
-                                Cancel
+                                Delete label
                               </button>
-                              <button
-                                onClick={() => handleEditLabel(label)}
-                                className="px-2 py-1 rounded-md text-[11px] font-medium transition-colors"
-                                style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-secondary)' }}
-                                onMouseEnter={e => (e.currentTarget.style.color = 'var(--text-primary)')}
-                                onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-secondary)')}
-                              >
-                                Save
-                              </button>
+                              <div className="flex gap-2">
+                                <button
+                                  onClick={() => setEditingLabelId(null)}
+                                  className="px-2 py-1 rounded-md text-[11px] transition-colors"
+                                  style={{ color: 'var(--text-muted)' }}
+                                  onMouseEnter={e => (e.currentTarget.style.color = 'var(--text-secondary)')}
+                                  onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-muted)')}
+                                >
+                                  Cancel
+                                </button>
+                                <button
+                                  onClick={() => handleEditLabel(label)}
+                                  className="px-2 py-1 rounded-md text-[11px] font-medium transition-colors"
+                                  style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-secondary)' }}
+                                  onMouseEnter={e => (e.currentTarget.style.color = 'var(--text-primary)')}
+                                  onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-secondary)')}
+                                >
+                                  Save
+                                </button>
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      ) : (
-                        <div
-                          className="group flex items-center gap-2 py-1 px-1 rounded-md"
-                          style={{ backgroundColor: 'transparent' }}
-                          onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)')}
-                          onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
-                        >
-                          <button
-                            onClick={() => handleToggleLabel(label)}
-                            className="flex items-center gap-1.5 flex-1 min-w-0"
+                        ) : (
+                          <div
+                            className="group flex items-center gap-2 py-1 px-1 rounded-md"
+                            style={{ backgroundColor: 'transparent' }}
+                            onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)')}
+                            onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
                           >
-                            <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: label.color }} />
-                            <span className="text-[12px] truncate" style={{ color: isOn ? 'var(--text-primary)' : 'var(--text-secondary)' }}>{label.name}</span>
-                            {isOn && <Check size={10} className="shrink-0 ml-auto" style={{ color: 'var(--text-secondary)' }} />}
-                          </button>
-                          <button
-                            onClick={() => {
-                              setEditingLabelId(label.id)
-                              setEditingLabelName(label.name)
-                              setEditingLabelColor(label.color)
-                            }}
-                            className="opacity-0 group-hover:opacity-100 transition-opacity shrink-0 p-0.5 rounded"
-                            style={{ color: 'var(--text-muted)' }}
-                            onMouseEnter={e => (e.currentTarget.style.color = 'var(--text-primary)')}
-                            onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-muted)')}
-                          >
-                            <Pencil size={10} />
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  )
-                })}
-              </div>
-
-              {allLabels.length === 0 && (
-                <p className="text-[11px] mb-2" style={{ color: 'var(--text-muted)' }}>No labels yet.</p>
-              )}
-
-              <div className="relative" ref={labelPickerRef}>
-                <button
-                  onClick={() => { setLabelPickerOpen(v => !v); setCreatingLabel(false) }}
-                  className="flex items-center gap-1.5 px-2 py-1 rounded-md text-xs transition-colors"
-                  style={{ color: 'var(--text-muted)' }}
-                  onMouseEnter={e => { e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)'; e.currentTarget.style.color = 'var(--text-secondary)' }}
-                  onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = 'var(--text-muted)' }}
-                >
-                  <Plus size={11} />
-                  <span>Create label</span>
-                </button>
-                {labelPickerOpen && (
-                  <div className="absolute bottom-full right-0 mb-1 z-50 w-52 rounded-lg shadow-xl py-1" style={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border)' }}>
-                    <div className="px-3 py-2 flex flex-col gap-2">
-                      <p className="text-[10px] uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>New label</p>
-                      <input
-                        autoFocus
-                        value={newLabelName}
-                        onChange={e => setNewLabelName(e.target.value)}
-                        onKeyDown={e => { if (e.key === 'Enter') handleCreateLabel() }}
-                        placeholder="Label name..."
-                        className="w-full rounded-md px-2 py-1.5 text-xs focus:outline-none"
-                        style={{ backgroundColor: 'var(--bg-tertiary)', border: '1px solid var(--border)', color: 'var(--text-primary)' }}
-                      />
-                      <div className="flex flex-wrap gap-1.5">
-                        {LABEL_COLORS.map(c => (
-                          <button key={c} onClick={() => setNewLabelColor(c)}
-                            className={`w-5 h-5 rounded-full transition-transform hover:scale-110 ${newLabelColor === c ? 'ring-2 ring-offset-1' : ''}`}
-                            style={{ backgroundColor: c }}
-                          />
-                        ))}
-                      </div>
-                      <div className="flex gap-2 mt-1">
-                        <button onClick={handleCreateLabel}
-                          className="flex-1 px-2 py-1.5 rounded-md text-xs transition-colors"
-                          style={{ backgroundColor: 'var(--bg-tertiary)', color: 'var(--text-secondary)' }}
-                          onMouseEnter={e => (e.currentTarget.style.color = 'var(--text-primary)')}
-                          onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-secondary)')}
-                        >Create</button>
-                        <button onClick={() => { setLabelPickerOpen(false); setNewLabelName('') }}
-                          className="px-2 py-1.5 rounded-md text-xs transition-colors"
-                          style={{ color: 'var(--text-muted)' }}
-                          onMouseEnter={e => (e.currentTarget.style.color = 'var(--text-secondary)')}
-                          onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-muted)')}
-                        >Cancel</button>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </>
-          )}
-
-          {isLoggedIn && activityEntries.length > 0 && (
-            <>
-              <div className="my-3 border-t" style={{ borderColor: 'var(--border)' }} />
-              <p className="text-[10px] font-medium uppercase tracking-wider mb-3" style={{ color: 'var(--text-muted)' }}>Activity</p>
-              <div className="flex flex-col gap-3">
-                {activityEntries.map((entry, i) => (
-                  <div key={i} className="flex items-start gap-2.5">
-                    <div className="flex flex-col items-center mt-0.5 shrink-0">
-                      <div className={`w-1.5 h-1.5 rounded-full`} style={{ backgroundColor: entry.type === 'created' ? 'rgba(16,185,129,0.6)' : 'var(--bg-tertiary)' }} />
-                      {i < activityEntries.length - 1 && <div className="w-px h-5 mt-1" style={{ backgroundColor: 'var(--border)' }} />}
-                    </div>
-                    <div className="flex flex-col gap-0.5 min-w-0">
-                      <div className="flex items-center gap-1.5">
-                        {currentUser && (
-                          <div className="w-3.5 h-3.5 rounded-full flex items-center justify-center text-[7px] font-medium shrink-0" style={{ backgroundColor: 'var(--bg-tertiary)', border: '1px solid var(--border)', color: 'var(--text-secondary)' }}>
-                            {getInitials(currentUser.name, currentUser.email)}
+                            <button
+                              onClick={() => handleToggleLabel(label)}
+                              className="flex items-center gap-1.5 flex-1 min-w-0"
+                            >
+                              <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: label.color }} />
+                              <span className="text-[12px] truncate" style={{ color: isOn ? 'var(--text-primary)' : 'var(--text-secondary)' }}>{label.name}</span>
+                              {isOn && <Check size={10} className="shrink-0 ml-auto" style={{ color: 'var(--text-secondary)' }} />}
+                            </button>
+                            <button
+                              onClick={() => {
+                                setEditingLabelId(label.id)
+                                setEditingLabelName(label.name)
+                                setEditingLabelColor(label.color)
+                              }}
+                              className="opacity-0 group-hover:opacity-100 transition-opacity shrink-0 p-0.5 rounded"
+                              style={{ color: 'var(--text-muted)' }}
+                              onMouseEnter={e => (e.currentTarget.style.color = 'var(--text-primary)')}
+                              onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-muted)')}
+                            >
+                              <Pencil size={10} />
+                            </button>
                           </div>
                         )}
-                        <span className="text-[11px]" style={{ color: 'var(--text-secondary)' }}>{currentUser?.name || currentUser?.email || 'You'}</span>
-                        <span className="text-[11px]" style={{ color: 'var(--text-muted)' }}>{entry.label.toLowerCase()}</span>
                       </div>
-                      <span className="text-[10px] ml-5" style={{ color: 'var(--text-muted)' }} title={formatDateTime(entry.timestamp)}>{timeAgo(entry.timestamp)}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </>
-          )}
+                    )
+                  })}
+                </div>
 
-          {isLoggedIn && (
-            <>
-              <div className="my-3 border-t" style={{ borderColor: 'var(--border)' }} />
-              <p className="text-[10px] font-medium uppercase tracking-wider mb-3" style={{ color: 'var(--text-muted)' }}>
-                Comments {comments.length > 0 && `· ${comments.length}`}
-              </p>
-              <div className="flex flex-col gap-3 mb-3">
-                {comments.length === 0 && <p className="text-[11px]" style={{ color: 'var(--text-muted)' }}>No comments yet.</p>}
-                {comments.map(comment => (
-                  <div key={comment.id} className="flex items-start gap-2 group">
-                    <div className="w-5 h-5 rounded-full flex items-center justify-center text-[8px] font-medium shrink-0 mt-0.5" style={{ backgroundColor: 'var(--bg-tertiary)', border: '1px solid var(--border)', color: 'var(--text-secondary)' }}>
-                      {comment.user_name?.[0]?.toUpperCase() ?? '?'}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between gap-1">
-                        <span className="text-[11px] font-medium truncate" style={{ color: 'var(--text-primary)' }}>{comment.user_name}</span>
-                        <div className="flex items-center gap-1 shrink-0">
-                          <span className="text-[10px]" style={{ color: 'var(--text-muted)' }}>{timeAgo(comment.created_at)}</span>
-                          {comment.user_id === String(currentUser?.id) && (
-                            <button onClick={() => handleDeleteComment(comment.id)}
-                              className="opacity-0 group-hover:opacity-100 transition-opacity hover:text-red-400 ml-1"
-                              style={{ color: 'var(--text-muted)' }}
-                            >
-                              <Trash2 size={10} />
-                            </button>
-                          )}
+                {allLabels.length === 0 && (
+                  <p className="text-[11px] mb-2" style={{ color: 'var(--text-muted)' }}>No labels yet.</p>
+                )}
+
+                <div className="relative" ref={labelPickerRef}>
+                  <button
+                    onClick={() => { setLabelPickerOpen(v => !v); setCreatingLabel(false) }}
+                    className="flex items-center gap-1.5 px-2 py-1 rounded-md text-xs transition-colors"
+                    style={{ color: 'var(--text-muted)' }}
+                    onMouseEnter={e => { e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)'; e.currentTarget.style.color = 'var(--text-secondary)' }}
+                    onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = 'var(--text-muted)' }}
+                  >
+                    <Plus size={11} />
+                    <span>Create label</span>
+                  </button>
+                  {labelPickerOpen && (
+                    <div className="absolute bottom-full right-0 mb-1 z-50 w-52 rounded-lg shadow-xl py-1" style={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border)' }}>
+                      <div className="px-3 py-2 flex flex-col gap-2">
+                        <p className="text-[10px] uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>New label</p>
+                        <input
+                          autoFocus
+                          value={newLabelName}
+                          onChange={e => setNewLabelName(e.target.value)}
+                          onKeyDown={e => { if (e.key === 'Enter') handleCreateLabel() }}
+                          placeholder="Label name..."
+                          className="w-full rounded-md px-2 py-1.5 text-xs focus:outline-none"
+                          style={{ backgroundColor: 'var(--bg-tertiary)', border: '1px solid var(--border)', color: 'var(--text-primary)' }}
+                        />
+                        <div className="flex flex-wrap gap-1.5">
+                          {LABEL_COLORS.map(c => (
+                            <button key={c} onClick={() => setNewLabelColor(c)}
+                              className={`w-5 h-5 rounded-full transition-transform hover:scale-110 ${newLabelColor === c ? 'ring-2 ring-offset-1' : ''}`}
+                              style={{ backgroundColor: c }}
+                            />
+                          ))}
+                        </div>
+                        <div className="flex gap-2 mt-1">
+                          <button onClick={handleCreateLabel}
+                            className="flex-1 px-2 py-1.5 rounded-md text-xs transition-colors"
+                            style={{ backgroundColor: 'var(--bg-tertiary)', color: 'var(--text-secondary)' }}
+                            onMouseEnter={e => (e.currentTarget.style.color = 'var(--text-primary)')}
+                            onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-secondary)')}
+                          >Create</button>
+                          <button onClick={() => { setLabelPickerOpen(false); setNewLabelName('') }}
+                            className="px-2 py-1.5 rounded-md text-xs transition-colors"
+                            style={{ color: 'var(--text-muted)' }}
+                            onMouseEnter={e => (e.currentTarget.style.color = 'var(--text-secondary)')}
+                            onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-muted)')}
+                          >Cancel</button>
                         </div>
                       </div>
-                      <p className="text-[12px] mt-0.5 leading-relaxed break-words" style={{ color: 'var(--text-secondary)' }}>{comment.body}</p>
                     </div>
-                  </div>
-                ))}
-              </div>
-              <div className="flex flex-col gap-2">
-                <textarea
-                  ref={commentInputRef}
-                  value={commentBody}
-                  onChange={e => setCommentBody(e.target.value)}
-                  onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handlePostComment() } }}
-                  placeholder="Add a comment..."
-                  rows={2}
-                  className="w-full rounded-lg px-3 py-2 text-[12px] focus:outline-none resize-none"
-                  style={{ backgroundColor: 'var(--bg-tertiary)', border: '1px solid var(--border)', color: 'var(--text-primary)' }}
-                />
-                <button onClick={handlePostComment} disabled={!commentBody.trim() || postingComment}
-                  className="self-end flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium transition-colors disabled:opacity-30"
-                  style={{ backgroundColor: 'var(--bg-tertiary)', color: 'var(--text-secondary)' }}
-                >
-                  <Send size={11} />
-                  {postingComment ? 'Posting...' : 'Post'}
-                </button>
-              </div>
-            </>
-          )}
+                  )}
+                </div>
+              </>
+            )}
+
+            {isLoggedIn && activityEntries.length > 0 && (
+              <>
+                <div className="my-3 border-t" style={{ borderColor: 'var(--border)' }} />
+                <p className="text-[10px] font-medium uppercase tracking-wider mb-3" style={{ color: 'var(--text-muted)' }}>Activity</p>
+                <div className="flex flex-col gap-3">
+                  {activityEntries.map((entry, i) => (
+                    <div key={i} className="flex items-start gap-2.5">
+                      <div className="flex flex-col items-center mt-0.5 shrink-0">
+                        <div className={`w-1.5 h-1.5 rounded-full`} style={{ backgroundColor: entry.type === 'created' ? 'rgba(16,185,129,0.6)' : 'var(--bg-tertiary)' }} />
+                        {i < activityEntries.length - 1 && <div className="w-px h-5 mt-1" style={{ backgroundColor: 'var(--border)' }} />}
+                      </div>
+                      <div className="flex flex-col gap-0.5 min-w-0">
+                        <div className="flex items-center gap-1.5">
+                          {currentUser && (
+                            <div className="w-3.5 h-3.5 rounded-full flex items-center justify-center text-[7px] font-medium shrink-0" style={{ backgroundColor: 'var(--bg-tertiary)', border: '1px solid var(--border)', color: 'var(--text-secondary)' }}>
+                              {getInitials(currentUser.name, currentUser.email)}
+                            </div>
+                          )}
+                          <span className="text-[11px]" style={{ color: 'var(--text-secondary)' }}>{currentUser?.name || currentUser?.email || 'You'}</span>
+                          <span className="text-[11px]" style={{ color: 'var(--text-muted)' }}>{entry.label.toLowerCase()}</span>
+                        </div>
+                        <span className="text-[10px] ml-5" style={{ color: 'var(--text-muted)' }} title={formatDateTime(entry.timestamp)}>{timeAgo(entry.timestamp)}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+
+            {isLoggedIn && (
+              <>
+                <div className="my-3 border-t" style={{ borderColor: 'var(--border)' }} />
+                <p className="text-[10px] font-medium uppercase tracking-wider mb-3" style={{ color: 'var(--text-muted)' }}>
+                  Comments {comments.length > 0 && `· ${comments.length}`}
+                </p>
+                <div className="flex flex-col gap-3 mb-3">
+                  {comments.length === 0 && <p className="text-[11px]" style={{ color: 'var(--text-muted)' }}>No comments yet.</p>}
+                  {comments.map(comment => (
+                    <div key={comment.id} className="flex items-start gap-2 group">
+                      <div className="w-5 h-5 rounded-full flex items-center justify-center text-[8px] font-medium shrink-0 mt-0.5" style={{ backgroundColor: 'var(--bg-tertiary)', border: '1px solid var(--border)', color: 'var(--text-secondary)' }}>
+                        {comment.user_name?.[0]?.toUpperCase() ?? '?'}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between gap-1">
+                          <span className="text-[11px] font-medium truncate" style={{ color: 'var(--text-primary)' }}>{comment.user_name}</span>
+                          <div className="flex items-center gap-1 shrink-0">
+                            <span className="text-[10px]" style={{ color: 'var(--text-muted)' }}>{timeAgo(comment.created_at)}</span>
+                            {comment.user_id === String(currentUser?.id) && (
+                              <button onClick={() => handleDeleteComment(comment.id)}
+                                className="opacity-0 group-hover:opacity-100 transition-opacity hover:text-red-400 ml-1"
+                                style={{ color: 'var(--text-muted)' }}
+                              >
+                                <Trash2 size={10} />
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                        <p className="text-[12px] mt-0.5 leading-relaxed break-words" style={{ color: 'var(--text-secondary)' }}>{comment.body}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="flex flex-col gap-2">
+                  <textarea
+                    ref={commentInputRef}
+                    value={commentBody}
+                    onChange={e => setCommentBody(e.target.value)}
+                    onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handlePostComment() } }}
+                    placeholder="Add a comment..."
+                    rows={2}
+                    className="w-full rounded-lg px-3 py-2 text-[12px] focus:outline-none resize-none"
+                    style={{ backgroundColor: 'var(--bg-tertiary)', border: '1px solid var(--border)', color: 'var(--text-primary)' }}
+                  />
+                  <button onClick={handlePostComment} disabled={!commentBody.trim() || postingComment}
+                    className="self-end flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium transition-colors disabled:opacity-30"
+                    style={{ backgroundColor: 'var(--bg-tertiary)', color: 'var(--text-secondary)' }}
+                  >
+                    <Send size={11} />
+                    {postingComment ? 'Posting...' : 'Post'}
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
         </div>
       </div>
-    </div>
+    </RoomProvider>
   )
 }
 
