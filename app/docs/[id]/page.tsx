@@ -7,34 +7,50 @@ import Editor from '@/components/editor'
 import DocTopbar from '@/components/doc-topbar'
 import TabBar from '@/components/tab-bar'
 import { useTabStore } from '@/hooks/use-tab-store'
-import { CalendarDays, SignalLow, SignalMedium, SignalHigh, Minus, FileText, User, Clock, Plus, Check, Send, Trash2, Circle, CheckCircle2, Pencil } from 'lucide-react'
+import { CalendarDays, SignalLow, SignalMedium, SignalHigh, Minus, PanelRight, X, FileText, User, Clock, Plus, Check, Send, Trash2, Circle, CheckCircle2, Pencil, PanelLeftOpen } from 'lucide-react'
 import type { Doc } from '@/lib/db'
-import { createRoomContext } from '@liveblocks/react'
-import { createClient, LiveObject } from '@liveblocks/client'
 
-const liveblocksClient = createClient({
-  authEndpoint: async (room) => {
-    const res = await fetch('/api/liveblocks-auth', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ room }),
-    })
-    return res.json()
-  },
-})
+interface Folder {
+  id: string
+  name: string
+}
 
-const {
-  RoomProvider,
-  useStorage,
-  useMutation,
-} = createRoomContext(liveblocksClient)
+interface User {
+  id: number
+  email: string
+  name: string
+}
 
-interface Folder { id: string; name: string }
-interface User { id: number; email: string; name: string }
-interface Label { id: number; name: string; color: string }
-interface ActivityEntry { type: 'created' | 'edited'; timestamp: string; label: string }
-interface Comment { id: number; user_id: string; user_name: string; body: string; created_at: string }
-interface Task { id: number; title: string; due_date: string | null; doc_id: string; doc_title: string; completed: boolean; created_at: string }
+interface Label {
+  id: number
+  name: string
+  color: string
+}
+
+interface ActivityEntry {
+  type: 'created' | 'edited'
+  timestamp: string
+  label: string
+}
+
+interface Comment {
+  id: number
+  user_id: string
+  user_name: string
+  body: string
+  created_at: string
+}
+
+interface Task {
+  id: number
+  title: string
+  due_date: string | null
+  doc_id: string
+  doc_title: string
+  completed: boolean
+  created_at: string
+}
+
 type Priority = 'low' | 'medium' | 'high' | null
 
 const PRIORITIES: { value: Priority; label: string; icon: React.ReactNode; color: string }[] = [
@@ -54,15 +70,18 @@ function getWordCount(content: string): number {
   if (!text) return 0
   return text.split(/\s+/).filter(Boolean).length
 }
+
 function getCharCount(content: string): number {
   return content.replace(/<[^>]*>/g, '').length
 }
+
 function formatDate(dateStr: string) {
   if (!dateStr) return ''
   const date = new Date(dateStr)
   if (isNaN(date.getTime())) return ''
   return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
 }
+
 function formatDateTime(dateStr: string) {
   if (!dateStr) return ''
   const date = new Date(dateStr)
@@ -70,6 +89,7 @@ function formatDateTime(dateStr: string) {
   return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) +
     ' · ' + date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
 }
+
 function timeAgo(dateStr: string): string {
   const date = new Date(dateStr)
   const now = new Date()
@@ -84,6 +104,7 @@ function timeAgo(dateStr: string): string {
   if (days < 30) return `${days}d ago`
   return formatDate(dateStr)
 }
+
 function getInitials(name: string, email: string): string {
   if (name && name.trim()) {
     const parts = name.trim().split(' ')
@@ -93,63 +114,13 @@ function getInitials(name: string, email: string): string {
   return email?.[0]?.toUpperCase() ?? '?'
 }
 
-function CollaborativeEditor({
-  content, isLoggedIn, editorFocusRef, insertImageRef, handleImageUpload,
-}: {
-  content: string
-  isLoggedIn: boolean
-  editorFocusRef: React.MutableRefObject<(() => void) | null>
-  insertImageRef: React.MutableRefObject<((url: string) => void) | null>
-  handleImageUpload: (file: File) => Promise<string | null>
-  setContent: (c: string) => void
-}) {
-  const lbContent = useStorage((root) => (root.content as any)?.html)
-  const updateLbContent = useMutation(({ storage }, newContent: string) => {
-    const contentObj = storage.get('content') as any
-    if (contentObj) contentObj.set('html', newContent)
-  }, [])
-
-  const [localContent, setLocalContent] = useState(content)
-  const prevLbRef = useRef<string | null>(null)
-  const isFirstSync = useRef(true)
-
-  useEffect(() => {
-    if (lbContent === undefined || lbContent === null) return
-    if (isFirstSync.current) {
-      isFirstSync.current = false
-      prevLbRef.current = lbContent
-      if (lbContent && lbContent !== localContent) setLocalContent(lbContent)
-      return
-    }
-    if (lbContent !== prevLbRef.current) {
-      prevLbRef.current = lbContent
-      setLocalContent(lbContent)
-    }
-  }, [lbContent])
-
-  const handleChange = useCallback((newContent: string) => {
-    if (!isLoggedIn) return
-    setLocalContent(newContent)
-    updateLbContent(newContent)
-  }, [isLoggedIn, updateLbContent])
-
-  return (
-    <Editor
-      content={localContent}
-      editable={isLoggedIn}
-      onChange={handleChange}
-      onReady={(focusFn) => { editorFocusRef.current = focusFn }}
-      onImageUpload={handleImageUpload}
-      onInsertImageReady={(fn) => { insertImageRef.current = fn }}
-    />
-  )
-}
-
 export default function DocPage() {
   const params = useParams()
   const urlDocId = Array.isArray(params.id) ? params.id[0] : (params.id as string)
   const router = useRouter()
   const { activeId: tabActiveId } = useTabStore()
+  // Use the tab store's active ID when switching tabs (avoids full page reload)
+  // Fall back to the URL param for direct navigation / first load
   const docId = tabActiveId || urlDocId
   const [collapsed, setCollapsed] = useState(false)
 
@@ -191,21 +162,25 @@ export default function DocPage() {
   const commentInputRef = useRef<HTMLTextAreaElement>(null)
   const imageInputRef = useRef<HTMLInputElement>(null)
   const insertImageRef = useRef<((url: string) => void) | null>(null)
+
+  // Label editing state
   const [editingLabelId, setEditingLabelId] = useState<number | null>(null)
   const [editingLabelName, setEditingLabelName] = useState('')
   const [editingLabelColor, setEditingLabelColor] = useState('')
+
   const [tasks, setTasks] = useState<Task[]>([])
   const [addingTask, setAddingTask] = useState(false)
   const [newTaskTitle, setNewTaskTitle] = useState('')
   const [newTaskDueDate, setNewTaskDueDate] = useState('')
   const newTaskInputRef = useRef<HTMLInputElement>(null)
   const [hoveredTaskId, setHoveredTaskId] = useState<number | null>(null)
-  const [isSharedDoc, setIsSharedDoc] = useState(false)
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
       if (labelPickerRef.current && !labelPickerRef.current.contains(e.target as Node)) {
-        setLabelPickerOpen(false); setCreatingLabel(false); setNewLabelName('')
+        setLabelPickerOpen(false)
+        setCreatingLabel(false)
+        setNewLabelName('')
       }
     }
     document.addEventListener('mousedown', handleClickOutside)
@@ -213,7 +188,9 @@ export default function DocPage() {
   }, [])
 
   useEffect(() => {
-    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape' && detailOpen) setDetailOpen(false) }
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && detailOpen) setDetailOpen(false)
+    }
     document.addEventListener('keydown', handler)
     return () => document.removeEventListener('keydown', handler)
   }, [detailOpen])
@@ -224,7 +201,10 @@ export default function DocPage() {
   }, [])
 
   const toggleWideMode = () => {
-    setWideMode((v) => { localStorage.setItem('doc-wide-mode', String(!v)); return !v })
+    setWideMode((v) => {
+      localStorage.setItem('doc-wide-mode', String(!v))
+      return !v
+    })
   }
 
   const resizeTitle = () => {
@@ -261,9 +241,14 @@ export default function DocPage() {
     fetch('/api/labels').then(r => r.json()).then(data => { if (Array.isArray(data)) setAllLabels(data) })
     fetch(`/api/docs/${docId}/labels`).then(r => r.json()).then(data => { if (Array.isArray(data)) setDocLabels(data) })
     fetch(`/api/comments?docId=${docId}`).then(r => r.json()).then(data => { if (Array.isArray(data)) setComments(data) })
-    fetch('/api/tasks').then(r => r.json()).then(data => {
-      if (Array.isArray(data)) setTasks(data.filter((t: Task) => String(t.doc_id) === String(docId)))
-    }).catch(() => {})
+    fetch('/api/tasks')
+      .then(r => r.json())
+      .then(data => {
+        if (Array.isArray(data)) {
+          setTasks(data.filter((t: Task) => String(t.doc_id) === String(docId)))
+        }
+      })
+      .catch(() => {})
   }, [isLoggedIn, docId])
 
   useEffect(() => {
@@ -282,7 +267,6 @@ export default function DocPage() {
         if (data.folder_id && data.folder_name) {
           setFolder({ id: data.folder_id, name: data.folder_name })
         }
-        setIsSharedDoc(!!data.workspace_id)
       })
     } else {
       fetch(`/api/docs/public/${docId}`).then((res) => res.json()).then((data: Doc) => {
@@ -319,8 +303,14 @@ export default function DocPage() {
   }, [title, content])
 
   const handlePriorityChange = async (value: Priority) => {
-    setPriority(value); setPriorityOpen(false); setHeaderPriorityOpen(false)
-    await fetch(`/api/docs/${docId}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ priority: value }) })
+    setPriority(value)
+    setPriorityOpen(false)
+    setHeaderPriorityOpen(false)
+    await fetch(`/api/docs/${docId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ priority: value }),
+    })
   }
 
   const handleToggleLabel = async (label: Label) => {
@@ -341,12 +331,18 @@ export default function DocPage() {
     setAllLabels(prev => [...prev, created])
     await fetch(`/api/docs/${docId}/labels`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ labelId: created.id }) })
     setDocLabels(prev => [...prev, created])
-    setNewLabelName(''); setNewLabelColor('#888888'); setCreatingLabel(false)
+    setNewLabelName('')
+    setNewLabelColor('#888888')
+    setCreatingLabel(false)
   }
 
   const handleEditLabel = async (label: Label) => {
     if (!editingLabelName.trim()) return
-    const res = await fetch(`/api/labels/${label.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: editingLabelName.trim(), color: editingLabelColor }) })
+    const res = await fetch(`/api/labels/${label.id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: editingLabelName.trim(), color: editingLabelColor }),
+    })
     const updated = await res.json()
     setAllLabels(prev => prev.map(l => l.id === label.id ? updated : l))
     setDocLabels(prev => prev.map(l => l.id === label.id ? updated : l))
@@ -363,9 +359,15 @@ export default function DocPage() {
   const handlePostComment = async () => {
     if (!commentBody.trim() || postingComment) return
     setPostingComment(true)
-    const res = await fetch('/api/comments', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ docId, body: commentBody.trim(), userName: currentUser?.name || currentUser?.email || 'Anonymous' }) })
+    const res = await fetch('/api/comments', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ docId, body: commentBody.trim(), userName: currentUser?.name || currentUser?.email || 'Anonymous' }),
+    })
     const created = await res.json()
-    setComments(prev => [...prev, created]); setCommentBody(''); setPostingComment(false)
+    setComments(prev => [...prev, created])
+    setCommentBody('')
+    setPostingComment(false)
   }
 
   const handleDeleteComment = async (commentId: number) => {
@@ -375,20 +377,40 @@ export default function DocPage() {
 
   const handleAddTask = async () => {
     if (!newTaskTitle.trim()) return
-    const res = await fetch('/api/tasks', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title: newTaskTitle.trim(), due_date: newTaskDueDate || null, doc_id: docId, doc_title: title || 'Untitled' }) })
+    const res = await fetch('/api/tasks', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        title: newTaskTitle.trim(),
+        due_date: newTaskDueDate || null,
+        doc_id: docId,
+        doc_title: title || 'Untitled',
+      }),
+    })
     const created = await res.json()
-    setTasks(prev => [created, ...prev]); setNewTaskTitle(''); setNewTaskDueDate(''); setAddingTask(false)
+    setTasks(prev => [created, ...prev])
+    setNewTaskTitle('')
+    setNewTaskDueDate('')
+    setAddingTask(false)
   }
 
   const handleToggleTask = async (task: Task) => {
     const updated = { ...task, completed: !task.completed }
     setTasks(prev => prev.map(t => t.id === task.id ? updated : t))
-    await fetch('/api/tasks', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: task.id, completed: updated.completed }) })
+    await fetch('/api/tasks', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: task.id, completed: updated.completed }),
+    })
   }
 
   const handleDeleteTask = async (taskId: number) => {
     setTasks(prev => prev.filter(t => t.id !== taskId))
-    await fetch('/api/tasks', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: taskId }) })
+    await fetch('/api/tasks', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: taskId }),
+    })
   }
 
   const handleNewDoc = async () => {
@@ -400,7 +422,11 @@ export default function DocPage() {
   const handleToggleFavorite = async () => {
     const newValue = !isFavorite
     setIsFavorite(newValue)
-    await fetch(`/api/docs/${docId}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ is_starred: newValue }) })
+    await fetch(`/api/docs/${docId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ is_starred: newValue }),
+    })
   }
 
   const handleDelete = async () => {
@@ -438,34 +464,6 @@ export default function DocPage() {
 
   if (!authChecked || !doc) return null
 
-  const editorNode = doc !== null && (
-    isSharedDoc && isLoggedIn ? (
-      <RoomProvider
-        id={docId}
-        initialPresence={{}}
-        initialStorage={{ content: new LiveObject({ html: content }) }}
-      >
-        <CollaborativeEditor
-          content={content}
-          isLoggedIn={isLoggedIn}
-          editorFocusRef={editorFocusRef}
-          insertImageRef={insertImageRef}
-          handleImageUpload={handleImageUpload}
-          setContent={setContent}
-        />
-      </RoomProvider>
-    ) : (
-      <Editor
-        content={content}
-        editable={isLoggedIn}
-        onChange={(newContent) => { if (!isLoggedIn) return; setContent(newContent) }}
-        onReady={(focusFn) => { editorFocusRef.current = focusFn }}
-        onImageUpload={handleImageUpload}
-        onInsertImageReady={(fn) => { insertImageRef.current = fn }}
-      />
-    )
-  )
-
   return (
     <div className="flex h-screen bg-background overflow-hidden">
       <input
@@ -477,7 +475,9 @@ export default function DocPage() {
           const file = e.target.files?.[0]
           if (file) {
             const url = await handleImageUpload(file)
-            if (url && insertImageRef.current) insertImageRef.current(url)
+            if (url && insertImageRef.current) {
+              insertImageRef.current(url)
+            }
           }
           e.target.value = ""
         }}
@@ -492,21 +492,21 @@ export default function DocPage() {
         style={{ marginRight: detailOpen ? '280px' : '0' }}
       >
         <DocTopbar
-          docTitle={title}
-          folder={folder}
-          saveStatus={saveStatus}
-          content={content}
-          onDelete={isLoggedIn ? handleDelete : undefined}
-          docId={docId}
-          isPublic={isPublic}
-          sidebarWidth={sidebarWidth}
-          wideMode={wideMode}
-          onToggleWide={toggleWideMode}
-          isFavorite={isFavorite}
-          onToggleFavorite={isLoggedIn ? handleToggleFavorite : undefined}
-          detailOpen={detailOpen}
-          onToggleDetail={() => setDetailOpen(v => !v)}
-        />
+  docTitle={title}
+  folder={folder}
+  saveStatus={saveStatus}
+  content={content}
+  onDelete={isLoggedIn ? handleDelete : undefined}
+  docId={docId}
+  isPublic={isPublic}
+  sidebarWidth={sidebarWidth}
+  wideMode={wideMode}
+  onToggleWide={toggleWideMode}
+  isFavorite={isFavorite}
+  onToggleFavorite={isLoggedIn ? handleToggleFavorite : undefined}
+  detailOpen={detailOpen}
+  onToggleDetail={() => setDetailOpen(v => !v)}
+/>
         <TabBar sidebarWidth={sidebarWidth} />
 
         <main className="flex-1 overflow-y-auto" style={{ paddingTop: tabs.length > 0 ? '80px' : '44px' }}>
@@ -551,8 +551,8 @@ export default function DocPage() {
                     <div className="absolute top-full mt-1.5 left-0 z-50 w-44 rounded-lg border border-[var(--border)] bg-[var(--bg-tertiary)] shadow-xl py-1">
                       {PRIORITIES.map((p) => (
                         <button key={String(p.value)} onClick={() => handlePriorityChange(p.value)}
-                          className="w-full flex items-center gap-2.5 px-3 py-1.5 text-xs transition-colors"
-                          style={{ color: priority === p.value ? 'var(--text-primary)' : 'var(--text-secondary)' }}>
+                          className={`w-full flex items-center gap-2.5 px-3 py-1.5 text-xs transition-colors`}
+                        style={{ color: priority === p.value ? 'var(--text-primary)' : 'var(--text-secondary)' }}>
                           <span className={p.color}>{p.icon}</span>
                           <span>{p.label}</span>
                           {priority === p.value && <span className="ml-auto text-[#555]">✓</span>}
@@ -575,7 +575,16 @@ export default function DocPage() {
               )}
             </div>
 
-            {editorNode}
+            {doc !== null && (
+              <Editor
+                content={content}
+                editable={isLoggedIn}
+                onChange={(newContent) => { if (!isLoggedIn) return; setContent(newContent) }}
+                onReady={(focusFn) => { editorFocusRef.current = focusFn }}
+                onImageUpload={handleImageUpload}
+                onInsertImageReady={(fn) => { insertImageRef.current = fn }}
+              />
+            )}
 
             {wordCount > 0 && (
               <div className="mt-16 flex items-center gap-2 text-[11px] text-[#383838] select-none">
@@ -592,7 +601,10 @@ export default function DocPage() {
         className={`fixed top-0 right-0 h-full w-[280px] flex flex-col z-30 transition-transform duration-300 ease-in-out ${detailOpen ? 'translate-x-0' : 'translate-x-full'}`}
         style={{ backgroundColor: 'var(--bg)', borderLeft: '1px solid var(--border)' }}
       >
-        <div className="flex-1 overflow-y-auto flex flex-col gap-1" style={{ padding: '56px 16px 20px', color: 'var(--text-primary)' }}>
+        <div
+          className="flex-1 overflow-y-auto flex flex-col gap-1"
+          style={{ padding: '56px 16px 20px', color: 'var(--text-primary)' }}
+        >
           {isLoggedIn && (
             <>
               <div className="flex items-center justify-between mb-3">
@@ -612,37 +624,86 @@ export default function DocPage() {
               </div>
 
               {addingTask && (
-                <div className="rounded-lg p-2.5 mb-3 flex flex-col gap-2" style={{ backgroundColor: 'var(--bg-tertiary)', border: '1px solid var(--border)' }}>
-                  <input ref={newTaskInputRef} value={newTaskTitle} onChange={e => setNewTaskTitle(e.target.value)}
-                    onKeyDown={e => { if (e.key === 'Enter') handleAddTask(); if (e.key === 'Escape') { setAddingTask(false); setNewTaskTitle(''); setNewTaskDueDate('') } }}
-                    placeholder="Task title..." className="w-full bg-transparent text-[12px] focus:outline-none" style={{ color: 'var(--text-primary)' }} />
-                  <input type="date" value={newTaskDueDate} onChange={e => setNewTaskDueDate(e.target.value)}
+                <div
+                  className="rounded-lg p-2.5 mb-3 flex flex-col gap-2"
+                  style={{ backgroundColor: 'var(--bg-tertiary)', border: '1px solid var(--border)' }}
+                >
+                  <input
+                    ref={newTaskInputRef}
+                    value={newTaskTitle}
+                    onChange={e => setNewTaskTitle(e.target.value)}
+                    onKeyDown={e => {
+                      if (e.key === 'Enter') handleAddTask()
+                      if (e.key === 'Escape') { setAddingTask(false); setNewTaskTitle(''); setNewTaskDueDate('') }
+                    }}
+                    placeholder="Task title..."
+                    className="w-full bg-transparent text-[12px] focus:outline-none"
+                    style={{ color: 'var(--text-primary)' }}
+                  />
+                  <input
+                    type="date"
+                    value={newTaskDueDate}
+                    onChange={e => setNewTaskDueDate(e.target.value)}
                     className="w-full rounded-md px-2 py-1 text-[11px] focus:outline-none"
-                    style={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border)', color: 'var(--text-secondary)', colorScheme: 'dark' }} />
+                    style={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border)', color: 'var(--text-secondary)', colorScheme: 'dark' }}
+                  />
                   <div className="flex gap-2 justify-end">
-                    <button onClick={() => { setAddingTask(false); setNewTaskTitle(''); setNewTaskDueDate('') }}
-                      className="px-2 py-1 rounded-md text-[11px] transition-colors" style={{ color: 'var(--text-muted)' }}
-                      onMouseEnter={e => (e.currentTarget.style.color = 'var(--text-secondary)')} onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-muted)')}>Cancel</button>
-                    <button onClick={handleAddTask} disabled={!newTaskTitle.trim()}
+                    <button
+                      onClick={() => { setAddingTask(false); setNewTaskTitle(''); setNewTaskDueDate('') }}
+                      className="px-2 py-1 rounded-md text-[11px] transition-colors"
+                      style={{ color: 'var(--text-muted)' }}
+                      onMouseEnter={e => (e.currentTarget.style.color = 'var(--text-secondary)')}
+                      onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-muted)')}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handleAddTask}
+                      disabled={!newTaskTitle.trim()}
                       className="px-2 py-1 rounded-md text-[11px] font-medium transition-colors disabled:opacity-30"
                       style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-secondary)' }}
-                      onMouseEnter={e => (e.currentTarget.style.color = 'var(--text-primary)')} onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-secondary)')}>Add task</button>
+                      onMouseEnter={e => (e.currentTarget.style.color = 'var(--text-primary)')}
+                      onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-secondary)')}
+                    >
+                      Add task
+                    </button>
                   </div>
                 </div>
               )}
 
-              {tasks.length === 0 && !addingTask && <p className="text-[11px] mb-3" style={{ color: 'var(--text-muted)' }}>No tasks yet.</p>}
+              {tasks.length === 0 && !addingTask && (
+                <p className="text-[11px] mb-3" style={{ color: 'var(--text-muted)' }}>No tasks yet.</p>
+              )}
 
               <div className="flex flex-col gap-0.5 mb-3">
                 {tasks.map(task => (
-                  <div key={task.id} className="flex items-start gap-2 py-1.5 px-1 rounded-md"
+                  <div
+                    key={task.id}
+                    className="flex items-start gap-2 py-1.5 px-1 rounded-md"
                     style={{ backgroundColor: hoveredTaskId === task.id ? 'var(--bg-tertiary)' : 'transparent' }}
-                    onMouseEnter={() => setHoveredTaskId(task.id)} onMouseLeave={() => setHoveredTaskId(null)}>
-                    <button onClick={() => handleToggleTask(task)} className="mt-[1px] shrink-0" style={{ color: 'var(--text-secondary)' }}>
+                    onMouseEnter={() => setHoveredTaskId(task.id)}
+                    onMouseLeave={() => setHoveredTaskId(null)}
+                  >
+                    <button
+                      onClick={() => handleToggleTask(task)}
+                      className="mt-[1px] shrink-0"
+                      style={{ color: 'var(--text-secondary)' }}
+                    >
                       {task.completed ? <CheckCircle2 size={13} /> : <Circle size={13} />}
                     </button>
                     <div className="flex-1 min-w-0">
-                      <span style={{ display: 'block', fontSize: '12px', lineHeight: '1.4', color: 'var(--text-primary)', textDecoration: task.completed ? 'line-through' : 'none', opacity: task.completed ? 0.5 : 1 }}>{task.title}</span>
+                      <span
+                        style={{
+                          display: 'block',
+                          fontSize: '12px',
+                          lineHeight: '1.4',
+                          color: 'var(--text-primary)',
+                          textDecoration: task.completed ? 'line-through' : 'none',
+                          opacity: task.completed ? 0.5 : 1,
+                        }}
+                      >
+                        {task.title}
+                      </span>
                       {task.due_date && (
                         <span style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '10px', color: 'var(--text-muted)', marginTop: '2px' }}>
                           <CalendarDays size={9} />
@@ -650,9 +711,13 @@ export default function DocPage() {
                         </span>
                       )}
                     </div>
-                    <button onClick={() => handleDeleteTask(task.id)} className="shrink-0 mt-[1px]"
+                    <button
+                      onClick={() => handleDeleteTask(task.id)}
+                      className="shrink-0 mt-[1px]"
                       style={{ color: hoveredTaskId === task.id ? 'var(--text-muted)' : 'transparent' }}
-                      onMouseEnter={e => (e.currentTarget.style.color = '#e05252')} onMouseLeave={e => (e.currentTarget.style.color = hoveredTaskId === task.id ? 'var(--text-muted)' : 'transparent')}>
+                      onMouseEnter={e => (e.currentTarget.style.color = '#e05252')}
+                      onMouseLeave={e => (e.currentTarget.style.color = hoveredTaskId === task.id ? 'var(--text-muted)' : 'transparent')}
+                    >
                       <Trash2 size={11} />
                     </button>
                   </div>
@@ -663,7 +728,10 @@ export default function DocPage() {
           )}
 
           <p className="text-[10px] font-medium uppercase tracking-wider mb-2 mt-3" style={{ color: 'var(--text-muted)' }}>Document</p>
-          <DetailRow label="Created" icon={<CalendarDays size={12} />}><span style={{ color: 'var(--text-primary)' }}>{formatDate(doc.created_at)}</span></DetailRow>
+
+          <DetailRow label="Created" icon={<CalendarDays size={12} />}>
+            <span style={{ color: 'var(--text-primary)' }}>{formatDate(doc.created_at)}</span>
+          </DetailRow>
           <DetailRow label="Author" icon={<User size={12} />}>
             {currentUser ? (
               <div className="flex items-center gap-1.5">
@@ -672,10 +740,16 @@ export default function DocPage() {
                 </div>
                 <span className="truncate" style={{ color: 'var(--text-primary)' }}>{currentUser.name || currentUser.email}</span>
               </div>
-            ) : <span style={{ color: 'var(--text-muted)' }}>Unknown</span>}
+            ) : (
+              <span style={{ color: 'var(--text-muted)' }}>Unknown</span>
+            )}
           </DetailRow>
-          <DetailRow label="Words" icon={<FileText size={12} />}><span style={{ color: 'var(--text-primary)' }}>{wordCount.toLocaleString()}</span></DetailRow>
-          <DetailRow label="Characters" icon={<Clock size={12} />}><span style={{ color: 'var(--text-primary)' }}>{charCount.toLocaleString()}</span></DetailRow>
+          <DetailRow label="Words" icon={<FileText size={12} />}>
+            <span style={{ color: 'var(--text-primary)' }}>{wordCount.toLocaleString()}</span>
+          </DetailRow>
+          <DetailRow label="Characters" icon={<Clock size={12} />}>
+            <span style={{ color: 'var(--text-primary)' }}>{charCount.toLocaleString()}</span>
+          </DetailRow>
 
           <div className="my-3 border-t" style={{ borderColor: 'var(--border)' }} />
           <p className="text-[10px] font-medium uppercase tracking-wider mb-2" style={{ color: 'var(--text-muted)' }}>Properties</p>
@@ -684,9 +758,13 @@ export default function DocPage() {
             <span className="text-xs flex items-center gap-2" style={{ color: 'var(--text-secondary)' }}>Priority</span>
             {isLoggedIn ? (
               <div className="relative" ref={priorityRef}>
-                <button onClick={() => setPriorityOpen((v) => !v)}
-                  className="flex items-center gap-1.5 px-2 py-1 rounded-md text-xs transition-colors" style={{ color: 'var(--text-secondary)' }}
-                  onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)')} onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}>
+                <button
+                  onClick={() => setPriorityOpen((v) => !v)}
+                  className="flex items-center gap-1.5 px-2 py-1 rounded-md text-xs transition-colors"
+                  style={{ color: 'var(--text-secondary)' }}
+                  onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)')}
+                  onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
+                >
                   <span className={activePriority.color}>{activePriority.icon}</span>
                   <span>{activePriority.label}</span>
                 </button>
@@ -696,7 +774,9 @@ export default function DocPage() {
                       <button key={String(p.value)} onClick={() => handlePriorityChange(p.value)}
                         className="w-full flex items-center gap-2.5 px-3 py-1.5 text-xs transition-colors"
                         style={{ color: priority === p.value ? 'var(--text-primary)' : 'var(--text-muted)' }}
-                        onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--border)')} onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}>
+                        onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--border)')}
+                        onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
+                      >
                         <span className={p.color}>{p.icon}</span>
                         <span>{p.label}</span>
                         {priority === p.value && <span className="ml-auto">✓</span>}
@@ -705,7 +785,9 @@ export default function DocPage() {
                   </div>
                 )}
               </div>
-            ) : <span className={`text-xs px-2 py-1 ${activePriority.color}`}>{activePriority.label}</span>}
+            ) : (
+              <span className={`text-xs px-2 py-1 ${activePriority.color}`}>{activePriority.label}</span>
+            )}
           </div>
 
           <div className="flex items-center justify-between py-1.5">
@@ -717,6 +799,7 @@ export default function DocPage() {
             <>
               <div className="my-3 border-t" style={{ borderColor: 'var(--border)' }} />
               <p className="text-[10px] font-medium uppercase tracking-wider mb-2" style={{ color: 'var(--text-muted)' }}>Labels</p>
+
               <div className="flex flex-col gap-0.5 mb-2">
                 {allLabels.map(label => {
                   const isOn = docLabels.some(l => l.id === label.id)
@@ -724,40 +807,89 @@ export default function DocPage() {
                   return (
                     <div key={label.id}>
                       {isEditing ? (
-                        <div className="rounded-lg p-2 flex flex-col gap-2 mb-1" style={{ backgroundColor: 'var(--bg-tertiary)', border: '1px solid var(--border)' }}>
-                          <input autoFocus value={editingLabelName} onChange={e => setEditingLabelName(e.target.value)}
-                            onKeyDown={e => { if (e.key === 'Enter') handleEditLabel(label); if (e.key === 'Escape') setEditingLabelId(null) }}
-                            className="w-full bg-transparent text-[12px] focus:outline-none" style={{ color: 'var(--text-primary)' }} />
+                        <div
+                          className="rounded-lg p-2 flex flex-col gap-2 mb-1"
+                          style={{ backgroundColor: 'var(--bg-tertiary)', border: '1px solid var(--border)' }}
+                        >
+                          <input
+                            autoFocus
+                            value={editingLabelName}
+                            onChange={e => setEditingLabelName(e.target.value)}
+                            onKeyDown={e => {
+                              if (e.key === 'Enter') handleEditLabel(label)
+                              if (e.key === 'Escape') setEditingLabelId(null)
+                            }}
+                            className="w-full bg-transparent text-[12px] focus:outline-none"
+                            style={{ color: 'var(--text-primary)' }}
+                          />
                           <div className="flex flex-wrap gap-1">
                             {LABEL_COLORS.map(c => (
-                              <button key={c} onClick={() => setEditingLabelColor(c)}
+                              <button
+                                key={c}
+                                onClick={() => setEditingLabelColor(c)}
                                 className={`w-4 h-4 rounded-full transition-transform hover:scale-110 ${editingLabelColor === c ? 'ring-2 ring-offset-1' : ''}`}
-                                style={{ backgroundColor: c }} />
+                                style={{ backgroundColor: c }}
+                              />
                             ))}
                           </div>
                           <div className="flex items-center justify-between">
-                            <button onClick={() => handleDeleteLabel(label.id)} className="text-[11px] transition-colors" style={{ color: '#e05252' }}
-                              onMouseEnter={e => (e.currentTarget.style.color = '#f87171')} onMouseLeave={e => (e.currentTarget.style.color = '#e05252')}>Delete label</button>
+                            <button
+                              onClick={() => handleDeleteLabel(label.id)}
+                              className="text-[11px] transition-colors"
+                              style={{ color: '#e05252' }}
+                              onMouseEnter={e => (e.currentTarget.style.color = '#f87171')}
+                              onMouseLeave={e => (e.currentTarget.style.color = '#e05252')}
+                            >
+                              Delete label
+                            </button>
                             <div className="flex gap-2">
-                              <button onClick={() => setEditingLabelId(null)} className="px-2 py-1 rounded-md text-[11px] transition-colors" style={{ color: 'var(--text-muted)' }}
-                                onMouseEnter={e => (e.currentTarget.style.color = 'var(--text-secondary)')} onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-muted)')}>Cancel</button>
-                              <button onClick={() => handleEditLabel(label)} className="px-2 py-1 rounded-md text-[11px] font-medium transition-colors"
+                              <button
+                                onClick={() => setEditingLabelId(null)}
+                                className="px-2 py-1 rounded-md text-[11px] transition-colors"
+                                style={{ color: 'var(--text-muted)' }}
+                                onMouseEnter={e => (e.currentTarget.style.color = 'var(--text-secondary)')}
+                                onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-muted)')}
+                              >
+                                Cancel
+                              </button>
+                              <button
+                                onClick={() => handleEditLabel(label)}
+                                className="px-2 py-1 rounded-md text-[11px] font-medium transition-colors"
                                 style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-secondary)' }}
-                                onMouseEnter={e => (e.currentTarget.style.color = 'var(--text-primary)')} onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-secondary)')}>Save</button>
+                                onMouseEnter={e => (e.currentTarget.style.color = 'var(--text-primary)')}
+                                onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-secondary)')}
+                              >
+                                Save
+                              </button>
                             </div>
                           </div>
                         </div>
                       ) : (
-                        <div className="group flex items-center gap-2 py-1 px-1 rounded-md" style={{ backgroundColor: 'transparent' }}
-                          onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)')} onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}>
-                          <button onClick={() => handleToggleLabel(label)} className="flex items-center gap-1.5 flex-1 min-w-0">
+                        <div
+                          className="group flex items-center gap-2 py-1 px-1 rounded-md"
+                          style={{ backgroundColor: 'transparent' }}
+                          onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)')}
+                          onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
+                        >
+                          <button
+                            onClick={() => handleToggleLabel(label)}
+                            className="flex items-center gap-1.5 flex-1 min-w-0"
+                          >
                             <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: label.color }} />
                             <span className="text-[12px] truncate" style={{ color: isOn ? 'var(--text-primary)' : 'var(--text-secondary)' }}>{label.name}</span>
                             {isOn && <Check size={10} className="shrink-0 ml-auto" style={{ color: 'var(--text-secondary)' }} />}
                           </button>
-                          <button onClick={() => { setEditingLabelId(label.id); setEditingLabelName(label.name); setEditingLabelColor(label.color) }}
-                            className="opacity-0 group-hover:opacity-100 transition-opacity shrink-0 p-0.5 rounded" style={{ color: 'var(--text-muted)' }}
-                            onMouseEnter={e => (e.currentTarget.style.color = 'var(--text-primary)')} onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-muted)')}>
+                          <button
+                            onClick={() => {
+                              setEditingLabelId(label.id)
+                              setEditingLabelName(label.name)
+                              setEditingLabelColor(label.color)
+                            }}
+                            className="opacity-0 group-hover:opacity-100 transition-opacity shrink-0 p-0.5 rounded"
+                            style={{ color: 'var(--text-muted)' }}
+                            onMouseEnter={e => (e.currentTarget.style.color = 'var(--text-primary)')}
+                            onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-muted)')}
+                          >
                             <Pencil size={10} />
                           </button>
                         </div>
@@ -766,36 +898,56 @@ export default function DocPage() {
                   )
                 })}
               </div>
-              {allLabels.length === 0 && <p className="text-[11px] mb-2" style={{ color: 'var(--text-muted)' }}>No labels yet.</p>}
+
+              {allLabels.length === 0 && (
+                <p className="text-[11px] mb-2" style={{ color: 'var(--text-muted)' }}>No labels yet.</p>
+              )}
+
               <div className="relative" ref={labelPickerRef}>
-                <button onClick={() => { setLabelPickerOpen(v => !v); setCreatingLabel(false) }}
-                  className="flex items-center gap-1.5 px-2 py-1 rounded-md text-xs transition-colors" style={{ color: 'var(--text-muted)' }}
+                <button
+                  onClick={() => { setLabelPickerOpen(v => !v); setCreatingLabel(false) }}
+                  className="flex items-center gap-1.5 px-2 py-1 rounded-md text-xs transition-colors"
+                  style={{ color: 'var(--text-muted)' }}
                   onMouseEnter={e => { e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)'; e.currentTarget.style.color = 'var(--text-secondary)' }}
-                  onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = 'var(--text-muted)' }}>
-                  <Plus size={11} /><span>Create label</span>
+                  onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = 'var(--text-muted)' }}
+                >
+                  <Plus size={11} />
+                  <span>Create label</span>
                 </button>
                 {labelPickerOpen && (
                   <div className="absolute bottom-full right-0 mb-1 z-50 w-52 rounded-lg shadow-xl py-1" style={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border)' }}>
                     <div className="px-3 py-2 flex flex-col gap-2">
                       <p className="text-[10px] uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>New label</p>
-                      <input autoFocus value={newLabelName} onChange={e => setNewLabelName(e.target.value)}
-                        onKeyDown={e => { if (e.key === 'Enter') handleCreateLabel() }} placeholder="Label name..."
+                      <input
+                        autoFocus
+                        value={newLabelName}
+                        onChange={e => setNewLabelName(e.target.value)}
+                        onKeyDown={e => { if (e.key === 'Enter') handleCreateLabel() }}
+                        placeholder="Label name..."
                         className="w-full rounded-md px-2 py-1.5 text-xs focus:outline-none"
-                        style={{ backgroundColor: 'var(--bg-tertiary)', border: '1px solid var(--border)', color: 'var(--text-primary)' }} />
+                        style={{ backgroundColor: 'var(--bg-tertiary)', border: '1px solid var(--border)', color: 'var(--text-primary)' }}
+                      />
                       <div className="flex flex-wrap gap-1.5">
                         {LABEL_COLORS.map(c => (
                           <button key={c} onClick={() => setNewLabelColor(c)}
                             className={`w-5 h-5 rounded-full transition-transform hover:scale-110 ${newLabelColor === c ? 'ring-2 ring-offset-1' : ''}`}
-                            style={{ backgroundColor: c }} />
+                            style={{ backgroundColor: c }}
+                          />
                         ))}
                       </div>
                       <div className="flex gap-2 mt-1">
-                        <button onClick={handleCreateLabel} className="flex-1 px-2 py-1.5 rounded-md text-xs transition-colors"
+                        <button onClick={handleCreateLabel}
+                          className="flex-1 px-2 py-1.5 rounded-md text-xs transition-colors"
                           style={{ backgroundColor: 'var(--bg-tertiary)', color: 'var(--text-secondary)' }}
-                          onMouseEnter={e => (e.currentTarget.style.color = 'var(--text-primary)')} onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-secondary)')}>Create</button>
+                          onMouseEnter={e => (e.currentTarget.style.color = 'var(--text-primary)')}
+                          onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-secondary)')}
+                        >Create</button>
                         <button onClick={() => { setLabelPickerOpen(false); setNewLabelName('') }}
-                          className="px-2 py-1.5 rounded-md text-xs transition-colors" style={{ color: 'var(--text-muted)' }}
-                          onMouseEnter={e => (e.currentTarget.style.color = 'var(--text-secondary)')} onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-muted)')}>Cancel</button>
+                          className="px-2 py-1.5 rounded-md text-xs transition-colors"
+                          style={{ color: 'var(--text-muted)' }}
+                          onMouseEnter={e => (e.currentTarget.style.color = 'var(--text-secondary)')}
+                          onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-muted)')}
+                        >Cancel</button>
                       </div>
                     </div>
                   </div>
@@ -812,7 +964,7 @@ export default function DocPage() {
                 {activityEntries.map((entry, i) => (
                   <div key={i} className="flex items-start gap-2.5">
                     <div className="flex flex-col items-center mt-0.5 shrink-0">
-                      <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: entry.type === 'created' ? 'rgba(16,185,129,0.6)' : 'var(--bg-tertiary)' }} />
+                      <div className={`w-1.5 h-1.5 rounded-full`} style={{ backgroundColor: entry.type === 'created' ? 'rgba(16,185,129,0.6)' : 'var(--bg-tertiary)' }} />
                       {i < activityEntries.length - 1 && <div className="w-px h-5 mt-1" style={{ backgroundColor: 'var(--border)' }} />}
                     </div>
                     <div className="flex flex-col gap-0.5 min-w-0">
@@ -853,7 +1005,9 @@ export default function DocPage() {
                           <span className="text-[10px]" style={{ color: 'var(--text-muted)' }}>{timeAgo(comment.created_at)}</span>
                           {comment.user_id === String(currentUser?.id) && (
                             <button onClick={() => handleDeleteComment(comment.id)}
-                              className="opacity-0 group-hover:opacity-100 transition-opacity hover:text-red-400 ml-1" style={{ color: 'var(--text-muted)' }}>
+                              className="opacity-0 group-hover:opacity-100 transition-opacity hover:text-red-400 ml-1"
+                              style={{ color: 'var(--text-muted)' }}
+                            >
                               <Trash2 size={10} />
                             </button>
                           )}
@@ -865,13 +1019,20 @@ export default function DocPage() {
                 ))}
               </div>
               <div className="flex flex-col gap-2">
-                <textarea ref={commentInputRef} value={commentBody} onChange={e => setCommentBody(e.target.value)}
+                <textarea
+                  ref={commentInputRef}
+                  value={commentBody}
+                  onChange={e => setCommentBody(e.target.value)}
                   onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handlePostComment() } }}
-                  placeholder="Add a comment..." rows={2} className="w-full rounded-lg px-3 py-2 text-[12px] focus:outline-none resize-none"
-                  style={{ backgroundColor: 'var(--bg-tertiary)', border: '1px solid var(--border)', color: 'var(--text-primary)' }} />
+                  placeholder="Add a comment..."
+                  rows={2}
+                  className="w-full rounded-lg px-3 py-2 text-[12px] focus:outline-none resize-none"
+                  style={{ backgroundColor: 'var(--bg-tertiary)', border: '1px solid var(--border)', color: 'var(--text-primary)' }}
+                />
                 <button onClick={handlePostComment} disabled={!commentBody.trim() || postingComment}
                   className="self-end flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium transition-colors disabled:opacity-30"
-                  style={{ backgroundColor: 'var(--bg-tertiary)', color: 'var(--text-secondary)' }}>
+                  style={{ backgroundColor: 'var(--bg-tertiary)', color: 'var(--text-secondary)' }}
+                >
                   <Send size={11} />
                   {postingComment ? 'Posting...' : 'Post'}
                 </button>
