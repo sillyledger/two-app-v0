@@ -9,7 +9,7 @@ import TabBar from '@/components/tab-bar'
 import { useTabStore } from '@/hooks/use-tab-store'
 import { CalendarDays, SignalLow, SignalMedium, SignalHigh, Minus, FileText, User, Clock, Plus, Check, Send, Trash2, Circle, CheckCircle2, Pencil } from 'lucide-react'
 import type { Doc } from '@/lib/db'
-import { RoomProvider, useStorage, useMutation, createRoomContext } from '@liveblocks/react'
+import { createRoomContext } from '@liveblocks/react'
 import { createClient, LiveObject } from '@liveblocks/client'
 
 const liveblocksClient = createClient({
@@ -23,7 +23,11 @@ const liveblocksClient = createClient({
   },
 })
 
-const { RoomProvider: LBRoomProvider, useStorage: useLBStorage, useMutation: useLBMutation } = createRoomContext(liveblocksClient)
+const {
+  RoomProvider,
+  useStorage,
+  useMutation,
+} = createRoomContext(liveblocksClient)
 
 interface Folder { id: string; name: string }
 interface User { id: number; email: string; name: string }
@@ -89,7 +93,6 @@ function getInitials(name: string, email: string): string {
   return email?.[0]?.toUpperCase() ?? '?'
 }
 
-// ── Collaborative editor — only mounted for shared docs ──
 function CollaborativeEditor({
   content, isLoggedIn, editorFocusRef, insertImageRef, handleImageUpload,
 }: {
@@ -115,9 +118,7 @@ function CollaborativeEditor({
     if (isFirstSync.current) {
       isFirstSync.current = false
       prevLbRef.current = lbContent
-      if (lbContent && lbContent !== localContent) {
-        setLocalContent(lbContent)
-      }
+      if (lbContent && lbContent !== localContent) setLocalContent(lbContent)
       return
     }
     if (lbContent !== prevLbRef.current) {
