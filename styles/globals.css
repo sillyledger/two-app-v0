@@ -146,4 +146,5 @@ body {
   height: 0;
 }
 
-[data-liveblocks-portal] iframe { display: none !important; }
+[data-liveblocks-portal] { display: none !important; }
+.lb-root { display: none !important; }
