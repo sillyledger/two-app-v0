@@ -3,6 +3,7 @@
 import Link from "next/link"
 import { Share2, MoreHorizontal, Copy, Download, Trash2, Globe, Lock, FolderInput, Star, FileText, PanelRight } from "lucide-react"
 import { useState, useRef, useEffect } from "react"
+import { useOthers } from "@/liveblocks.config"
 
 interface Folder {
   id: string
@@ -88,7 +89,6 @@ async function loadImageAsBase64(src: string): Promise<{ dataUrl: string; width:
       }
     }
     img.onerror = () => resolve(null)
-    // Route through our proxy to avoid CORS issues with R2
     img.src = `/api/proxy-image?url=${encodeURIComponent(src)}`
   })
 }
@@ -106,7 +106,6 @@ async function exportAsPDF(docTitle: string, html: string) {
     if (y + needed > pageHeight - margin) { doc.addPage(); y = margin }
   }
 
-  // Title
   doc.setFont('helvetica', 'bold')
   doc.setFontSize(22)
   doc.setTextColor(0, 0, 0)
@@ -117,12 +116,10 @@ async function exportAsPDF(docTitle: string, html: string) {
   doc.line(margin, y, pageWidth - margin, y)
   y += 8
 
-  // Parse HTML into DOM so we can walk nodes in order (preserves images)
   const parser = new DOMParser()
   const domDoc = parser.parseFromString(html, 'text/html')
   const body = domDoc.body
 
-  // Flatten all block-level children into a processable list
   async function processNode(node: Element) {
     const tag = node.tagName?.toLowerCase()
 
@@ -131,17 +128,14 @@ async function exportAsPDF(docTitle: string, html: string) {
       if (src) {
         const imgData = await loadImageAsBase64(src)
         if (imgData) {
-          // Scale image to fit page width while keeping aspect ratio
           const aspectRatio = imgData.height / imgData.width
-          const imgW = Math.min(maxWidth, 120) // max 120mm wide
+          const imgW = Math.min(maxWidth, 120)
           const imgH = imgW * aspectRatio
           checkY(imgH + 4)
           try {
             doc.addImage(imgData.dataUrl, 'JPEG', margin, y, imgW, imgH)
             y += imgH + 4
-          } catch {
-            // If image fails, skip it silently
-          }
+          } catch { }
         }
       }
       return
@@ -150,7 +144,6 @@ async function exportAsPDF(docTitle: string, html: string) {
     if (tag === 'ul' || tag === 'ol') {
       const items = node.querySelectorAll(':scope > li')
       for (const li of Array.from(items)) {
-        // Handle <p> inside <li> (Tiptap wraps content in <p>)
         const liText = stripTags(li.innerHTML).replace(/\n+/g, ' ').trim()
         if (liText) {
           checkY(6)
@@ -162,11 +155,8 @@ async function exportAsPDF(docTitle: string, html: string) {
           doc.text(w, margin + 4, y)
           y += w.length * 5.5 + 1
         }
-        // Check for nested images inside li
         const imgs = li.querySelectorAll('img')
-        for (const img of Array.from(imgs)) {
-          await processNode(img)
-        }
+        for (const img of Array.from(imgs)) { await processNode(img) }
       }
       return
     }
@@ -237,12 +227,9 @@ async function exportAsPDF(docTitle: string, html: string) {
     }
 
     if (tag === 'p') {
-      // Check if this <p> directly contains an image
       const imgs = node.querySelectorAll('img')
       if (imgs.length > 0) {
-        for (const img of Array.from(imgs)) {
-          await processNode(img)
-        }
+        for (const img of Array.from(imgs)) { await processNode(img) }
         return
       }
       const text = stripTags(node.innerHTML).replace(/\n+/g, ' ').trim()
@@ -258,18 +245,76 @@ async function exportAsPDF(docTitle: string, html: string) {
       return
     }
 
-    // For any other container elements, recurse into children
     for (const child of Array.from(node.children)) {
       await processNode(child as Element)
     }
   }
 
-  // Walk all top-level children of body
   for (const child of Array.from(body.children)) {
     await processNode(child as Element)
   }
 
   doc.save(`${docTitle.trim() || 'untitled'}.pdf`)
+}
+
+const PRESENCE_COLORS = [
+  '#5271e0', '#52e0b8', '#e05252', '#f5a623',
+  '#a052e0', '#52b8e0', '#52e052', '#e052a0',
+]
+
+function PresenceAvatars() {
+  const others = useOthers()
+  if (others.length === 0) return null
+  const visible = others.slice(0, 4)
+  const overflow = others.length - 4
+
+  return (
+    <div className="flex items-center mr-1" style={{ gap: '-4px' }}>
+      {visible.map((other, i) => {
+        const name: string = (other.presence?.name as string) || '?'
+        const initial = name[0]?.toUpperCase() ?? '?'
+        const color = PRESENCE_COLORS[i % PRESENCE_COLORS.length]
+        return (
+          <div
+            key={other.connectionId}
+            title={name}
+            style={{
+              width: 24,
+              height: 24,
+              borderRadius: '50%',
+              backgroundColor: color,
+              border: '2px solid var(--bg)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: 10,
+              fontWeight: 600,
+              color: '#fff',
+              marginLeft: i === 0 ? 0 : -6,
+              zIndex: visible.length - i,
+              position: 'relative',
+              flexShrink: 0,
+            }}
+          >
+            {initial}
+          </div>
+        )
+      })}
+      {overflow > 0 && (
+        <div style={{
+          width: 24, height: 24, borderRadius: '50%',
+          backgroundColor: 'var(--bg-tertiary)',
+          border: '2px solid var(--bg)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          fontSize: 10, fontWeight: 600,
+          color: 'var(--text-secondary)',
+          marginLeft: -6, position: 'relative', flexShrink: 0,
+        }}>
+          +{overflow}
+        </div>
+      )}
+    </div>
+  )
 }
 
 export default function DocTopbar({
@@ -410,6 +455,8 @@ export default function DocTopbar({
               </>
             )}
           </div>
+
+          <PresenceAvatars />
 
           {onToggleWide && (
             <button onClick={onToggleWide} title={wideMode ? "Narrow view" : "Wide view"}
