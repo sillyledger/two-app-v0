@@ -39,6 +39,7 @@ import {
   Columns,
 } from "lucide-react"
 import { useCallback, useState, useRef, useEffect } from "react"
+import { useLiveblocksExtension } from "@liveblocks/react-tiptap"
 import { useRouter } from "next/navigation"
 
 const lowlight = createLowlight(common)
