@@ -471,6 +471,11 @@ export default function Editor({ content, onChange, onReady, onImageUpload, onIn
     onCreate: ({ editor: e }) => {
       editorRef.current = e
       setEditorReady(true)
+      // Seed the Yjs doc with saved content only if it's currently empty
+      // (prevents overwriting when another user is already in the doc)
+      if (content && e.isEmpty) {
+        e.commands.setContent(content, false)
+      }
     },
   }, [ydoc, provider])
 
