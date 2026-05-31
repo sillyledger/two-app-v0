@@ -13,8 +13,6 @@ import TableCell from "@tiptap/extension-table-cell"
 import Image from "@tiptap/extension-image"
 import TaskList from "@tiptap/extension-task-list"
 import TaskItem from "@tiptap/extension-task-item"
-import Collaboration from "@tiptap/extension-collaboration"
-import CollaborationCursor from "@tiptap/extension-collaboration-cursor"
 import { SlashCommands } from "./slash-commands"
 import { common, createLowlight } from "lowlight"
 import {
@@ -42,9 +40,6 @@ import {
 } from "lucide-react"
 import { useCallback, useState, useRef, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import * as Y from "yjs"
-import { LiveblocksYjsProvider } from "@liveblocks/yjs"
-import { useRoom } from "@/liveblocks.config"
 
 const lowlight = createLowlight(common)
 
@@ -147,11 +142,6 @@ const LinkKeyboardFix = Extension.create({
   },
 })
 
-const PRESENCE_COLORS = [
-  "#5271e0", "#52e0b8", "#e05252", "#f5a623",
-  "#a052e0", "#52b8e0", "#52e052", "#e052a0",
-]
-
 interface EditorProps {
   content: string
   onChange: (content: string) => void
@@ -159,7 +149,6 @@ interface EditorProps {
   onImageUpload?: (file: File) => Promise<string | null>
   onInsertImageReady?: (fn: (url: string) => void) => void
   editable?: boolean
-  currentUserName?: string
 }
 
 interface Doc {
@@ -167,9 +156,8 @@ interface Doc {
   title: string
 }
 
-export default function Editor({ content, onChange, onReady, onImageUpload, onInsertImageReady, editable = true, currentUserName }: EditorProps) {
+export default function Editor({ content, onChange, onReady, onImageUpload, onInsertImageReady, editable = true }: EditorProps) {
   const router = useRouter()
-  const room = useRoom()
   const [bubbleVisible, setBubbleVisible] = useState(false)
   const [bubblePos, setBubblePos] = useState({ top: 0, left: 0 })
   const containerRef = useRef<HTMLDivElement>(null)
@@ -195,17 +183,6 @@ export default function Editor({ content, onChange, onReady, onImageUpload, onIn
   const onImageUploadRef = useRef(onImageUpload)
   const editorRef = useRef<ReturnType<typeof useEditor>>(null)
   const uploadingRef = useRef(false)
-
- // Set up Yjs doc and Liveblocks provider synchronously so they exist on first render
-  const [ydoc] = useState(() => new Y.Doc())
-  const [provider] = useState(() => new LiveblocksYjsProvider(room, ydoc))
-
-  useEffect(() => {
-    return () => {
-      provider.destroy()
-      ydoc.destroy()
-    }
-  }, [])
 
   useEffect(() => {
     onImageUploadRef.current = onImageUpload
@@ -274,18 +251,6 @@ export default function Editor({ content, onChange, onReady, onImageUpload, onIn
         blockquote: {},
         codeBlock: false,
         horizontalRule: {},
-        // history must be disabled when using Collaboration
-        history: false,
-      }),
-      Collaboration.configure({
-        document: ydoc,
-      }),
-      CollaborationCursor.configure({
-        provider: provider,
-        user: {
-          name: currentUserName || "Anonymous",
-          color: PRESENCE_COLORS[Math.floor(Math.random() * PRESENCE_COLORS.length)],
-        },
       }),
       CodeBlockLowlight.configure({
         lowlight,
@@ -471,13 +436,8 @@ export default function Editor({ content, onChange, onReady, onImageUpload, onIn
     onCreate: ({ editor: e }) => {
       editorRef.current = e
       setEditorReady(true)
-      // Seed the Yjs doc with saved content only if it's currently empty
-      // (prevents overwriting when another user is already in the doc)
-      if (content && e.isEmpty) {
-        e.commands.setContent(content, false)
-      }
     },
-  }, [ydoc, provider])
+  })
 
   useEffect(() => {
     if (editor && onInsertImageReady) {
@@ -908,31 +868,6 @@ export default function Editor({ content, onChange, onReady, onImageUpload, onIn
         }
         .callout-content p {
           margin: 0 !important;
-        }
-        /* ── Collaboration cursors ── */
-        .collaboration-cursor__caret {
-          border-left: 2px solid;
-          border-right: 2px solid;
-          margin-left: -1px;
-          margin-right: -1px;
-          pointer-events: none;
-          position: relative;
-          word-break: normal;
-        }
-        .collaboration-cursor__label {
-          border-radius: 3px 3px 3px 0;
-          color: #fff;
-          font-size: 11px;
-          font-style: normal;
-          font-weight: 600;
-          left: -1px;
-          line-height: 1.4;
-          padding: 2px 5px;
-          position: absolute;
-          top: -1.6em;
-          user-select: none;
-          white-space: nowrap;
-          pointer-events: none;
         }
       `}</style>
 
