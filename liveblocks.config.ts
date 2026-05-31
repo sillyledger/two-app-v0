@@ -16,4 +16,5 @@ export const {
   RoomProvider,
   useOthers,
   useSelf,
+  useRoom,
 } = createRoomContext<Presence, Storage>(client)
