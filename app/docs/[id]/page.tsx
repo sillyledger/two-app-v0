@@ -511,6 +511,7 @@ export default function DocPage() {
             onToggleFavorite={isLoggedIn ? handleToggleFavorite : undefined}
             detailOpen={detailOpen}
             onToggleDetail={() => setDetailOpen(v => !v)}
+            currentUserName={currentUser?.name || currentUser?.email || undefined}
           />
           <TabBar sidebarWidth={sidebarWidth} />
 
