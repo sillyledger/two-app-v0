@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { Share2, MoreHorizontal, Copy, Download, Trash2, Globe, Lock, FolderInput, Star, FileText, PanelRight } from "lucide-react"
 import { useState, useRef, useEffect } from "react"
-import { useOthers } from "@/liveblocks.config"
+import { useOthers, useSelf } from "@/liveblocks.config"
 
 interface Folder {
   id: string
@@ -25,6 +25,7 @@ interface DocTopbarProps {
   onToggleFavorite?: () => void
   detailOpen?: boolean
   onToggleDetail?: () => void
+  currentUserName?: string
 }
 
 function stripTags(html: string): string {
@@ -258,18 +259,47 @@ async function exportAsPDF(docTitle: string, html: string) {
 }
 
 const PRESENCE_COLORS = [
-  '#5271e0', '#52e0b8', '#e05252', '#f5a623',
+  '#52e0b8', '#e05252', '#f5a623',
   '#a052e0', '#52b8e0', '#52e052', '#e052a0',
 ]
 
-function PresenceAvatars() {
+function PresenceAvatars({ currentUserName }: { currentUserName?: string }) {
   const others = useOthers()
-  if (others.length === 0) return null
-  const visible = others.slice(0, 4)
-  const overflow = others.length - 4
+  const self = useSelf()
+
+  const selfName = currentUserName || (self?.presence?.name as string) || 'You'
+  const selfInitial = selfName[0]?.toUpperCase() ?? 'Y'
+
+  const visible = others.slice(0, 3)
+  const overflow = others.length - 3
 
   return (
-    <div className="flex items-center mr-1" style={{ gap: '-4px' }}>
+    <div className="flex items-center mr-1">
+      {/* Your own avatar — always shown first, blue with a ring so you can spot yourself */}
+      <div
+        title={`${selfName} (you)`}
+        style={{
+          width: 24,
+          height: 24,
+          borderRadius: '50%',
+          backgroundColor: '#5271e0',
+          border: '2px solid var(--bg)',
+          outline: '2px solid #5271e0',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontSize: 10,
+          fontWeight: 600,
+          color: '#fff',
+          position: 'relative',
+          flexShrink: 0,
+          zIndex: 10,
+        }}
+      >
+        {selfInitial}
+      </div>
+
+      {/* Other people currently in the doc */}
       {visible.map((other, i) => {
         const name: string = (other.presence?.name as string) || '?'
         const initial = name[0]?.toUpperCase() ?? '?'
@@ -290,8 +320,8 @@ function PresenceAvatars() {
               fontSize: 10,
               fontWeight: 600,
               color: '#fff',
-              marginLeft: i === 0 ? 0 : -6,
-              zIndex: visible.length - i,
+              marginLeft: -6,
+              zIndex: 9 - i,
               position: 'relative',
               flexShrink: 0,
             }}
@@ -300,6 +330,7 @@ function PresenceAvatars() {
           </div>
         )
       })}
+
       {overflow > 0 && (
         <div style={{
           width: 24, height: 24, borderRadius: '50%',
@@ -332,6 +363,7 @@ export default function DocTopbar({
   onToggleFavorite,
   detailOpen = false,
   onToggleDetail,
+  currentUserName,
 }: DocTopbarProps) {
   const [menuOpen, setMenuOpen] = useState(false)
   const [shareOpen, setShareOpen] = useState(false)
@@ -456,7 +488,7 @@ export default function DocTopbar({
             )}
           </div>
 
-          <PresenceAvatars />
+          <PresenceAvatars currentUserName={currentUserName} />
 
           {onToggleWide && (
             <button onClick={onToggleWide} title={wideMode ? "Narrow view" : "Wide view"}
