@@ -589,6 +589,7 @@ export default function DocPage() {
                   onReady={(focusFn) => { editorFocusRef.current = focusFn }}
                   onImageUpload={handleImageUpload}
                   onInsertImageReady={(fn) => { insertImageRef.current = fn }}
+                  currentUserName={currentUser?.name || currentUser?.email || undefined}
                 />
               )}
 
