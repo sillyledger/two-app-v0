@@ -196,20 +196,16 @@ export default function Editor({ content, onChange, onReady, onImageUpload, onIn
   const editorRef = useRef<ReturnType<typeof useEditor>>(null)
   const uploadingRef = useRef(false)
 
-  // Set up Yjs doc and Liveblocks provider
-  const ydocRef = useRef<Y.Doc | null>(null)
-  const providerRef = useRef<LiveblocksYjsProvider | null>(null)
+ // Set up Yjs doc and Liveblocks provider synchronously so they exist on first render
+  const [ydoc] = useState(() => new Y.Doc())
+  const [provider] = useState(() => new LiveblocksYjsProvider(room, ydoc))
 
   useEffect(() => {
-    const ydoc = new Y.Doc()
-    const provider = new LiveblocksYjsProvider(room, ydoc)
-    ydocRef.current = ydoc
-    providerRef.current = provider
     return () => {
       provider.destroy()
       ydoc.destroy()
     }
-  }, [room])
+  }, [])
 
   useEffect(() => {
     onImageUploadRef.current = onImageUpload
@@ -282,10 +278,10 @@ export default function Editor({ content, onChange, onReady, onImageUpload, onIn
         history: false,
       }),
       Collaboration.configure({
-        document: ydocRef.current!,
+        document: ydoc,
       }),
       CollaborationCursor.configure({
-        provider: providerRef.current!,
+        provider: provider,
         user: {
           name: currentUserName || "Anonymous",
           color: PRESENCE_COLORS[Math.floor(Math.random() * PRESENCE_COLORS.length)],
@@ -476,7 +472,7 @@ export default function Editor({ content, onChange, onReady, onImageUpload, onIn
       editorRef.current = e
       setEditorReady(true)
     },
-  }, [ydocRef.current, providerRef.current])
+  }, [ydoc, provider])
 
   useEffect(() => {
     if (editor && onInsertImageReady) {
