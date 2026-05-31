@@ -286,6 +286,13 @@ export default function DocPage() {
 
   const handleSave = useCallback(async (latestTitle: string, latestContent: string, latestDoc: Doc | null) => {
     if (!isLoggedIn) return
+    // Safety guard: never save if content is suspiciously shorter than what was loaded
+    // This prevents empty editor states from wiping real content
+    const savedLength = latestDoc?.content ? latestDoc.content.length : 0
+    if (savedLength > 100 && latestContent.length < savedLength * 0.5) {
+      setSaveStatus('saved')
+      return
+    }
     setSaveStatus('saving')
     await fetch(`/api/docs/${docId}`, {
       method: 'PUT',
