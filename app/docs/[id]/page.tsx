@@ -506,7 +506,7 @@ export default function DocPage() {
             currentUserName={currentUser?.name || currentUser?.email || undefined}
           />
 
-          <main className="flex-1 overflow-y-auto" style={{ paddingTop: tabs.length > 0 ? '80px' : '44px' }}>
+          <main className="flex-1 overflow-y-auto" style={{ paddingTop: '80px' }}>
             <div className={`mx-auto w-full px-16 pt-16 pb-32 transition-all duration-200 ${wideMode ? 'max-w-[1200px]' : 'max-w-[800px]'}`}>
               <textarea
                 ref={titleRef}
