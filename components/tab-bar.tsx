@@ -11,11 +11,7 @@ interface DocItem {
   folder_name?: string | null
 }
 
-interface TabBarProps {
-  sidebarWidth?: string
-}
-
-export default function TabBar({ sidebarWidth = "0px" }: TabBarProps) {
+export default function TabBar() {
   const router = useRouter()
   const { tabs, activeId, openTab, switchTab, closeTab } = useTabStore()
   const activeRef = useRef<HTMLButtonElement>(null)
@@ -135,7 +131,7 @@ export default function TabBar({ sidebarWidth = "0px" }: TabBarProps) {
         className="tabbar-wrap fixed z-30 flex items-end overflow-x-auto"
         style={{
           top: "44px",
-          left: sidebarWidth,
+          left: "var(--sidebar-width, 0px)",
           right: 0,
           height: "36px",
           backgroundColor: "var(--bg)",
