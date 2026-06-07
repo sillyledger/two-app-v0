@@ -11,6 +11,7 @@ import { CalendarDays, SignalLow, SignalMedium, SignalHigh, Minus, PanelRight, X
 import type { Doc } from '@/lib/db'
 import { RoomProvider, useIsStorageLoading } from '@/liveblocks.config'
 import { LiveObject } from '@liveblocks/client'
+import { useLiveblocksExtension } from '@liveblocks/react-tiptap'
 
 interface Folder {
   id: string
@@ -1065,8 +1066,9 @@ export default function DocPage() {
 
 function CollaborativeEditor(props: React.ComponentProps<typeof Editor>) {
   const isLoading = useIsStorageLoading()
+  const liveblocks = useLiveblocksExtension()
   if (isLoading) return null
-  return <Editor {...props} />
+  return <Editor {...props} extraExtensions={[liveblocks]} />
 }
 
 function DetailRow({ label, icon, children }: { label: string; icon: React.ReactNode; children: React.ReactNode }) {
