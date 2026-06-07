@@ -875,23 +875,41 @@ export default function Editor({ content, onChange, onReady, onImageUpload, onIn
           margin: 0 !important;
         }
 
-        /* ── Liveblocks cursor labels ── */
-        .lb-tiptap-cursor-caret {
-          width: 2px !important;
+        /* ── Liveblocks cursor overrides (Tiptap v3 uses .collaboration-carets) ── */
+        /* Thin caret line only, no block highlight */
+        .collaboration-carets__caret {
+          border-left: 2px solid;
+          border-color: inherit;
+          margin-left: -1px;
+          position: relative;
+          word-break: normal;
+          box-decoration-break: slice;
         }
-        .lb-tiptap-cursor-label {
+        /* Hide the full-line selection highlight */
+        .collaboration-carets__selection {
+          background: transparent !important;
+        }
+        /* Name label: hidden by default, appears on hover */
+        .collaboration-carets__label {
           font-size: 10px !important;
+          font-weight: 500 !important;
           padding: 1px 5px !important;
           border-radius: 3px 3px 3px 0 !important;
-          opacity: 0;
-          transition: opacity 0.15s;
-          white-space: nowrap;
-          max-width: 80px;
-          overflow: hidden;
-          text-overflow: ellipsis;
+          line-height: 1.4 !important;
+          white-space: nowrap !important;
+          max-width: 90px !important;
+          overflow: hidden !important;
+          text-overflow: ellipsis !important;
+          opacity: 0 !important;
+          transition: opacity 0.15s ease !important;
+          pointer-events: none !important;
+          user-select: none !important;
+          position: absolute !important;
+          top: -1.4em !important;
+          left: -1px !important;
         }
-        .lb-tiptap-cursor:hover .lb-tiptap-cursor-label {
-          opacity: 1;
+        .collaboration-carets__caret:hover .collaboration-carets__label {
+          opacity: 1 !important;
         }
       `}</style>
 
