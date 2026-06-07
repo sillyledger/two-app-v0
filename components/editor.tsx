@@ -40,6 +40,7 @@ import {
 } from "lucide-react"
 import { useCallback, useState, useRef, useEffect } from "react"
 import { useRouter } from "next/navigation"
+import { useLiveblocksExtension } from "@liveblocks/react-tiptap"
 
 const lowlight = createLowlight(common)
 
@@ -242,8 +243,12 @@ export default function Editor({ content, onChange, onReady, onImageUpload, onIn
     setSelectedIndex(0)
   }, [linkUrl, allDocs])
 
+  const liveblocks = useLiveblocksExtension({ initialContent: content })
+
   const editor = useEditor({
+    immediatelyRender: false,
     extensions: [
+      liveblocks,
       StarterKit.configure({
         heading: { levels: [1, 2, 3] },
         bulletList: {},
@@ -251,6 +256,7 @@ export default function Editor({ content, onChange, onReady, onImageUpload, onIn
         blockquote: {},
         codeBlock: false,
         horizontalRule: {},
+        history: false,
       }),
       CodeBlockLowlight.configure({
         lowlight,
