@@ -9,9 +9,7 @@ import TabBar from '@/components/tab-bar'
 import { useTabStore } from '@/hooks/use-tab-store'
 import { CalendarDays, SignalLow, SignalMedium, SignalHigh, Minus, PanelRight, X, FileText, User, Clock, Plus, Check, Send, Trash2, Circle, CheckCircle2, Pencil, PanelLeftOpen } from 'lucide-react'
 import type { Doc } from '@/lib/db'
-import { RoomProvider, useIsStorageLoading } from '@/liveblocks.config'
-import { LiveObject } from '@liveblocks/client'
-import { useLiveblocksExtension } from '@liveblocks/react-tiptap'
+import { RoomProvider } from '@/liveblocks.config'
 
 interface Folder {
   id: string
@@ -478,9 +476,6 @@ export default function DocPage() {
     <RoomProvider
       id={docId}
       initialPresence={{ name: currentUser?.name || currentUser?.email || 'Anonymous', color: '#888888' }}
-      initialStorage={{
-        content: new LiveObject({ html: content }),
-      }}
     >
       <div className="flex h-screen bg-background overflow-hidden">
         <input
@@ -594,7 +589,7 @@ export default function DocPage() {
               </div>
 
               {doc !== null && (
-                <CollaborativeEditor
+                <Editor
                   content={content}
                   editable={isLoggedIn}
                   onChange={(newContent) => { if (!isLoggedIn) return; setContent(newContent) }}
@@ -1062,13 +1057,6 @@ export default function DocPage() {
       </div>
     </RoomProvider>
   )
-}
-
-function CollaborativeEditor(props: React.ComponentProps<typeof Editor>) {
-  const isLoading = useIsStorageLoading()
-  const liveblocks = useLiveblocksExtension()
-  if (isLoading) return null
-  return <Editor {...props} extraExtensions={[liveblocks]} />
 }
 
 function DetailRow({ label, icon, children }: { label: string; icon: React.ReactNode; children: React.ReactNode }) {
