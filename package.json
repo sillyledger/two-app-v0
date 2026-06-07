@@ -88,6 +88,7 @@
     "@liveblocks/react": "^3.19.3",
     "@liveblocks/react-tiptap": "^3.19.3",
     "@liveblocks/node": "^3.19.3",
+    "@liveblocks/yjs": "^3.19.3",
     "yjs": "^13.6.31",
     "sonner": "^1.7.1",
     "swr": "^2.4.1",
