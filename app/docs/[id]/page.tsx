@@ -210,8 +210,11 @@ export default function DocPage() {
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
+  // ─── STEP 1: Auth fetch ───────────────────────────────────────────────────
   useEffect(() => {
+    console.time('[TWO] auth fetch')
     fetch('/api/auth/me').then(async (res) => {
+      console.timeEnd('[TWO] auth fetch')
       if (res.ok) {
         const data = await res.json()
         setIsLoggedIn(true)
@@ -238,13 +241,16 @@ export default function DocPage() {
       .catch(() => {})
   }, [isLoggedIn, docId])
 
+  // ─── STEP 2: Doc fetch (only runs after auth completes) ───────────────────
   useEffect(() => {
     if (!authChecked) return
     setDoc(null)
     setTitle('')
     setContent('')
     if (isLoggedIn) {
+      console.time('[TWO] doc fetch')
       fetch(`/api/docs/${docId}`).then((res) => res.json()).then((data: Doc) => {
+        console.timeEnd('[TWO] doc fetch')
         if (data.error) { router.push('/'); return }
         setDoc(data)
         setTitle(data.title)
@@ -261,7 +267,9 @@ export default function DocPage() {
         }
       })
     } else {
+      console.time('[TWO] doc fetch (public)')
       fetch(`/api/docs/public/${docId}`).then((res) => res.json()).then((data: Doc) => {
+        console.timeEnd('[TWO] doc fetch (public)')
         if (data.error) { router.push('/login'); return }
         setDoc(data)
         setTitle(data.title)
@@ -277,8 +285,6 @@ export default function DocPage() {
 
   const handleSave = useCallback(async (latestTitle: string, latestContent: string, latestDoc: Doc | null) => {
     if (!isLoggedIn) return
-    // Safety guard: never save if content is suspiciously shorter than what was loaded
-    // This prevents empty editor states from wiping real content
     const savedLength = latestDoc?.content ? latestDoc.content.length : 0
     if (savedLength > 100 && latestContent.length < savedLength * 0.5) {
       setSaveStatus('saved')
