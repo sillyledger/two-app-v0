@@ -256,7 +256,7 @@ export default function Editor({ content, onChange, onReady, onImageUpload, onIn
         blockquote: {},
         codeBlock: false,
         horizontalRule: {},
-        history: false,
+        undoRedo: false,
       }),
       CodeBlockLowlight.configure({
         lowlight,
@@ -296,7 +296,6 @@ export default function Editor({ content, onChange, onReady, onImageUpload, onIn
       }),
       SlashCommands,
     ],
-    content,
     editable,
     onUpdate: ({ editor }) => {
       if (editable) onChange(editor.getHTML())
@@ -874,6 +873,25 @@ export default function Editor({ content, onChange, onReady, onImageUpload, onIn
         }
         .callout-content p {
           margin: 0 !important;
+        }
+
+        /* ── Liveblocks cursor labels ── */
+        .lb-tiptap-cursor-caret {
+          width: 2px !important;
+        }
+        .lb-tiptap-cursor-label {
+          font-size: 10px !important;
+          padding: 1px 5px !important;
+          border-radius: 3px 3px 3px 0 !important;
+          opacity: 0;
+          transition: opacity 0.15s;
+          white-space: nowrap;
+          max-width: 80px;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+        .lb-tiptap-cursor:hover .lb-tiptap-cursor-label {
+          opacity: 1;
         }
       `}</style>
 
