@@ -467,7 +467,53 @@ export default function DocPage() {
     if (createdAt) activityEntries.push({ type: 'created', timestamp: createdAt, label: 'Created' })
   }
 
-  if (!authChecked || !doc) return null
+  if (!authChecked || !doc) return (
+    <div className="flex-1 flex flex-col min-h-screen min-w-0 overflow-hidden">
+      {/* Topbar skeleton */}
+      <div
+        className="fixed top-0 right-0 z-20 flex items-center px-4 gap-3"
+        style={{
+          left: 'var(--sidebar-width, 240px)',
+          height: '44px',
+          borderBottom: '1px solid var(--border)',
+          backgroundColor: 'var(--bg)',
+        }}
+      >
+        <div className="h-3 w-32 rounded-md animate-pulse" style={{ backgroundColor: 'var(--bg-tertiary)' }} />
+        <div className="h-3 w-16 rounded-md animate-pulse" style={{ backgroundColor: 'var(--bg-tertiary)' }} />
+        <div className="ml-auto flex gap-2">
+          <div className="h-6 w-6 rounded-md animate-pulse" style={{ backgroundColor: 'var(--bg-tertiary)' }} />
+          <div className="h-6 w-6 rounded-md animate-pulse" style={{ backgroundColor: 'var(--bg-tertiary)' }} />
+          <div className="h-6 w-6 rounded-md animate-pulse" style={{ backgroundColor: 'var(--bg-tertiary)' }} />
+        </div>
+      </div>
+
+      {/* Content skeleton */}
+      <main className="flex-1 overflow-y-auto" style={{ paddingTop: '80px' }}>
+        <div className="mx-auto w-full px-16 pt-16 pb-32 max-w-[800px]">
+          {/* Title */}
+          <div className="h-10 w-2/3 rounded-lg mb-6 animate-pulse" style={{ backgroundColor: 'var(--bg-tertiary)' }} />
+
+          {/* Meta row */}
+          <div className="flex gap-2 mb-10">
+            <div className="h-5 w-24 rounded-md animate-pulse" style={{ backgroundColor: 'var(--bg-tertiary)' }} />
+            <div className="h-5 w-20 rounded-md animate-pulse" style={{ backgroundColor: 'var(--bg-tertiary)' }} />
+            <div className="h-5 w-16 rounded-md animate-pulse" style={{ backgroundColor: 'var(--bg-tertiary)' }} />
+          </div>
+
+          {/* Body lines */}
+          <div className="flex flex-col gap-3">
+            <div className="h-4 w-full rounded animate-pulse" style={{ backgroundColor: 'var(--bg-tertiary)' }} />
+            <div className="h-4 w-5/6 rounded animate-pulse" style={{ backgroundColor: 'var(--bg-tertiary)' }} />
+            <div className="h-4 w-full rounded animate-pulse" style={{ backgroundColor: 'var(--bg-tertiary)' }} />
+            <div className="h-4 w-4/6 rounded animate-pulse" style={{ backgroundColor: 'var(--bg-tertiary)' }} />
+            <div className="h-4 w-full rounded animate-pulse" style={{ backgroundColor: 'var(--bg-tertiary)' }} />
+            <div className="h-4 w-3/4 rounded animate-pulse" style={{ backgroundColor: 'var(--bg-tertiary)' }} />
+          </div>
+        </div>
+      </main>
+    </div>
+  )
 
   return (
     <RoomProvider
