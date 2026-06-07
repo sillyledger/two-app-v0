@@ -2,10 +2,8 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import Sidebar from '@/components/sidebar'
 import Editor from '@/components/editor'
 import DocTopbar from '@/components/doc-topbar'
-import TabBar from '@/components/tab-bar'
 import { useTabStore } from '@/hooks/use-tab-store'
 import { CalendarDays, SignalLow, SignalMedium, SignalHigh, Minus, PanelRight, X, FileText, User, Clock, Plus, Check, Send, Trash2, Circle, CheckCircle2, Pencil, PanelLeftOpen } from 'lucide-react'
 import type { Doc } from '@/lib/db'
@@ -119,13 +117,6 @@ export default function DocPage() {
   const params = useParams()
   const docId = Array.isArray(params.id) ? params.id[0] : (params.id as string)
   const router = useRouter()
-  const [collapsed, setCollapsed] = useState(false)
-
-  useEffect(() => {
-    const saved = localStorage.getItem("sidebar-collapsed")
-    if (saved === "true") setCollapsed(true)
-  }, [])
-
   const [wideMode, setWideMode] = useState(false)
   const [detailOpen, setDetailOpen] = useState(false)
   const [doc, setDoc] = useState<Doc | null>(null)
@@ -455,7 +446,6 @@ export default function DocPage() {
     return null
   }, [])
 
-  const sidebarWidth = collapsed ? '56px' : '256px'
   const { tabs, updateTabTitle } = useTabStore()
   const wordCount = getWordCount(content)
   const charCount = getCharCount(content)
@@ -477,7 +467,7 @@ export default function DocPage() {
       id={docId}
       initialPresence={{ name: currentUser?.name || currentUser?.email || 'Anonymous', color: '#888888' }}
     >
-      <div className="flex h-screen bg-background overflow-hidden">
+      <>
         <input
           ref={imageInputRef}
           type="file"
@@ -495,10 +485,6 @@ export default function DocPage() {
           }}
         />
 
-        {isLoggedIn && (
-          <Sidebar onNewNote={handleNewDoc} collapsed={collapsed} onToggle={() => setCollapsed((v) => !v)} />
-        )}
-
         <div
           className="flex-1 flex flex-col min-h-screen transition-all duration-300 ease-in-out min-w-0 overflow-hidden"
           style={{ marginRight: detailOpen ? '280px' : '0' }}
@@ -511,7 +497,6 @@ export default function DocPage() {
             onDelete={isLoggedIn ? handleDelete : undefined}
             docId={docId}
             isPublic={isPublic}
-            sidebarWidth={sidebarWidth}
             wideMode={wideMode}
             onToggleWide={toggleWideMode}
             isFavorite={isFavorite}
@@ -520,7 +505,6 @@ export default function DocPage() {
             onToggleDetail={() => setDetailOpen(v => !v)}
             currentUserName={currentUser?.name || currentUser?.email || undefined}
           />
-          <TabBar sidebarWidth={sidebarWidth} />
 
           <main className="flex-1 overflow-y-auto" style={{ paddingTop: tabs.length > 0 ? '80px' : '44px' }}>
             <div className={`mx-auto w-full px-16 pt-16 pb-32 transition-all duration-200 ${wideMode ? 'max-w-[1200px]' : 'max-w-[800px]'}`}>
@@ -1054,7 +1038,7 @@ export default function DocPage() {
             )}
           </div>
         </div>
-      </div>
+      </>
     </RoomProvider>
   )
 }
