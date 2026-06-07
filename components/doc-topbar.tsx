@@ -450,7 +450,7 @@ export default function DocTopbar({
     <>
       <header
         className="fixed top-0 z-40 h-[44px] flex items-center px-4 transition-all duration-200"
-        style={{ left: sidebarWidth, right: 0, backgroundColor: "var(--bg)" }}
+        style={{ left: "var(--sidebar-width, 0px)", right: 0, backgroundColor: "var(--bg)" }}
       >
         <div className="flex items-center gap-0.5 min-w-0 flex-1">
           <Link href="/" className="text-[12px] font-medium truncate transition-colors" style={{ color: "var(--text-muted)" }}>
