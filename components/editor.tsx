@@ -39,6 +39,7 @@ import {
   Columns,
 } from "lucide-react"
 import { useCallback, useState, useRef, useEffect } from "react"
+import { useLiveblocksExtension } from "@liveblocks/react-tiptap"
 import { useRouter } from "next/navigation"
 
 const lowlight = createLowlight(common)
@@ -244,6 +245,7 @@ export default function Editor({ content, onChange, onReady, onImageUpload, onIn
 
   const editor = useEditor({
     extensions: [
+      useLiveblocksExtension(),
       StarterKit.configure({
         heading: { levels: [1, 2, 3] },
         bulletList: {},
@@ -251,6 +253,7 @@ export default function Editor({ content, onChange, onReady, onImageUpload, onIn
         blockquote: {},
         codeBlock: false,
         horizontalRule: {},
+        history: false,
       }),
       CodeBlockLowlight.configure({
         lowlight,
@@ -292,6 +295,7 @@ export default function Editor({ content, onChange, onReady, onImageUpload, onIn
     ],
     content,
     editable,
+    immediatelyRender: false,
     onUpdate: ({ editor }) => {
       if (editable) onChange(editor.getHTML())
     },
