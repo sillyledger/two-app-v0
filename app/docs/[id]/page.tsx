@@ -210,76 +210,77 @@ export default function DocPage() {
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
-  // ─── STEP 1: Auth fetch ───────────────────────────────────────────────────
+  // ─── Auth + doc fetch in parallel ────────────────────────────────────────
+  // Fire both requests at the same time instead of waiting for auth to finish
+  // before starting the doc fetch. Saves ~500ms on every page load.
   useEffect(() => {
-    console.time('[TWO] auth fetch')
-    fetch('/api/auth/me').then(async (res) => {
-      console.timeEnd('[TWO] auth fetch')
-      if (res.ok) {
-        const data = await res.json()
+    if (!docId) return
+    setDoc(null)
+    setTitle('')
+    setContent('')
+
+    console.time('[TWO] parallel fetch total')
+
+    const authPromise = fetch('/api/auth/me').then(res => res.ok ? res.json() : null)
+    const docPromise = fetch(`/api/docs/${docId}`).then(res => res.json())
+
+    Promise.all([authPromise, docPromise]).then(([authData, docData]) => {
+      console.timeEnd('[TWO] parallel fetch total')
+
+      // Handle auth result
+      if (authData?.user) {
         setIsLoggedIn(true)
-        setCurrentUser(data.user)
+        setCurrentUser(authData.user)
       } else {
         setIsLoggedIn(false)
       }
       setAuthChecked(true)
-    })
-  }, [])
 
-  useEffect(() => {
-    if (!isLoggedIn || !docId) return
-    fetch('/api/labels').then(r => r.json()).then(data => { if (Array.isArray(data)) setAllLabels(data) })
-    fetch(`/api/docs/${docId}/labels`).then(r => r.json()).then(data => { if (Array.isArray(data)) setDocLabels(data) })
-    fetch(`/api/comments?docId=${docId}`).then(r => r.json()).then(data => { if (Array.isArray(data)) setComments(data) })
-    fetch('/api/tasks')
-      .then(r => r.json())
-      .then(data => {
-        if (Array.isArray(data)) {
-          setTasks(data.filter((t: Task) => String(t.doc_id) === String(docId)))
-        }
-      })
-      .catch(() => {})
-  }, [isLoggedIn, docId])
-
-  // ─── STEP 2: Doc fetch (only runs after auth completes) ───────────────────
-  useEffect(() => {
-    if (!authChecked) return
-    setDoc(null)
-    setTitle('')
-    setContent('')
-    if (isLoggedIn) {
-      console.time('[TWO] doc fetch')
-      fetch(`/api/docs/${docId}`).then((res) => res.json()).then((data: Doc) => {
-        console.timeEnd('[TWO] doc fetch')
-        if (data.error) { router.push('/'); return }
-        setDoc(data)
-        setTitle(data.title)
-        updateTabTitle(docId, data.title || 'Untitled')
-        setContent(data.content || '')
-        setIsPublic(data.is_public ?? false)
-        setPriority((data.priority as Priority) ?? null)
-        setLastSaved(data.updated_at ?? null)
-        setIsFavorite(data.is_starred ?? false)
-        if (data.folder_id && data.folder_name) {
-          setFolder({ id: data.folder_id, name: data.folder_name })
+      // Handle doc result
+      // If doc returned an error and user is not logged in, try the public endpoint
+      if (docData?.error) {
+        if (!authData?.user) {
+          fetch(`/api/docs/public/${docId}`).then(res => res.json()).then((data: Doc) => {
+            if (data.error) { router.push('/login'); return }
+            setDoc(data)
+            setTitle(data.title)
+            setContent(data.content || '')
+            setIsPublic(data.is_public ?? false)
+            setPriority((data.priority as Priority) ?? null)
+            setLastSaved(data.updated_at ?? null)
+          })
         } else {
-          setFolder(null)
+          router.push('/')
         }
-      })
-    } else {
-      console.time('[TWO] doc fetch (public)')
-      fetch(`/api/docs/public/${docId}`).then((res) => res.json()).then((data: Doc) => {
-        console.timeEnd('[TWO] doc fetch (public)')
-        if (data.error) { router.push('/login'); return }
-        setDoc(data)
-        setTitle(data.title)
-        setContent(data.content || '')
-        setIsPublic(data.is_public ?? false)
-        setPriority((data.priority as Priority) ?? null)
-        setLastSaved(data.updated_at ?? null)
-      })
-    }
-  }, [docId, authChecked])
+        return
+      }
+
+      const data: Doc = docData
+      setDoc(data)
+      setTitle(data.title)
+      updateTabTitle(docId, data.title || 'Untitled')
+      setContent(data.content || '')
+      setIsPublic(data.is_public ?? false)
+      setPriority((data.priority as Priority) ?? null)
+      setLastSaved(data.updated_at ?? null)
+      setIsFavorite(data.is_starred ?? false)
+      if (data.folder_id && data.folder_name) {
+        setFolder({ id: data.folder_id, name: data.folder_name })
+      } else {
+        setFolder(null)
+      }
+
+      // Fire secondary fetches (labels, comments, tasks) now that we know user is logged in
+      if (authData?.user) {
+        fetch('/api/labels').then(r => r.json()).then(d => { if (Array.isArray(d)) setAllLabels(d) })
+        fetch(`/api/docs/${docId}/labels`).then(r => r.json()).then(d => { if (Array.isArray(d)) setDocLabels(d) })
+        fetch(`/api/comments?docId=${docId}`).then(r => r.json()).then(d => { if (Array.isArray(d)) setComments(d) })
+        fetch('/api/tasks').then(r => r.json()).then(d => {
+          if (Array.isArray(d)) setTasks(d.filter((t: Task) => String(t.doc_id) === String(docId)))
+        }).catch(() => {})
+      }
+    })
+  }, [docId])
 
   useEffect(() => { resizeTitle() }, [title])
 
