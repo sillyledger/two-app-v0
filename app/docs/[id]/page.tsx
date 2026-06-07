@@ -576,6 +576,7 @@ export default function DocPage() {
                 <Editor
                   content={content}
                   editable={isLoggedIn}
+                  isShared={!!(doc as any).workspace_id}
                   onChange={(newContent) => { if (!isLoggedIn) return; setContent(newContent) }}
                   onReady={(focusFn) => { editorFocusRef.current = focusFn }}
                   onImageUpload={handleImageUpload}
