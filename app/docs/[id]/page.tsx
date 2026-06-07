@@ -489,8 +489,8 @@ export default function DocPage() {
       </div>
 
       {/* Content skeleton */}
-      <main className="flex-1 overflow-y-auto" style={{ paddingTop: '80px' }}>
-        <div className="mx-auto px-16 pt-16 pb-32 max-w-[800px]">
+      <main className="flex-1 overflow-y-auto flex flex-col items-center" style={{ paddingTop: '80px' }}>
+        <div className="mx-auto w-full px-16 pt-16 pb-32 max-w-[800px]">
           {/* Title */}
           <div className="h-10 w-2/3 rounded-lg mb-6 animate-pulse" style={{ backgroundColor: 'var(--bg-tertiary)' }} />
 
@@ -539,7 +539,7 @@ export default function DocPage() {
         />
 
         <div
-          className="flex-1 flex flex-col min-h-screen transition-all duration-300 ease-in-out min-w-0"
+          className="flex-1 flex flex-col min-h-screen transition-all duration-300 ease-in-out min-w-0 overflow-hidden"
           style={{ marginRight: detailOpen ? '280px' : '0' }}
         >
           <DocTopbar
@@ -559,8 +559,8 @@ export default function DocPage() {
             currentUserName={currentUser?.name || currentUser?.email || undefined}
           />
 
-          <main className="flex-1 overflow-y-auto" style={{ paddingTop: '80px' }}>
-            <div className={`mx-auto px-16 pt-16 pb-32 transition-all duration-200 ${wideMode ? 'max-w-[1200px]' : 'max-w-[800px]'}`}>
+          <main className="flex-1 overflow-y-auto flex flex-col items-center" style={{ paddingTop: '80px' }}>
+            <div className={`mx-auto w-full px-16 pt-16 pb-32 transition-all duration-200 ${wideMode ? 'max-w-[1200px]' : 'max-w-[800px]'}`}>
               <textarea
                 ref={titleRef}
                 value={title}
