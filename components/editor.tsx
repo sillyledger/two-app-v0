@@ -150,6 +150,7 @@ interface EditorProps {
   onImageUpload?: (file: File) => Promise<string | null>
   onInsertImageReady?: (fn: (url: string) => void) => void
   editable?: boolean
+  isShared?: boolean
 }
 
 interface Doc {
@@ -157,7 +158,7 @@ interface Doc {
   title: string
 }
 
-export default function Editor({ content, onChange, onReady, onImageUpload, onInsertImageReady, editable = true }: EditorProps) {
+export default function Editor({ content, onChange, onReady, onImageUpload, onInsertImageReady, editable = true, isShared = false }: EditorProps) {
   const router = useRouter()
   const [bubbleVisible, setBubbleVisible] = useState(false)
   const [bubblePos, setBubblePos] = useState({ top: 0, left: 0 })
@@ -243,12 +244,13 @@ export default function Editor({ content, onChange, onReady, onImageUpload, onIn
     setSelectedIndex(0)
   }, [linkUrl, allDocs])
 
-  const liveblocks = useLiveblocksExtension({ initialContent: content })
+  // Only use Liveblocks for shared docs — private docs use DB content directly
+  const liveblocks = useLiveblocksExtension(isShared ? { initialContent: content } : {})
 
   const editor = useEditor({
     immediatelyRender: false,
     extensions: [
-      liveblocks,
+      ...(isShared ? [liveblocks] : []),
       StarterKit.configure({
         heading: { levels: [1, 2, 3] },
         bulletList: {},
@@ -256,7 +258,7 @@ export default function Editor({ content, onChange, onReady, onImageUpload, onIn
         blockquote: {},
         codeBlock: false,
         horizontalRule: {},
-        undoRedo: false,
+        undoRedo: isShared ? false : undefined,
       }),
       CodeBlockLowlight.configure({
         lowlight,
@@ -296,6 +298,7 @@ export default function Editor({ content, onChange, onReady, onImageUpload, onIn
       }),
       SlashCommands,
     ],
+    content: isShared ? undefined : content,
     editable,
     onUpdate: ({ editor }) => {
       if (editable) onChange(editor.getHTML())
@@ -874,9 +877,7 @@ export default function Editor({ content, onChange, onReady, onImageUpload, onIn
         .callout-content p {
           margin: 0 !important;
         }
-
         /* ── Liveblocks cursor overrides (Tiptap v3 uses .collaboration-carets) ── */
-        /* Thin caret line only, no block highlight */
         .collaboration-carets__caret {
           border-left: 2px solid;
           border-color: inherit;
@@ -885,11 +886,9 @@ export default function Editor({ content, onChange, onReady, onImageUpload, onIn
           word-break: normal;
           box-decoration-break: slice;
         }
-        /* Hide the full-line selection highlight */
         .collaboration-carets__selection {
           background: transparent !important;
         }
-        /* Name label: hidden by default, appears on hover */
         .collaboration-carets__label {
           font-size: 10px !important;
           font-weight: 500 !important;
