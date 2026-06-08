@@ -165,6 +165,7 @@ export default function DocPage() {
   // Track whether the user is actively typing so we don't overwrite mid-keystroke
   const isTypingRef = useRef(false)
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const remoteUpdateRef = useRef<((html: string) => void) | null>(null)
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -280,26 +281,42 @@ export default function DocPage() {
     })
   }, [docId])
 
-  // ─── Poll for updates from other devices ─────────────────────────────────
-  // Every 3 seconds, silently fetch the latest doc — but only if not typing
+  // ─── SSE: listen for updates from other devices ───────────────────────────
+  // When another device saves this doc, the server sends an "updated" ping.
+  // We silently re-fetch the latest content — but only if the user isn't typing.
   useEffect(() => {
     if (!docId || !isLoggedIn) return
 
-    const interval = setInterval(() => {
+    const eventSource = new EventSource(`/api/docs/${docId}/sync`)
+
+    eventSource.onmessage = (e) => {
+      if (e.data !== 'updated') return
+      // Don't overwrite content while the user is actively typing
       if (isTypingRef.current) return
+
       fetch(`/api/docs/${docId}`)
         .then(res => res.json())
         .then((data: Doc) => {
           if (data.error) return
-          setContent(data.content || '')
+          if (remoteUpdateRef.current) {
+            remoteUpdateRef.current(data.content || '')
+          } else {
+            setContent(data.content || '')
+          }
           setTitle(data.title || '')
           setLastSaved(data.updated_at ?? null)
           updateTabTitle(docId, data.title || 'Untitled')
         })
         .catch(() => {})
-    }, 3000)
+    }
 
-    return () => clearInterval(interval)
+    eventSource.onerror = () => {
+      // SSE will auto-reconnect — no action needed
+    }
+
+    return () => {
+      eventSource.close()
+    }
   }, [docId, isLoggedIn])
 
   useEffect(() => { resizeTitle() }, [title])
@@ -497,6 +514,7 @@ export default function DocPage() {
 
   if (!authChecked || !doc) return (
     <div className="flex-1 flex flex-col min-h-screen min-w-0 overflow-hidden">
+      {/* Topbar skeleton */}
       <div
         className="fixed top-0 right-0 z-20 flex items-center px-4 gap-3"
         style={{
@@ -514,6 +532,8 @@ export default function DocPage() {
           <div className="h-6 w-6 rounded-md animate-pulse" style={{ backgroundColor: 'var(--bg-tertiary)' }} />
         </div>
       </div>
+
+      {/* Content skeleton */}
       <main className="flex-1 overflow-y-auto flex flex-col items-center" style={{ paddingTop: '80px' }}>
         <div className="mx-auto w-full px-16 pt-16 pb-32 max-w-[800px]">
           <div className="h-10 w-2/3 rounded-lg mb-6 animate-pulse" style={{ backgroundColor: 'var(--bg-tertiary)' }} />
@@ -654,6 +674,7 @@ export default function DocPage() {
                   onReady={(focusFn) => { editorFocusRef.current = focusFn }}
                   onImageUpload={handleImageUpload}
                   onInsertImageReady={(fn) => { insertImageRef.current = fn }}
+                  onRemoteUpdate={(fn) => { remoteUpdateRef.current = fn }}
                 />
               )}
 
