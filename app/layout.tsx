@@ -28,7 +28,7 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" className={`dark bg-background ${instrumentSerif.variable}`}>
+    <html lang="en" className={`bg-background ${instrumentSerif.variable}`}>
       <head>
         <meta name="apple-mobile-web-app-title" content="TWO" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -42,6 +42,10 @@ export default function RootLayout({
                   if (theme === 'light') {
                     document.documentElement.classList.remove('dark');
                     document.documentElement.classList.add('light');
+                  } else if (theme === 'system') {
+                    var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                    document.documentElement.classList.remove('dark', 'light');
+                    document.documentElement.classList.add(prefersDark ? 'dark' : 'light');
                   } else {
                     document.documentElement.classList.remove('light');
                     document.documentElement.classList.add('dark');
