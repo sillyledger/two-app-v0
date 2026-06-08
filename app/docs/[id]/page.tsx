@@ -280,19 +280,13 @@ export default function DocPage() {
     })
   }, [docId])
 
-  // ─── SSE: listen for updates from other devices ───────────────────────────
-  // When another device saves this doc, the server sends an "updated" ping.
-  // We silently re-fetch the latest content — but only if the user isn't typing.
+  // ─── Poll for updates from other devices ─────────────────────────────────
+  // Every 3 seconds, silently fetch the latest doc — but only if not typing
   useEffect(() => {
     if (!docId || !isLoggedIn) return
 
-    const eventSource = new EventSource(`/api/docs/${docId}/sync`)
-
-    eventSource.onmessage = (e) => {
-      if (e.data !== 'updated') return
-      // Don't overwrite content while the user is actively typing
+    const interval = setInterval(() => {
       if (isTypingRef.current) return
-
       fetch(`/api/docs/${docId}`)
         .then(res => res.json())
         .then((data: Doc) => {
@@ -303,15 +297,9 @@ export default function DocPage() {
           updateTabTitle(docId, data.title || 'Untitled')
         })
         .catch(() => {})
-    }
+    }, 3000)
 
-    eventSource.onerror = () => {
-      // SSE will auto-reconnect — no action needed
-    }
-
-    return () => {
-      eventSource.close()
-    }
+    return () => clearInterval(interval)
   }, [docId, isLoggedIn])
 
   useEffect(() => { resizeTitle() }, [title])
@@ -509,7 +497,6 @@ export default function DocPage() {
 
   if (!authChecked || !doc) return (
     <div className="flex-1 flex flex-col min-h-screen min-w-0 overflow-hidden">
-      {/* Topbar skeleton */}
       <div
         className="fixed top-0 right-0 z-20 flex items-center px-4 gap-3"
         style={{
@@ -527,8 +514,6 @@ export default function DocPage() {
           <div className="h-6 w-6 rounded-md animate-pulse" style={{ backgroundColor: 'var(--bg-tertiary)' }} />
         </div>
       </div>
-
-      {/* Content skeleton */}
       <main className="flex-1 overflow-y-auto flex flex-col items-center" style={{ paddingTop: '80px' }}>
         <div className="mx-auto w-full px-16 pt-16 pb-32 max-w-[800px]">
           <div className="h-10 w-2/3 rounded-lg mb-6 animate-pulse" style={{ backgroundColor: 'var(--bg-tertiary)' }} />
