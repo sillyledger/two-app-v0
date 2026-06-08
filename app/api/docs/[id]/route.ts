@@ -2,7 +2,15 @@ import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { verifyToken } from '@/lib/auth'
 import { sql } from '@/lib/db'
-import { broadcastDocUpdate } from '@/lib/doc-sync'
+import Pusher from 'pusher'
+
+const pusher = new Pusher({
+  appId: process.env.PUSHER_APP_ID!,
+  key: process.env.PUSHER_KEY!,
+  secret: process.env.PUSHER_SECRET!,
+  cluster: process.env.PUSHER_CLUSTER!,
+  useTLS: true,
+})
 
 export async function GET(
   request: Request,
@@ -115,8 +123,8 @@ export async function PUT(
       return NextResponse.json({ error: 'Doc not found' }, { status: 404 })
     }
 
-    // Broadcast to all other devices/tabs watching this doc
-    broadcastDocUpdate(id)
+    // Broadcast to all other devices watching this doc
+    await pusher.trigger(`doc-${id}`, 'updated', {})
 
     return NextResponse.json(result[0])
   } catch (error) {
@@ -176,6 +184,6 @@ export async function DELETE(
     return NextResponse.json({ success: true })
   } catch (error) {
     console.error('Failed to delete doc:', error)
-    return NextResponse.json({ error: 'Failed to update doc' }, { status: 500 })
+    return NextResponse.json({ error: 'Failed to delete doc' }, { status: 500 })
   }
 }
