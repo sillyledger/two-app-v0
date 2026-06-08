@@ -8,6 +8,7 @@ import { useTabStore } from '@/hooks/use-tab-store'
 import { CalendarDays, SignalLow, SignalMedium, SignalHigh, Minus, PanelRight, X, FileText, User, Clock, Plus, Check, Send, Trash2, Circle, CheckCircle2, Pencil, PanelLeftOpen } from 'lucide-react'
 import type { Doc } from '@/lib/db'
 import { RoomProvider } from '@/liveblocks.config'
+import PusherJS from 'pusher-js'
 
 interface Folder {
   id: string
@@ -281,19 +282,18 @@ export default function DocPage() {
     })
   }, [docId])
 
-  // ─── SSE: listen for updates from other devices ───────────────────────────
-  // When another device saves this doc, the server sends an "updated" ping.
-  // We silently re-fetch the latest content — but only if the user isn't typing.
+  // ─── Pusher: listen for updates from other devices ───────────────────────
   useEffect(() => {
     if (!docId || !isLoggedIn) return
 
-    const eventSource = new EventSource(`/api/docs/${docId}/sync`)
+    const pusher = new PusherJS(process.env.NEXT_PUBLIC_PUSHER_KEY!, {
+      cluster: process.env.NEXT_PUBLIC_PUSHER_CLUSTER!,
+    })
 
-    eventSource.onmessage = (e) => {
-      if (e.data !== 'updated') return
-      // Don't overwrite content while the user is actively typing
+    const channel = pusher.subscribe(`doc-${docId}`)
+
+    channel.bind('updated', () => {
       if (isTypingRef.current) return
-
       fetch(`/api/docs/${docId}`)
         .then(res => res.json())
         .then((data: Doc) => {
@@ -308,14 +308,12 @@ export default function DocPage() {
           updateTabTitle(docId, data.title || 'Untitled')
         })
         .catch(() => {})
-    }
-
-    eventSource.onerror = () => {
-      // SSE will auto-reconnect — no action needed
-    }
+    })
 
     return () => {
-      eventSource.close()
+      channel.unbind_all()
+      pusher.unsubscribe(`doc-${docId}`)
+      pusher.disconnect()
     }
   }, [docId, isLoggedIn])
 
