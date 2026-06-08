@@ -9,9 +9,8 @@ export default function ThemeToggle() {
     const saved = localStorage.getItem("theme")
     const initial = saved === "light" ? "light" : "dark"
     setTheme(initial)
-    const html = document.documentElement
-    html.classList.remove("dark", "light")
-    html.classList.add(initial)
+    // Do NOT touch html classes here — layout.tsx script already applied
+    // the correct theme before paint. Overwriting it here causes the flicker.
   }, [])
 
   const toggle = () => {
