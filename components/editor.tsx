@@ -151,6 +151,7 @@ interface EditorProps {
   onInsertImageReady?: (fn: (url: string) => void) => void
   editable?: boolean
   isShared?: boolean
+  onRemoteUpdate?: (setContentFn: (html: string) => void) => void
 }
 
 interface Doc {
@@ -158,7 +159,7 @@ interface Doc {
   title: string
 }
 
-export default function Editor({ content, onChange, onReady, onImageUpload, onInsertImageReady, editable = true, isShared = false }: EditorProps) {
+export default function Editor({ content, onChange, onReady, onImageUpload, onInsertImageReady, editable = true, isShared = false, onRemoteUpdate }: EditorProps) {
   const router = useRouter()
   const [bubbleVisible, setBubbleVisible] = useState(false)
   const [bubblePos, setBubblePos] = useState({ top: 0, left: 0 })
@@ -524,6 +525,14 @@ export default function Editor({ content, onChange, onReady, onImageUpload, onIn
   useEffect(() => {
     if (editor && onReady) {
       onReady(() => editor.commands.focus("end"))
+    }
+  }, [editor])
+
+  useEffect(() => {
+    if (editor && onRemoteUpdate) {
+      onRemoteUpdate((html: string) => {
+        editor.commands.setContent(html, false)
+      })
     }
   }, [editor])
 
