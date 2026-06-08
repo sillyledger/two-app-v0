@@ -615,7 +615,7 @@ export default function SettingsPage() {
                         }}
                       >
                         Yearly
-                        <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full" style={{ backgroundColor: "#16a34a20", color: "#4ade80" }}>
+                        <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full" style={{ backgroundColor: "#16a34a", color: "#ffffff" }}>
                           −20%
                         </span>
                       </button>
