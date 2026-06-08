@@ -162,6 +162,10 @@ export default function DocPage() {
   const newTaskInputRef = useRef<HTMLInputElement>(null)
   const [hoveredTaskId, setHoveredTaskId] = useState<number | null>(null)
 
+  // Track whether the user is actively typing so we don't overwrite mid-keystroke
+  const isTypingRef = useRef(false)
+  const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
       if (labelPickerRef.current && !labelPickerRef.current.contains(e.target as Node)) {
@@ -211,8 +215,6 @@ export default function DocPage() {
   }, [])
 
   // ─── Auth + doc fetch in parallel ────────────────────────────────────────
-  // Fire both requests at the same time instead of waiting for auth to finish
-  // before starting the doc fetch. Saves ~500ms on every page load.
   useEffect(() => {
     if (!docId) return
     setDoc(null)
@@ -227,7 +229,6 @@ export default function DocPage() {
     Promise.all([authPromise, docPromise]).then(([authData, docData]) => {
       console.timeEnd('[TWO] parallel fetch total')
 
-      // Handle auth result
       if (authData?.user) {
         setIsLoggedIn(true)
         setCurrentUser(authData.user)
@@ -236,8 +237,6 @@ export default function DocPage() {
       }
       setAuthChecked(true)
 
-      // Handle doc result
-      // If doc returned an error and user is not logged in, try the public endpoint
       if (docData?.error) {
         if (!authData?.user) {
           fetch(`/api/docs/public/${docId}`).then(res => res.json()).then((data: Doc) => {
@@ -270,7 +269,6 @@ export default function DocPage() {
         setFolder(null)
       }
 
-      // Fire secondary fetches (labels, comments, tasks) now that we know user is logged in
       if (authData?.user) {
         fetch('/api/labels').then(r => r.json()).then(d => { if (Array.isArray(d)) setAllLabels(d) })
         fetch(`/api/docs/${docId}/labels`).then(r => r.json()).then(d => { if (Array.isArray(d)) setDocLabels(d) })
@@ -281,6 +279,40 @@ export default function DocPage() {
       }
     })
   }, [docId])
+
+  // ─── SSE: listen for updates from other devices ───────────────────────────
+  // When another device saves this doc, the server sends an "updated" ping.
+  // We silently re-fetch the latest content — but only if the user isn't typing.
+  useEffect(() => {
+    if (!docId || !isLoggedIn) return
+
+    const eventSource = new EventSource(`/api/docs/${docId}/sync`)
+
+    eventSource.onmessage = (e) => {
+      if (e.data !== 'updated') return
+      // Don't overwrite content while the user is actively typing
+      if (isTypingRef.current) return
+
+      fetch(`/api/docs/${docId}`)
+        .then(res => res.json())
+        .then((data: Doc) => {
+          if (data.error) return
+          setContent(data.content || '')
+          setTitle(data.title || '')
+          setLastSaved(data.updated_at ?? null)
+          updateTabTitle(docId, data.title || 'Untitled')
+        })
+        .catch(() => {})
+    }
+
+    eventSource.onerror = () => {
+      // SSE will auto-reconnect — no action needed
+    }
+
+    return () => {
+      eventSource.close()
+    }
+  }, [docId, isLoggedIn])
 
   useEffect(() => { resizeTitle() }, [title])
 
@@ -303,6 +335,14 @@ export default function DocPage() {
 
   useEffect(() => {
     if (!doc || !isLoggedIn) return
+
+    // Mark user as typing; clear after 2s of inactivity
+    isTypingRef.current = true
+    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current)
+    typingTimeoutRef.current = setTimeout(() => {
+      isTypingRef.current = false
+    }, 2000)
+
     setSaveStatus('unsaved')
     const timer = setTimeout(() => { handleSave(title, content, doc) }, 1000)
     return () => clearTimeout(timer)
@@ -491,17 +531,12 @@ export default function DocPage() {
       {/* Content skeleton */}
       <main className="flex-1 overflow-y-auto flex flex-col items-center" style={{ paddingTop: '80px' }}>
         <div className="mx-auto w-full px-16 pt-16 pb-32 max-w-[800px]">
-          {/* Title */}
           <div className="h-10 w-2/3 rounded-lg mb-6 animate-pulse" style={{ backgroundColor: 'var(--bg-tertiary)' }} />
-
-          {/* Meta row */}
           <div className="flex gap-2 mb-10">
             <div className="h-5 w-24 rounded-md animate-pulse" style={{ backgroundColor: 'var(--bg-tertiary)' }} />
             <div className="h-5 w-20 rounded-md animate-pulse" style={{ backgroundColor: 'var(--bg-tertiary)' }} />
             <div className="h-5 w-16 rounded-md animate-pulse" style={{ backgroundColor: 'var(--bg-tertiary)' }} />
           </div>
-
-          {/* Body lines */}
           <div className="flex flex-col gap-3">
             <div className="h-4 w-full rounded animate-pulse" style={{ backgroundColor: 'var(--bg-tertiary)' }} />
             <div className="h-4 w-5/6 rounded animate-pulse" style={{ backgroundColor: 'var(--bg-tertiary)' }} />
