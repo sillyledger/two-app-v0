@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { verifyToken } from '@/lib/auth'
 import { sql } from '@/lib/db'
+import { broadcastDocUpdate } from './sync/route'
 
 export async function GET(
   request: Request,
@@ -113,6 +114,10 @@ export async function PUT(
     if (result.length === 0) {
       return NextResponse.json({ error: 'Doc not found' }, { status: 404 })
     }
+
+    // Broadcast to all other devices/tabs watching this doc
+    broadcastDocUpdate(id)
+
     return NextResponse.json(result[0])
   } catch (error) {
     console.error('Failed to update doc:', error)
