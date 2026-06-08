@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { verifyToken } from '@/lib/auth'
 import { sql } from '@/lib/db'
-import { broadcastDocUpdate } from './sync/route'
+import { broadcastDocUpdate } from '@/lib/doc-sync'
 
 export async function GET(
   request: Request,
