@@ -28,7 +28,7 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" className={`bg-background ${instrumentSerif.variable}`}>
+    <html lang="en" suppressHydrationWarning className={`dark bg-background ${instrumentSerif.variable}`}>
       <head>
         <meta name="apple-mobile-web-app-title" content="TWO" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -50,13 +50,9 @@ export default function RootLayout({
                     document.documentElement.classList.remove('light');
                     document.documentElement.classList.add('dark');
                   }
-                  var fontSize = localStorage.getItem('font-size');
-                  if (fontSize === 'small') {
-                    document.documentElement.style.fontSize = '13px';
-                  } else if (fontSize === 'large') {
-                    document.documentElement.style.fontSize = '17px';
-                  } else {
-                    document.documentElement.style.fontSize = '';
+                  var fontSize = localStorage.getItem('font-size-px');
+                  if (fontSize) {
+                    document.documentElement.style.fontSize = fontSize + 'px';
                   }
                 } catch(e) {}
               })();
