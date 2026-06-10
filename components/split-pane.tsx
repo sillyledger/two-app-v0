@@ -95,7 +95,7 @@ export default function SplitPane({ docId }: SplitPaneProps) {
         </span>
       </div>
 
-      <div className="mx-auto w-full px-16 pt-12 pb-32 max-w-[800px]">
+      <div className="mx-auto w-full px-16 pt-20 pb-32 max-w-[800px]">
         <textarea
           ref={titleRef}
           value={title}
