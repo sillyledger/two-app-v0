@@ -36,6 +36,14 @@ export default function DocsLayout({ children }: { children: React.ReactNode }) 
     if (saved === 'true') setCollapsed(true)
   }, [])
 
+  useEffect(() => {
+    const savedSplitId = localStorage.getItem('split-doc-id')
+    if (savedSplitId) {
+      setSplitDocId(savedSplitId)
+      setSplitActive(true)
+    }
+  }, [])
+
   // Listen for the Split View toggle fired from DocTopbar
   useEffect(() => {
     const handler = () => {
@@ -54,6 +62,7 @@ export default function DocsLayout({ children }: { children: React.ReactNode }) 
         setSplitActive(false)
         setSplitDocId(null)
         setLeftWidth(50)
+        localStorage.removeItem('split-doc-id')
       }
     }
     window.addEventListener('toggle-split-view', handler)
@@ -88,6 +97,7 @@ export default function DocsLayout({ children }: { children: React.ReactNode }) 
     setSplitActive(true)
     setSplitPickerOpen(false)
     setSplitQuery('')
+    localStorage.setItem('split-doc-id', doc.uuid)
   }
 
   // Drag-to-resize the divider
