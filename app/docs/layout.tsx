@@ -168,7 +168,7 @@ export default function DocsLayout({ children }: { children: React.ReactNode }) 
             <div className="min-w-0 overflow-hidden flex flex-col" style={{ width: `${100 - leftWidth}%` }}>
               <iframe
                 key={splitDocId}
-                src={`/docs/${splitDocId}`}
+                src={`/split/${splitDocId}`}
                 className="flex-1 w-full h-full border-none"
                 style={{ minHeight: 'calc(100vh - 80px)' }}
                 title="Split view doc"
