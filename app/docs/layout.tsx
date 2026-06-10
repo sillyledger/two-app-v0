@@ -5,7 +5,8 @@ import Sidebar from '@/components/sidebar'
 import TabBar from '@/components/tab-bar'
 import { useTabStore } from '@/hooks/use-tab-store'
 import { useRouter } from 'next/navigation'
-import { Search, X, FileText, FilePlus } from 'lucide-react'
+import { Search, X, FileText } from 'lucide-react'
+import SplitPane from '@/components/split-pane'
 
 interface DocItem {
   uuid: string
@@ -164,15 +165,9 @@ export default function DocsLayout({ children }: { children: React.ReactNode }) 
               onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'var(--border)')}
             />
 
-            {/* Right pane — second doc in iframe */}
+            {/* Right pane — second doc rendered directly */}
             <div className="min-w-0 overflow-hidden flex flex-col" style={{ width: `${100 - leftWidth}%` }}>
-              <iframe
-                key={splitDocId}
-                src={`/split/${splitDocId}`}
-                className="flex-1 w-full h-full border-none"
-                style={{ minHeight: 'calc(100vh - 80px)' }}
-                title="Split view doc"
-              />
+              <SplitPane docId={splitDocId} />
             </div>
 
           </div>
