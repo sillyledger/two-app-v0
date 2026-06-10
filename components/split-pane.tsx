@@ -87,7 +87,7 @@ export default function SplitPane({ docId }: SplitPaneProps) {
 
   return (
     <RoomProvider id={docId} initialPresence={{ name: 'Anonymous', color: '#888888' }}>
-    <div className="flex flex-col h-full overflow-y-auto" style={{ backgroundColor: 'var(--bg)' }}>
+    <div className="flex flex-col h-full overflow-y-auto" style={{ backgroundColor: 'var(--bg)', paddingTop: '80px' }}>
       {/* Minimal save indicator */}
       <div className="sticky top-3 flex justify-end px-4 z-10 pointer-events-none">
         <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
@@ -95,7 +95,7 @@ export default function SplitPane({ docId }: SplitPaneProps) {
         </span>
       </div>
 
-      <div className="mx-auto w-full px-16 pt-20 pb-32 max-w-[800px]">
+      <div className="mx-auto w-full px-16 pt-16 pb-32 max-w-[800px]">
         <textarea
           ref={titleRef}
           value={title}
