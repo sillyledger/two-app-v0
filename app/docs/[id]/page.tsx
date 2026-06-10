@@ -119,6 +119,7 @@ export default function DocPage() {
   const docId = Array.isArray(params.id) ? params.id[0] : (params.id as string)
   const router = useRouter()
   const [wideMode, setWideMode] = useState(false)
+  const [splitViewActive, setSplitViewActive] = useState(false)
   const [detailOpen, setDetailOpen] = useState(false)
   const [doc, setDoc] = useState<Doc | null>(null)
   const [title, setTitle] = useState('')
@@ -198,6 +199,11 @@ export default function DocPage() {
       localStorage.setItem('doc-wide-mode', String(!v))
       return !v
     })
+  }
+
+  const handleToggleSplitView = () => {
+    setSplitViewActive(v => !v)
+    window.dispatchEvent(new Event('toggle-split-view'))
   }
 
   const resizeTitle = () => {
@@ -595,6 +601,8 @@ export default function DocPage() {
             detailOpen={detailOpen}
             onToggleDetail={() => setDetailOpen(v => !v)}
             currentUserName={currentUser?.name || currentUser?.email || undefined}
+            splitViewActive={splitViewActive}
+            onToggleSplitView={handleToggleSplitView}
           />
 
           <main className="flex-1 overflow-y-auto flex flex-col items-center" style={{ paddingTop: '80px' }}>
