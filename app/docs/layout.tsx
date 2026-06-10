@@ -157,7 +157,7 @@ export default function DocsLayout({ children }: { children: React.ReactNode }) 
 
         {/* Main content area — single or split */}
         {splitActive && splitDocId ? (
-          <div ref={containerRef} className="flex flex-1 min-h-0" style={{ paddingTop: '80px' }}>
+          <div ref={containerRef} className="flex flex-1 min-h-0" style={{ paddingTop: '0' }}>
 
             {/* Left pane — current doc */}
             <div className="min-w-0 overflow-hidden flex flex-col" style={{ width: `${leftWidth}%` }}>
