@@ -74,7 +74,7 @@ export async function PUT(
   try {
     const { id } = await params
     const body = await request.json()
-    const { title, content, color, is_starred, type, folder_id, priority } = body
+    const { title, content, color, is_starred, type, folder_id, priority, board_stage } = body
 
     const accessCheck = await sql`
       SELECT docs.uuid FROM docs
@@ -106,6 +106,9 @@ export async function PUT(
       return NextResponse.json(result[0])
     }
 
+    // board_stage can be set to null (remove from board) or a string value
+    const boardStageValue = board_stage !== undefined ? board_stage : undefined
+
     const result = await sql`
       UPDATE docs
       SET
@@ -115,6 +118,10 @@ export async function PUT(
         is_starred = COALESCE(${is_starred ?? null}, is_starred),
         type = COALESCE(${type ?? null}, type),
         priority = COALESCE(${priority ?? null}, priority),
+        board_stage = CASE
+          WHEN ${boardStageValue !== undefined} THEN ${boardStageValue ?? null}
+          ELSE board_stage
+        END,
         updated_at = CURRENT_TIMESTAMP
       WHERE uuid = ${id}
       RETURNING *
@@ -123,7 +130,6 @@ export async function PUT(
       return NextResponse.json({ error: 'Doc not found' }, { status: 404 })
     }
 
-    // Broadcast to all other devices watching this doc
     await pusher.trigger(`doc-${id}`, 'updated', {})
 
     return NextResponse.json(result[0])
