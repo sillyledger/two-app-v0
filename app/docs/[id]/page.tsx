@@ -488,6 +488,7 @@ export default function DocPage() {
   const handleDelete = async () => {
     await fetch(`/api/docs/${docId}`, { method: 'DELETE' })
     closeTab(docId)
+    window.dispatchEvent(new Event('sb-refresh'))
     router.push('/')
   }
 
