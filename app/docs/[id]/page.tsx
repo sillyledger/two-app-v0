@@ -265,6 +265,7 @@ export default function DocPage() {
       const data: Doc = docData
       setDoc(data)
       setTitle(data.title)
+      openTab(docId, data.title || 'Untitled')
       updateTabTitle(docId, data.title || 'Untitled')
       setContent(data.content || '')
       setIsPublic(data.is_public ?? false)
@@ -486,6 +487,7 @@ export default function DocPage() {
 
   const handleDelete = async () => {
     await fetch(`/api/docs/${docId}`, { method: 'DELETE' })
+    closeTab(docId)
     router.push('/')
   }
 
@@ -502,7 +504,7 @@ export default function DocPage() {
     return null
   }, [])
 
-  const { tabs, updateTabTitle } = useTabStore()
+  const { tabs, openTab, updateTabTitle, closeTab } = useTabStore()
   const wordCount = getWordCount(content)
   const charCount = getCharCount(content)
   const activePriority = PRIORITIES.find(p => p.value === priority) ?? PRIORITIES[0]
