@@ -183,9 +183,9 @@ export async function DELETE(
       SET deleted_at = CURRENT_TIMESTAMP
       WHERE uuid = ${id}
         AND (
-          user_id = ${payload.userId}
-          OR workspace_id IN (
-            SELECT id FROM workspaces WHERE user_id = ${payload.userId}
+          user_id::text = ${String(payload.userId)}
+          OR workspace_id::text IN (
+            SELECT id::text FROM workspaces WHERE user_id::text = ${String(payload.userId)}
           )
         )
       RETURNING *
