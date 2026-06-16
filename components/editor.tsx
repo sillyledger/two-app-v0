@@ -6,10 +6,11 @@ import Link from "@tiptap/extension-link"
 import Typography from "@tiptap/extension-typography"
 import CodeBlockLowlight from "@tiptap/extension-code-block-lowlight"
 import Placeholder from "@tiptap/extension-placeholder"
-import { Table as TableExtension } from "@tiptap/extension-table"
+import { Table as TableExtensionBase } from "@tiptap/extension-table"
 import TableRow from "@tiptap/extension-table-row"
 import TableHeader from "@tiptap/extension-table-header"
 import TableCell from "@tiptap/extension-table-cell"
+
 import Image from "@tiptap/extension-image"
 import TaskList from "@tiptap/extension-task-list"
 import TaskItem from "@tiptap/extension-task-item"
@@ -41,6 +42,21 @@ import {
 import { useCallback, useState, useRef, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useLiveblocksExtension } from "@liveblocks/react-tiptap"
+
+// Extended Table that persists the "fit width" toggle as a data attribute in saved HTML
+const TableExtension = TableExtensionBase.extend({
+  addAttributes() {
+    return {
+      ...this.parent?.(),
+      fitWidth: {
+        default: false,
+        parseHTML: (element: HTMLElement) => element.getAttribute("data-fit-width") === "true",
+        renderHTML: (attributes: Record<string, unknown>) =>
+          attributes.fitWidth ? { "data-fit-width": "true" } : {},
+      },
+    }
+  },
+})
 
 const lowlight = createLowlight(common)
 
@@ -682,7 +698,7 @@ export default function Editor({ content, onChange, onReady, onImageUpload, onIn
           margin: 1.25em 0;
           -webkit-overflow-scrolling: touch;
         }
-        .tableWrapper.fit-width {
+        .tableWrapper:has(table[data-fit-width="true"]) {
           overflow-x: visible;
           width: 100vw;
           position: relative;
@@ -693,7 +709,7 @@ export default function Editor({ content, onChange, onReady, onImageUpload, onIn
           padding: 0 4rem;
           box-sizing: border-box;
         }
-        .tableWrapper.fit-width table {
+        .tableWrapper:has(table[data-fit-width="true"]) table {
           width: 100%;
           min-width: 0;
         }
