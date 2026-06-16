@@ -47,7 +47,7 @@ export default function Sidebar({ onNewNote, onToggle }: SidebarProps = {}) {
   const [workspaceId, setWorkspaceId] = useState<string | null>(() => cacheGet<string>("sb_workspaceId"))
   const [workspaces, setWorkspaces] = useState<Workspace[]>(() => cacheGet<Workspace[]>("sb_workspaces") ?? [])
   const [activeWorkspaceId, setActiveWorkspaceId] = useState<string | null>(() => cacheGet<string>("sb_workspaceId"))
-  const [docs, setDocs] = useState<Doc[]>(() => cacheGet<Doc[]>("sb_docs") ?? [])
+  const [docs, setDocs] = useState<Doc[]>([])
   const [folders, setFolders] = useState<FolderType[]>(() => cacheGet<FolderType[]>("sb_folders") ?? [])
   const [expandedWorkspaces, setExpandedWorkspaces] = useState<Record<string, boolean>>({})
   const [wsData, setWsData] = useState<Record<string, { docs: Doc[]; folders: FolderType[] }>>({})
@@ -170,16 +170,7 @@ export default function Sidebar({ onNewNote, onToggle }: SidebarProps = {}) {
       if (data?.name) { setWorkspaceName(data.name); cacheSet("sb_workspaceName", data.name) }
       if (data?.id) {
         setWorkspaceId(data.id); setActiveWorkspaceId(data.id); cacheSet("sb_workspaceId", data.id)
-        // Always do a fresh fetch on mount to replace any stale cache
-        fetch(`/api/docs?workspace_id=${data.id}`)
-          .then(r => r.json())
-          .then(docs => {
-            if (!Array.isArray(docs)) return
-            const unfiled = docs.filter((d: any) => !d.folder_id).slice(0, 8)
-            setDocs(unfiled)
-            try { sessionStorage.setItem("sb_docs", JSON.stringify(unfiled)) } catch {}
-          }).catch(() => {})
-        fetchFoldersForWorkspace(data.id, true)
+        fetchDocsForWorkspace(data.id, true); fetchFoldersForWorkspace(data.id, true)
       }
     }).catch(() => {})
     fetch("/api/workspaces").then(r => r.json()).then(data => {
