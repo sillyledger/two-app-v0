@@ -102,7 +102,14 @@ export default function Sidebar({ onNewNote, onToggle }: SidebarProps = {}) {
   }, [showModal])
 
   useEffect(() => {
-    const handler = () => {
+    const handler = (e: Event) => {
+      // If a specific doc uuid is passed, remove it from local state immediately
+      const uuid = (e as CustomEvent).detail?.uuid
+      if (uuid) {
+        setDocs(prev => prev.filter(d => d.uuid !== uuid))
+        sessionStorage.removeItem("sb_docs")
+      }
+      // Then re-fetch from server to sync fully
       if (workspaceId) fetchDocsForWorkspace(workspaceId, true)
     }
     window.addEventListener("sb-refresh", handler)
