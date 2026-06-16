@@ -3,8 +3,8 @@
 import { useState, useEffect, useCallback } from "react"
 
 export interface Tab {
-  id: string    // the doc's uuid
-  title: string // the doc's title, shown in the tab
+  id: string
+  title: string
 }
 
 const STORAGE_KEY = "two-open-tabs"
@@ -25,59 +25,89 @@ function save(key: string, value: unknown) {
   try { localStorage.setItem(key, JSON.stringify(value)) } catch {}
 }
 
+// ── Singleton state shared across all hook instances ──────────────────────────
+type Listener = () => void
+let _tabs: Tab[]         = []
+let _activeId: string | null = null
+let _initialized         = false
+const _listeners         = new Set<Listener>()
+
+function notify() {
+  _listeners.forEach(fn => fn())
+}
+
+function initOnce() {
+  if (_initialized || typeof window === "undefined") return
+  _initialized = true
+  _tabs     = load<Tab[]>(STORAGE_KEY, [])
+  _activeId = load<string | null>(ACTIVE_KEY, null)
+}
+
+// ── Shared mutators ───────────────────────────────────────────────────────────
+function _openTab(id: string, title: string) {
+  const exists = _tabs.find(t => t.id === id)
+  if (exists) {
+    _tabs = _tabs.map(t => t.id === id ? { ...t, title } : t)
+  } else {
+    const next = [..._tabs, { id, title }]
+    _tabs = next.length > MAX_TABS ? next.slice(next.length - MAX_TABS) : next
+  }
+  _activeId = id
+  save(STORAGE_KEY, _tabs)
+  save(ACTIVE_KEY, _activeId)
+  notify()
+}
+
+function _updateTabTitle(id: string, title: string) {
+  _tabs = _tabs.map(t => t.id === id ? { ...t, title } : t)
+  save(STORAGE_KEY, _tabs)
+  notify()
+}
+
+function _closeTab(id: string) {
+  const idx  = _tabs.findIndex(t => t.id === id)
+  const next = _tabs.filter(t => t.id !== id)
+  if (_activeId === id) {
+    const newIdx = Math.max(0, idx - 1)
+    _activeId = next[newIdx]?.id ?? null
+    save(ACTIVE_KEY, _activeId)
+  }
+  _tabs = next
+  save(STORAGE_KEY, _tabs)
+  notify()
+}
+
+function _switchTab(id: string) {
+  _activeId = id
+  save(ACTIVE_KEY, _activeId)
+  notify()
+}
+
+function _closeAll() {
+  _tabs = []
+  _activeId = null
+  save(STORAGE_KEY, _tabs)
+  save(ACTIVE_KEY, _activeId)
+  notify()
+}
+
+// ── Hook ─────────────────────────────────────────────────────────────────────
 export function useTabStore() {
-  const [tabs, setTabs]         = useState<Tab[]>(() => load<Tab[]>(STORAGE_KEY, []))
-  const [activeId, setActiveId] = useState<string | null>(() => load<string | null>(ACTIVE_KEY, null))
+  initOnce()
 
-  // Keep localStorage in sync whenever tabs or activeId change
-  useEffect(() => { save(STORAGE_KEY, tabs) }, [tabs])
-  useEffect(() => { save(ACTIVE_KEY, activeId) }, [activeId])
+  const [, rerender] = useState(0)
 
-  // Open a doc in a new tab (or switch to it if already open)
-  const openTab = useCallback((id: string, title: string) => {
-    setTabs(prev => {
-      const exists = prev.find(t => t.id === id)
-      if (exists) {
-        // Tab already open — just update title in case it changed
-        return prev.map(t => t.id === id ? { ...t, title } : t)
-      }
-      const next = [...prev, { id, title }]
-      return next.length > MAX_TABS ? next.slice(next.length - MAX_TABS) : next
-    })
-    setActiveId(id)
+  useEffect(() => {
+    const fn = () => rerender(n => n + 1)
+    _listeners.add(fn)
+    return () => { _listeners.delete(fn) }
   }, [])
 
-  // Update the title of an already-open tab (called when doc title changes)
-  const updateTabTitle = useCallback((id: string, title: string) => {
-    setTabs(prev => prev.map(t => t.id === id ? { ...t, title } : t))
-  }, [])
+  const openTab       = useCallback((id: string, title: string) => _openTab(id, title), [])
+  const updateTabTitle = useCallback((id: string, title: string) => _updateTabTitle(id, title), [])
+  const closeTab      = useCallback((id: string) => _closeTab(id), [])
+  const switchTab     = useCallback((id: string) => _switchTab(id), [])
+  const closeAll      = useCallback(() => _closeAll(), [])
 
-  // Close a tab — if it was active, switch to the nearest remaining tab
-  const closeTab = useCallback((id: string) => {
-    setTabs(prev => {
-      const idx  = prev.findIndex(t => t.id === id)
-      const next = prev.filter(t => t.id !== id)
-      setActiveId(current => {
-        if (current !== id) return current
-        if (next.length === 0) return null
-        // Switch to the tab to the left, or the first one if none
-        const newIdx = Math.max(0, idx - 1)
-        return next[newIdx]?.id ?? null
-      })
-      return next
-    })
-  }, [])
-
-  // Switch to a tab that's already open
-  const switchTab = useCallback((id: string) => {
-    setActiveId(id)
-  }, [])
-
-  // Close every tab (e.g. on logout)
-  const closeAll = useCallback(() => {
-    setTabs([])
-    setActiveId(null)
-  }, [])
-
-  return { tabs, activeId, openTab, updateTabTitle, closeTab, switchTab, closeAll }
+  return { tabs: _tabs, activeId: _activeId, openTab, updateTabTitle, closeTab, switchTab, closeAll }
 }
