@@ -103,15 +103,23 @@ export default function Sidebar({ onNewNote, onToggle }: SidebarProps = {}) {
 
   useEffect(() => {
     const handler = (e: Event) => {
-      // If a specific doc uuid is passed, remove it from local state immediately
       const uuid = (e as CustomEvent).detail?.uuid
+      // Remove from local state immediately
       if (uuid) {
         setDocs(prev => prev.filter(d => d.uuid !== uuid))
-        sessionStorage.removeItem("sb_docs")
       }
-      // Then re-fetch from server to sync fully using ref (always current, not stale closure)
+      // Direct fetch — no stale closure, no dependency on workspaceId state
       const wsId = workspaceIdRef.current
-      if (wsId) fetchDocsForWorkspace(wsId, true)
+      if (!wsId) return
+      fetch(`/api/docs?workspace_id=${wsId}`)
+        .then(r => r.json())
+        .then(data => {
+          if (!Array.isArray(data)) return
+          const unfiled = data.filter((d: any) => !d.folder_id).slice(0, 8)
+          setDocs(unfiled)
+          try { sessionStorage.setItem("sb_docs", JSON.stringify(unfiled)) } catch {}
+        })
+        .catch(() => {})
     }
     window.addEventListener("sb-refresh", handler)
     return () => window.removeEventListener("sb-refresh", handler)
