@@ -109,12 +109,13 @@ export default function Sidebar({ onNewNote, onToggle }: SidebarProps = {}) {
         setDocs(prev => prev.filter(d => d.uuid !== uuid))
         sessionStorage.removeItem("sb_docs")
       }
-      // Then re-fetch from server to sync fully
-      if (workspaceId) fetchDocsForWorkspace(workspaceId, true)
+      // Then re-fetch from server to sync fully using ref (always current, not stale closure)
+      const wsId = workspaceIdRef.current
+      if (wsId) fetchDocsForWorkspace(wsId, true)
     }
     window.addEventListener("sb-refresh", handler)
     return () => window.removeEventListener("sb-refresh", handler)
-  }, [workspaceId])
+  }, [])
 
   // ── Silent 30s polling for shared workspaces ──
   useEffect(() => {
