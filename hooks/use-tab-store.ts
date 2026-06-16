@@ -37,7 +37,10 @@ export function useTabStore() {
   const openTab = useCallback((id: string, title: string) => {
     setTabs(prev => {
       const exists = prev.find(t => t.id === id)
-      if (exists) return prev // already open, don't duplicate
+      if (exists) {
+        // Tab already open — just update title in case it changed
+        return prev.map(t => t.id === id ? { ...t, title } : t)
+      }
       const next = [...prev, { id, title }]
       return next.length > MAX_TABS ? next.slice(next.length - MAX_TABS) : next
     })
