@@ -487,9 +487,14 @@ export default function DocPage() {
   }
 
   const handleDelete = async () => {
-    await fetch(`/api/docs/${docId}`, { method: 'DELETE' })
+    const res = await fetch(`/api/docs/${docId}`, { method: 'DELETE' })
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}))
+      console.error('Delete failed:', err)
+      alert('Delete failed: ' + (err.error || res.status))
+      return
+    }
     closeTab(docId)
-    // Clear sidebar cache so deleted doc doesn't reappear on remount
     try { sessionStorage.removeItem('sb_docs') } catch {}
     window.dispatchEvent(new CustomEvent('sb-refresh', { detail: { uuid: docId } }))
     router.push('/')
