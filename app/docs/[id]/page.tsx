@@ -118,6 +118,7 @@ export default function DocPage() {
   const params = useParams()
   const docId = Array.isArray(params.id) ? params.id[0] : (params.id as string)
   const router = useRouter()
+  const { tabs, openTab, updateTabTitle, closeTab } = useTabStore()
   const [wideMode, setWideMode] = useState(false)
   const [splitViewActive, setSplitViewActive] = useState(false)
   const [detailOpen, setDetailOpen] = useState(false)
@@ -504,8 +505,6 @@ export default function DocPage() {
     alert(data.error || 'Upload failed')
     return null
   }, [])
-
-  const { tabs, openTab, updateTabTitle, closeTab } = useTabStore()
   const wordCount = getWordCount(content)
   const charCount = getCharCount(content)
   const activePriority = PRIORITIES.find(p => p.value === priority) ?? PRIORITIES[0]
