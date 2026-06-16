@@ -181,7 +181,13 @@ export async function DELETE(
     const result = await sql`
       UPDATE docs
       SET deleted_at = CURRENT_TIMESTAMP
-      WHERE uuid = ${id} AND user_id = ${payload.userId}
+      WHERE uuid = ${id}
+        AND (
+          user_id = ${payload.userId}
+          OR workspace_id IN (
+            SELECT id FROM workspaces WHERE user_id = ${payload.userId}
+          )
+        )
       RETURNING *
     `
     if (result.length === 0) {
