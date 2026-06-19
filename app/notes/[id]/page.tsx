@@ -9,6 +9,11 @@ import Sidebar from '@/components/sidebar'
 
 const FONT = "'DM Sans', system-ui, sans-serif"
 
+const SWATCHES = [
+  '#7F77DD', '#1D9E75', '#D85A30', '#D4537E',
+  '#378ADD', '#639922', '#BA7517', '#E24B4A', '#888890',
+]
+
 interface NoteCategory {
   id: number
   name: string
@@ -40,6 +45,10 @@ export default function NoteEditorPage() {
   const [panelOpen, setPanelOpen] = useState(true)
   const [categoryDropdownOpen, setCategoryDropdownOpen] = useState(false)
   const [collapsed, setCollapsed] = useState(false)
+  const [showCategoryModal, setShowCategoryModal] = useState(false)
+  const [newCategoryName, setNewCategoryName] = useState('')
+  const [newCategoryColor, setNewCategoryColor] = useState('#7F77DD')
+  const categoryNameRef = useRef<HTMLInputElement>(null)
 
   const titleRef = useRef<HTMLTextAreaElement>(null)
   const categoryDropdownRef = useRef<HTMLDivElement>(null)
@@ -147,6 +156,30 @@ export default function NoteEditorPage() {
     if (!confirm('Delete this note? This cannot be undone.')) return
     await fetch(`/api/notes/${noteId}`, { method: 'DELETE' })
     router.push('/notes')
+  }
+
+  function openCategoryModal() {
+    setCategoryDropdownOpen(false)
+    setNewCategoryName('')
+    setNewCategoryColor(SWATCHES[0])
+    setShowCategoryModal(true)
+    setTimeout(() => categoryNameRef.current?.focus(), 50)
+  }
+
+  async function handleCreateCategory() {
+    const name = newCategoryName.trim()
+    if (!name) { setShowCategoryModal(false); return }
+    setShowCategoryModal(false)
+    try {
+      const res = await fetch('/api/note-categories', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, color: newCategoryColor }),
+      })
+      const category = await res.json()
+      setCategories(prev => [...prev, category])
+      setCategoryId(category.id)
+    } catch {}
   }
 
   const activeCategory = categories.find(c => c.id === categoryId) || null
@@ -260,7 +293,7 @@ export default function NoteEditorPage() {
                       </button>
                     ))}
                     <button
-                      onClick={() => { setCategoryDropdownOpen(false); router.push('/notes') }}
+                      onClick={openCategoryModal}
                       style={{ width: '100%', textAlign: 'left', padding: '8px 9px', background: 'transparent', border: 'none', borderTop: '1px solid var(--border)', marginTop: 3, fontSize: 12, color: 'var(--text-muted)', cursor: 'pointer', fontFamily: FONT }}
                     >
                       + New category
@@ -275,6 +308,43 @@ export default function NoteEditorPage() {
         </div>
       </div>
     </div>
+
+    {showCategoryModal && (
+      <div style={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.55)' }} onClick={() => setShowCategoryModal(false)} />
+        <div style={{ position: 'relative', borderRadius: 14, width: 320, padding: '22px 22px 18px', zIndex: 10, background: 'var(--bg-secondary)', border: '1px solid var(--border)', fontFamily: FONT }}>
+          <h2 style={{ fontSize: 14, fontWeight: 600, marginBottom: 16, color: 'var(--text-primary)' }}>New category</h2>
+          <label style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--text-muted)', display: 'block', marginBottom: 6 }}>Name</label>
+          <input
+            ref={categoryNameRef}
+            type="text"
+            value={newCategoryName}
+            onChange={e => setNewCategoryName(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter') handleCreateCategory(); if (e.key === 'Escape') setShowCategoryModal(false) }}
+            placeholder="e.g. Research"
+            style={{ width: '100%', borderRadius: 9, padding: '9px 12px', fontSize: 13.5, outline: 'none', background: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--text-primary)', fontFamily: FONT, boxSizing: 'border-box', marginBottom: 16 }}
+          />
+          <label style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--text-muted)', display: 'block', marginBottom: 8 }}>Color</label>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 20 }}>
+            {SWATCHES.map(color => (
+              <button
+                key={color}
+                onClick={() => setNewCategoryColor(color)}
+                style={{
+                  width: 24, height: 24, borderRadius: '50%', background: color, cursor: 'pointer',
+                  border: newCategoryColor === color ? '2px solid var(--text-primary)' : '2px solid transparent',
+                  padding: 0,
+                }}
+              />
+            ))}
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+            <button onClick={() => setShowCategoryModal(false)} style={{ padding: '7px 14px', borderRadius: 8, fontSize: 13, fontWeight: 500, color: 'var(--text-muted)', background: 'transparent', border: 'none', cursor: 'pointer', fontFamily: FONT }}>Cancel</button>
+            <button onClick={handleCreateCategory} style={{ padding: '7px 14px', borderRadius: 8, fontSize: 13, fontWeight: 600, color: '#fff', background: '#6b5ce7', border: 'none', cursor: 'pointer', fontFamily: FONT }}>Create</button>
+          </div>
+        </div>
+      </div>
+    )}
     </div>
     </RoomProvider>
   )
