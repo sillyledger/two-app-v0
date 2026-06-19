@@ -2,7 +2,6 @@
 
 import { useEffect, useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import Sidebar from '@/components/sidebar'
 
 interface NoteCategory {
   id: number
@@ -59,7 +58,6 @@ function excerpt(content: string | null) {
 
 export default function NotesPage() {
   const router = useRouter()
-  const [collapsed, setCollapsed] = useState(false)
   const [authChecked, setAuthChecked] = useState(false)
   const [notes, setNotes] = useState<Note[]>([])
   const [categories, setCategories] = useState<NoteCategory[]>([])
@@ -74,11 +72,6 @@ export default function NotesPage() {
 
   const [openCategoryMenuId, setOpenCategoryMenuId] = useState<number | null>(null)
   const categoryMenuRef = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    const saved = localStorage.getItem('sidebar-collapsed')
-    if (saved === 'true') setCollapsed(true)
-  }, [])
 
   useEffect(() => {
     fetch('/api/auth/me').then(r => {
@@ -170,17 +163,8 @@ export default function NotesPage() {
   if (!authChecked) return null
 
   return (
-    <div className="flex min-h-screen" style={{ backgroundColor: 'var(--bg)' }}>
-      <Sidebar
-        collapsed={collapsed}
-        onToggle={() => {
-          const next = !collapsed
-          setCollapsed(next)
-          localStorage.setItem('sidebar-collapsed', String(next))
-        }}
-      />
-
-      <main className="flex-1 overflow-y-auto" style={{ fontFamily: FONT }}>
+    <>
+      <main className="flex-1 overflow-y-auto" style={{ fontFamily: FONT, backgroundColor: 'var(--bg)' }}>
         <div style={{ maxWidth: 1080, margin: '0 auto', padding: '48px 40px' }}>
 
           <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 24 }}>
@@ -365,6 +349,6 @@ export default function NotesPage() {
           </div>
         </div>
       )}
-    </div>
+    </>
   )
 }
