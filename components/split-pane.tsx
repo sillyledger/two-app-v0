@@ -6,11 +6,31 @@ import { RoomProvider } from '@/liveblocks.config'
 import type { Doc } from '@/lib/db'
 
 interface SplitPaneProps {
-  docId: string
+  type: 'doc' | 'note'
+  id: string
 }
 
-export default function SplitPane({ docId }: SplitPaneProps) {
+interface NoteCategory {
+  id: number
+  name: string
+  color: string
+}
+
+interface Note {
+  id: number
+  uuid: string
+  title: string
+  content: string | null
+  category_id: number | null
+  category_name?: string | null
+  category_color?: string | null
+  error?: string
+}
+
+export default function SplitPane({ type, id }: SplitPaneProps) {
+  const itemId = id
   const [doc, setDoc] = useState<Doc | null>(null)
+  const [note, setNote] = useState<Note | null>(null)
   const [title, setTitle] = useState('')
   const [content, setContent] = useState('')
   const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'unsaved'>('saved')
@@ -20,6 +40,7 @@ export default function SplitPane({ docId }: SplitPaneProps) {
   const remoteUpdateRef = useRef<((html: string) => void) | null>(null)
   const isTypingRef = useRef(false)
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const loaded = type === 'doc' ? !!doc : !!note
 
   const resizeTitle = () => {
     const el = titleRef.current
@@ -29,44 +50,57 @@ export default function SplitPane({ docId }: SplitPaneProps) {
   }
 
   useEffect(() => {
-    if (!docId) return
+    if (!itemId) return
     setDoc(null)
+    setNote(null)
     setTitle('')
     setContent('')
-    fetch(`/api/docs/${docId}`)
+    const endpoint = type === 'doc' ? `/api/docs/${itemId}` : `/api/notes/${itemId}`
+    fetch(endpoint)
       .then(res => res.json())
-      .then((data: Doc) => {
-        if (data.error) return
-        setDoc(data)
+      .then((data: Doc | Note) => {
+        if ((data as any).error) return
+        if (type === 'doc') setDoc(data as Doc)
+        else setNote(data as Note)
         setTitle(data.title || '')
         setContent(data.content || '')
       })
-  }, [docId])
+  }, [itemId, type])
 
   useEffect(() => { resizeTitle() }, [title])
 
-  const handleSave = useCallback(async (latestTitle: string, latestContent: string, latestDoc: Doc | null) => {
-    const savedLength = latestDoc?.content ? latestDoc.content.length : 0
-    if (savedLength > 100 && latestContent.length < savedLength * 0.5) {
+  const handleSave = useCallback(async (latestTitle: string, latestContent: string) => {
+    if (type === 'doc') {
+      const savedLength = doc?.content ? doc.content.length : 0
+      if (savedLength > 100 && latestContent.length < savedLength * 0.5) {
+        setSaveStatus('saved')
+        return
+      }
+      setSaveStatus('saving')
+      await fetch(`/api/docs/${itemId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: latestTitle, content: latestContent }),
+      })
       setSaveStatus('saved')
-      return
+    } else {
+      setSaveStatus('saving')
+      await fetch(`/api/notes/${itemId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: latestTitle, content: latestContent }),
+      })
+      setSaveStatus('saved')
     }
-    setSaveStatus('saving')
-    await fetch(`/api/docs/${docId}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title: latestTitle, content: latestContent }),
-    })
-    setSaveStatus('saved')
-  }, [docId])
+  }, [itemId, type, doc])
 
   useEffect(() => {
-    if (!doc) return
+    if (!loaded) return
     isTypingRef.current = true
     if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current)
     typingTimeoutRef.current = setTimeout(() => { isTypingRef.current = false }, 2000)
     setSaveStatus('unsaved')
-    const timer = setTimeout(() => { handleSave(title, content, doc) }, 1000)
+    const timer = setTimeout(() => { handleSave(title, content) }, 1000)
     return () => clearTimeout(timer)
   }, [title, content])
 
@@ -79,14 +113,16 @@ export default function SplitPane({ docId }: SplitPaneProps) {
     return data.url ?? null
   }, [])
 
-  if (!doc) return (
+  if (!loaded) return (
     <div className="flex-1 flex items-center justify-center h-full" style={{ backgroundColor: 'var(--bg)' }}>
       <div className="w-5 h-5 rounded-full border-2 border-white/10 border-t-white/40 animate-spin" />
     </div>
   )
 
+  const roomId = type === 'doc' ? itemId : `note-${itemId}`
+
   return (
-    <RoomProvider id={docId} initialPresence={{ name: 'Anonymous', color: '#888888' }}>
+    <RoomProvider id={roomId} initialPresence={{ name: 'Anonymous', color: '#888888' }}>
     <div className="flex flex-col h-full overflow-y-auto" style={{ backgroundColor: 'var(--bg)', paddingTop: '80px' }}>
       {/* Minimal save indicator */}
       <div className="sticky top-3 flex justify-end px-4 z-10 pointer-events-none">
