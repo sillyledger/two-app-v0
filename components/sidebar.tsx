@@ -438,6 +438,7 @@ export default function Sidebar({ onNewNote, onToggle }: SidebarProps = {}) {
         <div className="sb-scroll">
           <NavItem href="/" icon={<span style={{fontSize:17,lineHeight:1}}>⌂</span>} label="Home" />
           <NavItem href="/planner" icon={<span style={{fontSize:15,lineHeight:1}}>◎</span>} label="Planner" />
+          <NavItem href="/notes" icon={<span style={{fontSize:15,lineHeight:1}}>▤</span>} label="Notes" />
           <NavItem href="/activity" icon={<span style={{fontSize:15,lineHeight:1}}>⟳</span>} label="Activity" />
           <NavItem href="/library" icon={<span style={{fontSize:15,lineHeight:1}}>◫</span>} label="Library" />
 
