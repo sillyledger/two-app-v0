@@ -4,6 +4,7 @@ import { useEffect, useState, useRef, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Editor from '@/components/editor'
 import PusherJS from 'pusher-js'
+import { RoomProvider } from '@/liveblocks.config'
 
 const FONT = "'DM Sans', system-ui, sans-serif"
 
@@ -152,6 +153,7 @@ export default function NoteEditorPage() {
   }
 
   return (
+    <RoomProvider id={`note-${noteId}`} initialPresence={{ name: 'Anonymous', color: '#888888' }}>
     <div style={{ background: 'var(--bg)', minHeight: '100vh', fontFamily: FONT, display: 'flex', flexDirection: 'column' }}>
       <style>{`
         .note-side-panel { width: 230px; border-left: 1px solid var(--border); padding: 22px 18px; overflow-y: auto; flex-shrink: 0; display: flex; flex-direction: column; gap: 18px; transition: width 0.2s ease, opacity 0.2s ease, padding 0.2s ease; }
@@ -247,5 +249,6 @@ export default function NoteEditorPage() {
         </div>
       </div>
     </div>
+    </RoomProvider>
   )
 }
