@@ -5,14 +5,25 @@ import Sidebar from '@/components/sidebar'
 import TabBar from '@/components/tab-bar'
 import { useTabStore } from '@/hooks/use-tab-store'
 import { useRouter } from 'next/navigation'
-import { Search, X, FileText } from 'lucide-react'
+import { Search, X, FileText, StickyNote } from 'lucide-react'
 import SplitPane from '@/components/split-pane'
 
 interface DocItem {
+  type: 'doc'
   uuid: string
   title: string
   folder_name?: string | null
 }
+
+interface NoteItem {
+  type: 'note'
+  uuid: string
+  title: string
+  category_name?: string | null
+}
+
+type SplitItem = DocItem | NoteItem
+type SplitTarget = { type: 'doc' | 'note'; id: string }
 
 export default function DocsLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter()
@@ -20,9 +31,9 @@ export default function DocsLayout({ children }: { children: React.ReactNode }) 
 
   const [collapsed, setCollapsed] = useState(false)
   const [splitActive, setSplitActive] = useState(false)
-  const [splitDocId, setSplitDocId] = useState<string | null>(null)
+  const [splitTarget, setSplitTarget] = useState<SplitTarget | null>(null)
   const [splitPickerOpen, setSplitPickerOpen] = useState(false)
-  const [splitDocs, setSplitDocs] = useState<DocItem[]>([])
+  const [splitItems, setSplitItems] = useState<SplitItem[]>([])
   const [splitQuery, setSplitQuery] = useState('')
   const [splitLoading, setSplitLoading] = useState(false)
   const [leftWidth, setLeftWidth] = useState(50)
@@ -37,10 +48,17 @@ export default function DocsLayout({ children }: { children: React.ReactNode }) 
   }, [])
 
   useEffect(() => {
-    const savedSplitId = localStorage.getItem('split-doc-id')
-    if (savedSplitId) {
-      setSplitDocId(savedSplitId)
-      setSplitActive(true)
+    const savedTarget = localStorage.getItem('split-target')
+    if (savedTarget) {
+      try {
+        const parsed = JSON.parse(savedTarget)
+        if (parsed?.type && parsed?.id) {
+          setSplitTarget(parsed)
+          setSplitActive(true)
+        }
+      } catch {
+        localStorage.removeItem('split-target')
+      }
     }
   }, [])
 
@@ -48,21 +66,29 @@ export default function DocsLayout({ children }: { children: React.ReactNode }) 
   useEffect(() => {
     const handler = () => {
       if (!splitActive) {
-        // Opening split — show doc picker
+        // Opening split — show doc/note picker
         setSplitPickerOpen(true)
         setSplitLoading(true)
-        fetch('/api/docs')
-          .then(r => r.json())
-          .then(data => setSplitDocs(Array.isArray(data) ? data : []))
-          .catch(() => setSplitDocs([]))
+        Promise.all([
+          fetch('/api/docs').then(r => r.json()),
+          fetch('/api/notes').then(r => r.json()),
+        ]).then(([docsData, notesData]) => {
+          const docs: DocItem[] = (Array.isArray(docsData) ? docsData : []).map((d: any) => ({
+            type: 'doc', uuid: d.uuid, title: d.title, folder_name: d.folder_name,
+          }))
+          const notes: NoteItem[] = (Array.isArray(notesData) ? notesData : []).map((n: any) => ({
+            type: 'note', uuid: n.uuid, title: n.title, category_name: n.category_name,
+          }))
+          setSplitItems([...docs, ...notes])
+        }).catch(() => setSplitItems([]))
           .finally(() => setSplitLoading(false))
         setTimeout(() => searchRef.current?.focus(), 80)
       } else {
         // Closing split
         setSplitActive(false)
-        setSplitDocId(null)
+        setSplitTarget(null)
         setLeftWidth(50)
-        localStorage.removeItem('split-doc-id')
+        localStorage.removeItem('split-target')
       }
     }
     window.addEventListener('toggle-split-view', handler)
@@ -92,12 +118,13 @@ export default function DocsLayout({ children }: { children: React.ReactNode }) 
     return () => document.removeEventListener('keydown', handler)
   }, [splitPickerOpen])
 
-  const handlePickSplitDoc = (doc: DocItem) => {
-    setSplitDocId(doc.uuid)
+  const handlePickSplitItem = (item: SplitItem) => {
+    const target: SplitTarget = { type: item.type, id: item.uuid }
+    setSplitTarget(target)
     setSplitActive(true)
     setSplitPickerOpen(false)
     setSplitQuery('')
-    localStorage.setItem('split-doc-id', doc.uuid)
+    localStorage.setItem('split-target', JSON.stringify(target))
   }
 
   // Drag-to-resize the divider
@@ -137,7 +164,7 @@ export default function DocsLayout({ children }: { children: React.ReactNode }) 
 
   const sidebarWidth = collapsed ? '56px' : '256px'
 
-  const filteredDocs = splitDocs.filter(d =>
+  const filteredItems = splitItems.filter(d =>
     (d.title || 'Untitled').toLowerCase().includes(splitQuery.toLowerCase())
   )
 
@@ -156,7 +183,7 @@ export default function DocsLayout({ children }: { children: React.ReactNode }) 
         <TabBar />
 
         {/* Main content area — single or split */}
-        {splitActive && splitDocId ? (
+        {splitActive && splitTarget ? (
           <div ref={containerRef} className="flex flex-1 min-h-0" style={{ paddingTop: '0' }}>
 
             {/* Left pane — current doc */}
@@ -175,9 +202,9 @@ export default function DocsLayout({ children }: { children: React.ReactNode }) 
               onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'var(--border)')}
             />
 
-            {/* Right pane — second doc rendered directly */}
+            {/* Right pane — second doc or note rendered directly */}
             <div className="min-w-0 overflow-hidden flex flex-col" style={{ width: `${100 - leftWidth}%` }}>
-              <SplitPane docId={splitDocId} />
+              <SplitPane type={splitTarget.type} id={splitTarget.id} />
             </div>
 
           </div>
@@ -186,7 +213,7 @@ export default function DocsLayout({ children }: { children: React.ReactNode }) 
         )}
       </div>
 
-      {/* Split doc picker */}
+      {/* Split doc/note picker */}
       {splitPickerOpen && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 60, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', paddingTop: '120px', backgroundColor: 'rgba(0,0,0,0.45)' }}>
           <div ref={pickerRef} style={{ width: '520px', maxWidth: 'calc(100vw - 32px)', borderRadius: '12px', overflow: 'hidden', backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border)', boxShadow: '0 24px 64px rgba(0,0,0,0.6)' }}>
@@ -197,7 +224,7 @@ export default function DocsLayout({ children }: { children: React.ReactNode }) 
               <input
                 ref={searchRef}
                 type="text"
-                placeholder="Pick a doc for split view..."
+                placeholder="Pick a doc or note for split view..."
                 value={splitQuery}
                 onChange={e => setSplitQuery(e.target.value)}
                 style={{ flex: 1, background: 'transparent', border: 'none', outline: 'none', fontSize: 14, color: 'var(--text-primary)' }}
@@ -209,27 +236,31 @@ export default function DocsLayout({ children }: { children: React.ReactNode }) 
               )}
             </div>
 
-            {/* Doc list */}
+            {/* Item list */}
             <div style={{ maxHeight: '360px', overflowY: 'auto', padding: '6px 0' }}>
               {splitLoading && <p style={{ padding: '16px', fontSize: 13, color: 'var(--text-muted)', textAlign: 'center' }}>Loading...</p>}
-              {!splitLoading && filteredDocs.length === 0 && (
+              {!splitLoading && filteredItems.length === 0 && (
                 <p style={{ padding: '16px', fontSize: 13, color: 'var(--text-muted)', textAlign: 'center' }}>
-                  {splitQuery ? `No docs matching "${splitQuery}"` : 'No docs found'}
+                  {splitQuery ? `No docs or notes matching "${splitQuery}"` : 'No docs or notes found'}
                 </p>
               )}
-              {!splitLoading && filteredDocs.map(doc => (
+              {!splitLoading && filteredItems.map(item => (
                 <button
-                  key={doc.uuid}
-                  onClick={() => handlePickSplitDoc(doc)}
+                  key={item.type + '-' + item.uuid}
+                  onClick={() => handlePickSplitItem(item)}
                   style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', padding: '9px 16px', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left', transition: 'background 0.1s' }}
                   onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)')}
                   onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
                 >
-                  <FileText size={14} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
+                  {item.type === 'doc'
+                    ? <FileText size={14} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
+                    : <StickyNote size={14} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
+                  }
                   <span style={{ flex: 1, fontSize: 13, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {doc.title || 'Untitled'}
+                    {item.title || 'Untitled'}
                   </span>
-                  {doc.folder_name && <span style={{ fontSize: 11, color: 'var(--text-muted)', flexShrink: 0 }}>{doc.folder_name}</span>}
+                  {item.type === 'doc' && item.folder_name && <span style={{ fontSize: 11, color: 'var(--text-muted)', flexShrink: 0 }}>{item.folder_name}</span>}
+                  {item.type === 'note' && item.category_name && <span style={{ fontSize: 11, color: 'var(--text-muted)', flexShrink: 0 }}>{item.category_name}</span>}
                 </button>
               ))}
             </div>
