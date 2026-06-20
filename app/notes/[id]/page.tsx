@@ -5,7 +5,6 @@ import { useParams, useRouter } from 'next/navigation'
 import Editor from '@/components/editor'
 import PusherJS from 'pusher-js'
 import { RoomProvider } from '@/liveblocks.config'
-import Sidebar from '@/components/sidebar'
 
 const FONT = "'DM Sans', system-ui, sans-serif"
 
@@ -44,7 +43,7 @@ export default function NoteEditorPage() {
   const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'unsaved'>('saved')
   const [panelOpen, setPanelOpen] = useState(true)
   const [categoryDropdownOpen, setCategoryDropdownOpen] = useState(false)
-  const [collapsed, setCollapsed] = useState(false)
+  const [splitViewActive, setSplitViewActive] = useState(false)
   const [showCategoryModal, setShowCategoryModal] = useState(false)
   const [newCategoryName, setNewCategoryName] = useState('')
   const [newCategoryColor, setNewCategoryColor] = useState('#7F77DD')
@@ -65,11 +64,6 @@ export default function NoteEditorPage() {
   }
 
   useEffect(() => { resizeTitle() }, [title])
-
-  useEffect(() => {
-    const saved = localStorage.getItem('sidebar-collapsed')
-    if (saved === 'true') setCollapsed(true)
-  }, [])
 
   useEffect(() => {
     fetch('/api/auth/me').then(r => {
@@ -158,6 +152,11 @@ export default function NoteEditorPage() {
     router.push('/notes')
   }
 
+  function handleToggleSplitView() {
+    setSplitViewActive(v => !v)
+    window.dispatchEvent(new Event('toggle-split-view'))
+  }
+
   function openCategoryModal() {
     setCategoryDropdownOpen(false)
     setNewCategoryName('')
@@ -186,34 +185,15 @@ export default function NoteEditorPage() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen" style={{ backgroundColor: 'var(--bg)' }}>
-        <Sidebar
-          collapsed={collapsed}
-          onToggle={() => {
-            const next = !collapsed
-            setCollapsed(next)
-            localStorage.setItem('sidebar-collapsed', String(next))
-          }}
-        />
-        <main className="flex-1" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: FONT }}>
-          <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>Loading...</p>
-        </main>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', fontFamily: FONT }}>
+        <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>Loading...</p>
       </div>
     )
   }
 
   return (
     <RoomProvider id={`note-${noteId}`} initialPresence={{ name: 'Anonymous', color: '#888888' }}>
-    <div className="flex min-h-screen" style={{ backgroundColor: 'var(--bg)' }}>
-      <Sidebar
-        collapsed={collapsed}
-        onToggle={() => {
-          const next = !collapsed
-          setCollapsed(next)
-          localStorage.setItem('sidebar-collapsed', String(next))
-        }}
-      />
-      <div style={{ flex: 1, minWidth: 0, fontFamily: FONT, display: 'flex', flexDirection: 'column' }}>
+    <div style={{ flex: 1, minWidth: 0, fontFamily: FONT, display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
       <style>{`
         .note-side-panel { width: 230px; border-left: 1px solid var(--border); padding: 22px 18px; overflow-y: auto; flex-shrink: 0; display: flex; flex-direction: column; gap: 18px; transition: width 0.2s ease, opacity 0.2s ease, padding 0.2s ease; }
         .note-side-panel.closed { width: 0; padding: 0; opacity: 0; overflow: hidden; pointer-events: none; }
@@ -231,6 +211,14 @@ export default function NoteEditorPage() {
           {saveStatus === 'saving' && <span style={{ fontSize: 11.5, color: 'var(--text-muted)' }}>Saving...</span>}
           {saveStatus === 'saved' && <span style={{ fontSize: 11.5, color: '#1D9E75' }}>Saved</span>}
           {saveStatus === 'unsaved' && <span style={{ fontSize: 11.5, color: 'var(--text-muted)' }}>Unsaved</span>}
+          <button
+            onClick={handleToggleSplitView}
+            title={splitViewActive ? 'Close split view' : 'Open split view'}
+            style={{ display: 'flex', alignItems: 'center', gap: 6, background: splitViewActive ? 'var(--bg-tertiary)' : 'transparent', border: '1px solid var(--border)', borderRadius: 7, padding: '5px 10px', fontSize: 12, color: splitViewActive ? 'var(--text-primary)' : 'var(--text-muted)', cursor: 'pointer', fontFamily: FONT }}
+          >
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="1" y="1" width="12" height="12" rx="1.5" stroke="currentColor" strokeWidth="1.2"/><line x1="7" y1="1" x2="7" y2="13" stroke="currentColor" strokeWidth="1.2"/></svg>
+            Split
+          </button>
           <button
             onClick={() => setPanelOpen(o => !o)}
             style={{ background: panelOpen ? 'var(--bg-tertiary)' : 'transparent', border: '1px solid var(--border)', borderRadius: 7, padding: '5px 8px', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
@@ -307,9 +295,8 @@ export default function NoteEditorPage() {
           <button onClick={deleteNote} style={{ width: '100%', background: 'transparent', color: '#E24B4A', border: '1px solid rgba(226,75,74,0.25)', borderRadius: 9, padding: 10, fontSize: 13, cursor: 'pointer', fontFamily: FONT }}>Delete note</button>
         </div>
       </div>
-    </div>
 
-    {showCategoryModal && (
+      {showCategoryModal && (
       <div style={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.55)' }} onClick={() => setShowCategoryModal(false)} />
         <div style={{ position: 'relative', borderRadius: 14, width: 320, padding: '22px 22px 18px', zIndex: 10, background: 'var(--bg-secondary)', border: '1px solid var(--border)', fontFamily: FONT }}>
