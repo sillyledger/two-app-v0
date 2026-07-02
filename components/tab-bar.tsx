@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback } from "react"
 import { useRouter } from "next/navigation"
-import { X, Plus, Search, FileText, FilePlus } from "lucide-react"
+import { X, Plus, Search, FileText, FilePlus, ListX } from "lucide-react"
 import { useTabStore } from "@/hooks/use-tab-store"
 
 interface DocItem {
@@ -13,7 +13,7 @@ interface DocItem {
 
 export default function TabBar() {
   const router = useRouter()
-  const { tabs, activeId, openTab, switchTab, closeTab } = useTabStore()
+  const { tabs, activeId, openTab, switchTab, closeTab, closeAll } = useTabStore()
   const activeRef = useRef<HTMLButtonElement>(null)
 
   const [pickerOpen, setPickerOpen] = useState(false)
@@ -112,6 +112,17 @@ export default function TabBar() {
     }
   }
 
+  const handleCloseAll = () => {
+    const confirmed = window.confirm(
+      tabs.length === 1
+        ? "Close this tab?"
+        : `Close all ${tabs.length} tabs?`
+    )
+    if (!confirmed) return
+    closeAll()
+    router.push("/")
+  }
+
   if (tabs.length === 0) return null
 
   return (
@@ -180,6 +191,27 @@ export default function TabBar() {
         >
           <Plus size={13} />
         </button>
+
+        {/* Close all tabs — only shown once there's more than one tab, and set apart from the rest */}
+        {tabs.length > 1 && (
+          <button
+            onClick={handleCloseAll}
+            title="Close all tabs"
+            className="flex items-center justify-center w-8 h-full shrink-0 transition-colors"
+            style={{
+              color: "var(--text-muted)",
+              background: "none",
+              border: "none",
+              borderLeft: "1px solid var(--border)",
+              marginLeft: "4px",
+              cursor: "pointer",
+            }}
+            onMouseEnter={e => { e.currentTarget.style.color = "#ff6b6b"; e.currentTarget.style.backgroundColor = "var(--bg-secondary)" }}
+            onMouseLeave={e => { e.currentTarget.style.color = "var(--text-muted)"; e.currentTarget.style.backgroundColor = "transparent" }}
+          >
+            <ListX size={14} />
+          </button>
+        )}
       </div>
 
       {/* ── Doc picker modal ── */}
