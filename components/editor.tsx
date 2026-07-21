@@ -41,7 +41,12 @@ import {
 } from "lucide-react"
 import { useCallback, useState, useRef, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { useLiveblocksExtension } from "@liveblocks/react-tiptap"
+import { Editor as TiptapCoreEditor } from "@tiptap/core"
+import Collaboration from "@tiptap/extension-collaboration"
+import CollaborationCaret from "@tiptap/extension-collaboration-caret"
+import * as Y from "yjs"
+import { Awareness } from "y-protocols/awareness"
+import { PusherYjsProvider } from "@/lib/yjs-pusher-provider"
 
 // Extended Table that persists the "fit width" toggle as a data attribute in saved HTML
 const TableExtension = TableExtensionBase.extend({
@@ -168,6 +173,9 @@ interface EditorProps {
   editable?: boolean
   isShared?: boolean
   onRemoteUpdate?: (setContentFn: (html: string) => void) => void
+  docId?: string
+  presenceName?: string
+  onAwarenessReady?: (awareness: Awareness | null) => void
 }
 
 interface Doc {
@@ -175,7 +183,70 @@ interface Doc {
   title: string
 }
 
-export default function Editor({ content, onChange, onReady, onImageUpload, onInsertImageReady, editable = true, isShared = false, onRemoteUpdate }: EditorProps) {
+// Node/mark extensions that make up the document schema — shared between the
+// real editor and the headless editor used to seed a fresh Y.Doc, so both
+// agree on how to parse/render the same HTML.
+function buildContentExtensions(options: { undoRedo?: false } = {}) {
+  return [
+    StarterKit.configure({
+      heading: { levels: [1, 2, 3] },
+      bulletList: {},
+      orderedList: {},
+      blockquote: {},
+      codeBlock: false,
+      horizontalRule: {},
+      undoRedo: options.undoRedo,
+    }),
+    CodeBlockLowlight.configure({
+      lowlight,
+      defaultLanguage: "plaintext",
+    }),
+    Link.configure({
+      openOnClick: false,
+      inclusive: false,
+      autolink: true,
+      linkOnPaste: true,
+      protocols: ["http", "https"],
+      HTMLAttributes: {
+        rel: "noopener noreferrer",
+        target: null,
+      },
+    }),
+    LinkKeyboardFix,
+    Image.configure({
+      HTMLAttributes: {
+        class: "editor-image",
+      },
+    }),
+    TableExtension.configure({
+      resizable: true,
+    }),
+    TableRow,
+    TableHeader,
+    TableCell,
+    TaskList,
+    TaskItem.configure({
+      nested: true,
+    }),
+    CalloutNode,
+    Typography,
+  ]
+}
+
+// Populates a fresh Y.Doc with the doc's saved HTML content via a detached,
+// never-rendered editor instance — this is what "seeding" means throughout
+// this file. Must run before any provider/network activity touches the doc,
+// since an empty Y.Doc that gets synced out is how content has been lost
+// before.
+function seedYDocFromHtml(ydoc: Y.Doc, html: string) {
+  const seedEditor = new TiptapCoreEditor({
+    extensions: [...buildContentExtensions(), Collaboration.configure({ document: ydoc })],
+    content: html,
+  })
+  seedEditor.destroy()
+}
+
+export default function Editor({ content, onChange, onReady, onImageUpload, onInsertImageReady, editable = true, isShared = false, onRemoteUpdate, docId, presenceName, onAwarenessReady }: EditorProps) {
   const router = useRouter()
   const [bubbleVisible, setBubbleVisible] = useState(false)
   const [bubblePos, setBubblePos] = useState({ top: 0, left: 0 })
@@ -261,55 +332,71 @@ export default function Editor({ content, onChange, onReady, onImageUpload, onIn
     setSelectedIndex(0)
   }, [linkUrl, allDocs])
 
-  // Only use Liveblocks for shared docs — private docs use DB content directly
-  const liveblocks = useLiveblocksExtension(isShared ? { initialContent: content } : {})
+  // Only use realtime collaboration for shared docs — private docs use DB
+  // content directly, completely untouched by any of this.
+  const contentRef = useRef(content)
+  contentRef.current = content
+
+  const [collab, setCollab] = useState<{ ydoc: Y.Doc; awareness: Awareness } | null>(null)
+  const [collabReady, setCollabReady] = useState(!isShared)
+
+  useEffect(() => {
+    if (!isShared || !docId) {
+      setCollab(null)
+      setCollabReady(true)
+      onAwarenessReady?.(null)
+      return
+    }
+
+    setCollabReady(false)
+    let cancelled = false
+
+    const ydoc = new Y.Doc()
+    const awareness = new Awareness(ydoc)
+
+    const provider = new PusherYjsProvider({
+      docId,
+      doc: ydoc,
+      awareness,
+      // Only called when it's safe: we're alone in the room, or nobody
+      // answered a sync request in time. Never called alongside a peer sync,
+      // which would duplicate content instead of no-op'ing.
+      seed: () => seedYDocFromHtml(ydoc, contentRef.current),
+    })
+
+    provider.synced.then(() => {
+      if (cancelled) return
+      setCollab({ ydoc, awareness })
+      setCollabReady(true)
+      onAwarenessReady?.(awareness)
+    })
+
+    return () => {
+      cancelled = true
+      provider.destroy()
+      awareness.destroy()
+      ydoc.destroy()
+      onAwarenessReady?.(null)
+    }
+  }, [isShared, docId])
 
   const editor = useEditor({
     immediatelyRender: false,
     extensions: [
-      ...(isShared ? [liveblocks] : []),
-      StarterKit.configure({
-        heading: { levels: [1, 2, 3] },
-        bulletList: {},
-        orderedList: {},
-        blockquote: {},
-        codeBlock: false,
-        horizontalRule: {},
-        undoRedo: isShared ? false : undefined,
-      }),
-      CodeBlockLowlight.configure({
-        lowlight,
-        defaultLanguage: "plaintext",
-      }),
-      Link.configure({
-        openOnClick: false,
-        inclusive: false,
-        autolink: true,
-        linkOnPaste: true,
-        protocols: ["http", "https"],
-        HTMLAttributes: {
-          rel: "noopener noreferrer",
-          target: null,
-        },
-      }),
-      LinkKeyboardFix,
-      Image.configure({
-        HTMLAttributes: {
-          class: "editor-image",
-        },
-      }),
-      TableExtension.configure({
-        resizable: true,
-      }),
-      TableRow,
-      TableHeader,
-      TableCell,
-      TaskList,
-      TaskItem.configure({
-        nested: true,
-      }),
-      CalloutNode,
-      Typography,
+      ...(isShared && collab
+        ? [
+            Collaboration.configure({ document: collab.ydoc }),
+            CollaborationCaret.configure({
+              provider: { awareness: collab.awareness },
+              user: { name: presenceName || "Anonymous", color: "#888888" },
+              selectionRender: (user: { color: string; name: string }) => ({
+                style: `background-color: ${user.color}`,
+                class: "collaboration-carets__selection",
+              }),
+            }),
+          ]
+        : []),
+      ...buildContentExtensions({ undoRedo: isShared ? false : undefined }),
       Placeholder.configure({
         placeholder: "Start writing, or press / for commands…",
       }),
@@ -462,7 +549,7 @@ export default function Editor({ content, onChange, onReady, onImageUpload, onIn
       editorRef.current = e
       setEditorReady(true)
     },
-  })
+  }, [isShared, docId, collabReady])
 
   useEffect(() => {
     if (editor && onInsertImageReady) {
@@ -615,7 +702,10 @@ export default function Editor({ content, onChange, onReady, onImageUpload, onIn
     }
   }
 
-  if (!editor) return null
+  // Never render (and thus never let onUpdate/autosave fire) until a shared
+  // doc's Y.Doc has been seeded or synced from a peer — an editor mounted
+  // against an empty collaborative doc is exactly how content has been lost.
+  if (!editor || (isShared && !collabReady)) return null
 
   return (
     <div ref={containerRef} className="relative">
@@ -902,7 +992,7 @@ export default function Editor({ content, onChange, onReady, onImageUpload, onIn
         .callout-content p {
           margin: 0 !important;
         }
-        /* ── Liveblocks cursor overrides (Tiptap v3 uses .collaboration-carets) ── */
+        /* ── Collaboration caret overrides (@tiptap/extension-collaboration-caret) ── */
         .collaboration-carets__caret {
           border-left: 2px solid;
           border-color: inherit;
