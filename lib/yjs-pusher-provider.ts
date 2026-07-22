@@ -5,6 +5,12 @@ import * as awarenessProtocol from "y-protocols/awareness"
 const DOC_UPDATE_INTERVAL_MS = 100
 const AWARENESS_UPDATE_INTERVAL_MS = 200
 const PEER_SYNC_TIMEOUT_MS = 2000
+// Absolute ceiling from construction, independent of whether the presence
+// channel subscription ever succeeds at all (bad/missing Pusher env vars,
+// auth endpoint failing, network issues, etc). Without this, a broken Pusher
+// connection would leave the editor waiting — and therefore blank — forever,
+// which looks exactly like data loss even though the DB content is untouched.
+const HARD_SYNC_CEILING_MS = 6000
 
 function bytesToBase64(bytes: Uint8Array): string {
   let binary = ""
@@ -87,33 +93,65 @@ export class PusherYjsProvider {
     this.doc = doc
     this.awareness = awareness
 
+    // Guards every path below (peer sync, peer timeout, subscription failure,
+    // hard ceiling) so seed()/resolveSynced() each fire exactly once no
+    // matter which one wins the race.
+    let settled = false
+    let peerSyncTimeout: ReturnType<typeof setTimeout> | null = null
+
     this.synced = new Promise((resolve) => {
       this.resolveSynced = resolve
     })
+
+    const settleWithSeed = (reason: string) => {
+      if (settled) return
+      settled = true
+      if (peerSyncTimeout) clearTimeout(peerSyncTimeout)
+      clearTimeout(hardCeiling)
+      console.warn(`[PusherYjsProvider] Falling back to DB-seeded content (${reason}).`)
+      seed()
+      this.resolveSynced()
+    }
+
+    // Absolute last resort: if we haven't settled by any other path within
+    // this window (subscription never succeeding at all, auth endpoint down,
+    // missing/misconfigured Pusher env vars, etc), seed from DB anyway rather
+    // than leaving the editor waiting — and therefore blank — indefinitely.
+    const hardCeiling = setTimeout(() => settleWithSeed("subscription never completed in time"), HARD_SYNC_CEILING_MS)
 
     this.pusher = new PusherJS(process.env.NEXT_PUBLIC_PUSHER_KEY!, {
       cluster: process.env.NEXT_PUBLIC_PUSHER_CLUSTER!,
       authEndpoint: "/api/pusher-auth",
     })
 
+    this.pusher.connection.bind("error", (err: unknown) => {
+      console.error("[PusherYjsProvider] Pusher connection error:", err)
+      settleWithSeed("pusher connection error")
+    })
+
     this.channel = this.pusher.subscribe(`presence-doc-${docId}`)
+
+    this.channel.bind("pusher:subscription_error", (err: unknown) => {
+      console.error("[PusherYjsProvider] Presence channel subscription failed:", err)
+      settleWithSeed("subscription_error")
+    })
 
     this.channel.bind("pusher:subscription_succeeded", (members: { count: number }) => {
       this.subscribed = true
+      if (settled) return
 
       // Client events only start working after subscription_succeeded — this
       // is also where we decide how to get the doc into a valid starting state.
       if (members.count <= 1) {
-        seed()
-        this.resolveSynced()
+        settleWithSeed("alone in room")
         return
       }
 
-      let settled = false
       const onSyncResponse = (payload: { update: string }) => {
         if (settled) return
         settled = true
-        clearTimeout(timeout)
+        if (peerSyncTimeout) clearTimeout(peerSyncTimeout)
+        clearTimeout(hardCeiling)
         this.channel.unbind("client-yjs-sync-response", onSyncResponse)
         Y.applyUpdate(this.doc, base64ToBytes(payload.update), "pusher-sync")
         this.resolveSynced()
@@ -130,14 +168,11 @@ export class PusherYjsProvider {
         )
       }
 
-      const timeout = setTimeout(() => {
-        if (settled) return
-        settled = true
+      peerSyncTimeout = setTimeout(() => {
         this.channel.unbind("client-yjs-sync-response", onSyncResponse)
         // Nobody answered in time — fall back to DB content so we don't get
         // stuck forever rather than risk starting from a wrong base state.
-        seed()
-        this.resolveSynced()
+        settleWithSeed("no peer responded to sync request")
       }, PEER_SYNC_TIMEOUT_MS)
     })
 
