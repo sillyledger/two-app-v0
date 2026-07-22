@@ -238,7 +238,19 @@ function buildContentExtensions(options: { undoRedo?: false } = {}) {
 // this file. Must run before any provider/network activity touches the doc,
 // since an empty Y.Doc that gets synced out is how content has been lost
 // before.
+//
+// Guarded to be a no-op if the fragment already has content: the temp
+// editor's initial content gets diff-reconciled into the Y fragment on
+// mount (via @tiptap/y-tiptap's ySyncPlugin) regardless of what's already
+// there — it does NOT check emptiness itself. The provider only calls this
+// in fallback paths (alone in room / peer sync timed out / connection
+// failed), but ambient `client-yjs-update` events can still land on this
+// doc in between — e.g. a live peer edit arriving during the peer-sync
+// timeout window — so by the time a fallback fires, the fragment may no
+// longer be empty. Seeding over that with stale page-load HTML would diff
+// against and corrupt real, newer content for every connected peer.
 function seedYDocFromHtml(ydoc: Y.Doc, html: string) {
+  if (ydoc.getXmlFragment("default").length > 0) return
   const seedEditor = new TiptapCoreEditor({
     extensions: [...buildContentExtensions(), Collaboration.configure({ document: ydoc })],
     content: html,
