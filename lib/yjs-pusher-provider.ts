@@ -41,7 +41,7 @@ interface PusherYjsProviderOptions {
 }
 
 /**
- * Custom Yjs transport over a Pusher presence channel, replacing Liveblocks.
+ * Custom Yjs transport over a Pusher presence channel.
  * There's no persistent Yjs server here — Pusher just relays messages between
  * currently-connected clients — so a newly joining client must either seed
  * itself from the DB (if it's alone) or pull the live document state from an
