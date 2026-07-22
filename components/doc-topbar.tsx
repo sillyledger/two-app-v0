@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { MoreHorizontal, Copy, Download, Trash2, Globe, Lock, FolderInput, Star, FileText, PanelRight, Share2, Columns2, ArrowLeftRight } from "lucide-react"
 import { useState, useRef, useEffect } from "react"
-import { useOthers, useSelf } from "@/liveblocks.config"
+import type { Awareness } from "y-protocols/awareness"
 
 interface Folder {
   id: string
@@ -28,6 +28,7 @@ interface DocTopbarProps {
   currentUserName?: string
   splitViewActive?: boolean
   onToggleSplitView?: () => void
+  awareness?: Awareness | null
 }
 
 function stripTags(html: string): string {
@@ -265,11 +266,35 @@ const PRESENCE_COLORS = [
   '#a052e0', '#52b8e0', '#52e052', '#e052a0',
 ]
 
-function PresenceAvatars({ currentUserName }: { currentUserName?: string }) {
-  const others = useOthers()
-  const self = useSelf()
+interface AwarenessOther {
+  connectionId: number
+  presence: { name?: string; color?: string }
+}
 
-  const selfName = currentUserName || (self?.presence?.name as string) || 'You'
+function useAwarenessStates(awareness: Awareness | null | undefined): AwarenessOther[] {
+  const [, forceUpdate] = useState(0)
+
+  useEffect(() => {
+    if (!awareness) return
+    const onChange = () => forceUpdate((n) => n + 1)
+    awareness.on('change', onChange)
+    return () => awareness.off('change', onChange)
+  }, [awareness])
+
+  if (!awareness) return []
+  const localId = awareness.clientID
+  const others: AwarenessOther[] = []
+  awareness.getStates().forEach((state, clientId) => {
+    if (clientId === localId) return
+    others.push({ connectionId: clientId, presence: (state as any)?.user || {} })
+  })
+  return others
+}
+
+function PresenceAvatars({ currentUserName, awareness }: { currentUserName?: string; awareness?: Awareness | null }) {
+  const others = useAwarenessStates(awareness)
+
+  const selfName = currentUserName || 'You'
   const selfInitial = selfName[0]?.toUpperCase() ?? 'Y'
 
   const visible = others.slice(0, 3)
@@ -348,6 +373,7 @@ export default function DocTopbar({
   currentUserName,
   splitViewActive = false,
   onToggleSplitView,
+  awareness,
 }: DocTopbarProps) {
   const [menuOpen, setMenuOpen] = useState(false)
   const [shareOpen, setShareOpen] = useState(false)
@@ -487,7 +513,7 @@ export default function DocTopbar({
           </div>
 
           {/* Presence avatars */}
-          <PresenceAvatars currentUserName={currentUserName} />
+          <PresenceAvatars currentUserName={currentUserName} awareness={awareness} />
 
           {/* Favorite */}
           {onToggleFavorite && (

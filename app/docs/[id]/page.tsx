@@ -7,7 +7,7 @@ import DocTopbar from '@/components/doc-topbar'
 import { useTabStore } from '@/hooks/use-tab-store'
 import { CalendarDays, SignalLow, SignalMedium, SignalHigh, Minus, PanelRight, X, FileText, User, Clock, Plus, Check, Send, Trash2, Circle, CheckCircle2, Pencil, PanelLeftOpen } from 'lucide-react'
 import type { Doc } from '@/lib/db'
-import { RoomProvider } from '@/liveblocks.config'
+import type { Awareness } from 'y-protocols/awareness'
 import PusherJS from 'pusher-js'
 
 interface Folder {
@@ -169,6 +169,7 @@ export default function DocPage() {
   const isTypingRef = useRef(false)
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const remoteUpdateRef = useRef<((html: string) => void) | null>(null)
+  const [awareness, setAwareness] = useState<Awareness | null>(null)
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -569,10 +570,6 @@ export default function DocPage() {
   )
 
   return (
-    <RoomProvider
-      id={docId}
-      initialPresence={{ name: currentUser?.name || currentUser?.email || 'Anonymous', color: '#888888' }}
-    >
       <>
         <input
           ref={imageInputRef}
@@ -612,6 +609,7 @@ export default function DocPage() {
             currentUserName={currentUser?.name || currentUser?.email || undefined}
             splitViewActive={splitViewActive}
             onToggleSplitView={handleToggleSplitView}
+            awareness={awareness}
           />
 
           <main className="flex-1 overflow-y-auto flex flex-col items-center" style={{ paddingTop: '80px' }}>
@@ -685,6 +683,9 @@ export default function DocPage() {
                   content={content}
                   editable={isLoggedIn}
                   isShared={!!(doc as any).workspace_id}
+                  docId={docId}
+                  presenceName={currentUser?.name || currentUser?.email || 'Anonymous'}
+                  onAwarenessReady={setAwareness}
                   onChange={(newContent) => { if (!isLoggedIn) return; setContent(newContent) }}
                   onReady={(focusFn) => { editorFocusRef.current = focusFn }}
                   onImageUpload={handleImageUpload}
@@ -1149,7 +1150,6 @@ export default function DocPage() {
           </div>
         </div>
       </>
-    </RoomProvider>
   )
 }
 

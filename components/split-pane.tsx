@@ -2,7 +2,6 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react'
 import Editor from '@/components/editor'
-import { RoomProvider } from '@/liveblocks.config'
 import type { Doc } from '@/lib/db'
 
 interface SplitPaneProps {
@@ -119,10 +118,7 @@ export default function SplitPane({ type, id }: SplitPaneProps) {
     </div>
   )
 
-  const roomId = type === 'doc' ? itemId : `note-${itemId}`
-
   return (
-    <RoomProvider id={roomId} initialPresence={{ name: 'Anonymous', color: '#888888' }}>
     <div className="flex flex-col h-full overflow-y-auto" style={{ backgroundColor: 'var(--bg)', paddingTop: '80px' }}>
       {/* Minimal save indicator */}
       <div className="sticky top-3 flex justify-end px-4 z-10 pointer-events-none">
@@ -154,6 +150,5 @@ export default function SplitPane({ type, id }: SplitPaneProps) {
         />
       </div>
     </div>
-    </RoomProvider>
   )
 }

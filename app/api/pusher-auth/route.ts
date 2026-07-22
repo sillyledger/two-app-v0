@@ -1,10 +1,14 @@
-import { Liveblocks } from "@liveblocks/node"
 import { NextResponse } from "next/server"
 import { getSession } from "@/lib/auth"
 import { sql } from "@/lib/db"
+import Pusher from "pusher"
 
-const liveblocks = new Liveblocks({
-  secret: process.env.LIVEBLOCKS_SECRET_KEY!,
+const pusher = new Pusher({
+  appId: process.env.PUSHER_APP_ID!,
+  key: process.env.PUSHER_KEY!,
+  secret: process.env.PUSHER_SECRET!,
+  cluster: process.env.PUSHER_CLUSTER!,
+  useTLS: true,
 })
 
 export async function POST(request: Request) {
@@ -13,13 +17,18 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
-  const { room } = await request.json()
-  if (!room) {
-    return NextResponse.json({ error: "Room required" }, { status: 400 })
+  const formData = await request.formData()
+  const socketId = formData.get("socket_id") as string
+  const channelName = formData.get("channel_name") as string
+  if (!socketId || !channelName) {
+    return NextResponse.json({ error: "socket_id and channel_name required" }, { status: 400 })
   }
 
-  // Verify the user has access to this doc
-  const docId = room // room ID is the doc UUID
+  const match = channelName.match(/^presence-doc-(.+)$/)
+  if (!match) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 403 })
+  }
+  const docId = match[1]
 
   const ownResult = await sql`
     SELECT docs.id FROM docs
@@ -47,19 +56,16 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 403 })
   }
 
-  // Get user info for presence
   const userRows = await sql`
     SELECT email, name FROM users WHERE id = ${session.userId}
   `
   const user = userRows[0]
   const name = user?.name || user?.email?.split("@")[0] || "Anonymous"
 
-  const liveblocksSession = liveblocks.prepareSession(session.userId, {
-    userInfo: { name },
+  const authResponse = pusher.authorizeChannel(socketId, channelName, {
+    user_id: String(session.userId),
+    user_info: { name },
   })
 
-  liveblocksSession.allow(docId, liveblocksSession.FULL_ACCESS)
-
-  const { body, status } = await liveblocksSession.authorize()
-  return new Response(body, { status })
+  return NextResponse.json(authResponse)
 }
