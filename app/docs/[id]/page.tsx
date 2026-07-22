@@ -170,6 +170,11 @@ export default function DocPage() {
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const remoteUpdateRef = useRef<((html: string) => void) | null>(null)
   const [awareness, setAwareness] = useState<Awareness | null>(null)
+  // Kept in sync every render (not just on docId change) so the poke
+  // listener below can read the *current* isShared value without having to
+  // resubscribe every time doc metadata changes.
+  const docRef = useRef<Doc | null>(null)
+  docRef.current = doc
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -307,10 +312,23 @@ export default function DocPage() {
         .then(res => res.json())
         .then((data: Doc) => {
           if (data.error) return
-          if (remoteUpdateRef.current) {
-            remoteUpdateRef.current(data.content || '')
-          } else {
-            setContent(data.content || '')
+          // Shared docs get their content exclusively from the live Yjs
+          // sync — this "poke" channel predates that and fires on *any*
+          // save to this doc (including unrelated metadata like priority
+          // or favorite toggles from any client). Forcing a plain DB
+          // snapshot into a Yjs-bound editor via setContent() gets
+          // diff-reconciled straight into the shared Y.Doc, which can wipe
+          // out edits made after that snapshot was read — for every
+          // connected peer, not just this tab. So for shared docs, only
+          // the non-Yjs metadata (title, tab label, last-saved time) comes
+          // from this poke; content is left to Yjs entirely.
+          const isSharedDoc = !!(docRef.current as any)?.workspace_id
+          if (!isSharedDoc) {
+            if (remoteUpdateRef.current) {
+              remoteUpdateRef.current(data.content || '')
+            } else {
+              setContent(data.content || '')
+            }
           }
           setTitle(data.title || '')
           setLastSaved(data.updated_at ?? null)
@@ -332,6 +350,13 @@ export default function DocPage() {
     if (!isLoggedIn) return
     const savedLength = latestDoc?.content ? latestDoc.content.length : 0
     if (savedLength > 100 && latestContent.length < savedLength * 0.5) {
+      // Backstop against any content-loss bug, current or future, on any
+      // save path that flows through here (plain or Yjs-derived) — refuse
+      // rather than silently persist a drastic, likely-unintentional drop.
+      console.warn(
+        `[handleSave] Refused to save doc ${docId}: new content is ${latestContent.length} chars, ` +
+        `down from ${savedLength} previously saved (${Math.round((latestContent.length / savedLength) * 100)}%).`
+      )
       setSaveStatus('saved')
       return
     }
