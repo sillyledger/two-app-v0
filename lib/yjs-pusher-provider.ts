@@ -1,4 +1,4 @@
-import PusherJS, { type Channel } from "pusher-js"
+import PusherJS, { type PresenceChannel } from "pusher-js"
 import * as Y from "yjs"
 import * as awarenessProtocol from "y-protocols/awareness"
 
@@ -54,7 +54,7 @@ export class PusherYjsProvider {
   private doc: Y.Doc
   private awareness: awarenessProtocol.Awareness
   private pusher: PusherJS
-  private channel: Channel
+  private channel: PresenceChannel
   private subscribed = false
   private destroyed = false
 
@@ -62,6 +62,11 @@ export class PusherYjsProvider {
   private docUpdateTimer: ReturnType<typeof setTimeout> | null = null
   private pendingAwarenessClients: Set<number> = new Set()
   private awarenessTimer: ReturnType<typeof setTimeout> | null = null
+
+  // Presence channels dedupe by user_id — one logged-in user with two tabs
+  // open is a single Pusher member but two separate Y.Doc/awareness client
+  // ids, so this maps one-to-many when reconciling member_removed.
+  private pusherMemberToClientIds = new Map<string, Set<number>>()
 
   /** Resolves once the doc is either seeded from DB or synced from a peer. */
   public readonly synced: Promise<void>
@@ -129,7 +134,7 @@ export class PusherYjsProvider {
       settleWithSeed("pusher connection error")
     })
 
-    this.channel = this.pusher.subscribe(`presence-doc-${docId}`)
+    this.channel = this.pusher.subscribe(`presence-doc-${docId}`) as PresenceChannel
 
     this.channel.bind("pusher:subscription_error", (err: unknown) => {
       console.error("[PusherYjsProvider] Presence channel subscription failed:", err)
@@ -186,12 +191,57 @@ export class PusherYjsProvider {
       Y.applyUpdate(this.doc, base64ToBytes(payload.update), "pusher-remote")
     })
 
-    this.channel.bind("client-awareness-update", (payload: { update: string }) => {
-      awarenessProtocol.applyAwarenessUpdate(this.awareness, base64ToBytes(payload.update), "pusher-remote")
+    this.channel.bind(
+      "client-awareness-update",
+      (payload: { update: string; clientIds: number[]; pusherMemberId: string }) => {
+        awarenessProtocol.applyAwarenessUpdate(this.awareness, base64ToBytes(payload.update), "pusher-remote")
+        if (payload.pusherMemberId && Array.isArray(payload.clientIds)) {
+          let clientIds = this.pusherMemberToClientIds.get(payload.pusherMemberId)
+          if (!clientIds) {
+            clientIds = new Set()
+            this.pusherMemberToClientIds.set(payload.pusherMemberId, clientIds)
+          }
+          for (const id of payload.clientIds) clientIds.add(id)
+        }
+      }
+    )
+
+    // A peer who's already in the room only broadcasts on its own local
+    // awareness changes — a newly-joining client has no way to learn about
+    // them otherwise, since Pusher doesn't replay past client events to new
+    // subscribers. So every already-connected client re-announces its
+    // current presence whenever someone new joins.
+    this.channel.bind("pusher:member_added", () => {
+      if (this.awareness.getLocalState()) {
+        this.sendAwarenessUpdate([this.doc.clientID])
+      }
+    })
+
+    // Presence channels dedupe by user_id, so member_removed only fires once
+    // that user's last connection (tab) actually drops — remove whichever
+    // Y.Doc client ids we'd previously associated with them so their avatar
+    // disappears promptly instead of waiting on the ~30s built-in Awareness
+    // staleness GC.
+    this.channel.bind("pusher:member_removed", (member: { id: string }) => {
+      const clientIds = this.pusherMemberToClientIds.get(member.id)
+      this.pusherMemberToClientIds.delete(member.id)
+      if (clientIds && clientIds.size > 0) {
+        awarenessProtocol.removeAwarenessStates(this.awareness, Array.from(clientIds), "pusher-member-removed")
+      }
     })
 
     this.doc.on("update", this.handleDocUpdate)
     this.awareness.on("update", this.handleAwarenessUpdate)
+  }
+
+  private sendAwarenessUpdate(clientIds: number[]) {
+    if (this.destroyed || !this.subscribed || clientIds.length === 0) return
+    const update = awarenessProtocol.encodeAwarenessUpdate(this.awareness, clientIds)
+    this.channel.trigger("client-awareness-update", {
+      update: bytesToBase64(update),
+      clientIds,
+      pusherMemberId: this.channel.members.myID,
+    })
   }
 
   private flushDocUpdates() {
@@ -216,8 +266,7 @@ export class PusherYjsProvider {
     }
     const clientIds = Array.from(this.pendingAwarenessClients)
     this.pendingAwarenessClients.clear()
-    const update = awarenessProtocol.encodeAwarenessUpdate(this.awareness, clientIds)
-    this.channel.trigger("client-awareness-update", { update: bytesToBase64(update) })
+    this.sendAwarenessUpdate(clientIds)
   }
 
   destroy() {
