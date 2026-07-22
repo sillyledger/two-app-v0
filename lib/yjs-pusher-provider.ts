@@ -142,8 +142,19 @@ export class PusherYjsProvider {
     })
 
     this.channel.bind("pusher:subscription_succeeded", (members: { count: number }) => {
+      const isReconnect = settled
       this.subscribed = true
-      if (settled) return
+
+      if (isReconnect) {
+        // We already have a valid doc state from the first connection, but
+        // may have missed updates while offline (Pusher doesn't replay
+        // client events to a resubscribing client any more than to a new
+        // one). Unlike seed(), applying a peer's full state here via
+        // Y.applyUpdate is safe/idempotent regardless of what we already
+        // have — it's a real Yjs update, not a diff-write derived from HTML.
+        if (members.count > 1) this.requestResync()
+        return
+      }
 
       // Client events only start working after subscription_succeeded — this
       // is also where we decide how to get the doc into a valid starting state.
@@ -232,6 +243,33 @@ export class PusherYjsProvider {
 
     this.doc.on("update", this.handleDocUpdate)
     this.awareness.on("update", this.handleAwarenessUpdate)
+  }
+
+  // Best-effort catch-up after a reconnect: ask an existing peer for their
+  // full current state and merge it in. Multiple peers may all respond to
+  // the same broadcast request — only the first response is applied, the
+  // rest are harmless no-ops via the unbind below, and Y.applyUpdate is
+  // idempotent regardless of how much of it we've already seen.
+  private requestResync() {
+    let handled = false
+    const onResyncResponse = (payload: { update: string }) => {
+      if (handled) return
+      handled = true
+      this.channel.unbind("client-yjs-sync-response", onResyncResponse)
+      Y.applyUpdate(this.doc, base64ToBytes(payload.update), "pusher-sync")
+    }
+    this.channel.bind("client-yjs-sync-response", onResyncResponse)
+
+    const ok = this.channel.trigger("client-yjs-sync-request", {})
+    if (!ok) {
+      console.error("[PusherYjsProvider] Failed to trigger resync request after reconnect.")
+    }
+
+    setTimeout(() => {
+      if (handled) return
+      handled = true
+      this.channel.unbind("client-yjs-sync-response", onResyncResponse)
+    }, PEER_SYNC_TIMEOUT_MS)
   }
 
   private sendAwarenessUpdate(clientIds: number[]) {
