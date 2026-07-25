@@ -289,6 +289,10 @@ export default function DocPage() {
       }
 
       const data: Doc = docData
+      console.log(
+        `[docs/[id]] doc=${docId} fetch complete: contentLength=${(data.content || '').length}, ` +
+        `isShared=${!!(data as any).workspace_id}`
+      )
       setDoc(data)
       setTitle(data.title)
       openTab(docId, data.title || 'Untitled')

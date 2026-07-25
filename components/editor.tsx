@@ -259,13 +259,22 @@ function buildContentExtensions(options: { undoRedo?: false } = {}) {
 // longer be empty. Seeding over that with stale page-load HTML would diff
 // against and corrupt real, newer content for every connected peer.
 function seedYDocFromHtml(ydoc: Y.Doc, html: string, docId?: string) {
-  if (ydoc.getXmlFragment("default").length > 0) return
-  console.log(`[seedYDocFromHtml] doc=${docId ?? "unknown"} seeding from DB, length=${html.length}`)
+  const fragmentLenBefore = ydoc.getXmlFragment("default").length
+  console.log(`[seedYDocFromHtml] doc=${docId ?? "unknown"} called with html length=${html.length}, fragment length before=${fragmentLenBefore}`)
+  if (fragmentLenBefore > 0) {
+    console.log(`[seedYDocFromHtml] doc=${docId ?? "unknown"} SKIPPED — fragment already has content (length=${fragmentLenBefore}), not overwriting`)
+    return
+  }
   const seedEditor = new TiptapCoreEditor({
     extensions: [...buildContentExtensions(), Collaboration.configure({ document: ydoc })],
     content: html,
   })
   seedEditor.destroy()
+  const fragmentLenAfter = ydoc.getXmlFragment("default").length
+  console.log(
+    `[seedYDocFromHtml] doc=${docId ?? "unknown"} done, fragment length after=${fragmentLenAfter}` +
+    (html.length > 0 && fragmentLenAfter === 0 ? ' — WARNING: html was non-empty but fragment is still empty after seeding' : '')
+  )
 }
 
 export default function Editor({ content, onChange, onReady, onImageUpload, onInsertImageReady, editable = true, isShared = false, onRemoteUpdate, docId, presenceName, onAwarenessReady, onGetContent }: EditorProps) {
@@ -570,6 +579,12 @@ export default function Editor({ content, onChange, onReady, onImageUpload, onIn
     onCreate: ({ editor: e }) => {
       editorRef.current = e
       setEditorReady(true)
+      if (isShared) {
+        console.log(
+          `[Editor] doc=${docId ?? "unknown"} editor onCreate, isShared=${isShared}, collabReady=${collabReady}, ` +
+          `bound to Yjs=${!!(isShared && collab)}, getHTML() length=${e.getHTML().length}`
+        )
+      }
     },
   }, [isShared, docId, collabReady])
 

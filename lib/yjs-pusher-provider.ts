@@ -95,6 +95,7 @@ export class PusherYjsProvider {
   }
 
   constructor({ docId, doc, awareness, seed }: PusherYjsProviderOptions) {
+    console.log(`[PusherYjsProvider] doc=${docId} constructing, current fragment length=${doc.getXmlFragment("default").length}`)
     this.docId = docId
     this.doc = doc
     this.awareness = awareness
@@ -121,7 +122,9 @@ export class PusherYjsProvider {
       // since being provably alone is the one fallback case that's actually
       // safe to persist from.
       this.setSaveEligible(false)
+      console.log(`[PusherYjsProvider] doc=${this.docId} calling seed(), fragment length before=${this.doc.getXmlFragment("default").length}`)
       seed()
+      console.log(`[PusherYjsProvider] doc=${this.docId} seed() returned, fragment length after=${this.doc.getXmlFragment("default").length}`)
       this.resolveSynced()
     }
 
@@ -163,6 +166,7 @@ export class PusherYjsProvider {
     this.channel.bind("pusher:subscription_succeeded", (members: { count: number }) => {
       const isReconnect = settled
       this.subscribed = true
+      console.log(`[PusherYjsProvider] doc=${this.docId} subscription_succeeded, memberCount=${members.count}, isReconnect=${isReconnect}`)
 
       if (isReconnect) {
         // We just went through a disconnect/reconnect cycle — whatever we
@@ -201,6 +205,7 @@ export class PusherYjsProvider {
         clearTimeout(hardCeiling)
         this.channel.unbind("client-yjs-sync-response", onSyncResponse)
         Y.applyUpdate(this.doc, base64ToBytes(payload.update), "pusher-sync")
+        console.log(`[PusherYjsProvider] doc=${this.docId} synced via peer response, fragment length now=${this.doc.getXmlFragment("default").length}`)
         // A peer actually answered with real state — this is the strongest
         // confirmation of sync we can get, safe to persist from.
         this.setSaveEligible(true)
@@ -314,18 +319,31 @@ export class PusherYjsProvider {
     }, PEER_SYNC_TIMEOUT_MS)
   }
 
-  // Written into this client's own awareness state (merged alongside
-  // whatever CollaborationCaret writes there for cursors/user info — Yjs
-  // awareness field updates merge, they don't clobber the whole state) so
-  // that any peer, including this one, can read every currently-connected
-  // client's eligibility straight off the awareness map they already have,
-  // with no new Pusher channel or plumbing required. `true` means "I can
-  // truthfully vouch for being in sync with the room right now" — the only
-  // clients that should ever be considered as a shared doc's designated
-  // saver.
+  // Written into this client's own awareness state, merged in alongside
+  // whatever CollaborationCaret writes there for cursors/user info (see the
+  // read-then-write below — it preserves existing fields rather than
+  // clobbering them), so that any peer, including this one, can read every
+  // currently-connected client's eligibility straight off the awareness map
+  // they already have, with no new Pusher channel or plumbing required.
+  // `true` means "I can truthfully vouch for being in sync with the room
+  // right now" — the only clients that should ever be considered as a
+  // shared doc's designated saver.
   private setSaveEligible(eligible: boolean) {
     if (this.destroyed) return
-    this.awareness.setLocalStateField("saveEligible", eligible)
+    // Deliberately not using awareness.setLocalStateField() here: in
+    // y-protocols' Awareness class that can be a no-op when local state has
+    // never been initialized before (some versions guard on
+    // getLocalState() !== null), and the very first time this runs — on a
+    // client's initial connection — is before CollaborationCaret has ever
+    // touched this Awareness instance, so it may be the first write to it,
+    // period. Reading the current state and writing it back in full via
+    // setLocalState() works correctly regardless of whether it was null.
+    const current = this.awareness.getLocalState() ?? {}
+    this.awareness.setLocalState({ ...current, saveEligible: eligible })
+    console.log(
+      `[PusherYjsProvider] doc=${this.docId} setSaveEligible(${eligible}) -> ` +
+      `local awareness state is now`, this.awareness.getLocalState()
+    )
   }
 
   private sendAwarenessUpdate(clientIds: number[]) {
