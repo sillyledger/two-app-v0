@@ -32,7 +32,7 @@ export default function SplitPane({ type, id }: SplitPaneProps) {
   const [note, setNote] = useState<Note | null>(null)
   const [title, setTitle] = useState('')
   const [content, setContent] = useState('')
-  const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'unsaved'>('saved')
+  const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'unsaved' | 'blocked'>('saved')
   const titleRef = useRef<HTMLTextAreaElement>(null)
   const editorFocusRef = useRef<(() => void) | null>(null)
   const insertImageRef = useRef<((url: string) => void) | null>(null)
@@ -72,15 +72,27 @@ export default function SplitPane({ type, id }: SplitPaneProps) {
     if (type === 'doc') {
       const savedLength = doc?.content ? doc.content.length : 0
       if (savedLength > 100 && latestContent.length < savedLength * 0.5) {
-        setSaveStatus('saved')
+        console.error(
+          `[handleSave] Refused to save doc ${itemId} (client-side guard): new content is ` +
+          `${latestContent.length} chars, down from ${savedLength} previously saved. Local content is unaffected.`
+        )
+        setSaveStatus('blocked')
         return
       }
       setSaveStatus('saving')
-      await fetch(`/api/docs/${itemId}`, {
+      const res = await fetch(`/api/docs/${itemId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ title: latestTitle, content: latestContent, source: 'autosave' }),
       })
+      if (res.status === 409) {
+        const data = await res.json().catch(() => null)
+        if (data?.blocked) {
+          console.error(`[handleSave] Save BLOCKED by server-side content-loss guard for doc ${itemId}.`)
+          setSaveStatus('blocked')
+          return
+        }
+      }
       setSaveStatus('saved')
     } else {
       setSaveStatus('saving')
@@ -122,8 +134,11 @@ export default function SplitPane({ type, id }: SplitPaneProps) {
     <div className="flex flex-col h-full overflow-y-auto" style={{ backgroundColor: 'var(--bg)', paddingTop: '80px' }}>
       {/* Minimal save indicator */}
       <div className="sticky top-3 flex justify-end px-4 z-10 pointer-events-none">
-        <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
-          {saveStatus === 'saving' ? 'Saving...' : saveStatus === 'unsaved' ? '●' : ''}
+        <span
+          style={{ fontSize: '11px', color: saveStatus === 'blocked' ? '#ef4444' : 'var(--text-muted)' }}
+          className={saveStatus === 'blocked' ? 'font-medium' : undefined}
+        >
+          {saveStatus === 'saving' ? 'Saving...' : saveStatus === 'unsaved' ? '●' : saveStatus === 'blocked' ? 'Not saved' : ''}
         </span>
       </div>
 

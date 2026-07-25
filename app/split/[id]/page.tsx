@@ -12,7 +12,7 @@ export default function SplitDocPage() {
   const [doc, setDoc] = useState<Doc | null>(null)
   const [title, setTitle] = useState('')
   const [content, setContent] = useState('')
-  const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'unsaved'>('saved')
+  const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'unsaved' | 'blocked'>('saved')
   const titleRef = useRef<HTMLTextAreaElement>(null)
   const editorFocusRef = useRef<(() => void) | null>(null)
   const insertImageRef = useRef<((url: string) => void) | null>(null)
@@ -44,15 +44,27 @@ export default function SplitDocPage() {
   const handleSave = useCallback(async (latestTitle: string, latestContent: string, latestDoc: Doc | null) => {
     const savedLength = latestDoc?.content ? latestDoc.content.length : 0
     if (savedLength > 100 && latestContent.length < savedLength * 0.5) {
-      setSaveStatus('saved')
+      console.error(
+        `[handleSave] Refused to save doc ${docId} (client-side guard): new content is ` +
+        `${latestContent.length} chars, down from ${savedLength} previously saved. Local content is unaffected.`
+      )
+      setSaveStatus('blocked')
       return
     }
     setSaveStatus('saving')
-    await fetch(`/api/docs/${docId}`, {
+    const res = await fetch(`/api/docs/${docId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ title: latestTitle, content: latestContent, source: 'autosave' }),
     })
+    if (res.status === 409) {
+      const data = await res.json().catch(() => null)
+      if (data?.blocked) {
+        console.error(`[handleSave] Save BLOCKED by server-side content-loss guard for doc ${docId}.`)
+        setSaveStatus('blocked')
+        return
+      }
+    }
     setSaveStatus('saved')
   }, [docId])
 
@@ -85,8 +97,11 @@ export default function SplitDocPage() {
     <div className="flex flex-col min-h-screen" style={{ backgroundColor: 'var(--bg)' }}>
       {/* Minimal save indicator */}
       <div className="fixed top-3 right-4 z-10">
-        <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
-          {saveStatus === 'saving' ? 'Saving...' : saveStatus === 'unsaved' ? '●' : ''}
+        <span
+          style={{ fontSize: '11px', color: saveStatus === 'blocked' ? '#ef4444' : 'var(--text-muted)' }}
+          className={saveStatus === 'blocked' ? 'font-medium' : undefined}
+        >
+          {saveStatus === 'saving' ? 'Saving...' : saveStatus === 'unsaved' ? '●' : saveStatus === 'blocked' ? 'Not saved' : ''}
         </span>
       </div>
 

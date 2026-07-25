@@ -13,7 +13,7 @@ interface Folder {
 interface DocTopbarProps {
   docTitle: string
   folder?: Folder | null
-  saveStatus: "saved" | "saving" | "unsaved"
+  saveStatus: "saved" | "saving" | "unsaved" | "blocked"
   content?: string
   onDelete?: () => void
   docId?: string | string[]
@@ -508,6 +508,14 @@ export default function DocTopbar({
               <>
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500/80" />
                 <span className="text-[11px]" style={{ color: "var(--text-muted)" }}>Saved</span>
+              </>
+            )}
+            {saveStatus === "blocked" && (
+              <>
+                <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
+                <span className="text-[11px] font-medium text-red-400" title="Save was refused to protect existing content — your changes are safe here, but not yet in the database.">
+                  Not saved
+                </span>
               </>
             )}
           </div>

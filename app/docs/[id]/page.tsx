@@ -125,7 +125,7 @@ export default function DocPage() {
   const [doc, setDoc] = useState<Doc | null>(null)
   const [title, setTitle] = useState('')
   const [content, setContent] = useState('')
-  const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'unsaved'>('saved')
+  const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'unsaved' | 'blocked'>('saved')
   const [folder, setFolder] = useState<Folder | null>(null)
   const [isPublic, setIsPublic] = useState(false)
   const [isLoggedIn, setIsLoggedIn] = useState(false)
@@ -360,19 +360,31 @@ export default function DocPage() {
       // Backstop against any content-loss bug, current or future, on any
       // save path that flows through here (plain or Yjs-derived) — refuse
       // rather than silently persist a drastic, likely-unintentional drop.
-      console.warn(
-        `[handleSave] Refused to save doc ${docId}: new content is ${latestContent.length} chars, ` +
-        `down from ${savedLength} previously saved (${Math.round((latestContent.length / savedLength) * 100)}%).`
+      console.error(
+        `[handleSave] Refused to save doc ${docId} (client-side guard): new content is ` +
+        `${latestContent.length} chars, down from ${savedLength} previously saved ` +
+        `(${Math.round((latestContent.length / savedLength) * 100)}%). Local content is unaffected.`
       )
-      setSaveStatus('saved')
+      setSaveStatus('blocked')
       return
     }
     setSaveStatus('saving')
-    await fetch(`/api/docs/${docId}`, {
+    const res = await fetch(`/api/docs/${docId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ title: latestTitle, content: latestContent, color: latestDoc?.color ?? 'yellow', source: 'autosave' }),
     })
+    if (res.status === 409) {
+      const data = await res.json().catch(() => null)
+      if (data?.blocked) {
+        // Server-side content-loss guard refused the write. The user's local
+        // content is untouched (nothing here modifies title/content state) —
+        // it just hasn't reached the database yet.
+        console.error(`[handleSave] Save BLOCKED by server-side content-loss guard for doc ${docId}.`)
+        setSaveStatus('blocked')
+        return
+      }
+    }
     setSaveStatus('saved')
     setLastSaved(new Date().toISOString())
   }, [docId, isLoggedIn])
