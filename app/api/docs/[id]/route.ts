@@ -76,13 +76,10 @@ export async function PUT(
     const body = await request.json()
     const { title, content, color, is_starred, type, folder_id, priority, board_stage, source } = body
     const triggerSource = typeof source === 'string' ? source : 'unknown'
+    const contentProvided = content !== undefined && content !== null
 
-    // Fetched fresh right before the write (not a value cached at page load
-    // by the caller) so the guard below judges against the DB's actual
-    // current state, closing the race where a briefly-behind client's stale
-    // save would otherwise slip past a stale in-memory baseline.
     const accessCheck = await sql`
-      SELECT docs.uuid, length(docs.content) AS content_len, docs.workspace_id FROM docs
+      SELECT docs.uuid, docs.workspace_id FROM docs
       LEFT JOIN workspace_members wm ON wm.workspace_id::text = docs.workspace_id::text
         AND wm.user_id = ${payload.userId}
         AND wm.status = 'accepted'
@@ -117,27 +114,17 @@ export async function PUT(
     // Shared docs get a tighter threshold since multiple independently-saving
     // clients (see PusherYjsProvider) make partial, non-catastrophic drops
     // the realistic failure mode, not just full wipes.
-    let contentToWrite = content ?? null
-    if (content !== undefined && content !== null) {
-      const currentLen = Number(accessCheck[0].content_len ?? 0)
-      const isSharedDoc = accessCheck[0].workspace_id != null
-      const threshold = isSharedDoc ? 0.9 : 0.5
-      const newLen = content.length
-      const guardTripped = currentLen > 100 && newLen < currentLen * threshold
-
-      if (guardTripped) {
-        console.warn(
-          `[content-write-guard] BLOCKED doc=${id} at=${new Date().toISOString()} ` +
-          `oldLen=${currentLen} newLen=${newLen} shared=${isSharedDoc} source=${triggerSource}`
-        )
-        contentToWrite = null // COALESCE below keeps existing content untouched
-      } else {
-        console.log(
-          `[content-write-guard] pass doc=${id} at=${new Date().toISOString()} ` +
-          `oldLen=${currentLen} newLen=${newLen} shared=${isSharedDoc} source=${triggerSource}`
-        )
-      }
-    }
+    //
+    // The length check lives in the UPDATE's WHERE clause, evaluated against
+    // docs.content directly (not a value read by an earlier SELECT), so the
+    // check and the write are one atomic statement. Under Postgres's normal
+    // read-committed concurrent-update behavior, two overlapping writers to
+    // the same row serialize on the row lock and each is re-evaluated against
+    // the other's just-committed value — there is no window where a second
+    // request can act on a length it read before the first request's write
+    // landed, the way there was with a separate SELECT-then-UPDATE.
+    const isSharedDoc = accessCheck[0].workspace_id != null
+    const threshold = isSharedDoc ? 0.9 : 0.5
 
     // board_stage can be set to null (remove from board) or a string value
     const boardStageValue = board_stage !== undefined ? board_stage : undefined
@@ -146,7 +133,7 @@ export async function PUT(
       UPDATE docs
       SET
         title = COALESCE(${title ?? null}, title),
-        content = COALESCE(${contentToWrite}, content),
+        content = COALESCE(${content ?? null}, content),
         color = COALESCE(${color ?? null}, color),
         is_starred = COALESCE(${is_starred ?? null}, is_starred),
         type = COALESCE(${type ?? null}, type),
@@ -157,10 +144,35 @@ export async function PUT(
         END,
         updated_at = CURRENT_TIMESTAMP
       WHERE uuid = ${id}
+        AND (
+          NOT ${contentProvided}
+          OR length(COALESCE(content, '')) <= 100
+          OR length(${content ?? null}) >= length(COALESCE(content, '')) * ${threshold}
+        )
       RETURNING *
     `
+
     if (result.length === 0) {
+      // accessCheck already confirmed this doc exists and is accessible, so
+      // an empty result here means the atomic guard's WHERE clause is what
+      // rejected the row, not a missing doc.
+      if (contentProvided) {
+        const diag = await sql`SELECT length(content) AS len FROM docs WHERE uuid = ${id}`
+        const currentLen = diag[0]?.len ?? 0
+        console.warn(
+          `[content-write-guard] BLOCKED (atomic) doc=${id} at=${new Date().toISOString()} ` +
+          `oldLen=${currentLen} newLen=${content.length} shared=${isSharedDoc} source=${triggerSource}`
+        )
+        return NextResponse.json({ error: 'content_loss_guard_blocked', blocked: true }, { status: 409 })
+      }
       return NextResponse.json({ error: 'Doc not found' }, { status: 404 })
+    }
+
+    if (contentProvided) {
+      console.log(
+        `[content-write-guard] pass doc=${id} at=${new Date().toISOString()} ` +
+        `newLen=${content.length} shared=${isSharedDoc} source=${triggerSource}`
+      )
     }
 
     await pusher.trigger(`doc-${id}`, 'updated', {})
