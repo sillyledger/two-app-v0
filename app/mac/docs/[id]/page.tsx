@@ -51,7 +51,7 @@ export default function MacDocPage() {
     await fetch(`/api/docs/${docId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title: latestTitle, content: latestContent }),
+      body: JSON.stringify({ title: latestTitle, content: latestContent, source: 'autosave' }),
     })
     setSaveStatus('saved')
   }, [docId])

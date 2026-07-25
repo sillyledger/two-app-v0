@@ -364,7 +364,7 @@ export default function DocPage() {
     await fetch(`/api/docs/${docId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title: latestTitle, content: latestContent, color: latestDoc?.color ?? 'yellow' }),
+      body: JSON.stringify({ title: latestTitle, content: latestContent, color: latestDoc?.color ?? 'yellow', source: 'autosave' }),
     })
     setSaveStatus('saved')
     setLastSaved(new Date().toISOString())

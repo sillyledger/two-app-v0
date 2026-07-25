@@ -249,8 +249,9 @@ function buildContentExtensions(options: { undoRedo?: false } = {}) {
 // timeout window — so by the time a fallback fires, the fragment may no
 // longer be empty. Seeding over that with stale page-load HTML would diff
 // against and corrupt real, newer content for every connected peer.
-function seedYDocFromHtml(ydoc: Y.Doc, html: string) {
+function seedYDocFromHtml(ydoc: Y.Doc, html: string, docId?: string) {
   if (ydoc.getXmlFragment("default").length > 0) return
+  console.log(`[seedYDocFromHtml] doc=${docId ?? "unknown"} seeding from DB, length=${html.length}`)
   const seedEditor = new TiptapCoreEditor({
     extensions: [...buildContentExtensions(), Collaboration.configure({ document: ydoc })],
     content: html,
@@ -373,7 +374,7 @@ export default function Editor({ content, onChange, onReady, onImageUpload, onIn
       // Only called when it's safe: we're alone in the room, or nobody
       // answered a sync request in time. Never called alongside a peer sync,
       // which would duplicate content instead of no-op'ing.
-      seed: () => seedYDocFromHtml(ydoc, contentRef.current),
+      seed: () => seedYDocFromHtml(ydoc, contentRef.current, docId),
     })
 
     provider.synced.then(() => {

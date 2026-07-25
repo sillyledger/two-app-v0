@@ -60,6 +60,7 @@ export class PusherYjsProvider {
 
   private pendingDocUpdates: Uint8Array[] = []
   private docUpdateTimer: ReturnType<typeof setTimeout> | null = null
+  private consecutiveFlushFailures = 0
   private pendingAwarenessClients: Set<number> = new Set()
   private awarenessTimer: ReturnType<typeof setTimeout> | null = null
 
@@ -113,7 +114,7 @@ export class PusherYjsProvider {
       settled = true
       if (peerSyncTimeout) clearTimeout(peerSyncTimeout)
       clearTimeout(hardCeiling)
-      console.warn(`[PusherYjsProvider] Falling back to DB-seeded content (${reason}).`)
+      console.warn(`[PusherYjsProvider] doc=${this.docId} Falling back to DB-seeded content (${reason}).`)
       seed()
       this.resolveSynced()
     }
@@ -292,7 +293,39 @@ export class PusherYjsProvider {
     }
     const merged = Y.mergeUpdates(this.pendingDocUpdates)
     this.pendingDocUpdates = []
-    this.channel.trigger("client-yjs-update", { update: bytesToBase64(merged) })
+    const ok = this.channel.trigger("client-yjs-update", { update: bytesToBase64(merged) })
+
+    if (!ok) {
+      // Pusher client events are capped at ~10KB and silently refuse to send
+      // over that (or when rate-limited) — trigger() just returns false with
+      // no error. Left unhandled, this client keeps its own (correct) local
+      // state while every peer silently falls behind it, which is exactly
+      // the kind of quiet divergence that later shows up as "content
+      // disappeared" when a peer saves its now-stale view. Requeue and retry
+      // a few times in case this was transient (rate limit); if it keeps
+      // failing it's almost certainly a hard size cap we can't clear by
+      // retrying, so give up loudly rather than looping forever.
+      this.consecutiveFlushFailures++
+      console.error(
+        `[PusherYjsProvider] doc=${this.docId} FAILED to send Yjs update ` +
+        `(~${merged.byteLength} bytes, attempt ${this.consecutiveFlushFailures}) — ` +
+        `Pusher rejected the trigger (likely exceeds the 10KB client-event limit, ` +
+        `or rate-limited). Peers may now be missing this change.`
+      )
+      if (this.consecutiveFlushFailures <= 5) {
+        this.pendingDocUpdates.unshift(merged)
+        this.docUpdateTimer = setTimeout(() => this.flushDocUpdates(), DOC_UPDATE_INTERVAL_MS * 4)
+      } else {
+        console.error(
+          `[PusherYjsProvider] doc=${this.docId} giving up on this update after ` +
+          `${this.consecutiveFlushFailures} failed attempts — this client's own content is fine, ` +
+          `but peers will stay out of sync with it until they reload or another update reconciles them.`
+        )
+        this.consecutiveFlushFailures = 0
+      }
+      return
+    }
+    this.consecutiveFlushFailures = 0
   }
 
   private flushAwareness() {

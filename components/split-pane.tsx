@@ -79,7 +79,7 @@ export default function SplitPane({ type, id }: SplitPaneProps) {
       await fetch(`/api/docs/${itemId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: latestTitle, content: latestContent }),
+        body: JSON.stringify({ title: latestTitle, content: latestContent, source: 'autosave' }),
       })
       setSaveStatus('saved')
     } else {

@@ -74,10 +74,15 @@ export async function PUT(
   try {
     const { id } = await params
     const body = await request.json()
-    const { title, content, color, is_starred, type, folder_id, priority, board_stage } = body
+    const { title, content, color, is_starred, type, folder_id, priority, board_stage, source } = body
+    const triggerSource = typeof source === 'string' ? source : 'unknown'
 
+    // Fetched fresh right before the write (not a value cached at page load
+    // by the caller) so the guard below judges against the DB's actual
+    // current state, closing the race where a briefly-behind client's stale
+    // save would otherwise slip past a stale in-memory baseline.
     const accessCheck = await sql`
-      SELECT docs.uuid FROM docs
+      SELECT docs.uuid, length(docs.content) AS content_len, docs.workspace_id FROM docs
       LEFT JOIN workspace_members wm ON wm.workspace_id::text = docs.workspace_id::text
         AND wm.user_id = ${payload.userId}
         AND wm.status = 'accepted'
@@ -106,6 +111,34 @@ export async function PUT(
       return NextResponse.json(result[0])
     }
 
+    // Hard backstop against content loss, enforced here (the single DB write
+    // path for doc content) rather than relying on any client-side guard —
+    // those live in per-page state that can go stale or simply not run.
+    // Shared docs get a tighter threshold since multiple independently-saving
+    // clients (see PusherYjsProvider) make partial, non-catastrophic drops
+    // the realistic failure mode, not just full wipes.
+    let contentToWrite = content ?? null
+    if (content !== undefined && content !== null) {
+      const currentLen = Number(accessCheck[0].content_len ?? 0)
+      const isSharedDoc = accessCheck[0].workspace_id != null
+      const threshold = isSharedDoc ? 0.9 : 0.5
+      const newLen = content.length
+      const guardTripped = currentLen > 100 && newLen < currentLen * threshold
+
+      if (guardTripped) {
+        console.warn(
+          `[content-write-guard] BLOCKED doc=${id} at=${new Date().toISOString()} ` +
+          `oldLen=${currentLen} newLen=${newLen} shared=${isSharedDoc} source=${triggerSource}`
+        )
+        contentToWrite = null // COALESCE below keeps existing content untouched
+      } else {
+        console.log(
+          `[content-write-guard] pass doc=${id} at=${new Date().toISOString()} ` +
+          `oldLen=${currentLen} newLen=${newLen} shared=${isSharedDoc} source=${triggerSource}`
+        )
+      }
+    }
+
     // board_stage can be set to null (remove from board) or a string value
     const boardStageValue = board_stage !== undefined ? board_stage : undefined
 
@@ -113,7 +146,7 @@ export async function PUT(
       UPDATE docs
       SET
         title = COALESCE(${title ?? null}, title),
-        content = COALESCE(${content ?? null}, content),
+        content = COALESCE(${contentToWrite}, content),
         color = COALESCE(${color ?? null}, color),
         is_starred = COALESCE(${is_starred ?? null}, is_starred),
         type = COALESCE(${type ?? null}, type),
