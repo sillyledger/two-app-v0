@@ -3,9 +3,13 @@
 import Link from "next/link"
 import { MoreHorizontal, Copy, Download, Trash2, Globe, Lock, FolderInput, Star, FileText, PanelRight, Share2, Columns2, ArrowLeftRight } from "lucide-react"
 import { useState, useRef, useEffect } from "react"
-import type { Awareness } from "y-protocols/awareness"
 
 interface Folder {
+  id: string
+  name: string
+}
+
+interface PresenceMember {
   id: string
   name: string
 }
@@ -13,7 +17,7 @@ interface Folder {
 interface DocTopbarProps {
   docTitle: string
   folder?: Folder | null
-  saveStatus: "saved" | "saving" | "unsaved" | "blocked"
+  saveStatus: "saved" | "saving" | "unsaved" | "blocked" | "conflict"
   content?: string
   onDelete?: () => void
   docId?: string | string[]
@@ -28,7 +32,7 @@ interface DocTopbarProps {
   currentUserName?: string
   splitViewActive?: boolean
   onToggleSplitView?: () => void
-  awareness?: Awareness | null
+  presenceMembers?: PresenceMember[]
 }
 
 function stripTags(html: string): string {
@@ -266,33 +270,8 @@ const PRESENCE_COLORS = [
   '#a052e0', '#52b8e0', '#52e052', '#e052a0',
 ]
 
-interface AwarenessOther {
-  connectionId: number
-  presence: { name?: string; color?: string }
-}
-
-function useAwarenessStates(awareness: Awareness | null | undefined): AwarenessOther[] {
-  const [, forceUpdate] = useState(0)
-
-  useEffect(() => {
-    if (!awareness) return
-    const onChange = () => forceUpdate((n) => n + 1)
-    awareness.on('change', onChange)
-    return () => awareness.off('change', onChange)
-  }, [awareness])
-
-  if (!awareness) return []
-  const localId = awareness.clientID
-  const others: AwarenessOther[] = []
-  awareness.getStates().forEach((state, clientId) => {
-    if (clientId === localId) return
-    others.push({ connectionId: clientId, presence: (state as any)?.user || {} })
-  })
-  return others
-}
-
-function PresenceAvatars({ currentUserName, awareness }: { currentUserName?: string; awareness?: Awareness | null }) {
-  const others = useAwarenessStates(awareness)
+function PresenceAvatars({ currentUserName, members }: { currentUserName?: string; members?: PresenceMember[] }) {
+  const others = members || []
 
   const selfName = currentUserName || 'You'
   const selfInitial = selfName[0]?.toUpperCase() ?? 'Y'
@@ -318,12 +297,12 @@ function PresenceAvatars({ currentUserName, awareness }: { currentUserName?: str
       </div>
 
       {visible.map((other, i) => {
-        const name: string = (other.presence?.name as string) || '?'
+        const name = other.name || '?'
         const initial = name[0]?.toUpperCase() ?? '?'
         const color = PRESENCE_COLORS[i % PRESENCE_COLORS.length]
         return (
           <div
-            key={other.connectionId}
+            key={other.id}
             title={name}
             style={{
               width: 24, height: 24, borderRadius: '50%',
@@ -373,7 +352,7 @@ export default function DocTopbar({
   currentUserName,
   splitViewActive = false,
   onToggleSplitView,
-  awareness,
+  presenceMembers,
 }: DocTopbarProps) {
   const [menuOpen, setMenuOpen] = useState(false)
   const [shareOpen, setShareOpen] = useState(false)
@@ -513,15 +492,23 @@ export default function DocTopbar({
             {saveStatus === "blocked" && (
               <>
                 <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
-                <span className="text-[11px] font-medium text-red-400" title="Save was refused to protect existing content — your changes are safe here, but not yet in the database.">
+                <span className="text-[11px] font-medium text-red-400" title="The save request failed — your changes are safe here, but not yet in the database.">
                   Not saved
+                </span>
+              </>
+            )}
+            {saveStatus === "conflict" && (
+              <>
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                <span className="text-[11px] font-medium text-amber-400" title="This doc was changed by someone else. Reload to see the latest version.">
+                  Outdated — reload
                 </span>
               </>
             )}
           </div>
 
           {/* Presence avatars */}
-          <PresenceAvatars currentUserName={currentUserName} awareness={awareness} />
+          <PresenceAvatars currentUserName={currentUserName} members={presenceMembers} />
 
           {/* Favorite */}
           {onToggleFavorite && (

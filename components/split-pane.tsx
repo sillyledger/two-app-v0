@@ -32,13 +32,14 @@ export default function SplitPane({ type, id }: SplitPaneProps) {
   const [note, setNote] = useState<Note | null>(null)
   const [title, setTitle] = useState('')
   const [content, setContent] = useState('')
-  const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'unsaved' | 'blocked'>('saved')
+  const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'unsaved' | 'blocked' | 'conflict'>('saved')
   const titleRef = useRef<HTMLTextAreaElement>(null)
   const editorFocusRef = useRef<(() => void) | null>(null)
   const insertImageRef = useRef<((url: string) => void) | null>(null)
   const remoteUpdateRef = useRef<((html: string) => void) | null>(null)
   const isTypingRef = useRef(false)
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const latestUpdatedAtRef = useRef<string | null>(null)
   const loaded = type === 'doc' ? !!doc : !!note
 
   const resizeTitle = () => {
@@ -63,6 +64,7 @@ export default function SplitPane({ type, id }: SplitPaneProps) {
         else setNote(data as Note)
         setTitle(data.title || '')
         setContent(data.content || '')
+        latestUpdatedAtRef.current = type === 'doc' ? ((data as Doc).updated_at ?? null) : null
       })
   }, [itemId, type])
 
@@ -70,31 +72,24 @@ export default function SplitPane({ type, id }: SplitPaneProps) {
 
   const handleSave = useCallback(async (latestTitle: string, latestContent: string) => {
     if (type === 'doc') {
-      const savedLength = doc?.content ? doc.content.length : 0
-      if (savedLength > 100 && latestContent.length < savedLength * 0.5) {
-        console.error(
-          `[handleSave] Refused to save doc ${itemId} (client-side guard): new content is ` +
-          `${latestContent.length} chars, down from ${savedLength} previously saved. Local content is unaffected.`
-        )
-        setSaveStatus('blocked')
-        return
-      }
       setSaveStatus('saving')
       const res = await fetch(`/api/docs/${itemId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: latestTitle, content: latestContent, source: 'autosave' }),
+        body: JSON.stringify({ title: latestTitle, content: latestContent, source: 'autosave', updated_at: latestUpdatedAtRef.current }),
       })
+      if (res.status === 409) {
+        console.error(`[handleSave] Conflict saving doc ${itemId}: changed by someone else since last load.`)
+        setSaveStatus('conflict')
+        return
+      }
       if (!res.ok) {
-        let blockedByGuard = false
-        if (res.status === 409) {
-          const data = await res.json().catch(() => null)
-          blockedByGuard = !!data?.blocked
-        }
-        console.error(`[handleSave] Save FAILED for doc ${itemId}: HTTP ${res.status}${blockedByGuard ? ' (content-loss guard blocked it)' : ''}`)
+        console.error(`[handleSave] Save FAILED for doc ${itemId}: HTTP ${res.status}`)
         setSaveStatus('blocked')
         return
       }
+      const result = await res.json()
+      latestUpdatedAtRef.current = result.updated_at ?? latestUpdatedAtRef.current
       setSaveStatus('saved')
     } else {
       setSaveStatus('saving')
@@ -105,7 +100,7 @@ export default function SplitPane({ type, id }: SplitPaneProps) {
       })
       setSaveStatus('saved')
     }
-  }, [itemId, type, doc])
+  }, [itemId, type])
 
   useEffect(() => {
     if (!loaded) return
@@ -137,10 +132,11 @@ export default function SplitPane({ type, id }: SplitPaneProps) {
       {/* Minimal save indicator */}
       <div className="sticky top-3 flex justify-end px-4 z-10 pointer-events-none">
         <span
-          style={{ fontSize: '11px', color: saveStatus === 'blocked' ? '#ef4444' : 'var(--text-muted)' }}
-          className={saveStatus === 'blocked' ? 'font-medium' : undefined}
+          style={{ fontSize: '11px', color: saveStatus === 'blocked' ? '#ef4444' : saveStatus === 'conflict' ? '#f59e0b' : 'var(--text-muted)' }}
+          className={saveStatus === 'blocked' || saveStatus === 'conflict' ? 'font-medium' : undefined}
+          title={saveStatus === 'conflict' ? 'This doc was changed by someone else. Reload to see the latest version.' : undefined}
         >
-          {saveStatus === 'saving' ? 'Saving...' : saveStatus === 'unsaved' ? '●' : saveStatus === 'blocked' ? 'Not saved' : ''}
+          {saveStatus === 'saving' ? 'Saving...' : saveStatus === 'unsaved' ? '●' : saveStatus === 'blocked' ? 'Not saved' : saveStatus === 'conflict' ? 'Outdated — reload' : ''}
         </span>
       </div>
 
@@ -158,7 +154,6 @@ export default function SplitPane({ type, id }: SplitPaneProps) {
         <Editor
           content={content}
           editable={true}
-          isShared={false}
           onChange={(newContent) => { setContent(newContent) }}
           onReady={(focusFn) => { editorFocusRef.current = focusFn }}
           onImageUpload={handleImageUpload}

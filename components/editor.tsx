@@ -41,13 +41,6 @@ import {
 } from "lucide-react"
 import { useCallback, useState, useRef, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { generateJSON, getSchema } from "@tiptap/core"
-import { prosemirrorJSONToYXmlFragment } from "@tiptap/y-tiptap"
-import Collaboration from "@tiptap/extension-collaboration"
-import CollaborationCaret from "@tiptap/extension-collaboration-caret"
-import * as Y from "yjs"
-import { Awareness } from "y-protocols/awareness"
-import { PusherYjsProvider } from "@/lib/yjs-pusher-provider"
 
 // Extended Table that persists the "fit width" toggle as a data attribute in saved HTML
 const TableExtension = TableExtensionBase.extend({
@@ -172,11 +165,7 @@ interface EditorProps {
   onImageUpload?: (file: File) => Promise<string | null>
   onInsertImageReady?: (fn: (url: string) => void) => void
   editable?: boolean
-  isShared?: boolean
   onRemoteUpdate?: (setContentFn: (html: string) => void) => void
-  docId?: string
-  presenceName?: string
-  onAwarenessReady?: (awareness: Awareness | null) => void
 }
 
 interface Doc {
@@ -184,9 +173,7 @@ interface Doc {
   title: string
 }
 
-// Node/mark extensions that make up the document schema — shared between the
-// real editor and the headless editor used to seed a fresh Y.Doc, so both
-// agree on how to parse/render the same HTML.
+// Node/mark extensions that make up the document schema.
 function buildContentExtensions(options: { undoRedo?: false } = {}) {
   return [
     StarterKit.configure({
@@ -234,45 +221,6 @@ function buildContentExtensions(options: { undoRedo?: false } = {}) {
   ]
 }
 
-// Populates a fresh Y.Doc's XmlFragment directly from the doc's saved HTML —
-// this is what "seeding" means throughout this file. Called after the
-// PusherYjsProvider connection attempt has settled (peer responded, alone in
-// room, or peer-sync timed out) and only if the fragment is still empty at
-// that point — a peer's real state always wins over a DB seed.
-//
-// Deliberately NOT done via a live editor bound to both `content` and the
-// Collaboration extension at once: Yjs's sync plugin force-rerenders the
-// ProseMirror view FROM the (still empty) Y.XmlFragment as part of mounting,
-// which wipes out whatever the editor was constructed with from `content`
-// before any write-back to the fragment can happen — a live editor can
-// never actually seed an empty fragment this way, which is exactly how
-// shared docs ended up opening blank. Writing into the XmlFragment directly
-// via Yjs's own conversion utilities sidesteps the view/sync-plugin
-// lifecycle entirely, so there's nothing to race.
-function seedYDocFromHtml(ydoc: Y.Doc, html: string, docId?: string) {
-  const fragment = ydoc.getXmlFragment("default")
-  const meta = ydoc.getMap("meta")
-  // The "already seeded" marker lives inside the Y.Doc itself (not in this
-  // client's local state), so it syncs to every peer — this is what stops
-  // two clients who both connect around the same time from each
-  // independently seeding, which would duplicate content since Yjs merges
-  // concurrent writes as a union rather than deduping them. Checked before
-  // writing and set atomically alongside the content write below.
-  if (fragment.length > 0 || meta.get("__seeded") === true) return
-  const extensions = buildContentExtensions()
-  const schema = getSchema(extensions)
-  const json = generateJSON(html, extensions)
-  ydoc.transact(() => {
-    prosemirrorJSONToYXmlFragment(schema, json, fragment)
-    meta.set("__seeded", true)
-  })
-  console.log(`[seedYDocFromHtml] doc=${docId ?? "unknown"} seeded from DB, length=${html.length}`)
-}
-
-// Extracted so it can be shared between the live editor and the
-// read-only static view shown while a shared doc is still connecting/seeding
-// (see the render branch below) — avoids a visual style jump when swapping
-// between the two.
 function EditorStyles() {
   return (
     <style>{`
@@ -558,44 +506,11 @@ function EditorStyles() {
         .callout-content p {
           margin: 0 !important;
         }
-        /* ── Collaboration caret overrides (@tiptap/extension-collaboration-caret) ── */
-        .collaboration-carets__caret {
-          border-left: 2px solid;
-          border-color: inherit;
-          margin-left: -1px;
-          position: relative;
-          word-break: normal;
-          box-decoration-break: slice;
-        }
-        .collaboration-carets__selection {
-          background: transparent !important;
-        }
-        .collaboration-carets__label {
-          font-size: 10px !important;
-          font-weight: 500 !important;
-          padding: 1px 5px !important;
-          border-radius: 3px 3px 3px 0 !important;
-          line-height: 1.4 !important;
-          white-space: nowrap !important;
-          max-width: 90px !important;
-          overflow: hidden !important;
-          text-overflow: ellipsis !important;
-          opacity: 0 !important;
-          transition: opacity 0.15s ease !important;
-          pointer-events: none !important;
-          user-select: none !important;
-          position: absolute !important;
-          top: -1.4em !important;
-          left: -1px !important;
-        }
-        .collaboration-carets__caret:hover .collaboration-carets__label {
-          opacity: 1 !important;
-        }
     `}</style>
   )
 }
 
-export default function Editor({ content, onChange, onReady, onImageUpload, onInsertImageReady, editable = true, isShared = false, onRemoteUpdate, docId, presenceName, onAwarenessReady }: EditorProps) {
+export default function Editor({ content, onChange, onReady, onImageUpload, onInsertImageReady, editable = true, onRemoteUpdate }: EditorProps) {
   const router = useRouter()
   const [bubbleVisible, setBubbleVisible] = useState(false)
   const [bubblePos, setBubblePos] = useState({ top: 0, left: 0 })
@@ -681,117 +596,16 @@ export default function Editor({ content, onChange, onReady, onImageUpload, onIn
     setSelectedIndex(0)
   }, [linkUrl, allDocs])
 
-  // Only use realtime collaboration for shared docs — private docs use DB
-  // content directly, completely untouched by any of this.
-  const contentRef = useRef(content)
-  contentRef.current = content
-
-  const [collab, setCollab] = useState<{ ydoc: Y.Doc; awareness: Awareness } | null>(null)
-  // True if Pusher never worked this session (connection/subscription error,
-  // or the subscription never completed at all) — the doc is still fully
-  // usable, just without live collaboration: plain content, normal autosave.
-  const [collabFailed, setCollabFailed] = useState(false)
-  // True while we're still waiting on the initial connection attempt to
-  // settle (and, if it does, on the direct Y.XmlFragment seed to run). The
-  // editor is never mounted with the Collaboration extension during this
-  // window — see the render branch below, which shows the DB content
-  // read-only instead of ever risking an editor bound to an empty fragment.
-  const [seeding, setSeeding] = useState(isShared)
-
-  useEffect(() => {
-    if (!isShared || !docId) {
-      setCollab(null)
-      setCollabFailed(false)
-      setSeeding(false)
-      onAwarenessReady?.(null)
-      return
-    }
-
-    setSeeding(true)
-    setCollabFailed(false)
-    let cancelled = false
-    let cleanedUp = false
-
-    const ydoc = new Y.Doc()
-    const awareness = new Awareness(ydoc)
-    const provider = new PusherYjsProvider({ docId, doc: ydoc, awareness })
-
-    const teardown = () => {
-      if (cleanedUp) return
-      cleanedUp = true
-      provider.destroy()
-      awareness.destroy()
-      ydoc.destroy()
-    }
-
-    provider.synced.then((outcome) => {
-      if (cancelled) {
-        teardown()
-        return
-      }
-      if (outcome === "failed") {
-        teardown()
-        setCollab(null)
-        setCollabFailed(true)
-        setSeeding(false)
-        onAwarenessReady?.(null)
-        return
-      }
-      // "ready" doesn't guarantee the fragment has content — a peer may have
-      // answered with real state (nothing to do here), or we may be alone /
-      // nobody responded in time, in which case seed if it's still empty.
-      seedYDocFromHtml(ydoc, contentRef.current, docId)
-      setCollab({ ydoc, awareness })
-      setSeeding(false)
-      onAwarenessReady?.(awareness)
-    })
-
-    return () => {
-      cancelled = true
-      teardown()
-      onAwarenessReady?.(null)
-    }
-  }, [isShared, docId])
-
-  // True once the Yjs connection has settled AND the fragment is
-  // known-populated (peer state or a completed seed) — the only case where
-  // the Collaboration extension should attach. While `seeding` is true, the
-  // component doesn't render this editor at all (see the render branch
-  // below), so its config during that window doesn't matter visually; once
-  // `collabFailed` is true, this stays false forever for this connection and
-  // the editor behaves like a private doc's (plain content, normal save).
-  const useCollab = isShared && !!collab
-
   const editor = useEditor({
     immediatelyRender: false,
     extensions: [
-      ...(useCollab
-        ? [
-            Collaboration.configure({ document: collab!.ydoc }),
-            CollaborationCaret.configure({
-              provider: { awareness: collab!.awareness },
-              user: { name: presenceName || "Anonymous", color: "#888888" },
-              selectionRender: (user: { color: string; name: string }) => ({
-                style: `background-color: ${user.color}`,
-                class: "collaboration-carets__selection",
-              }),
-            }),
-          ]
-        : []),
-      ...buildContentExtensions({ undoRedo: useCollab ? false : undefined }),
+      ...buildContentExtensions(),
       Placeholder.configure({
         placeholder: "Start writing, or press / for commands…",
       }),
       SlashCommands,
     ],
-    // Never passed alongside Collaboration (see useCollab above) — Tiptap
-    // explicitly does not support both at once, since the Yjs sync plugin
-    // force-rerenders the view from the Y.XmlFragment on mount, which is
-    // exactly how shared docs ended up opening blank when this was violated.
-    // Content comes from the Y.Doc only once useCollab is true; otherwise
-    // (not shared, or Yjs failed for this session) it's the plain DB value,
-    // identical to a private doc.
-    content: useCollab ? undefined : content,
+    content,
     editable,
     onUpdate: ({ editor }) => {
       if (editable) onChange(editor.getHTML())
@@ -938,7 +752,7 @@ export default function Editor({ content, onChange, onReady, onImageUpload, onIn
       editorRef.current = e
       setEditorReady(true)
     },
-  }, [isShared, docId, useCollab, collabFailed])
+  }, [])
 
   useEffect(() => {
     if (editor && onInsertImageReady) {
@@ -1092,25 +906,6 @@ export default function Editor({ content, onChange, onReady, onImageUpload, onIn
   }
 
   if (!editor) return null
-
-  // While a shared doc's Yjs connection attempt (and, if needed, its direct
-  // Y.XmlFragment seed) is still in progress, show the DB content read-only
-  // rather than mounting any editor bound to the Collaboration extension —
-  // the fragment isn't known-safe to bind to yet. This is capped at a few
-  // seconds by PusherYjsProvider's own timeouts, so it's brief; it's what
-  // guarantees the user never sees a blank editor, regardless of how the
-  // connection attempt resolves.
-  if (isShared && seeding) {
-    return (
-      <div ref={containerRef} className="relative">
-        <EditorStyles />
-        <div
-          className="prose prose-invert max-w-none min-h-[60vh] editor-content cursor-default select-text"
-          dangerouslySetInnerHTML={{ __html: content }}
-        />
-      </div>
-    )
-  }
 
   return (
     <div ref={containerRef} className="relative">

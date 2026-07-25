@@ -7,8 +7,7 @@ import DocTopbar from '@/components/doc-topbar'
 import { useTabStore } from '@/hooks/use-tab-store'
 import { CalendarDays, SignalLow, SignalMedium, SignalHigh, Minus, PanelRight, X, FileText, User, Clock, Plus, Check, Send, Trash2, Circle, CheckCircle2, Pencil, PanelLeftOpen } from 'lucide-react'
 import type { Doc } from '@/lib/db'
-import type { Awareness } from 'y-protocols/awareness'
-import PusherJS from 'pusher-js'
+import PusherJS, { type PresenceChannel } from 'pusher-js'
 
 interface Folder {
   id: string
@@ -125,7 +124,7 @@ export default function DocPage() {
   const [doc, setDoc] = useState<Doc | null>(null)
   const [title, setTitle] = useState('')
   const [content, setContent] = useState('')
-  const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'unsaved' | 'blocked'>('saved')
+  const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'unsaved' | 'blocked' | 'conflict'>('saved')
   const [folder, setFolder] = useState<Folder | null>(null)
   const [isPublic, setIsPublic] = useState(false)
   const [isLoggedIn, setIsLoggedIn] = useState(false)
@@ -169,12 +168,13 @@ export default function DocPage() {
   const isTypingRef = useRef(false)
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const remoteUpdateRef = useRef<((html: string) => void) | null>(null)
-  const [awareness, setAwareness] = useState<Awareness | null>(null)
-  // Kept in sync every render (not just on docId change) so the poke
-  // listener below can read the *current* isShared value without having to
-  // resubscribe every time doc metadata changes.
-  const docRef = useRef<Doc | null>(null)
-  docRef.current = doc
+  // Who else is currently viewing this doc — presence only, via a plain
+  // Pusher presence channel. Never carries document content.
+  const [presenceMembers, setPresenceMembers] = useState<{ id: string; name: string }[]>([])
+  // The server's last-known updated_at for this doc, used for optimistic
+  // concurrency on save (see handleSave) — refreshed on load, on every
+  // successful save, and whenever the poke channel pulls a fresher copy.
+  const latestUpdatedAtRef = useRef<string | null>(null)
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -262,6 +262,7 @@ export default function DocPage() {
             setIsPublic(data.is_public ?? false)
             setPriority((data.priority as Priority) ?? null)
             setLastSaved(data.updated_at ?? null)
+            latestUpdatedAtRef.current = data.updated_at ?? null
           })
         } else {
           router.push('/')
@@ -278,6 +279,7 @@ export default function DocPage() {
       setIsPublic(data.is_public ?? false)
       setPriority((data.priority as Priority) ?? null)
       setLastSaved(data.updated_at ?? null)
+      latestUpdatedAtRef.current = data.updated_at ?? null
       setIsFavorite(data.is_starred ?? false)
       if (data.folder_id && data.folder_name) {
         setFolder({ id: data.folder_id, name: data.folder_name })
@@ -312,26 +314,19 @@ export default function DocPage() {
         .then(res => res.json())
         .then((data: Doc) => {
           if (data.error) return
-          // Shared docs get their content exclusively from the live Yjs
-          // sync — this "poke" channel predates that and fires on *any*
-          // save to this doc (including unrelated metadata like priority
-          // or favorite toggles from any client). Forcing a plain DB
-          // snapshot into a Yjs-bound editor via setContent() gets
-          // diff-reconciled straight into the shared Y.Doc, which can wipe
-          // out edits made after that snapshot was read — for every
-          // connected peer, not just this tab. So for shared docs, only
-          // the non-Yjs metadata (title, tab label, last-saved time) comes
-          // from this poke; content is left to Yjs entirely.
-          const isSharedDoc = !!(docRef.current as any)?.workspace_id
-          if (!isSharedDoc) {
-            if (remoteUpdateRef.current) {
-              remoteUpdateRef.current(data.content || '')
-            } else {
-              setContent(data.content || '')
-            }
+          // Same code path for every doc, shared or private: apply whatever
+          // the server now has. If the local editor has unsaved changes,
+          // the next autosave will hit the optimistic-concurrency check in
+          // handleSave and surface a conflict rather than silently losing
+          // either side.
+          if (remoteUpdateRef.current) {
+            remoteUpdateRef.current(data.content || '')
+          } else {
+            setContent(data.content || '')
           }
           setTitle(data.title || '')
           setLastSaved(data.updated_at ?? null)
+          latestUpdatedAtRef.current = data.updated_at ?? null
           updateTabTitle(docId, data.title || 'Untitled')
         })
         .catch(() => {})
@@ -344,48 +339,82 @@ export default function DocPage() {
     }
   }, [docId, isLoggedIn])
 
+  // ─── Pusher: presence only (who else is currently viewing this doc) ──────
+  // A separate, minimal presence-channel subscription — no document content
+  // ever flows through this, just membership. Only meaningful for shared
+  // docs; private docs have no "who else is here" concept.
+  useEffect(() => {
+    const isSharedDoc = !!(doc as any)?.workspace_id
+    if (!docId || !isLoggedIn || !isSharedDoc) {
+      setPresenceMembers([])
+      return
+    }
+
+    const pusher = new PusherJS(process.env.NEXT_PUBLIC_PUSHER_KEY!, {
+      cluster: process.env.NEXT_PUBLIC_PUSHER_CLUSTER!,
+      authEndpoint: '/api/pusher-auth',
+    })
+    const channel = pusher.subscribe(`presence-doc-${docId}`) as PresenceChannel
+
+    const sync = () => {
+      const members: { id: string; name: string }[] = []
+      channel.members.each((member: { id: string; info: { name?: string } }) => {
+        if (member.id === channel.members.myID) return
+        members.push({ id: member.id, name: member.info?.name || 'Anonymous' })
+      })
+      setPresenceMembers(members)
+    }
+
+    channel.bind('pusher:subscription_succeeded', sync)
+    channel.bind('pusher:member_added', sync)
+    channel.bind('pusher:member_removed', sync)
+
+    return () => {
+      channel.unbind_all()
+      pusher.unsubscribe(`presence-doc-${docId}`)
+      pusher.disconnect()
+      setPresenceMembers([])
+    }
+  }, [docId, isLoggedIn, !!(doc as any)?.workspace_id])
+
   useEffect(() => { resizeTitle() }, [title])
 
   // The DB is the single source of truth for both loading and saving,
-  // shared or private. Yjs/Pusher is a live-typing enhancement layered on
-  // top by the Editor component — it never gates whether this save fires.
+  // shared or private — identical path either way. Concurrency is handled
+  // by the server via optimistic locking on updated_at (see route.ts): this
+  // save only lands if nobody else has saved since latestUpdatedAtRef was
+  // last refreshed. A 409 means someone else saved first — surfaced as a
+  // 'conflict' status rather than silently overwriting either side.
   const handleSave = useCallback(async (latestTitle: string, latestContent: string, latestDoc: Doc | null) => {
     if (!isLoggedIn) return
-    const savedLength = latestDoc?.content ? latestDoc.content.length : 0
-    if (savedLength > 100 && latestContent.length < savedLength * 0.5) {
-      // Backstop against any content-loss bug, current or future — refuse
-      // rather than silently persist a drastic, likely-unintentional drop.
-      console.error(
-        `[handleSave] Refused to save doc ${docId} (client-side guard): new content is ` +
-        `${latestContent.length} chars, down from ${savedLength} previously saved ` +
-        `(${Math.round((latestContent.length / savedLength) * 100)}%). Local content is unaffected.`
-      )
-      setSaveStatus('blocked')
-      return
-    }
     setSaveStatus('saving')
     const res = await fetch(`/api/docs/${docId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title: latestTitle, content: latestContent, color: latestDoc?.color ?? 'yellow', source: 'autosave' }),
+      body: JSON.stringify({
+        title: latestTitle,
+        content: latestContent,
+        color: latestDoc?.color ?? 'yellow',
+        source: 'autosave',
+        updated_at: latestUpdatedAtRef.current,
+      }),
     })
+    if (res.status === 409) {
+      console.error(`[handleSave] Conflict saving doc ${docId}: changed by someone else since last load.`)
+      setSaveStatus('conflict')
+      return
+    }
     if (!res.ok) {
-      let blockedByGuard = false
-      if (res.status === 409) {
-        const data = await res.json().catch(() => null)
-        blockedByGuard = !!data?.blocked
-      }
-      // Any non-OK response means the write did not land — never report
-      // 'saved' for it. The user's local content is untouched either way
-      // (nothing here modifies title/content state), it just hasn't
-      // reached the database.
-      console.error(
-        `[handleSave] Save FAILED for doc ${docId}: HTTP ${res.status}` +
-        (blockedByGuard ? ' (server-side content-loss guard blocked it)' : '')
-      )
+      // Any other non-OK response means the write did not land — never
+      // report 'saved' for it. The user's local content is untouched
+      // either way (nothing here modifies title/content state), it just
+      // hasn't reached the database.
+      console.error(`[handleSave] Save FAILED for doc ${docId}: HTTP ${res.status}`)
       setSaveStatus('blocked')
       return
     }
+    const result = await res.json()
+    latestUpdatedAtRef.current = result.updated_at ?? latestUpdatedAtRef.current
     setSaveStatus('saved')
     setLastSaved(new Date().toISOString())
   }, [docId, isLoggedIn])
@@ -655,7 +684,7 @@ export default function DocPage() {
             currentUserName={currentUser?.name || currentUser?.email || undefined}
             splitViewActive={splitViewActive}
             onToggleSplitView={handleToggleSplitView}
-            awareness={awareness}
+            presenceMembers={presenceMembers}
           />
 
           <main className="flex-1 overflow-y-auto flex flex-col items-center" style={{ paddingTop: '80px' }}>
@@ -728,10 +757,6 @@ export default function DocPage() {
                 <Editor
                   content={content}
                   editable={isLoggedIn}
-                  isShared={!!(doc as any).workspace_id}
-                  docId={docId}
-                  presenceName={currentUser?.name || currentUser?.email || 'Anonymous'}
-                  onAwarenessReady={setAwareness}
                   onChange={(newContent) => { if (!isLoggedIn) return; setContent(newContent) }}
                   onReady={(focusFn) => { editorFocusRef.current = focusFn }}
                   onImageUpload={handleImageUpload}

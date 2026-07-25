@@ -74,12 +74,12 @@ export async function PUT(
   try {
     const { id } = await params
     const body = await request.json()
-    const { title, content, color, is_starred, type, folder_id, priority, board_stage, source } = body
-    const triggerSource = typeof source === 'string' ? source : 'unknown'
+    const { title, content, color, is_starred, type, folder_id, priority, board_stage, updated_at } = body
     const contentProvided = content !== undefined && content !== null
+    const expectedUpdatedAt = typeof updated_at === 'string' ? updated_at : null
 
     const accessCheck = await sql`
-      SELECT docs.uuid, docs.workspace_id FROM docs
+      SELECT docs.uuid FROM docs
       LEFT JOIN workspace_members wm ON wm.workspace_id::text = docs.workspace_id::text
         AND wm.user_id = ${payload.userId}
         AND wm.status = 'accepted'
@@ -108,27 +108,19 @@ export async function PUT(
       return NextResponse.json(result[0])
     }
 
-    // Hard backstop against content loss, enforced here (the single DB write
-    // path for doc content) rather than relying on any client-side guard —
-    // those live in per-page state that can go stale or simply not run.
-    // Shared docs get a tighter threshold since multiple independently-saving
-    // clients (see PusherYjsProvider) make partial, non-catastrophic drops
-    // the realistic failure mode, not just full wipes.
-    //
-    // The length check lives in the UPDATE's WHERE clause, evaluated against
-    // docs.content directly (not a value read by an earlier SELECT), so the
-    // check and the write are one atomic statement. Under Postgres's normal
-    // read-committed concurrent-update behavior, two overlapping writers to
-    // the same row serialize on the row lock and each is re-evaluated against
-    // the other's just-committed value — there is no window where a second
-    // request can act on a length it read before the first request's write
-    // landed, the way there was with a separate SELECT-then-UPDATE.
-    const isSharedDoc = accessCheck[0].workspace_id != null
-    const threshold = isSharedDoc ? 0.9 : 0.5
-
     // board_stage can be set to null (remove from board) or a string value
     const boardStageValue = board_stage !== undefined ? board_stage : undefined
 
+    // Optimistic concurrency, only when content is part of this save (the
+    // case that actually risks losing someone else's more recent edit —
+    // title/metadata-only updates were never the source of that risk and
+    // stay last-write-wins). The client sends the updated_at it last
+    // loaded/saved; the write only lands if the row hasn't changed since.
+    // Whoever saves second against a now-stale baseline gets a 409 instead
+    // of silently overwriting the winner — same atomic-WHERE-clause
+    // approach as before (check and write in one statement, no separate
+    // SELECT to race), just checking a timestamp match instead of guessing
+    // at a length heuristic.
     const result = await sql`
       UPDATE docs
       SET
@@ -146,33 +138,30 @@ export async function PUT(
       WHERE uuid = ${id}
         AND (
           NOT ${contentProvided}
-          OR length(COALESCE(content, '')) <= 100
-          OR length(${content ?? null}) >= length(COALESCE(content, '')) * ${threshold}
+          OR ${expectedUpdatedAt} IS NULL
+          OR updated_at = ${expectedUpdatedAt}::timestamptz
         )
       RETURNING *
     `
 
     if (result.length === 0) {
       // accessCheck already confirmed this doc exists and is accessible, so
-      // an empty result here means the atomic guard's WHERE clause is what
-      // rejected the row, not a missing doc.
-      if (contentProvided) {
-        const diag = await sql`SELECT length(content) AS len FROM docs WHERE uuid = ${id}`
-        const currentLen = diag[0]?.len ?? 0
+      // an empty result here means the concurrency check rejected the row —
+      // someone else saved after expectedUpdatedAt — not a missing doc.
+      if (contentProvided && expectedUpdatedAt !== null) {
+        const current = await sql`SELECT content, updated_at FROM docs WHERE uuid = ${id}`
         console.warn(
-          `[content-write-guard] BLOCKED (atomic) doc=${id} at=${new Date().toISOString()} ` +
-          `oldLen=${currentLen} newLen=${content.length} shared=${isSharedDoc} source=${triggerSource}`
+          `[optimistic-concurrency] CONFLICT doc=${id} at=${new Date().toISOString()} ` +
+          `expectedUpdatedAt=${expectedUpdatedAt} actualUpdatedAt=${current[0]?.updated_at}`
         )
-        return NextResponse.json({ error: 'content_loss_guard_blocked', blocked: true }, { status: 409 })
+        return NextResponse.json({
+          error: 'conflict',
+          message: 'This doc was changed by someone else. Reload to see the latest version.',
+          currentContent: current[0]?.content ?? null,
+          currentUpdatedAt: current[0]?.updated_at ?? null,
+        }, { status: 409 })
       }
       return NextResponse.json({ error: 'Doc not found' }, { status: 404 })
-    }
-
-    if (contentProvided) {
-      console.log(
-        `[content-write-guard] pass doc=${id} at=${new Date().toISOString()} ` +
-        `newLen=${content.length} shared=${isSharedDoc} source=${triggerSource}`
-      )
     }
 
     await pusher.trigger(`doc-${id}`, 'updated', {})

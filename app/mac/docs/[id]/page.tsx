@@ -12,13 +12,14 @@ export default function MacDocPage() {
   const [doc, setDoc] = useState<Doc | null>(null)
   const [title, setTitle] = useState('')
   const [content, setContent] = useState('')
-  const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'unsaved' | 'blocked'>('saved')
+  const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'unsaved' | 'blocked' | 'conflict'>('saved')
   const titleRef = useRef<HTMLTextAreaElement>(null)
   const editorFocusRef = useRef<(() => void) | null>(null)
   const insertImageRef = useRef<((url: string) => void) | null>(null)
   const remoteUpdateRef = useRef<((html: string) => void) | null>(null)
   const isTypingRef = useRef(false)
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const latestUpdatedAtRef = useRef<string | null>(null)
 
   const resizeTitle = () => {
     const el = titleRef.current
@@ -36,37 +37,31 @@ export default function MacDocPage() {
         setDoc(data)
         setTitle(data.title || '')
         setContent(data.content || '')
+        latestUpdatedAtRef.current = data.updated_at ?? null
       })
   }, [docId])
 
   useEffect(() => { resizeTitle() }, [title])
 
-  const handleSave = useCallback(async (latestTitle: string, latestContent: string, latestDoc: Doc | null) => {
-    const savedLength = latestDoc?.content ? latestDoc.content.length : 0
-    if (savedLength > 100 && latestContent.length < savedLength * 0.5) {
-      console.error(
-        `[handleSave] Refused to save doc ${docId} (client-side guard): new content is ` +
-        `${latestContent.length} chars, down from ${savedLength} previously saved. Local content is unaffected.`
-      )
-      setSaveStatus('blocked')
-      return
-    }
+  const handleSave = useCallback(async (latestTitle: string, latestContent: string) => {
     setSaveStatus('saving')
     const res = await fetch(`/api/docs/${docId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title: latestTitle, content: latestContent, source: 'autosave' }),
+      body: JSON.stringify({ title: latestTitle, content: latestContent, source: 'autosave', updated_at: latestUpdatedAtRef.current }),
     })
+    if (res.status === 409) {
+      console.error(`[handleSave] Conflict saving doc ${docId}: changed by someone else since last load.`)
+      setSaveStatus('conflict')
+      return
+    }
     if (!res.ok) {
-      let blockedByGuard = false
-      if (res.status === 409) {
-        const data = await res.json().catch(() => null)
-        blockedByGuard = !!data?.blocked
-      }
-      console.error(`[handleSave] Save FAILED for doc ${docId}: HTTP ${res.status}${blockedByGuard ? ' (content-loss guard blocked it)' : ''}`)
+      console.error(`[handleSave] Save FAILED for doc ${docId}: HTTP ${res.status}`)
       setSaveStatus('blocked')
       return
     }
+    const result = await res.json()
+    latestUpdatedAtRef.current = result.updated_at ?? latestUpdatedAtRef.current
     setSaveStatus('saved')
   }, [docId])
 
@@ -76,7 +71,7 @@ export default function MacDocPage() {
     if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current)
     typingTimeoutRef.current = setTimeout(() => { isTypingRef.current = false }, 2000)
     setSaveStatus('unsaved')
-    const timer = setTimeout(() => { handleSave(title, content, doc) }, 1000)
+    const timer = setTimeout(() => { handleSave(title, content) }, 1000)
     return () => clearTimeout(timer)
   }, [title, content])
 
@@ -100,10 +95,11 @@ export default function MacDocPage() {
       {/* Minimal save indicator */}
       <div className="fixed top-3 right-4 z-10">
         <span
-          style={{ fontSize: '11px', color: saveStatus === 'blocked' ? '#ef4444' : 'var(--text-muted)' }}
-          className={saveStatus === 'blocked' ? 'font-medium' : undefined}
+          style={{ fontSize: '11px', color: saveStatus === 'blocked' ? '#ef4444' : saveStatus === 'conflict' ? '#f59e0b' : 'var(--text-muted)' }}
+          className={saveStatus === 'blocked' || saveStatus === 'conflict' ? 'font-medium' : undefined}
+          title={saveStatus === 'conflict' ? 'This doc was changed by someone else. Reload to see the latest version.' : undefined}
         >
-          {saveStatus === 'saving' ? 'Saving...' : saveStatus === 'unsaved' ? '●' : saveStatus === 'blocked' ? 'Not saved' : ''}
+          {saveStatus === 'saving' ? 'Saving...' : saveStatus === 'unsaved' ? '●' : saveStatus === 'blocked' ? 'Not saved' : saveStatus === 'conflict' ? 'Outdated — reload' : ''}
         </span>
       </div>
 
@@ -122,7 +118,6 @@ export default function MacDocPage() {
           <Editor
             content={content}
             editable={true}
-            isShared={false}
             onChange={(newContent) => { setContent(newContent) }}
             onReady={(focusFn) => { editorFocusRef.current = focusFn }}
             onImageUpload={handleImageUpload}
