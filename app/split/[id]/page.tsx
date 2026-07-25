@@ -70,46 +70,15 @@ export default function SplitDocPage() {
     setSaveStatus('saved')
   }, [docId])
 
-  // This surface has no Yjs/Pusher connection at all — no live sync, no
-  // saver election. If the doc turns out to be shared, it can't safely
-  // participate in content persistence (no way to know if a peer elsewhere
-  // is mid-edit), so title still saves independently but content does not.
-  // Open the doc at /docs/[id] for live collaborative editing.
-  const handleSaveTitleOnly = useCallback(async (latestTitle: string) => {
-    const res = await fetch(`/api/docs/${docId}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title: latestTitle, source: 'autosave-title' }),
-    })
-    if (!res.ok) {
-      console.error(`[handleSaveTitleOnly] Title save failed for doc ${docId}: HTTP ${res.status}`)
-      setSaveStatus('blocked')
-      return
-    }
-    setSaveStatus('saved')
-  }, [docId])
-
   useEffect(() => {
     if (!doc) return
     isTypingRef.current = true
     if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current)
     typingTimeoutRef.current = setTimeout(() => { isTypingRef.current = false }, 2000)
     setSaveStatus('unsaved')
-
-    const isSharedDoc = !!(doc as any)?.workspace_id
-    if (isSharedDoc) return
-
     const timer = setTimeout(() => { handleSave(title, content, doc) }, 1000)
     return () => clearTimeout(timer)
   }, [title, content])
-
-  useEffect(() => {
-    if (!doc) return
-    const isSharedDoc = !!(doc as any)?.workspace_id
-    if (!isSharedDoc) return
-    const timer = setTimeout(() => { handleSaveTitleOnly(title) }, 1000)
-    return () => clearTimeout(timer)
-  }, [title])
 
   const handleImageUpload = useCallback(async (file: File): Promise<string | null> => {
     if (file.size > 5 * 1024 * 1024) return null

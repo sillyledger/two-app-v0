@@ -176,15 +176,6 @@ interface EditorProps {
   docId?: string
   presenceName?: string
   onAwarenessReady?: (awareness: Awareness | null) => void
-  /**
-   * Gives the parent a function that reads content directly off the live
-   * editor at call-time, rather than a value captured earlier. For shared
-   * docs this editor instance is bound to the Y.Doc via the Collaboration
-   * extension, so this is a synchronous read of the current Yjs CRDT state —
-   * the single source of truth — with no risk of lagging a render tick
-   * behind an in-flight remote update the way a `content` state closure can.
-   */
-  onGetContent?: (fn: () => string) => void
 }
 
 interface Doc {
@@ -259,25 +250,16 @@ function buildContentExtensions(options: { undoRedo?: false } = {}) {
 // longer be empty. Seeding over that with stale page-load HTML would diff
 // against and corrupt real, newer content for every connected peer.
 function seedYDocFromHtml(ydoc: Y.Doc, html: string, docId?: string) {
-  const fragmentLenBefore = ydoc.getXmlFragment("default").length
-  console.log(`[seedYDocFromHtml] doc=${docId ?? "unknown"} called with html length=${html.length}, fragment length before=${fragmentLenBefore}`)
-  if (fragmentLenBefore > 0) {
-    console.log(`[seedYDocFromHtml] doc=${docId ?? "unknown"} SKIPPED — fragment already has content (length=${fragmentLenBefore}), not overwriting`)
-    return
-  }
+  if (ydoc.getXmlFragment("default").length > 0) return
+  console.log(`[seedYDocFromHtml] doc=${docId ?? "unknown"} seeding from DB, length=${html.length}`)
   const seedEditor = new TiptapCoreEditor({
     extensions: [...buildContentExtensions(), Collaboration.configure({ document: ydoc })],
     content: html,
   })
   seedEditor.destroy()
-  const fragmentLenAfter = ydoc.getXmlFragment("default").length
-  console.log(
-    `[seedYDocFromHtml] doc=${docId ?? "unknown"} done, fragment length after=${fragmentLenAfter}` +
-    (html.length > 0 && fragmentLenAfter === 0 ? ' — WARNING: html was non-empty but fragment is still empty after seeding' : '')
-  )
 }
 
-export default function Editor({ content, onChange, onReady, onImageUpload, onInsertImageReady, editable = true, isShared = false, onRemoteUpdate, docId, presenceName, onAwarenessReady, onGetContent }: EditorProps) {
+export default function Editor({ content, onChange, onReady, onImageUpload, onInsertImageReady, editable = true, isShared = false, onRemoteUpdate, docId, presenceName, onAwarenessReady }: EditorProps) {
   const router = useRouter()
   const [bubbleVisible, setBubbleVisible] = useState(false)
   const [bubblePos, setBubblePos] = useState({ top: 0, left: 0 })
@@ -433,7 +415,16 @@ export default function Editor({ content, onChange, onReady, onImageUpload, onIn
       }),
       SlashCommands,
     ],
-    content: isShared ? undefined : content,
+    // Always render straight from the DB-fetched `content` prop first, same
+    // as a private doc — this is what makes opening a shared doc show
+    // content immediately instead of waiting on Pusher. Once the Yjs
+    // provider actually connects (`collab` set), the Collaboration extension
+    // above takes over content management for live sync, so `content` here
+    // is dropped rather than passed alongside it — passing both would let
+    // this editor's re-creation (on collabReady flip) diff-reconcile
+    // possibly-stale React state back into the Y-doc, undoing whatever a
+    // peer just synced in.
+    content: (isShared && collab) ? undefined : content,
     editable,
     onUpdate: ({ editor }) => {
       if (editable) onChange(editor.getHTML())
@@ -579,12 +570,6 @@ export default function Editor({ content, onChange, onReady, onImageUpload, onIn
     onCreate: ({ editor: e }) => {
       editorRef.current = e
       setEditorReady(true)
-      if (isShared) {
-        console.log(
-          `[Editor] doc=${docId ?? "unknown"} editor onCreate, isShared=${isShared}, collabReady=${collabReady}, ` +
-          `bound to Yjs=${!!(isShared && collab)}, getHTML() length=${e.getHTML().length}`
-        )
-      }
     },
   }, [isShared, docId, collabReady])
 
@@ -677,12 +662,6 @@ export default function Editor({ content, onChange, onReady, onImageUpload, onIn
   }, [editor])
 
   useEffect(() => {
-    if (editor && onGetContent) {
-      onGetContent(() => editor.getHTML())
-    }
-  }, [editor, onGetContent])
-
-  useEffect(() => {
     if (editor) {
       editor.setEditable(editable)
     }
@@ -745,10 +724,11 @@ export default function Editor({ content, onChange, onReady, onImageUpload, onIn
     }
   }
 
-  // Never render (and thus never let onUpdate/autosave fire) until a shared
-  // doc's Y.Doc has been seeded or synced from a peer — an editor mounted
-  // against an empty collaborative doc is exactly how content has been lost.
-  if (!editor || (isShared && !collabReady)) return null
+  // Render as soon as the editor exists, same as a private doc — the DB
+  // content is what the user sees immediately, whether or not Pusher/Yjs
+  // ever connects. Yjs (once collabReady) layers live sync on top; it never
+  // gates showing content in the first place.
+  if (!editor) return null
 
   return (
     <div ref={containerRef} className="relative">

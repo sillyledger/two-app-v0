@@ -107,45 +107,15 @@ export default function SplitPane({ type, id }: SplitPaneProps) {
     }
   }, [itemId, type, doc])
 
-  // This surface has no Yjs/Pusher connection — if the doc is shared,
-  // content can't safely persist from here (no way to know if a peer
-  // elsewhere is mid-edit), but title still saves independently. Open
-  // /docs/[id] for live collaborative editing.
-  const handleSaveDocTitleOnly = useCallback(async (latestTitle: string) => {
-    const res = await fetch(`/api/docs/${itemId}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title: latestTitle, source: 'autosave-title' }),
-    })
-    if (!res.ok) {
-      console.error(`[handleSaveDocTitleOnly] Title save failed for doc ${itemId}: HTTP ${res.status}`)
-      setSaveStatus('blocked')
-      return
-    }
-    setSaveStatus('saved')
-  }, [itemId])
-
   useEffect(() => {
     if (!loaded) return
     isTypingRef.current = true
     if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current)
     typingTimeoutRef.current = setTimeout(() => { isTypingRef.current = false }, 2000)
     setSaveStatus('unsaved')
-
-    const isSharedDoc = type === 'doc' && !!(doc as any)?.workspace_id
-    if (isSharedDoc) return
-
     const timer = setTimeout(() => { handleSave(title, content) }, 1000)
     return () => clearTimeout(timer)
   }, [title, content])
-
-  useEffect(() => {
-    if (!loaded) return
-    const isSharedDoc = type === 'doc' && !!(doc as any)?.workspace_id
-    if (!isSharedDoc) return
-    const timer = setTimeout(() => { handleSaveDocTitleOnly(title) }, 1000)
-    return () => clearTimeout(timer)
-  }, [title])
 
   const handleImageUpload = useCallback(async (file: File): Promise<string | null> => {
     if (file.size > 5 * 1024 * 1024) return null
