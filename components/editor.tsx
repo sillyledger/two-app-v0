@@ -176,6 +176,15 @@ interface EditorProps {
   docId?: string
   presenceName?: string
   onAwarenessReady?: (awareness: Awareness | null) => void
+  /**
+   * Gives the parent a function that reads content directly off the live
+   * editor at call-time, rather than a value captured earlier. For shared
+   * docs this editor instance is bound to the Y.Doc via the Collaboration
+   * extension, so this is a synchronous read of the current Yjs CRDT state —
+   * the single source of truth — with no risk of lagging a render tick
+   * behind an in-flight remote update the way a `content` state closure can.
+   */
+  onGetContent?: (fn: () => string) => void
 }
 
 interface Doc {
@@ -259,7 +268,7 @@ function seedYDocFromHtml(ydoc: Y.Doc, html: string, docId?: string) {
   seedEditor.destroy()
 }
 
-export default function Editor({ content, onChange, onReady, onImageUpload, onInsertImageReady, editable = true, isShared = false, onRemoteUpdate, docId, presenceName, onAwarenessReady }: EditorProps) {
+export default function Editor({ content, onChange, onReady, onImageUpload, onInsertImageReady, editable = true, isShared = false, onRemoteUpdate, docId, presenceName, onAwarenessReady, onGetContent }: EditorProps) {
   const router = useRouter()
   const [bubbleVisible, setBubbleVisible] = useState(false)
   const [bubblePos, setBubblePos] = useState({ top: 0, left: 0 })
@@ -651,6 +660,12 @@ export default function Editor({ content, onChange, onReady, onImageUpload, onIn
       })
     }
   }, [editor])
+
+  useEffect(() => {
+    if (editor && onGetContent) {
+      onGetContent(() => editor.getHTML())
+    }
+  }, [editor, onGetContent])
 
   useEffect(() => {
     if (editor) {

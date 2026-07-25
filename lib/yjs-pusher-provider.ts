@@ -115,6 +115,12 @@ export class PusherYjsProvider {
       if (peerSyncTimeout) clearTimeout(peerSyncTimeout)
       clearTimeout(hardCeiling)
       console.warn(`[PusherYjsProvider] doc=${this.docId} Falling back to DB-seeded content (${reason}).`)
+      // Every fallback reason means we don't actually know the true room
+      // state — not save-eligible. The one exception ("alone in room") is
+      // overridden back to true by its own call site right after this runs,
+      // since being provably alone is the one fallback case that's actually
+      // safe to persist from.
+      this.setSaveEligible(false)
       seed()
       this.resolveSynced()
     }
@@ -135,6 +141,18 @@ export class PusherYjsProvider {
       settleWithSeed("pusher connection error")
     })
 
+    // The moment the connection leaves a fully-connected state, we can no
+    // longer vouch for being in sync with peers — drop out of the
+    // save-eligible pool immediately rather than waiting for the slower
+    // subscription/resync lifecycle to notice. Re-eligibility is re-earned
+    // through the normal isReconnect/requestResync path above once the
+    // connection recovers.
+    this.pusher.connection.bind("state_change", ({ current }: { previous: string; current: string }) => {
+      if (current !== "connected") {
+        this.setSaveEligible(false)
+      }
+    })
+
     this.channel = this.pusher.subscribe(`presence-doc-${docId}`) as PresenceChannel
 
     this.channel.bind("pusher:subscription_error", (err: unknown) => {
@@ -147,13 +165,22 @@ export class PusherYjsProvider {
       this.subscribed = true
 
       if (isReconnect) {
+        // We just went through a disconnect/reconnect cycle — whatever we
+        // knew about the room before is now stale, so drop out of the
+        // save-eligible pool until we've re-confirmed it's safe (either a
+        // resync response lands, or we find we're alone again).
+        this.setSaveEligible(false)
         // We already have a valid doc state from the first connection, but
         // may have missed updates while offline (Pusher doesn't replay
         // client events to a resubscribing client any more than to a new
         // one). Unlike seed(), applying a peer's full state here via
         // Y.applyUpdate is safe/idempotent regardless of what we already
         // have — it's a real Yjs update, not a diff-write derived from HTML.
-        if (members.count > 1) this.requestResync()
+        if (members.count > 1) {
+          this.requestResync()
+        } else {
+          this.setSaveEligible(true)
+        }
         return
       }
 
@@ -161,6 +188,9 @@ export class PusherYjsProvider {
       // is also where we decide how to get the doc into a valid starting state.
       if (members.count <= 1) {
         settleWithSeed("alone in room")
+        // Provably nobody else is here to conflict with — safe to persist
+        // from, unlike the other fallback reasons.
+        this.setSaveEligible(true)
         return
       }
 
@@ -171,6 +201,9 @@ export class PusherYjsProvider {
         clearTimeout(hardCeiling)
         this.channel.unbind("client-yjs-sync-response", onSyncResponse)
         Y.applyUpdate(this.doc, base64ToBytes(payload.update), "pusher-sync")
+        // A peer actually answered with real state — this is the strongest
+        // confirmation of sync we can get, safe to persist from.
+        this.setSaveEligible(true)
         this.resolveSynced()
       }
       this.channel.bind("client-yjs-sync-response", onSyncResponse)
@@ -227,6 +260,13 @@ export class PusherYjsProvider {
       if (this.awareness.getLocalState()) {
         this.sendAwarenessUpdate([this.doc.clientID])
       }
+      // If we settled by falling back (peer timeout, subscription error,
+      // etc) we never got a real chance to true up against a peer — a newly
+      // joined member is exactly that chance. Gated on `settled` so this
+      // can't race the constructor's own first-connection decision above.
+      if (settled && this.awareness.getLocalState()?.saveEligible !== true) {
+        this.requestResync()
+      }
     })
 
     // Presence channels dedupe by user_id, so member_removed only fires once
@@ -258,6 +298,7 @@ export class PusherYjsProvider {
       handled = true
       this.channel.unbind("client-yjs-sync-response", onResyncResponse)
       Y.applyUpdate(this.doc, base64ToBytes(payload.update), "pusher-sync")
+      this.setSaveEligible(true)
     }
     this.channel.bind("client-yjs-sync-response", onResyncResponse)
 
@@ -271,6 +312,20 @@ export class PusherYjsProvider {
       handled = true
       this.channel.unbind("client-yjs-sync-response", onResyncResponse)
     }, PEER_SYNC_TIMEOUT_MS)
+  }
+
+  // Written into this client's own awareness state (merged alongside
+  // whatever CollaborationCaret writes there for cursors/user info — Yjs
+  // awareness field updates merge, they don't clobber the whole state) so
+  // that any peer, including this one, can read every currently-connected
+  // client's eligibility straight off the awareness map they already have,
+  // with no new Pusher channel or plumbing required. `true` means "I can
+  // truthfully vouch for being in sync with the room right now" — the only
+  // clients that should ever be considered as a shared doc's designated
+  // saver.
+  private setSaveEligible(eligible: boolean) {
+    if (this.destroyed) return
+    this.awareness.setLocalStateField("saveEligible", eligible)
   }
 
   private sendAwarenessUpdate(clientIds: number[]) {

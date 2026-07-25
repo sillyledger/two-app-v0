@@ -182,6 +182,18 @@ export default function DocPage() {
   latestTitleRef.current = title
   const latestContentRef = useRef(content)
   latestContentRef.current = content
+  // Reads content straight off the live Yjs-bound editor at call-time —
+  // the single source of truth for shared docs — set once Editor mounts.
+  const getContentRef = useRef<(() => string) | null>(null)
+
+  // Exactly one currently-connected client is elected the "designated
+  // saver" for a shared doc at any time (see the election effect below,
+  // driven by lib/yjs-pusher-provider.ts's `saveEligible` awareness field).
+  // Only that client's autosave/manual-save actually persists content.
+  const [isDesignatedSaver, setIsDesignatedSaver] = useState(false)
+  // A ref mirror so the Cmd/Ctrl+S handler (registered once, not
+  // resubscribed on every election change) always reads the current value.
+  const isDesignatedSaverRef = useRef(false)
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -353,7 +365,46 @@ export default function DocPage() {
 
   useEffect(() => { resizeTitle() }, [title])
 
-  const handleSave = useCallback(async (latestTitle: string, latestContent: string, latestDoc: Doc | null) => {
+  // Elects exactly one currently-connected client as the "designated saver"
+  // for a shared doc: the client with the numerically-lowest Yjs clientID
+  // among peers whose PusherYjsProvider has marked them `saveEligible` (see
+  // lib/yjs-pusher-provider.ts — eligibility means "provably alone" or "a
+  // peer actually confirmed sync with me," never a fallback/reconnect
+  // guess). Recomputed on every awareness change, so re-election on
+  // disconnect/reconnect is automatic — no separate heartbeat needed, it
+  // rides on Yjs's existing awareness propagation and staleness cleanup.
+  useEffect(() => {
+    if (!awareness) {
+      isDesignatedSaverRef.current = false
+      setIsDesignatedSaver(false)
+      return
+    }
+    const recompute = () => {
+      const myId = awareness.clientID
+      let lowestEligible: number | null = null
+      awareness.getStates().forEach((state, clientId) => {
+        if (state && (state as any).saveEligible === true) {
+          if (lowestEligible === null || clientId < lowestEligible) lowestEligible = clientId
+        }
+      })
+      const nowDesignated = lowestEligible !== null && lowestEligible === myId
+      if (nowDesignated !== isDesignatedSaverRef.current) {
+        isDesignatedSaverRef.current = nowDesignated
+        console.log(
+          `[election] doc=${docId} clientID=${myId} ${nowDesignated ? 'is now' : 'is no longer'} the designated saver` +
+          (lowestEligible === null ? ' (no eligible client currently — saves are paused)' : '')
+        )
+        setIsDesignatedSaver(nowDesignated)
+      }
+    }
+    recompute()
+    awareness.on('update', recompute)
+    return () => {
+      awareness.off('update', recompute)
+    }
+  }, [awareness, docId])
+
+  const handleSave = useCallback(async (latestTitle: string, latestContent: string, latestDoc: Doc | null, source: string = 'autosave') => {
     if (!isLoggedIn) return
     const savedLength = latestDoc?.content ? latestDoc.content.length : 0
     if (savedLength > 100 && latestContent.length < savedLength * 0.5) {
@@ -372,18 +423,45 @@ export default function DocPage() {
     const res = await fetch(`/api/docs/${docId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title: latestTitle, content: latestContent, color: latestDoc?.color ?? 'yellow', source: 'autosave' }),
+      body: JSON.stringify({ title: latestTitle, content: latestContent, color: latestDoc?.color ?? 'yellow', source }),
     })
-    if (res.status === 409) {
-      const data = await res.json().catch(() => null)
-      if (data?.blocked) {
-        // Server-side content-loss guard refused the write. The user's local
-        // content is untouched (nothing here modifies title/content state) —
-        // it just hasn't reached the database yet.
-        console.error(`[handleSave] Save BLOCKED by server-side content-loss guard for doc ${docId}.`)
-        setSaveStatus('blocked')
-        return
+    if (!res.ok) {
+      let blockedByGuard = false
+      if (res.status === 409) {
+        const data = await res.json().catch(() => null)
+        blockedByGuard = !!data?.blocked
       }
+      // Any non-OK response means the write did not land — never report
+      // 'saved' for it. The user's local content is untouched either way
+      // (nothing here modifies title/content state), it just hasn't
+      // reached the database.
+      console.error(
+        `[handleSave] Save FAILED for doc ${docId}: HTTP ${res.status}` +
+        (blockedByGuard ? ' (server-side content-loss guard blocked it)' : '')
+      )
+      setSaveStatus('blocked')
+      return
+    }
+    setSaveStatus('saved')
+    setLastSaved(new Date().toISOString())
+  }, [docId, isLoggedIn])
+
+  // Title is plain React state, not Yjs-backed, and was never part of the
+  // content-loss bug — any client may save it independently of who currently
+  // owns content persistence. No content-loss guard applies since `content`
+  // is omitted from the body entirely (the server's atomic guard already
+  // no-ops on content when it's absent).
+  const handleSaveTitleOnly = useCallback(async (latestTitle: string) => {
+    if (!isLoggedIn) return
+    const res = await fetch(`/api/docs/${docId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title: latestTitle, source: 'autosave-title' }),
+    })
+    if (!res.ok) {
+      console.error(`[handleSaveTitleOnly] Title save failed for doc ${docId}: HTTP ${res.status}`)
+      setSaveStatus('blocked')
+      return
     }
     setSaveStatus('saved')
     setLastSaved(new Date().toISOString())
@@ -401,30 +479,54 @@ export default function DocPage() {
 
     setSaveStatus('unsaved')
 
-    // STOPGAP: a content-loss bug is still being isolated for shared docs
-    // (every connected client's `content` state changes on remote Yjs
-    // updates too, not just local typing, so this debounce was firing an
-    // independent autosave per client on every peer's edit). Until root
-    // cause is confirmed, shared-doc content only reaches Postgres via the
-    // explicit Cmd/Ctrl+S handler below — live collaborative editing via
-    // Yjs/Pusher is unaffected. Private docs keep normal autosave.
     const isSharedDoc = !!(doc as any)?.workspace_id
-    if (isSharedDoc) return
 
-    const timer = setTimeout(() => { handleSave(title, content, doc) }, 1000)
+    // Not the elected saver for this shared doc — content stays fully
+    // editable and live-synced via Yjs regardless, persistence is just not
+    // this client's job right now. Title is saved by the separate effect
+    // below, independent of the content election.
+    if (isSharedDoc && !isDesignatedSaver) return
+
+    const timer = setTimeout(() => {
+      // For shared docs, read fresh off the live Yjs-bound editor rather
+      // than the `content` closure, which can lag an in-flight remote
+      // update by a render tick.
+      const latestContent = isSharedDoc ? (getContentRef.current?.() ?? content) : content
+      handleSave(title, latestContent, doc, isSharedDoc ? 'autosave-elected' : 'autosave')
+    }, 1000)
     return () => clearTimeout(timer)
-  }, [title, content])
+  }, [title, content, isDesignatedSaver])
 
-  // Manual save is the only way shared-doc content reaches the DB while the
-  // autosave stopgap above is in effect (see fix/collab-autosave-bypass).
+  // Title-only autosave for shared docs when this client is NOT the
+  // designated saver: title isn't Yjs-backed and was never part of the
+  // content-loss bug, so it persists independently of who owns content.
+  // Triggered only by title changes (not content), so a non-saver typing
+  // body text doesn't fire a redundant title-only PUT on every keystroke —
+  // when this client IS the saver, title already rides along with its
+  // content saves in the effect above.
+  useEffect(() => {
+    if (!doc || !isLoggedIn) return
+    const isSharedDoc = !!(doc as any)?.workspace_id
+    if (!isSharedDoc || isDesignatedSaver) return
+    const timer = setTimeout(() => { handleSaveTitleOnly(title) }, 1000)
+    return () => clearTimeout(timer)
+  }, [title, isDesignatedSaver])
+
+  // For shared docs, manual save only actually persists when this client is
+  // the designated saver — otherwise it's a no-op beyond suppressing the
+  // browser's native save dialog, since content is already safe (live-synced
+  // via Yjs) and will reach the DB via whichever client is elected.
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (!((e.metaKey || e.ctrlKey) && e.key === 's')) return
       const d = docRef.current
       if (!d || !isLoggedIn) return
-      if (!(d as any)?.workspace_id) return // non-shared docs already autosave
+      const isSharedDoc = !!(d as any)?.workspace_id
+      if (!isSharedDoc) return // non-shared docs already autosave
       e.preventDefault()
-      handleSave(latestTitleRef.current, latestContentRef.current, d)
+      if (!isDesignatedSaverRef.current) return
+      const latestContent = getContentRef.current?.() ?? latestContentRef.current
+      handleSave(latestTitleRef.current, latestContent, d, 'manual-elected')
     }
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
@@ -756,6 +858,7 @@ export default function DocPage() {
                   docId={docId}
                   presenceName={currentUser?.name || currentUser?.email || 'Anonymous'}
                   onAwarenessReady={setAwareness}
+                  onGetContent={(fn) => { getContentRef.current = fn }}
                   onChange={(newContent) => { if (!isLoggedIn) return; setContent(newContent) }}
                   onReady={(focusFn) => { editorFocusRef.current = focusFn }}
                   onImageUpload={handleImageUpload}
