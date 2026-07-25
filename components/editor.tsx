@@ -41,7 +41,8 @@ import {
 } from "lucide-react"
 import { useCallback, useState, useRef, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { Editor as TiptapCoreEditor } from "@tiptap/core"
+import { generateJSON, getSchema } from "@tiptap/core"
+import { prosemirrorJSONToYXmlFragment } from "@tiptap/y-tiptap"
 import Collaboration from "@tiptap/extension-collaboration"
 import CollaborationCaret from "@tiptap/extension-collaboration-caret"
 import * as Y from "yjs"
@@ -233,506 +234,48 @@ function buildContentExtensions(options: { undoRedo?: false } = {}) {
   ]
 }
 
-// Populates a fresh Y.Doc with the doc's saved HTML content via a detached,
-// never-rendered editor instance — this is what "seeding" means throughout
-// this file. Must run before any provider/network activity touches the doc,
-// since an empty Y.Doc that gets synced out is how content has been lost
-// before.
+// Populates a fresh Y.Doc's XmlFragment directly from the doc's saved HTML —
+// this is what "seeding" means throughout this file. Called after the
+// PusherYjsProvider connection attempt has settled (peer responded, alone in
+// room, or peer-sync timed out) and only if the fragment is still empty at
+// that point — a peer's real state always wins over a DB seed.
 //
-// Guarded to be a no-op if the fragment already has content: the temp
-// editor's initial content gets diff-reconciled into the Y fragment on
-// mount (via @tiptap/y-tiptap's ySyncPlugin) regardless of what's already
-// there — it does NOT check emptiness itself. The provider only calls this
-// in fallback paths (alone in room / peer sync timed out / connection
-// failed), but ambient `client-yjs-update` events can still land on this
-// doc in between — e.g. a live peer edit arriving during the peer-sync
-// timeout window — so by the time a fallback fires, the fragment may no
-// longer be empty. Seeding over that with stale page-load HTML would diff
-// against and corrupt real, newer content for every connected peer.
+// Deliberately NOT done via a live editor bound to both `content` and the
+// Collaboration extension at once: Yjs's sync plugin force-rerenders the
+// ProseMirror view FROM the (still empty) Y.XmlFragment as part of mounting,
+// which wipes out whatever the editor was constructed with from `content`
+// before any write-back to the fragment can happen — a live editor can
+// never actually seed an empty fragment this way, which is exactly how
+// shared docs ended up opening blank. Writing into the XmlFragment directly
+// via Yjs's own conversion utilities sidesteps the view/sync-plugin
+// lifecycle entirely, so there's nothing to race.
 function seedYDocFromHtml(ydoc: Y.Doc, html: string, docId?: string) {
-  if (ydoc.getXmlFragment("default").length > 0) return
-  console.log(`[seedYDocFromHtml] doc=${docId ?? "unknown"} seeding from DB, length=${html.length}`)
-  const seedEditor = new TiptapCoreEditor({
-    extensions: [...buildContentExtensions(), Collaboration.configure({ document: ydoc })],
-    content: html,
+  const fragment = ydoc.getXmlFragment("default")
+  const meta = ydoc.getMap("meta")
+  // The "already seeded" marker lives inside the Y.Doc itself (not in this
+  // client's local state), so it syncs to every peer — this is what stops
+  // two clients who both connect around the same time from each
+  // independently seeding, which would duplicate content since Yjs merges
+  // concurrent writes as a union rather than deduping them. Checked before
+  // writing and set atomically alongside the content write below.
+  if (fragment.length > 0 || meta.get("__seeded") === true) return
+  const extensions = buildContentExtensions()
+  const schema = getSchema(extensions)
+  const json = generateJSON(html, extensions)
+  ydoc.transact(() => {
+    prosemirrorJSONToYXmlFragment(schema, json, fragment)
+    meta.set("__seeded", true)
   })
-  seedEditor.destroy()
+  console.log(`[seedYDocFromHtml] doc=${docId ?? "unknown"} seeded from DB, length=${html.length}`)
 }
 
-export default function Editor({ content, onChange, onReady, onImageUpload, onInsertImageReady, editable = true, isShared = false, onRemoteUpdate, docId, presenceName, onAwarenessReady }: EditorProps) {
-  const router = useRouter()
-  const [bubbleVisible, setBubbleVisible] = useState(false)
-  const [bubblePos, setBubblePos] = useState({ top: 0, left: 0 })
-  const containerRef = useRef<HTMLDivElement>(null)
-
-  const [linkModalOpen, setLinkModalOpen] = useState(false)
-  const [linkUrl, setLinkUrl] = useState("")
-  const [allDocs, setAllDocs] = useState<Doc[]>([])
-  const [docResults, setDocResults] = useState<Doc[]>([])
-  const [selectedIndex, setSelectedIndex] = useState(0)
-  const linkInputRef = useRef<HTMLInputElement>(null)
-
-  const [linkPopup, setLinkPopup] = useState<{ url: string; top: number; left: number } | null>(null)
-  const linkPopupRef = useRef<HTMLDivElement>(null)
-  const hidePopupTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const [editorReady, setEditorReady] = useState(false)
-  const [uploading, setUploading] = useState(false)
-
-  const [tableToolbar, setTableToolbar] = useState<{ top: number; left: number } | null>(null)
-  const [tableAddRow, setTableAddRow] = useState<{ top: number; left: number; width: number } | null>(null)
-  const [tableFitWidth, setTableFitWidth] = useState(false)
-  const tableToolbarRef = useRef<HTMLDivElement>(null)
-
-  const onImageUploadRef = useRef(onImageUpload)
-  const editorRef = useRef<ReturnType<typeof useEditor>>(null)
-  const uploadingRef = useRef(false)
-
-  useEffect(() => {
-    onImageUploadRef.current = onImageUpload
-  }, [onImageUpload])
-
-  const doImageUpload = useCallback(async (file: File) => {
-    if (uploadingRef.current) return
-    if (!onImageUploadRef.current) return
-    uploadingRef.current = true
-    setUploading(true)
-
-    const blobUrl = URL.createObjectURL(file)
-    editorRef.current?.chain().focus().setImage({ src: blobUrl }).run()
-
-    try {
-      const realUrl = await onImageUploadRef.current(file)
-      if (realUrl && editorRef.current) {
-        const { state, dispatch } = editorRef.current.view
-        const { tr, doc } = state
-        doc.descendants((node, pos) => {
-          if (node.type.name === 'image' && node.attrs.src === blobUrl) {
-            tr.setNodeMarkup(pos, undefined, { ...node.attrs, src: realUrl })
-          }
-        })
-        dispatch(tr)
-      }
-    } finally {
-      URL.revokeObjectURL(blobUrl)
-      uploadingRef.current = false
-      setUploading(false)
-    }
-  }, [])
-
-  useEffect(() => {
-    const saved = localStorage.getItem("font-size-px")
-    const size = saved ? Number(saved) : 17
-    document.documentElement.style.setProperty("--editor-font-size", `${size}px`)
-  }, [])
-
-  useEffect(() => {
-    if (!linkModalOpen) return
-    fetch("/api/docs")
-      .then((r) => r.json())
-      .then((data) => setAllDocs(Array.isArray(data) ? data : []))
-      .catch(() => {})
-  }, [linkModalOpen])
-
-  useEffect(() => {
-    const isUrl = linkUrl.startsWith("http://") || linkUrl.startsWith("https://") || linkUrl.startsWith("www.")
-    if (isUrl || linkUrl === "") {
-      setDocResults([])
-      setSelectedIndex(0)
-      return
-    }
-    const q = linkUrl.toLowerCase()
-    setDocResults(allDocs.filter((d) => (d.title || "Untitled").toLowerCase().includes(q)).slice(0, 6))
-    setSelectedIndex(0)
-  }, [linkUrl, allDocs])
-
-  // Only use realtime collaboration for shared docs — private docs use DB
-  // content directly, completely untouched by any of this.
-  const contentRef = useRef(content)
-  contentRef.current = content
-
-  const [collab, setCollab] = useState<{ ydoc: Y.Doc; awareness: Awareness } | null>(null)
-  const [collabReady, setCollabReady] = useState(!isShared)
-
-  useEffect(() => {
-    if (!isShared || !docId) {
-      setCollab(null)
-      setCollabReady(true)
-      onAwarenessReady?.(null)
-      return
-    }
-
-    setCollabReady(false)
-    let cancelled = false
-
-    const ydoc = new Y.Doc()
-    const awareness = new Awareness(ydoc)
-
-    const provider = new PusherYjsProvider({
-      docId,
-      doc: ydoc,
-      awareness,
-      // Only called when it's safe: we're alone in the room, or nobody
-      // answered a sync request in time. Never called alongside a peer sync,
-      // which would duplicate content instead of no-op'ing.
-      seed: () => seedYDocFromHtml(ydoc, contentRef.current, docId),
-    })
-
-    provider.synced.then(() => {
-      if (cancelled) return
-      setCollab({ ydoc, awareness })
-      setCollabReady(true)
-      onAwarenessReady?.(awareness)
-    })
-
-    return () => {
-      cancelled = true
-      provider.destroy()
-      awareness.destroy()
-      ydoc.destroy()
-      onAwarenessReady?.(null)
-    }
-  }, [isShared, docId])
-
-  const editor = useEditor({
-    immediatelyRender: false,
-    extensions: [
-      ...(isShared && collab
-        ? [
-            Collaboration.configure({ document: collab.ydoc }),
-            CollaborationCaret.configure({
-              provider: { awareness: collab.awareness },
-              user: { name: presenceName || "Anonymous", color: "#888888" },
-              selectionRender: (user: { color: string; name: string }) => ({
-                style: `background-color: ${user.color}`,
-                class: "collaboration-carets__selection",
-              }),
-            }),
-          ]
-        : []),
-      ...buildContentExtensions({ undoRedo: isShared ? false : undefined }),
-      Placeholder.configure({
-        placeholder: "Start writing, or press / for commands…",
-      }),
-      SlashCommands,
-    ],
-    // Always render straight from the DB-fetched `content` prop first, same
-    // as a private doc — this is what makes opening a shared doc show
-    // content immediately instead of waiting on Pusher. Once the Yjs
-    // provider actually connects (`collab` set), the Collaboration extension
-    // above takes over content management for live sync, so `content` here
-    // is dropped rather than passed alongside it — passing both would let
-    // this editor's re-creation (on collabReady flip) diff-reconcile
-    // possibly-stale React state back into the Y-doc, undoing whatever a
-    // peer just synced in.
-    content: (isShared && collab) ? undefined : content,
-    editable,
-    onUpdate: ({ editor }) => {
-      if (editable) onChange(editor.getHTML())
-    },
-    onSelectionUpdate: ({ editor }) => {
-      if (!editable) {
-        setBubbleVisible(false)
-        setTableToolbar(null)
-        return
-      }
-
-      const isInTable = editor.isActive("table") || editor.isActive("tableCell") || editor.isActive("tableHeader")
-
-      if (isInTable) {
-        setBubbleVisible(false)
-
-        let tableEl: HTMLElement | null = null
-
-        const { from } = editor.state.selection
-        const domNode = editor.view.nodeDOM(from) as HTMLElement | null
-        if (domNode) {
-          let el: HTMLElement | null = domNode
-          while (el && el.tagName !== "TABLE") {
-            el = el.parentElement
-          }
-          if (el) tableEl = el
-        }
-
-        if (!tableEl) {
-          const sel = window.getSelection()
-          if (sel && sel.rangeCount > 0) {
-            let el = sel.getRangeAt(0).commonAncestorContainer as HTMLElement | null
-            if (el && el.nodeType === Node.TEXT_NODE) el = el.parentElement
-            while (el && el.tagName !== "TABLE") {
-              el = el.parentElement
-            }
-            if (el) tableEl = el
-          }
-        }
-
-        if (tableEl) {
-          const tableRect = tableEl.getBoundingClientRect()
-          setTableToolbar({
-            top: tableRect.top - 44,
-            left: tableRect.left,
-          })
-          setTableAddRow({
-            top: tableRect.bottom + 4,
-            left: tableRect.left,
-            width: tableRect.width,
-          })
-        } else {
-          setTableToolbar(null)
-          setTableAddRow(null)
-        }
-        return
-      }
-
-      setTableToolbar(null)
-      setTableAddRow(null)
-
-      const { from, to } = editor.state.selection
-      const hasSelection = from !== to
-
-      if (!hasSelection) {
-        setBubbleVisible(false)
-        return
-      }
-
-      const domSelection = window.getSelection()
-      if (!domSelection || domSelection.rangeCount === 0) {
-        setBubbleVisible(false)
-        return
-      }
-
-      const range = domSelection.getRangeAt(0)
-      const rect = range.getBoundingClientRect()
-      const containerRect = containerRef.current?.getBoundingClientRect()
-      if (!containerRect) return
-
-      setBubblePos({
-        top: rect.top - containerRect.top - 48,
-        left: Math.max(0, rect.left - containerRect.left + rect.width / 2 - 160),
-      })
-      setBubbleVisible(true)
-    },
-    editorProps: {
-      attributes: {
-        class: `prose prose-invert max-w-none focus:outline-none min-h-[60vh] editor-content ${
-          !editable ? "cursor-default select-text" : ""
-        }`,
-      },
-      handleKeyDown: (view, event) => {
-        if (!editable) return false
-        if ((event.metaKey || event.ctrlKey) && event.key === "k") {
-          event.preventDefault()
-          openLinkModal()
-          return true
-        }
-        return false
-      },
-      handleClick: (view, pos, event) => {
-        const target = event.target as HTMLElement
-        const anchor = target.closest("a")
-        if (!anchor) return false
-        const href = anchor.getAttribute("href")
-        if (!href) return false
-        event.preventDefault()
-        if (href.startsWith("/")) {
-          router.push(href)
-        } else {
-          window.open(href, "_blank", "noopener,noreferrer")
-        }
-        return true
-      },
-      handleDrop: (view, event) => {
-        if (!editable) return false
-        const files = event.dataTransfer?.files
-        if (!files || files.length === 0) return false
-        const imageFile = Array.from(files).find((f) => f.type.startsWith("image/"))
-        if (!imageFile) return false
-        event.preventDefault()
-        doImageUpload(imageFile)
-        return true
-      },
-      handlePaste: (view, event) => {
-        if (!editable) return false
-        const items = event.clipboardData?.items
-        if (!items) return false
-        for (const item of Array.from(items)) {
-          if (item.type.startsWith("image/")) {
-            const file = item.getAsFile()
-            if (file) {
-              event.preventDefault()
-              doImageUpload(file)
-              return true
-            }
-          }
-        }
-        return false
-      },
-    },
-    onCreate: ({ editor: e }) => {
-      editorRef.current = e
-      setEditorReady(true)
-    },
-  }, [isShared, docId, collabReady])
-
-  useEffect(() => {
-    if (editor && onInsertImageReady) {
-      onInsertImageReady((url: string) => {
-        editor.chain().focus().setImage({ src: url }).run()
-      })
-    }
-  }, [editor, onInsertImageReady])
-
-  useEffect(() => {
-    if (editor) editorRef.current = editor
-  }, [editor])
-
-  useEffect(() => {
-    if (!editorReady) return
-    const container = containerRef.current
-    if (!container) return
-
-    const attachedLinks = new Set<HTMLAnchorElement>()
-
-    const attachToLink = (a: HTMLAnchorElement) => {
-      if (attachedLinks.has(a)) return
-      attachedLinks.add(a)
-
-      a.addEventListener("mouseenter", () => {
-        if (hidePopupTimer.current) clearTimeout(hidePopupTimer.current)
-        const href = a.getAttribute("href") || ""
-        const rect = a.getBoundingClientRect()
-        const containerRect = container.getBoundingClientRect()
-        setLinkPopup({
-          url: href,
-          top: rect.bottom - containerRect.top + 6,
-          left: Math.max(0, rect.left - containerRect.left),
-        })
-      })
-
-      a.addEventListener("mouseleave", (e) => {
-        const related = e.relatedTarget as HTMLElement | null
-        if (linkPopupRef.current && related && linkPopupRef.current.contains(related)) return
-        hidePopupTimer.current = setTimeout(() => setLinkPopup(null), 600)
-      })
-
-      a.addEventListener("click", (e) => {
-        const href = a.getAttribute("href") || ""
-        if (!href) return
-        e.preventDefault()
-        e.stopPropagation()
-        if (href.startsWith("/")) {
-          router.push(href)
-        } else {
-          window.open(href, "_blank", "noopener,noreferrer")
-        }
-      })
-    }
-
-    container.querySelectorAll("a").forEach((a) => attachToLink(a as HTMLAnchorElement))
-
-    const observer = new MutationObserver(() => {
-      container.querySelectorAll("a").forEach((a) => attachToLink(a as HTMLAnchorElement))
-    })
-    observer.observe(container, { childList: true, subtree: true })
-
-    return () => {
-      observer.disconnect()
-      attachedLinks.clear()
-    }
-  }, [editorReady, router])
-
-  const handlePopupMouseEnter = () => {
-    if (hidePopupTimer.current) clearTimeout(hidePopupTimer.current)
-  }
-  const handlePopupMouseLeave = () => {
-    hidePopupTimer.current = setTimeout(() => setLinkPopup(null), 300)
-  }
-
-  useEffect(() => {
-    if (editor && onReady) {
-      onReady(() => editor.commands.focus("end"))
-    }
-  }, [editor])
-
-  useEffect(() => {
-    if (editor && onRemoteUpdate) {
-      onRemoteUpdate((html: string) => {
-        editor.commands.setContent(html, false)
-      })
-    }
-  }, [editor])
-
-  useEffect(() => {
-    if (editor) {
-      editor.setEditable(editable)
-    }
-  }, [editor, editable])
-
-  useEffect(() => {
-    if (linkModalOpen) {
-      setTimeout(() => linkInputRef.current?.focus(), 50)
-    }
-  }, [linkModalOpen])
-
-  const openLinkModal = useCallback(() => {
-    if (!editor || !editable) return
-    const previousUrl = editor.getAttributes("link").href || ""
-    setLinkUrl(previousUrl)
-    setLinkModalOpen(true)
-  }, [editor, editable])
-
-  const confirmLink = useCallback((url?: string) => {
-    if (!editor) return
-    const href = url ?? linkUrl
-    if (href === "") {
-      editor.chain().focus().extendMarkRange("link").unsetLink().run()
-    } else {
-      editor.chain().focus().extendMarkRange("link").setLink({ href }).run()
-    }
-    setLinkModalOpen(false)
-    setLinkUrl("")
-    setDocResults([])
-  }, [editor, linkUrl])
-
-  const cancelLink = useCallback(() => {
-    setLinkModalOpen(false)
-    setLinkUrl("")
-    setDocResults([])
-    editor?.commands.focus()
-  }, [editor])
-
-  const pickDoc = useCallback((doc: Doc) => {
-    confirmLink(`/docs/${doc.uuid}`)
-  }, [confirmLink])
-
-  const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (docResults.length === 0) {
-      if (e.key === "Enter") confirmLink()
-      if (e.key === "Escape") cancelLink()
-      return
-    }
-    if (e.key === "ArrowDown") {
-      e.preventDefault()
-      setSelectedIndex((i) => Math.min(i + 1, docResults.length - 1))
-    } else if (e.key === "ArrowUp") {
-      e.preventDefault()
-      setSelectedIndex((i) => Math.max(i - 1, 0))
-    } else if (e.key === "Enter") {
-      e.preventDefault()
-      pickDoc(docResults[selectedIndex])
-    } else if (e.key === "Escape") {
-      cancelLink()
-    }
-  }
-
-  // Render as soon as the editor exists, same as a private doc — the DB
-  // content is what the user sees immediately, whether or not Pusher/Yjs
-  // ever connects. Yjs (once collabReady) layers live sync on top; it never
-  // gates showing content in the first place.
-  if (!editor) return null
-
+// Extracted so it can be shared between the live editor and the
+// read-only static view shown while a shared doc is still connecting/seeding
+// (see the render branch below) — avoids a visual style jump when swapping
+// between the two.
+function EditorStyles() {
   return (
-    <div ref={containerRef} className="relative">
-      <style>{`
+    <style>{`
         .editor-content {
           font-size: var(--editor-font-size, 17px);
           line-height: 1.5;
@@ -1048,7 +591,530 @@ export default function Editor({ content, onChange, onReady, onImageUpload, onIn
         .collaboration-carets__caret:hover .collaboration-carets__label {
           opacity: 1 !important;
         }
-      `}</style>
+    `}</style>
+  )
+}
+
+export default function Editor({ content, onChange, onReady, onImageUpload, onInsertImageReady, editable = true, isShared = false, onRemoteUpdate, docId, presenceName, onAwarenessReady }: EditorProps) {
+  const router = useRouter()
+  const [bubbleVisible, setBubbleVisible] = useState(false)
+  const [bubblePos, setBubblePos] = useState({ top: 0, left: 0 })
+  const containerRef = useRef<HTMLDivElement>(null)
+
+  const [linkModalOpen, setLinkModalOpen] = useState(false)
+  const [linkUrl, setLinkUrl] = useState("")
+  const [allDocs, setAllDocs] = useState<Doc[]>([])
+  const [docResults, setDocResults] = useState<Doc[]>([])
+  const [selectedIndex, setSelectedIndex] = useState(0)
+  const linkInputRef = useRef<HTMLInputElement>(null)
+
+  const [linkPopup, setLinkPopup] = useState<{ url: string; top: number; left: number } | null>(null)
+  const linkPopupRef = useRef<HTMLDivElement>(null)
+  const hidePopupTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const [editorReady, setEditorReady] = useState(false)
+  const [uploading, setUploading] = useState(false)
+
+  const [tableToolbar, setTableToolbar] = useState<{ top: number; left: number } | null>(null)
+  const [tableAddRow, setTableAddRow] = useState<{ top: number; left: number; width: number } | null>(null)
+  const [tableFitWidth, setTableFitWidth] = useState(false)
+  const tableToolbarRef = useRef<HTMLDivElement>(null)
+
+  const onImageUploadRef = useRef(onImageUpload)
+  const editorRef = useRef<ReturnType<typeof useEditor>>(null)
+  const uploadingRef = useRef(false)
+
+  useEffect(() => {
+    onImageUploadRef.current = onImageUpload
+  }, [onImageUpload])
+
+  const doImageUpload = useCallback(async (file: File) => {
+    if (uploadingRef.current) return
+    if (!onImageUploadRef.current) return
+    uploadingRef.current = true
+    setUploading(true)
+
+    const blobUrl = URL.createObjectURL(file)
+    editorRef.current?.chain().focus().setImage({ src: blobUrl }).run()
+
+    try {
+      const realUrl = await onImageUploadRef.current(file)
+      if (realUrl && editorRef.current) {
+        const { state, dispatch } = editorRef.current.view
+        const { tr, doc } = state
+        doc.descendants((node, pos) => {
+          if (node.type.name === 'image' && node.attrs.src === blobUrl) {
+            tr.setNodeMarkup(pos, undefined, { ...node.attrs, src: realUrl })
+          }
+        })
+        dispatch(tr)
+      }
+    } finally {
+      URL.revokeObjectURL(blobUrl)
+      uploadingRef.current = false
+      setUploading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    const saved = localStorage.getItem("font-size-px")
+    const size = saved ? Number(saved) : 17
+    document.documentElement.style.setProperty("--editor-font-size", `${size}px`)
+  }, [])
+
+  useEffect(() => {
+    if (!linkModalOpen) return
+    fetch("/api/docs")
+      .then((r) => r.json())
+      .then((data) => setAllDocs(Array.isArray(data) ? data : []))
+      .catch(() => {})
+  }, [linkModalOpen])
+
+  useEffect(() => {
+    const isUrl = linkUrl.startsWith("http://") || linkUrl.startsWith("https://") || linkUrl.startsWith("www.")
+    if (isUrl || linkUrl === "") {
+      setDocResults([])
+      setSelectedIndex(0)
+      return
+    }
+    const q = linkUrl.toLowerCase()
+    setDocResults(allDocs.filter((d) => (d.title || "Untitled").toLowerCase().includes(q)).slice(0, 6))
+    setSelectedIndex(0)
+  }, [linkUrl, allDocs])
+
+  // Only use realtime collaboration for shared docs — private docs use DB
+  // content directly, completely untouched by any of this.
+  const contentRef = useRef(content)
+  contentRef.current = content
+
+  const [collab, setCollab] = useState<{ ydoc: Y.Doc; awareness: Awareness } | null>(null)
+  // True if Pusher never worked this session (connection/subscription error,
+  // or the subscription never completed at all) — the doc is still fully
+  // usable, just without live collaboration: plain content, normal autosave.
+  const [collabFailed, setCollabFailed] = useState(false)
+  // True while we're still waiting on the initial connection attempt to
+  // settle (and, if it does, on the direct Y.XmlFragment seed to run). The
+  // editor is never mounted with the Collaboration extension during this
+  // window — see the render branch below, which shows the DB content
+  // read-only instead of ever risking an editor bound to an empty fragment.
+  const [seeding, setSeeding] = useState(isShared)
+
+  useEffect(() => {
+    if (!isShared || !docId) {
+      setCollab(null)
+      setCollabFailed(false)
+      setSeeding(false)
+      onAwarenessReady?.(null)
+      return
+    }
+
+    setSeeding(true)
+    setCollabFailed(false)
+    let cancelled = false
+    let cleanedUp = false
+
+    const ydoc = new Y.Doc()
+    const awareness = new Awareness(ydoc)
+    const provider = new PusherYjsProvider({ docId, doc: ydoc, awareness })
+
+    const teardown = () => {
+      if (cleanedUp) return
+      cleanedUp = true
+      provider.destroy()
+      awareness.destroy()
+      ydoc.destroy()
+    }
+
+    provider.synced.then((outcome) => {
+      if (cancelled) {
+        teardown()
+        return
+      }
+      if (outcome === "failed") {
+        teardown()
+        setCollab(null)
+        setCollabFailed(true)
+        setSeeding(false)
+        onAwarenessReady?.(null)
+        return
+      }
+      // "ready" doesn't guarantee the fragment has content — a peer may have
+      // answered with real state (nothing to do here), or we may be alone /
+      // nobody responded in time, in which case seed if it's still empty.
+      seedYDocFromHtml(ydoc, contentRef.current, docId)
+      setCollab({ ydoc, awareness })
+      setSeeding(false)
+      onAwarenessReady?.(awareness)
+    })
+
+    return () => {
+      cancelled = true
+      teardown()
+      onAwarenessReady?.(null)
+    }
+  }, [isShared, docId])
+
+  // True once the Yjs connection has settled AND the fragment is
+  // known-populated (peer state or a completed seed) — the only case where
+  // the Collaboration extension should attach. While `seeding` is true, the
+  // component doesn't render this editor at all (see the render branch
+  // below), so its config during that window doesn't matter visually; once
+  // `collabFailed` is true, this stays false forever for this connection and
+  // the editor behaves like a private doc's (plain content, normal save).
+  const useCollab = isShared && !!collab
+
+  const editor = useEditor({
+    immediatelyRender: false,
+    extensions: [
+      ...(useCollab
+        ? [
+            Collaboration.configure({ document: collab!.ydoc }),
+            CollaborationCaret.configure({
+              provider: { awareness: collab!.awareness },
+              user: { name: presenceName || "Anonymous", color: "#888888" },
+              selectionRender: (user: { color: string; name: string }) => ({
+                style: `background-color: ${user.color}`,
+                class: "collaboration-carets__selection",
+              }),
+            }),
+          ]
+        : []),
+      ...buildContentExtensions({ undoRedo: useCollab ? false : undefined }),
+      Placeholder.configure({
+        placeholder: "Start writing, or press / for commands…",
+      }),
+      SlashCommands,
+    ],
+    // Never passed alongside Collaboration (see useCollab above) — Tiptap
+    // explicitly does not support both at once, since the Yjs sync plugin
+    // force-rerenders the view from the Y.XmlFragment on mount, which is
+    // exactly how shared docs ended up opening blank when this was violated.
+    // Content comes from the Y.Doc only once useCollab is true; otherwise
+    // (not shared, or Yjs failed for this session) it's the plain DB value,
+    // identical to a private doc.
+    content: useCollab ? undefined : content,
+    editable,
+    onUpdate: ({ editor }) => {
+      if (editable) onChange(editor.getHTML())
+    },
+    onSelectionUpdate: ({ editor }) => {
+      if (!editable) {
+        setBubbleVisible(false)
+        setTableToolbar(null)
+        return
+      }
+
+      const isInTable = editor.isActive("table") || editor.isActive("tableCell") || editor.isActive("tableHeader")
+
+      if (isInTable) {
+        setBubbleVisible(false)
+
+        let tableEl: HTMLElement | null = null
+
+        const { from } = editor.state.selection
+        const domNode = editor.view.nodeDOM(from) as HTMLElement | null
+        if (domNode) {
+          let el: HTMLElement | null = domNode
+          while (el && el.tagName !== "TABLE") {
+            el = el.parentElement
+          }
+          if (el) tableEl = el
+        }
+
+        if (!tableEl) {
+          const sel = window.getSelection()
+          if (sel && sel.rangeCount > 0) {
+            let el = sel.getRangeAt(0).commonAncestorContainer as HTMLElement | null
+            if (el && el.nodeType === Node.TEXT_NODE) el = el.parentElement
+            while (el && el.tagName !== "TABLE") {
+              el = el.parentElement
+            }
+            if (el) tableEl = el
+          }
+        }
+
+        if (tableEl) {
+          const tableRect = tableEl.getBoundingClientRect()
+          setTableToolbar({
+            top: tableRect.top - 44,
+            left: tableRect.left,
+          })
+          setTableAddRow({
+            top: tableRect.bottom + 4,
+            left: tableRect.left,
+            width: tableRect.width,
+          })
+        } else {
+          setTableToolbar(null)
+          setTableAddRow(null)
+        }
+        return
+      }
+
+      setTableToolbar(null)
+      setTableAddRow(null)
+
+      const { from, to } = editor.state.selection
+      const hasSelection = from !== to
+
+      if (!hasSelection) {
+        setBubbleVisible(false)
+        return
+      }
+
+      const domSelection = window.getSelection()
+      if (!domSelection || domSelection.rangeCount === 0) {
+        setBubbleVisible(false)
+        return
+      }
+
+      const range = domSelection.getRangeAt(0)
+      const rect = range.getBoundingClientRect()
+      const containerRect = containerRef.current?.getBoundingClientRect()
+      if (!containerRect) return
+
+      setBubblePos({
+        top: rect.top - containerRect.top - 48,
+        left: Math.max(0, rect.left - containerRect.left + rect.width / 2 - 160),
+      })
+      setBubbleVisible(true)
+    },
+    editorProps: {
+      attributes: {
+        class: `prose prose-invert max-w-none focus:outline-none min-h-[60vh] editor-content ${
+          !editable ? "cursor-default select-text" : ""
+        }`,
+      },
+      handleKeyDown: (view, event) => {
+        if (!editable) return false
+        if ((event.metaKey || event.ctrlKey) && event.key === "k") {
+          event.preventDefault()
+          openLinkModal()
+          return true
+        }
+        return false
+      },
+      handleClick: (view, pos, event) => {
+        const target = event.target as HTMLElement
+        const anchor = target.closest("a")
+        if (!anchor) return false
+        const href = anchor.getAttribute("href")
+        if (!href) return false
+        event.preventDefault()
+        if (href.startsWith("/")) {
+          router.push(href)
+        } else {
+          window.open(href, "_blank", "noopener,noreferrer")
+        }
+        return true
+      },
+      handleDrop: (view, event) => {
+        if (!editable) return false
+        const files = event.dataTransfer?.files
+        if (!files || files.length === 0) return false
+        const imageFile = Array.from(files).find((f) => f.type.startsWith("image/"))
+        if (!imageFile) return false
+        event.preventDefault()
+        doImageUpload(imageFile)
+        return true
+      },
+      handlePaste: (view, event) => {
+        if (!editable) return false
+        const items = event.clipboardData?.items
+        if (!items) return false
+        for (const item of Array.from(items)) {
+          if (item.type.startsWith("image/")) {
+            const file = item.getAsFile()
+            if (file) {
+              event.preventDefault()
+              doImageUpload(file)
+              return true
+            }
+          }
+        }
+        return false
+      },
+    },
+    onCreate: ({ editor: e }) => {
+      editorRef.current = e
+      setEditorReady(true)
+    },
+  }, [isShared, docId, useCollab, collabFailed])
+
+  useEffect(() => {
+    if (editor && onInsertImageReady) {
+      onInsertImageReady((url: string) => {
+        editor.chain().focus().setImage({ src: url }).run()
+      })
+    }
+  }, [editor, onInsertImageReady])
+
+  useEffect(() => {
+    if (editor) editorRef.current = editor
+  }, [editor])
+
+  useEffect(() => {
+    if (!editorReady) return
+    const container = containerRef.current
+    if (!container) return
+
+    const attachedLinks = new Set<HTMLAnchorElement>()
+
+    const attachToLink = (a: HTMLAnchorElement) => {
+      if (attachedLinks.has(a)) return
+      attachedLinks.add(a)
+
+      a.addEventListener("mouseenter", () => {
+        if (hidePopupTimer.current) clearTimeout(hidePopupTimer.current)
+        const href = a.getAttribute("href") || ""
+        const rect = a.getBoundingClientRect()
+        const containerRect = container.getBoundingClientRect()
+        setLinkPopup({
+          url: href,
+          top: rect.bottom - containerRect.top + 6,
+          left: Math.max(0, rect.left - containerRect.left),
+        })
+      })
+
+      a.addEventListener("mouseleave", (e) => {
+        const related = e.relatedTarget as HTMLElement | null
+        if (linkPopupRef.current && related && linkPopupRef.current.contains(related)) return
+        hidePopupTimer.current = setTimeout(() => setLinkPopup(null), 600)
+      })
+
+      a.addEventListener("click", (e) => {
+        const href = a.getAttribute("href") || ""
+        if (!href) return
+        e.preventDefault()
+        e.stopPropagation()
+        if (href.startsWith("/")) {
+          router.push(href)
+        } else {
+          window.open(href, "_blank", "noopener,noreferrer")
+        }
+      })
+    }
+
+    container.querySelectorAll("a").forEach((a) => attachToLink(a as HTMLAnchorElement))
+
+    const observer = new MutationObserver(() => {
+      container.querySelectorAll("a").forEach((a) => attachToLink(a as HTMLAnchorElement))
+    })
+    observer.observe(container, { childList: true, subtree: true })
+
+    return () => {
+      observer.disconnect()
+      attachedLinks.clear()
+    }
+  }, [editorReady, router])
+
+  const handlePopupMouseEnter = () => {
+    if (hidePopupTimer.current) clearTimeout(hidePopupTimer.current)
+  }
+  const handlePopupMouseLeave = () => {
+    hidePopupTimer.current = setTimeout(() => setLinkPopup(null), 300)
+  }
+
+  useEffect(() => {
+    if (editor && onReady) {
+      onReady(() => editor.commands.focus("end"))
+    }
+  }, [editor])
+
+  useEffect(() => {
+    if (editor && onRemoteUpdate) {
+      onRemoteUpdate((html: string) => {
+        editor.commands.setContent(html, false)
+      })
+    }
+  }, [editor])
+
+  useEffect(() => {
+    if (editor) {
+      editor.setEditable(editable)
+    }
+  }, [editor, editable])
+
+  useEffect(() => {
+    if (linkModalOpen) {
+      setTimeout(() => linkInputRef.current?.focus(), 50)
+    }
+  }, [linkModalOpen])
+
+  const openLinkModal = useCallback(() => {
+    if (!editor || !editable) return
+    const previousUrl = editor.getAttributes("link").href || ""
+    setLinkUrl(previousUrl)
+    setLinkModalOpen(true)
+  }, [editor, editable])
+
+  const confirmLink = useCallback((url?: string) => {
+    if (!editor) return
+    const href = url ?? linkUrl
+    if (href === "") {
+      editor.chain().focus().extendMarkRange("link").unsetLink().run()
+    } else {
+      editor.chain().focus().extendMarkRange("link").setLink({ href }).run()
+    }
+    setLinkModalOpen(false)
+    setLinkUrl("")
+    setDocResults([])
+  }, [editor, linkUrl])
+
+  const cancelLink = useCallback(() => {
+    setLinkModalOpen(false)
+    setLinkUrl("")
+    setDocResults([])
+    editor?.commands.focus()
+  }, [editor])
+
+  const pickDoc = useCallback((doc: Doc) => {
+    confirmLink(`/docs/${doc.uuid}`)
+  }, [confirmLink])
+
+  const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (docResults.length === 0) {
+      if (e.key === "Enter") confirmLink()
+      if (e.key === "Escape") cancelLink()
+      return
+    }
+    if (e.key === "ArrowDown") {
+      e.preventDefault()
+      setSelectedIndex((i) => Math.min(i + 1, docResults.length - 1))
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault()
+      setSelectedIndex((i) => Math.max(i - 1, 0))
+    } else if (e.key === "Enter") {
+      e.preventDefault()
+      pickDoc(docResults[selectedIndex])
+    } else if (e.key === "Escape") {
+      cancelLink()
+    }
+  }
+
+  if (!editor) return null
+
+  // While a shared doc's Yjs connection attempt (and, if needed, its direct
+  // Y.XmlFragment seed) is still in progress, show the DB content read-only
+  // rather than mounting any editor bound to the Collaboration extension —
+  // the fragment isn't known-safe to bind to yet. This is capped at a few
+  // seconds by PusherYjsProvider's own timeouts, so it's brief; it's what
+  // guarantees the user never sees a blank editor, regardless of how the
+  // connection attempt resolves.
+  if (isShared && seeding) {
+    return (
+      <div ref={containerRef} className="relative">
+        <EditorStyles />
+        <div
+          className="prose prose-invert max-w-none min-h-[60vh] editor-content cursor-default select-text"
+          dangerouslySetInnerHTML={{ __html: content }}
+        />
+      </div>
+    )
+  }
+
+  return (
+    <div ref={containerRef} className="relative">
+      <EditorStyles />
 
       {uploading && (
         <div className="absolute inset-0 z-50 flex items-center justify-center rounded-lg bg-black/40">

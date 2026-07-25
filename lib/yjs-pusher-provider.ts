@@ -4,13 +4,17 @@ import * as awarenessProtocol from "y-protocols/awareness"
 
 const DOC_UPDATE_INTERVAL_MS = 100
 const AWARENESS_UPDATE_INTERVAL_MS = 200
-const PEER_SYNC_TIMEOUT_MS = 2000
-// Absolute ceiling from construction, independent of whether the presence
-// channel subscription ever succeeds at all (bad/missing Pusher env vars,
-// auth endpoint failing, network issues, etc). Without this, a broken Pusher
-// connection would leave the editor waiting — and therefore blank — forever,
-// which looks exactly like data loss even though the DB content is untouched.
-const HARD_SYNC_CEILING_MS = 6000
+// How long to wait for an existing peer to answer a sync request before
+// giving up and treating the room as effectively empty (caller then decides
+// whether to seed from the DB). Short on purpose — the caller shows a
+// read-only view of the DB content while this is pending, so there's no
+// reason to make the user wait long for it.
+const PEER_SYNC_TIMEOUT_MS = 1500
+// Absolute ceiling from construction for the presence channel subscription
+// itself to succeed at all (bad/missing Pusher env vars, auth endpoint
+// failing, network issues, etc). If this fires, Pusher isn't working this
+// session at all — resolves 'failed', not 'ready'.
+const HARD_SYNC_CEILING_MS = 3000
 
 function bytesToBase64(bytes: Uint8Array): string {
   let binary = ""
@@ -29,25 +33,32 @@ interface PusherYjsProviderOptions {
   docId: string
   doc: Y.Doc
   awareness: awarenessProtocol.Awareness
-  /**
-   * Called at most once, and only when it's safe to do so: either we're the
-   * first client in the room (nothing to sync from), or no peer answered our
-   * sync request in time. Must populate `doc` synchronously from the saved
-   * DB content. Never called if a peer's live state was applied instead —
-   * doing both would duplicate content, since Yjs merges independent seeds
-   * as a union rather than deduping them.
-   */
-  seed: () => void
 }
+
+/** How the initial connection attempt resolved. */
+export type SyncOutcome =
+  | "ready" // Subscribed (alone, peer responded, or peer-sync timed out) — the
+  // Y.Doc may still be empty at this point; the caller checks and seeds
+  // from the DB directly (not via this class) if so.
+  | "failed" // Pusher never worked this session (connection/subscription error,
+  // or the subscription never completed within the hard ceiling) — the
+  // caller should not use Yjs/Collaboration at all for this session.
 
 /**
  * Custom Yjs transport over a Pusher presence channel.
  * There's no persistent Yjs server here — Pusher just relays messages between
- * currently-connected clients — so a newly joining client must either seed
- * itself from the DB (if it's alone) or pull the live document state from an
- * existing peer (if not), rather than always seeding independently. Two
- * clients independently seeding the same DB content into two empty Y.Docs
- * would merge as duplicated content, not a no-op.
+ * currently-connected clients — so a newly joining client must either find
+ * out it's alone (and let the caller seed from the DB) or pull the live
+ * document state from an existing peer, rather than ever seeding
+ * independently through this class. Seeding is a caller-side concern
+ * entirely: writing HTML into an empty Y.XmlFragment must happen through
+ * Yjs's own conversion utilities (prosemirrorJSONToYXmlFragment), not
+ * through a live editor — a live editor bound to both `content` and the
+ * Collaboration extension at once can't reliably seed an empty fragment,
+ * since the sync plugin force-rerenders the view from the (still empty)
+ * fragment on mount before any write-back can happen. This class only ever
+ * hands back a Y.Doc that's either already synced with a peer or is known
+ * to be safe to seed — never one it seeded itself.
  */
 export class PusherYjsProvider {
   private docId: string
@@ -69,9 +80,9 @@ export class PusherYjsProvider {
   // ids, so this maps one-to-many when reconciling member_removed.
   private pusherMemberToClientIds = new Map<string, Set<number>>()
 
-  /** Resolves once the doc is either seeded from DB or synced from a peer. */
-  public readonly synced: Promise<void>
-  private resolveSynced!: () => void
+  /** Resolves once the initial connection attempt has settled one way or the other. */
+  public readonly synced: Promise<SyncOutcome>
+  private resolveSynced!: (outcome: SyncOutcome) => void
 
   private handleDocUpdate = (update: Uint8Array, origin: unknown) => {
     if (origin === "pusher-remote" || origin === "pusher-sync") return
@@ -94,14 +105,14 @@ export class PusherYjsProvider {
     }
   }
 
-  constructor({ docId, doc, awareness, seed }: PusherYjsProviderOptions) {
+  constructor({ docId, doc, awareness }: PusherYjsProviderOptions) {
     this.docId = docId
     this.doc = doc
     this.awareness = awareness
 
     // Guards every path below (peer sync, peer timeout, subscription failure,
-    // hard ceiling) so seed()/resolveSynced() each fire exactly once no
-    // matter which one wins the race.
+    // hard ceiling) so the promise settles exactly once no matter which one
+    // wins the race.
     let settled = false
     let peerSyncTimeout: ReturnType<typeof setTimeout> | null = null
 
@@ -109,21 +120,24 @@ export class PusherYjsProvider {
       this.resolveSynced = resolve
     })
 
-    const settleWithSeed = (reason: string) => {
+    const settle = (outcome: SyncOutcome, reason: string) => {
       if (settled) return
       settled = true
       if (peerSyncTimeout) clearTimeout(peerSyncTimeout)
       clearTimeout(hardCeiling)
-      console.warn(`[PusherYjsProvider] doc=${this.docId} Falling back to DB-seeded content (${reason}).`)
-      seed()
-      this.resolveSynced()
+      if (outcome === "failed") {
+        console.error(`[PusherYjsProvider] doc=${this.docId} giving up on Yjs (${reason}) — falling back to plain content/autosave.`)
+      } else {
+        console.log(`[PusherYjsProvider] doc=${this.docId} ready (${reason})`)
+      }
+      this.resolveSynced(outcome)
     }
 
-    // Absolute last resort: if we haven't settled by any other path within
-    // this window (subscription never succeeding at all, auth endpoint down,
-    // missing/misconfigured Pusher env vars, etc), seed from DB anyway rather
-    // than leaving the editor waiting — and therefore blank — indefinitely.
-    const hardCeiling = setTimeout(() => settleWithSeed("subscription never completed in time"), HARD_SYNC_CEILING_MS)
+    // Absolute last resort: if the subscription hasn't even succeeded within
+    // this window (auth endpoint down, missing/misconfigured Pusher env
+    // vars, network issues), Pusher isn't working this session — resolve
+    // 'failed' rather than leaving the caller waiting indefinitely.
+    const hardCeiling = setTimeout(() => settle("failed", "subscription never completed in time"), HARD_SYNC_CEILING_MS)
 
     this.pusher = new PusherJS(process.env.NEXT_PUBLIC_PUSHER_KEY!, {
       cluster: process.env.NEXT_PUBLIC_PUSHER_CLUSTER!,
@@ -132,14 +146,14 @@ export class PusherYjsProvider {
 
     this.pusher.connection.bind("error", (err: unknown) => {
       console.error("[PusherYjsProvider] Pusher connection error:", err)
-      settleWithSeed("pusher connection error")
+      settle("failed", "pusher connection error")
     })
 
     this.channel = this.pusher.subscribe(`presence-doc-${docId}`) as PresenceChannel
 
     this.channel.bind("pusher:subscription_error", (err: unknown) => {
       console.error("[PusherYjsProvider] Presence channel subscription failed:", err)
-      settleWithSeed("subscription_error")
+      settle("failed", "subscription_error")
     })
 
     this.channel.bind("pusher:subscription_succeeded", (members: { count: number }) => {
@@ -147,31 +161,25 @@ export class PusherYjsProvider {
       this.subscribed = true
 
       if (isReconnect) {
-        // We already have a valid doc state from the first connection, but
-        // may have missed updates while offline (Pusher doesn't replay
-        // client events to a resubscribing client any more than to a new
-        // one). Unlike seed(), applying a peer's full state here via
-        // Y.applyUpdate is safe/idempotent regardless of what we already
-        // have — it's a real Yjs update, not a diff-write derived from HTML.
+        // We already resolved once (ready or failed) — this is a later
+        // resubscribe. Only meaningful if we're actually using Yjs; a real
+        // Yjs update here is safe/idempotent regardless of what we already
+        // have, unlike seeding.
         if (members.count > 1) this.requestResync()
         return
       }
 
-      // Client events only start working after subscription_succeeded — this
-      // is also where we decide how to get the doc into a valid starting state.
       if (members.count <= 1) {
-        settleWithSeed("alone in room")
+        settle("ready", "alone in room")
         return
       }
 
       const onSyncResponse = (payload: { update: string }) => {
         if (settled) return
-        settled = true
-        if (peerSyncTimeout) clearTimeout(peerSyncTimeout)
-        clearTimeout(hardCeiling)
         this.channel.unbind("client-yjs-sync-response", onSyncResponse)
+        if (peerSyncTimeout) clearTimeout(peerSyncTimeout)
         Y.applyUpdate(this.doc, base64ToBytes(payload.update), "pusher-sync")
-        this.resolveSynced()
+        settle("ready", "peer responded")
       }
       this.channel.bind("client-yjs-sync-response", onSyncResponse)
 
@@ -187,9 +195,10 @@ export class PusherYjsProvider {
 
       peerSyncTimeout = setTimeout(() => {
         this.channel.unbind("client-yjs-sync-response", onSyncResponse)
-        // Nobody answered in time — fall back to DB content so we don't get
-        // stuck forever rather than risk starting from a wrong base state.
-        settleWithSeed("no peer responded to sync request")
+        // Nobody answered in time — resolve 'ready' anyway; the caller
+        // checks whether the Y.Doc ended up empty and seeds from the DB if
+        // so, rather than waiting any longer for a peer.
+        settle("ready", "no peer responded to sync request")
       }, PEER_SYNC_TIMEOUT_MS)
     })
 
