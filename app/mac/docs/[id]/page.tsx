@@ -12,14 +12,13 @@ export default function MacDocPage() {
   const [doc, setDoc] = useState<Doc | null>(null)
   const [title, setTitle] = useState('')
   const [content, setContent] = useState('')
-  const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'unsaved' | 'blocked' | 'conflict'>('saved')
+  const [saveStatus, setSaveStatus] = useState<'saved' | 'saving'>('saved')
   const titleRef = useRef<HTMLTextAreaElement>(null)
   const editorFocusRef = useRef<(() => void) | null>(null)
   const insertImageRef = useRef<((url: string) => void) | null>(null)
   const remoteUpdateRef = useRef<((html: string) => void) | null>(null)
   const isTypingRef = useRef(false)
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const latestUpdatedAtRef = useRef<string | null>(null)
 
   const resizeTitle = () => {
     const el = titleRef.current
@@ -37,7 +36,6 @@ export default function MacDocPage() {
         setDoc(data)
         setTitle(data.title || '')
         setContent(data.content || '')
-        latestUpdatedAtRef.current = data.updated_at ?? null
       })
   }, [docId])
 
@@ -48,20 +46,11 @@ export default function MacDocPage() {
     const res = await fetch(`/api/docs/${docId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title: latestTitle, content: latestContent, source: 'autosave', updated_at: latestUpdatedAtRef.current }),
+      body: JSON.stringify({ title: latestTitle, content: latestContent }),
     })
-    if (res.status === 409) {
-      console.error(`[handleSave] Conflict saving doc ${docId}: changed by someone else since last load.`)
-      setSaveStatus('conflict')
-      return
-    }
     if (!res.ok) {
       console.error(`[handleSave] Save FAILED for doc ${docId}: HTTP ${res.status}`)
-      setSaveStatus('blocked')
-      return
     }
-    const result = await res.json()
-    latestUpdatedAtRef.current = result.updated_at ?? latestUpdatedAtRef.current
     setSaveStatus('saved')
   }, [docId])
 
@@ -70,7 +59,6 @@ export default function MacDocPage() {
     isTypingRef.current = true
     if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current)
     typingTimeoutRef.current = setTimeout(() => { isTypingRef.current = false }, 2000)
-    setSaveStatus('unsaved')
     const timer = setTimeout(() => { handleSave(title, content) }, 1000)
     return () => clearTimeout(timer)
   }, [title, content])
@@ -94,12 +82,8 @@ export default function MacDocPage() {
     <div className="flex flex-col min-h-screen" style={{ backgroundColor: 'var(--bg)' }}>
       {/* Minimal save indicator */}
       <div className="fixed top-3 right-4 z-10">
-        <span
-          style={{ fontSize: '11px', color: saveStatus === 'blocked' ? '#ef4444' : saveStatus === 'conflict' ? '#f59e0b' : 'var(--text-muted)' }}
-          className={saveStatus === 'blocked' || saveStatus === 'conflict' ? 'font-medium' : undefined}
-          title={saveStatus === 'conflict' ? 'This doc was changed by someone else. Reload to see the latest version.' : undefined}
-        >
-          {saveStatus === 'saving' ? 'Saving...' : saveStatus === 'unsaved' ? '●' : saveStatus === 'blocked' ? 'Not saved' : saveStatus === 'conflict' ? 'Outdated — reload' : ''}
+        <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+          {saveStatus === 'saving' ? 'Saving...' : 'Saved'}
         </span>
       </div>
 

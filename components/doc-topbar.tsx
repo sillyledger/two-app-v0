@@ -17,7 +17,7 @@ interface PresenceMember {
 interface DocTopbarProps {
   docTitle: string
   folder?: Folder | null
-  saveStatus: "saved" | "saving" | "unsaved" | "blocked" | "conflict"
+  saveStatus: "saved" | "saving"
   content?: string
   onDelete?: () => void
   docId?: string | string[]
@@ -487,22 +487,6 @@ export default function DocTopbar({
               <>
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500/80" />
                 <span className="text-[11px]" style={{ color: "var(--text-muted)" }}>Saved</span>
-              </>
-            )}
-            {saveStatus === "blocked" && (
-              <>
-                <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
-                <span className="text-[11px] font-medium text-red-400" title="The save request failed — your changes are safe here, but not yet in the database.">
-                  Not saved
-                </span>
-              </>
-            )}
-            {saveStatus === "conflict" && (
-              <>
-                <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
-                <span className="text-[11px] font-medium text-amber-400" title="This doc was changed by someone else. Reload to see the latest version.">
-                  Outdated — reload
-                </span>
               </>
             )}
           </div>

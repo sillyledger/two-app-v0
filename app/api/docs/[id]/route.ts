@@ -74,9 +74,7 @@ export async function PUT(
   try {
     const { id } = await params
     const body = await request.json()
-    const { title, content, color, is_starred, type, folder_id, priority, board_stage, updated_at } = body
-    const contentProvided = content !== undefined && content !== null
-    const expectedUpdatedAt = typeof updated_at === 'string' ? updated_at : null
+    const { title, content, color, is_starred, type, folder_id, priority, board_stage } = body
 
     const accessCheck = await sql`
       SELECT docs.uuid FROM docs
@@ -111,16 +109,6 @@ export async function PUT(
     // board_stage can be set to null (remove from board) or a string value
     const boardStageValue = board_stage !== undefined ? board_stage : undefined
 
-    // Optimistic concurrency, only when content is part of this save (the
-    // case that actually risks losing someone else's more recent edit —
-    // title/metadata-only updates were never the source of that risk and
-    // stay last-write-wins). The client sends the updated_at it last
-    // loaded/saved; the write only lands if the row hasn't changed since.
-    // Whoever saves second against a now-stale baseline gets a 409 instead
-    // of silently overwriting the winner — same atomic-WHERE-clause
-    // approach as before (check and write in one statement, no separate
-    // SELECT to race), just checking a timestamp match instead of guessing
-    // at a length heuristic.
     const result = await sql`
       UPDATE docs
       SET
@@ -136,31 +124,10 @@ export async function PUT(
         END,
         updated_at = CURRENT_TIMESTAMP
       WHERE uuid = ${id}
-        AND (
-          NOT ${contentProvided}
-          OR ${expectedUpdatedAt} IS NULL
-          OR updated_at = ${expectedUpdatedAt}::timestamptz
-        )
       RETURNING *
     `
 
     if (result.length === 0) {
-      // accessCheck already confirmed this doc exists and is accessible, so
-      // an empty result here means the concurrency check rejected the row —
-      // someone else saved after expectedUpdatedAt — not a missing doc.
-      if (contentProvided && expectedUpdatedAt !== null) {
-        const current = await sql`SELECT content, updated_at FROM docs WHERE uuid = ${id}`
-        console.warn(
-          `[optimistic-concurrency] CONFLICT doc=${id} at=${new Date().toISOString()} ` +
-          `expectedUpdatedAt=${expectedUpdatedAt} actualUpdatedAt=${current[0]?.updated_at}`
-        )
-        return NextResponse.json({
-          error: 'conflict',
-          message: 'This doc was changed by someone else. Reload to see the latest version.',
-          currentContent: current[0]?.content ?? null,
-          currentUpdatedAt: current[0]?.updated_at ?? null,
-        }, { status: 409 })
-      }
       return NextResponse.json({ error: 'Doc not found' }, { status: 404 })
     }
 
