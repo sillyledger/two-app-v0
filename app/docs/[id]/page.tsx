@@ -175,6 +175,13 @@ export default function DocPage() {
   // resubscribe every time doc metadata changes.
   const docRef = useRef<Doc | null>(null)
   docRef.current = doc
+  // Mirrors title/content every render so the manual-save keyboard listener
+  // below (registered once) can always read the latest values without
+  // resubscribing on every keystroke.
+  const latestTitleRef = useRef(title)
+  latestTitleRef.current = title
+  const latestContentRef = useRef(content)
+  latestContentRef.current = content
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -381,9 +388,35 @@ export default function DocPage() {
     }, 2000)
 
     setSaveStatus('unsaved')
+
+    // STOPGAP: a content-loss bug is still being isolated for shared docs
+    // (every connected client's `content` state changes on remote Yjs
+    // updates too, not just local typing, so this debounce was firing an
+    // independent autosave per client on every peer's edit). Until root
+    // cause is confirmed, shared-doc content only reaches Postgres via the
+    // explicit Cmd/Ctrl+S handler below — live collaborative editing via
+    // Yjs/Pusher is unaffected. Private docs keep normal autosave.
+    const isSharedDoc = !!(doc as any)?.workspace_id
+    if (isSharedDoc) return
+
     const timer = setTimeout(() => { handleSave(title, content, doc) }, 1000)
     return () => clearTimeout(timer)
   }, [title, content])
+
+  // Manual save is the only way shared-doc content reaches the DB while the
+  // autosave stopgap above is in effect (see fix/collab-autosave-bypass).
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (!((e.metaKey || e.ctrlKey) && e.key === 's')) return
+      const d = docRef.current
+      if (!d || !isLoggedIn) return
+      if (!(d as any)?.workspace_id) return // non-shared docs already autosave
+      e.preventDefault()
+      handleSave(latestTitleRef.current, latestContentRef.current, d)
+    }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [isLoggedIn, handleSave])
 
   const handlePriorityChange = async (value: Priority) => {
     setPriority(value)
