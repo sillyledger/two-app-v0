@@ -1,7 +1,8 @@
 "use client"
 import { useEffect, useState, useRef } from "react"
 import { useRouter } from "next/navigation"
-import { Plus, MoreHorizontal, Pencil, FolderInput, Trash2, LayoutTemplate, Star, Lock, Search, LayoutGrid, List } from "lucide-react"
+import { Plus, MoreHorizontal, Pencil, FolderInput, Trash2, LayoutTemplate, Star, Lock, Search, LayoutGrid, List, ChevronRight } from "lucide-react"
+import Link from "next/link"
 import Sidebar from "@/components/sidebar"
 import TemplatePickerModal from "@/components/template-picker-modal"
 import { useTabStore } from "@/hooks/use-tab-store"
@@ -19,6 +20,12 @@ interface Doc {
 interface Folder {
   id: string
   name: string
+}
+
+interface PinnedFolder {
+  id: string
+  name: string
+  doc_count: number | string
 }
 
 function formatDate(dateStr: string) {
@@ -40,6 +47,19 @@ const ACCENT_COLORS = [
 
 function getAccent(index: number) {
   return ACCENT_COLORS[index % ACCENT_COLORS.length]
+}
+
+function FolderIcon({ color, size = 54 }: { color: string; size?: number }) {
+  const rectWidth = size * (50 / 54)
+  const rectHeight = size * (36 / 54)
+  const backTop = size * (4 / 54)
+  const frontTop = size * (11 / 54)
+  return (
+    <div style={{ position: "relative", height: size, width: size, flexShrink: 0 }}>
+      <div style={{ position: "absolute", left: 0, top: backTop, width: rectWidth, height: rectHeight, borderRadius: "7px", backgroundColor: color, opacity: 0.35 }} />
+      <div style={{ position: "absolute", left: 0, top: frontTop, width: rectWidth, height: rectHeight, borderRadius: "7px", backgroundColor: color }} />
+    </div>
+  )
 }
 
 type FilterTab = "recent" | "favorites" | "deleted"
@@ -81,6 +101,14 @@ export default function HomePage() {
   const [movingDoc, setMovingDoc] = useState<Doc | null>(null)
   const [folders, setFolders] = useState<Folder[]>([])
   const [deletingDoc, setDeletingDoc] = useState<Doc | null>(null)
+  const [pinnedFolders, setPinnedFolders] = useState<PinnedFolder[]>([])
+
+  useEffect(() => {
+    fetch("/api/folders")
+      .then(res => res.json())
+      .then(data => setPinnedFolders(Array.isArray(data) ? data.filter((f: any) => f.pinned) : []))
+      .catch(() => setPinnedFolders([]))
+  }, [])
 
   useEffect(() => {
     fetch("/api/docs")
@@ -252,6 +280,47 @@ export default function HomePage() {
                 New Doc
               </button>
             </div>
+          </div>
+
+          {/* Folders preview */}
+          <div className="mb-7">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-[13px]" style={{ color: "var(--text-muted)" }}>Folders</span>
+              <Link
+                href="/folders"
+                className="flex items-center gap-1 text-[13px] transition-colors"
+                style={{ color: "var(--text-muted)" }}
+                onMouseEnter={e => (e.currentTarget.style.color = "var(--text-primary)")}
+                onMouseLeave={e => (e.currentTarget.style.color = "var(--text-muted)")}
+              >
+                All folders
+                <ChevronRight size={14} />
+              </Link>
+            </div>
+
+            {pinnedFolders.length > 0 && (
+              <div className="grid grid-cols-4 gap-4">
+                {pinnedFolders.map((folder, index) => {
+                  const docCount = Number(folder.doc_count) || 0
+                  return (
+                    <div
+                      key={folder.id}
+                      className="rounded-xl p-3 flex items-center gap-3 cursor-pointer transition-colors"
+                      style={{ backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border)" }}
+                      onClick={() => router.push(`/folders/${folder.id}?name=${encodeURIComponent(folder.name)}`)}
+                      onMouseEnter={e => { e.currentTarget.style.backgroundColor = "var(--bg-tertiary)"; e.currentTarget.style.borderColor = "var(--text-muted)" }}
+                      onMouseLeave={e => { e.currentTarget.style.backgroundColor = "var(--bg-secondary)"; e.currentTarget.style.borderColor = "var(--border)" }}
+                    >
+                      <FolderIcon color={getAccent(index)} size={40} />
+                      <div className="min-w-0">
+                        <p className="font-semibold text-[13px] truncate" style={{ color: "var(--text-primary)" }}>{folder.name}</p>
+                        <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>{docCount} {docCount === 1 ? "doc" : "docs"}</p>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
           </div>
 
           {/* Search */}
