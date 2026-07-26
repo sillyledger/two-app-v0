@@ -42,6 +42,29 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
   }
 }
 
+export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const cookieStore = await cookies()
+  const token = cookieStore.get('auth-token')
+  if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const payload = await verifyToken(token.value)
+  if (!payload) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  try {
+    const { id } = await params
+    const { pinned } = await request.json()
+    const result = await sql`
+      UPDATE folders SET pinned = ${pinned} WHERE id::text = ${id} AND user_id = ${payload.userId}
+      RETURNING *
+    `
+    if (result.length === 0) {
+      return NextResponse.json({ error: 'Folder not found' }, { status: 404 })
+    }
+    return NextResponse.json(result[0])
+  } catch (error) {
+    console.error('Folder pin error:', error)
+    return NextResponse.json({ error: 'Failed to update folder' }, { status: 500 })
+  }
+}
+
 export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const cookieStore = await cookies()

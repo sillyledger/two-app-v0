@@ -16,15 +16,27 @@ export async function GET(request: Request) {
   try {
     const folders = workspaceId
       ? await sql`
-          SELECT * FROM folders
-          WHERE user_id = ${payload.userId}
-            AND workspace_id = ${workspaceId}
-          ORDER BY created_at ASC
+          SELECT
+            folders.*,
+            COUNT(docs.id) FILTER (WHERE docs.deleted_at IS NULL) AS doc_count,
+            MAX(docs.updated_at) FILTER (WHERE docs.deleted_at IS NULL) AS last_edited
+          FROM folders
+          LEFT JOIN docs ON docs.folder_id = folders.id
+          WHERE folders.user_id = ${payload.userId}
+            AND folders.workspace_id = ${workspaceId}
+          GROUP BY folders.id
+          ORDER BY folders.created_at ASC
         `
       : await sql`
-          SELECT * FROM folders
-          WHERE user_id = ${payload.userId}
-          ORDER BY created_at ASC
+          SELECT
+            folders.*,
+            COUNT(docs.id) FILTER (WHERE docs.deleted_at IS NULL) AS doc_count,
+            MAX(docs.updated_at) FILTER (WHERE docs.deleted_at IS NULL) AS last_edited
+          FROM folders
+          LEFT JOIN docs ON docs.folder_id = folders.id
+          WHERE folders.user_id = ${payload.userId}
+          GROUP BY folders.id
+          ORDER BY folders.created_at ASC
         `
 
     return NextResponse.json(folders)
