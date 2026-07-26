@@ -15,6 +15,8 @@ interface Doc {
   type: string
   created_at: string
   is_starred: boolean
+  folder_id?: string | null
+  folder_name?: string | null
 }
 
 interface Folder {
@@ -47,6 +49,13 @@ const ACCENT_COLORS = [
 
 function getAccent(index: number) {
   return ACCENT_COLORS[index % ACCENT_COLORS.length]
+}
+
+function folderDotColor(folderId: string | null) {
+  if (!folderId) return null
+  let hash = 0
+  for (let i = 0; i < folderId.length; i++) hash = (hash * 31 + folderId.charCodeAt(i)) >>> 0
+  return ACCENT_COLORS[hash % ACCENT_COLORS.length]
 }
 
 function FolderIcon({ color, size = 54 }: { color: string; size?: number }) {
@@ -426,7 +435,17 @@ export default function HomePage() {
               </p>
             </div>
           ) : (
-            <div className={view === "grid" ? "grid grid-cols-4 gap-4" : "flex flex-col gap-2"}>
+            <>
+              {view === "list" && (
+                <div style={{ display: "flex", alignItems: "center", gap: 16, padding: "0 20px 8px", fontSize: 11, color: "var(--text-muted)" }}>
+                  <div style={{ width: 28 }} />
+                  <span style={{ flex: 1 }}>Name</span>
+                  <span style={{ width: 130 }}>Folder</span>
+                  <span>Edited</span>
+                </div>
+              )}
+
+              <div className={view === "grid" ? "grid grid-cols-4 gap-4" : "flex flex-col gap-2"}>
               {visibleDocs.map((doc, index) => {
                 const isLocked = userPlan === "free" && index >= FREE_LIMIT
                 const isMenuOpen = openMenuId === doc.uuid
@@ -528,19 +547,25 @@ export default function HomePage() {
                         }
                       }}
                     >
-                      <div style={{ width: "5px", backgroundColor: "#4a4948", flexShrink: 0 }} />
-
                       <button
                         onClick={handleOpenDoc}
                         className="text-left flex items-center gap-4 flex-1 min-w-0 px-5 py-3.5"
                         style={{ cursor: isLocked ? "default" : "pointer" }}
                       >
-                        <p className="font-semibold text-[15px] leading-snug flex-shrink-0 w-56 truncate" style={{ color: "var(--text-primary)" }}>
+                        <div style={{ width: 28, height: 28, borderRadius: 8, backgroundColor: "#3a393f", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#d4d2c8" strokeWidth="2" strokeLinecap="round">
+                            <rect x="4" y="2.5" width="16" height="19" rx="3" />
+                            <line x1="8" y1="8" x2="16" y2="8" />
+                            <line x1="8" y1="12" x2="16" y2="12" />
+                            <line x1="8" y1="16" x2="12.5" y2="16" />
+                          </svg>
+                        </div>
+                        <p className="font-semibold text-[15px] leading-snug flex-1 min-w-0 truncate" style={{ color: "var(--text-primary)" }}>
                           {doc.title || "Untitled"}
                         </p>
-                        <p className="text-[13px] leading-relaxed flex-1 min-w-0 truncate" style={{ color: "var(--text-secondary)" }}>
-                          {stripHtml(doc.content)}
-                        </p>
+                        <div style={{ width: 130, display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--text-muted)", flexShrink: 0 }}>
+                          {doc.folder_name ? (<><span style={{ width: 6, height: 6, borderRadius: "50%", backgroundColor: folderDotColor(doc.folder_id ?? null) ?? undefined, flexShrink: 0 }} />{doc.folder_name}</>) : <span>—</span>}
+                        </div>
                         <p className="text-[12px] flex-shrink-0" style={{ color: "var(--text-muted)" }}>{formatDate(doc.created_at)}</p>
                       </button>
 
@@ -610,6 +635,7 @@ export default function HomePage() {
                 )
               })}
             </div>
+            </>
           )}
         </div>
       </main>

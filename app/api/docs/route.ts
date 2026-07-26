@@ -17,9 +17,11 @@ export async function GET(request: Request) {
   try {
     if (folderId) {
       const docs = await sql`
-        SELECT docs.*, users.name AS author_name, users.email AS author_email
+        SELECT docs.*, users.name AS author_name, users.email AS author_email,
+               folders.name AS folder_name
         FROM docs
         LEFT JOIN users ON docs.user_id = users.id
+        LEFT JOIN folders ON docs.folder_id::text = folders.id::text
         WHERE docs.user_id = ${payload.userId}
           AND docs.folder_id = ${folderId}
           AND docs.deleted_at IS NULL
@@ -46,9 +48,11 @@ export async function GET(request: Request) {
 
       // Return all docs in workspace regardless of who created them
       const docs = await sql`
-        SELECT docs.*, users.name AS author_name, users.email AS author_email
+        SELECT docs.*, users.name AS author_name, users.email AS author_email,
+               folders.name AS folder_name
         FROM docs
         LEFT JOIN users ON docs.user_id = users.id
+        LEFT JOIN folders ON docs.folder_id::text = folders.id::text
         WHERE docs.workspace_id::text = ${workspaceId}
           AND docs.deleted_at IS NULL
         ORDER BY docs.created_at DESC
@@ -58,9 +62,11 @@ export async function GET(request: Request) {
 
     // Default: return only user's own docs
     const docs = await sql`
-      SELECT docs.*, users.name AS author_name, users.email AS author_email
+      SELECT docs.*, users.name AS author_name, users.email AS author_email,
+             folders.name AS folder_name
       FROM docs
       LEFT JOIN users ON docs.user_id = users.id
+      LEFT JOIN folders ON docs.folder_id::text = folders.id::text
       WHERE docs.user_id = ${payload.userId}
         AND docs.deleted_at IS NULL
       ORDER BY docs.created_at DESC
