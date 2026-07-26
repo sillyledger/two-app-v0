@@ -282,6 +282,23 @@ export default function HomePage() {
             </div>
           </div>
 
+          {/* Search */}
+          <div className="relative mb-5">
+            <Search
+              size={15}
+              className="absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none"
+              style={{ color: "var(--text-muted)" }}
+            />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              placeholder="Search docs..."
+              className="w-full rounded-lg pl-9 pr-4 py-2.5 text-sm outline-none placeholder-[var(--text-muted)]"
+              style={{ backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border)", color: "var(--text-primary)" }}
+            />
+          </div>
+
           {/* Folders preview */}
           <div className="mb-7">
             <div className="flex items-center justify-between mb-3">
@@ -299,45 +316,25 @@ export default function HomePage() {
             </div>
 
             {pinnedFolders.length > 0 && (
-              <div className="grid grid-cols-4 gap-4">
+              <div className="grid grid-cols-6 gap-4">
                 {pinnedFolders.map((folder, index) => {
                   const docCount = Number(folder.doc_count) || 0
                   return (
                     <div
                       key={folder.id}
-                      className="rounded-xl p-3 flex items-center gap-3 cursor-pointer transition-colors"
-                      style={{ backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border)" }}
+                      className="flex flex-col items-center text-center cursor-pointer group"
                       onClick={() => router.push(`/folders/${folder.id}?name=${encodeURIComponent(folder.name)}`)}
-                      onMouseEnter={e => { e.currentTarget.style.backgroundColor = "var(--bg-tertiary)"; e.currentTarget.style.borderColor = "var(--text-muted)" }}
-                      onMouseLeave={e => { e.currentTarget.style.backgroundColor = "var(--bg-secondary)"; e.currentTarget.style.borderColor = "var(--border)" }}
                     >
-                      <FolderIcon color={getAccent(index)} size={40} />
-                      <div className="min-w-0">
-                        <p className="font-semibold text-[13px] truncate" style={{ color: "var(--text-primary)" }}>{folder.name}</p>
-                        <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>{docCount} {docCount === 1 ? "doc" : "docs"}</p>
+                      <div className="mb-2 transition-transform group-hover:scale-105">
+                        <FolderIcon color={getAccent(index)} size={48} />
                       </div>
+                      <p className="font-medium text-[13px] truncate w-full" style={{ color: "var(--text-primary)" }}>{folder.name}</p>
+                      <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>{docCount} {docCount === 1 ? "doc" : "docs"}</p>
                     </div>
                   )
                 })}
               </div>
             )}
-          </div>
-
-          {/* Search */}
-          <div className="relative mb-5">
-            <Search
-              size={15}
-              className="absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none"
-              style={{ color: "var(--text-muted)" }}
-            />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              placeholder="Search docs..."
-              className="w-full rounded-lg pl-9 pr-4 py-2.5 text-sm outline-none placeholder-[var(--text-muted)]"
-              style={{ backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border)", color: "var(--text-primary)" }}
-            />
           </div>
 
           {/* Pills */}
