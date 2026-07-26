@@ -528,7 +528,7 @@ export default function HomePage() {
                         }
                       }}
                     >
-                      <div style={{ width: "5px", backgroundColor: getAccent(index), flexShrink: 0 }} />
+                      <div style={{ width: "5px", backgroundColor: "#4a4948", flexShrink: 0 }} />
 
                       <button
                         onClick={handleOpenDoc}
@@ -580,7 +580,7 @@ export default function HomePage() {
                       }
                     }}
                   >
-                    <div style={{ height: "5px", backgroundColor: getAccent(index), width: "100%", flexShrink: 0 }} />
+                    <div style={{ height: "5px", backgroundColor: "#4a4948", width: "100%", flexShrink: 0 }} />
 
                     <button
                       onClick={handleOpenDoc}
