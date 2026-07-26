@@ -207,7 +207,7 @@ export default function HomePage() {
       {sidebarReady && <Sidebar collapsed={collapsed} onToggle={() => setCollapsed(v => !v)} />}
 
       <main className="flex-1 overflow-y-auto transition-all duration-200">
-        <div className="max-w-5xl mx-auto px-10 py-10">
+        <div className="max-w-[1180px] mx-auto px-10 py-10">
 
           {/* Header */}
           <div className="flex items-center justify-between mb-6">
@@ -345,7 +345,7 @@ export default function HomePage() {
 
           {/* Grid */}
           {loading ? (
-            <div className="grid grid-cols-3 gap-5">
+            <div className="grid grid-cols-4 gap-4">
               {Array.from({ length: 9 }).map((_, i) => (
                 <div key={i} className="h-52 rounded-xl animate-pulse" style={{ backgroundColor: "var(--bg-tertiary)" }} />
               ))}
@@ -360,7 +360,7 @@ export default function HomePage() {
               </p>
             </div>
           ) : (
-            <div className={view === "grid" ? "grid grid-cols-3 gap-5" : "flex flex-col gap-2"}>
+            <div className={view === "grid" ? "grid grid-cols-4 gap-4" : "flex flex-col gap-2"}>
               {visibleDocs.map((doc, index) => {
                 const isLocked = userPlan === "free" && index >= FREE_LIMIT
                 const isMenuOpen = openMenuId === doc.uuid
