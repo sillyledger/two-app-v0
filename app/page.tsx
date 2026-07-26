@@ -311,7 +311,7 @@ export default function HomePage() {
 
           {/* Folders preview */}
           <div className="mb-7">
-            <div className="flex items-center mb-3">
+            <div className="flex items-center justify-end mb-3">
               <Link
                 href="/folders"
                 className="flex items-center gap-1 text-[13px] transition-colors"
