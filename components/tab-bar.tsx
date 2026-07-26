@@ -11,6 +11,9 @@ interface DocItem {
   folder_name?: string | null
 }
 
+const TAB_COLORS = ["#e8a33d", "#5b93e0", "#5cc98f", "#8f8fe0", "#e07fae", "#97c459"]
+function tabColor(index: number) { return TAB_COLORS[index % TAB_COLORS.length] }
+
 export default function TabBar() {
   const router = useRouter()
   const { tabs, activeId, openTab, switchTab, closeTab, closeAll } = useTabStore()
@@ -132,33 +135,33 @@ export default function TabBar() {
         .tab-close { opacity: 0; transition: opacity 0.12s; }
         .tab-btn:hover .tab-close,
         .tab-btn-active .tab-close { opacity: 1; }
-        .tab-btn { border-top: 2px solid transparent !important; border-right: 1px solid var(--border) !important; border-left: none !important; border-bottom: none !important; }
-        .tab-btn-active { border-top: 2px solid #6b5ce7 !important; background-color: var(--bg-secondary) !important; color: var(--text-primary) !important; }
+        .tab-btn { border-radius: 10px; }
+        .tab-btn-active { background-color: var(--bg-secondary) !important; color: var(--text-primary) !important; }
         .tab-btn:not(.tab-btn-active):hover { background-color: var(--bg-tertiary) !important; color: var(--text-secondary) !important; }
       `}</style>
 
       {/* ── Tab bar ── */}
       <div
-        className="tabbar-wrap fixed z-30 flex items-end overflow-x-auto"
+        className="tabbar-wrap fixed z-30 flex items-center overflow-x-auto gap-1.5"
         style={{
           top: "44px",
           left: "var(--sidebar-width, 0px)",
           right: 0,
-          height: "36px",
+          height: "40px",
           backgroundColor: "var(--bg)",
           borderBottom: "1px solid var(--border)",
           scrollbarWidth: "none",
           transition: "left 0.2s",
         }}
       >
-        {tabs.map((tab) => {
+        {tabs.map((tab, index) => {
           const isActive = tab.id === activeId
           return (
             <button
               key={tab.id}
               ref={isActive ? activeRef : undefined}
               onClick={() => handleSwitch(tab.id)}
-              className={`tab-btn${isActive ? " tab-btn-active" : ""} relative flex items-center gap-1.5 px-3 shrink-0 h-full text-[12px] font-medium transition-colors`}
+              className={`tab-btn${isActive ? " tab-btn-active" : ""} relative flex items-center gap-1.5 px-3 py-1.5 shrink-0 text-[12px] font-medium transition-colors`}
               style={{
                 maxWidth: "180px",
                 minWidth: "80px",
@@ -166,12 +169,13 @@ export default function TabBar() {
                 color: isActive ? "var(--text-primary)" : "var(--text-muted)",
               }}
             >
+              <span style={{ width: "6px", height: "6px", borderRadius: "50%", backgroundColor: tabColor(index), flexShrink: 0 }} />
               <span className="truncate flex-1 text-left">{tab.title || "Untitled"}</span>
               <span
                 className="tab-close flex items-center justify-center w-4 h-4 rounded shrink-0"
                 onClick={(e) => handleClose(e, tab.id)}
                 style={{ color: "var(--text-muted)" }}
-                onMouseEnter={e => { e.currentTarget.style.backgroundColor = "rgba(107,92,231,0.2)"; e.currentTarget.style.color = "#c4b8ff" }}
+                onMouseEnter={e => { e.currentTarget.style.backgroundColor = "var(--bg-tertiary)"; e.currentTarget.style.color = "var(--text-primary)" }}
                 onMouseLeave={e => { e.currentTarget.style.backgroundColor = "transparent"; e.currentTarget.style.color = "var(--text-muted)" }}
               >
                 <X size={10} />
@@ -184,7 +188,7 @@ export default function TabBar() {
         <button
           onClick={() => setPickerOpen(true)}
           title="Open another doc"
-          className="flex items-center justify-center w-8 h-full shrink-0 transition-colors"
+          className="flex items-center justify-center w-8 h-8 rounded-lg shrink-0 transition-colors"
           style={{ color: "var(--text-muted)", background: "none", border: "none", cursor: "pointer" }}
           onMouseEnter={e => { e.currentTarget.style.color = "var(--text-primary)"; e.currentTarget.style.backgroundColor = "var(--bg-secondary)" }}
           onMouseLeave={e => { e.currentTarget.style.color = "var(--text-muted)"; e.currentTarget.style.backgroundColor = "transparent" }}
@@ -197,13 +201,12 @@ export default function TabBar() {
           <button
             onClick={handleCloseAll}
             title="Close all tabs"
-            className="flex items-center justify-center w-8 h-full shrink-0 transition-colors"
+            className="flex items-center justify-center w-8 h-8 rounded-lg shrink-0 transition-colors"
             style={{
               color: "var(--text-muted)",
               background: "none",
               border: "none",
-              borderLeft: "1px solid var(--border)",
-              marginLeft: "4px",
+              marginLeft: "8px",
               cursor: "pointer",
             }}
             onMouseEnter={e => { e.currentTarget.style.color = "#ff6b6b"; e.currentTarget.style.backgroundColor = "var(--bg-secondary)" }}
