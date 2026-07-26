@@ -1,7 +1,7 @@
 "use client"
 import { useEffect, useState, useRef } from "react"
 import { useRouter } from "next/navigation"
-import { Plus, MoreHorizontal, Pencil, FolderInput, Trash2, LayoutTemplate, Star, Lock, Search, LayoutGrid, List, ChevronRight } from "lucide-react"
+import { Plus, MoreHorizontal, Pencil, FolderInput, Trash2, LayoutTemplate, Star, Lock, Search, LayoutGrid, List, ChevronRight, Users } from "lucide-react"
 import Link from "next/link"
 import Sidebar from "@/components/sidebar"
 import TemplatePickerModal from "@/components/template-picker-modal"
@@ -17,6 +17,7 @@ interface Doc {
   is_starred: boolean
   folder_id?: string | null
   folder_name?: string | null
+  is_workspace_shared?: boolean
 }
 
 interface Folder {
@@ -528,22 +529,19 @@ export default function HomePage() {
                   return (
                     <div
                       key={doc.uuid}
-                      className="relative group rounded-xl flex items-stretch transition-colors overflow-hidden"
+                      className="relative group flex items-stretch transition-colors overflow-hidden"
                       style={{
-                        backgroundColor: "var(--bg-secondary)",
-                        border: `1px solid ${isLocked ? "rgba(255,255,255,0.04)" : "var(--border)"}`,
+                        borderBottom: "1px solid var(--border)",
                         opacity: isLocked ? 0.5 : 1,
                       }}
                       onMouseEnter={e => {
                         if (!isLocked) {
-                          e.currentTarget.style.backgroundColor = "var(--bg-tertiary)"
-                          e.currentTarget.style.borderColor = "var(--text-muted)"
+                          e.currentTarget.style.backgroundColor = "var(--bg-secondary)"
                         }
                       }}
                       onMouseLeave={e => {
                         if (!isLocked) {
-                          e.currentTarget.style.backgroundColor = "var(--bg-secondary)"
-                          e.currentTarget.style.borderColor = "var(--border)"
+                          e.currentTarget.style.backgroundColor = "transparent"
                         }
                       }}
                     >
@@ -563,6 +561,12 @@ export default function HomePage() {
                         <p className="font-semibold text-[15px] leading-snug flex-1 min-w-0 truncate" style={{ color: "var(--text-primary)" }}>
                           {doc.title || "Untitled"}
                         </p>
+                        {doc.is_workspace_shared && (
+                          <span style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 11, color: "#e0b48c", backgroundColor: "#e0b48c1a", borderRadius: 20, padding: "2px 8px", flexShrink: 0 }}>
+                            <Users size={10} />
+                            Shared
+                          </span>
+                        )}
                         <div style={{ width: 130, display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--text-muted)", flexShrink: 0 }}>
                           {doc.folder_name ? (<><span style={{ width: 6, height: 6, borderRadius: "50%", backgroundColor: folderDotColor(doc.folder_id ?? null) ?? undefined, flexShrink: 0 }} />{doc.folder_name}</>) : <span>—</span>}
                         </div>
