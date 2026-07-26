@@ -149,10 +149,10 @@ export default function FoldersPage() {
           className="absolute top-3.5 right-3.5 transition-opacity"
           style={{
             color: folder.pinned ? "#EF9F27" : "var(--text-muted)",
-            opacity: folder.pinned ? 1 : 0,
+            opacity: folder.pinned ? 1 : 0.4,
           }}
           onMouseEnter={e => (e.currentTarget.style.opacity = "1")}
-          onMouseLeave={e => (e.currentTarget.style.opacity = folder.pinned ? "1" : "0")}
+          onMouseLeave={e => (e.currentTarget.style.opacity = folder.pinned ? "1" : "0.4")}
         >
           <Pin size={14} fill={folder.pinned ? "#EF9F27" : "none"} />
         </button>
