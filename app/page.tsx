@@ -1,7 +1,7 @@
 "use client"
 import { useEffect, useState, useRef } from "react"
 import { useRouter } from "next/navigation"
-import { Plus, MoreHorizontal, Pencil, FolderInput, Trash2, LayoutTemplate, Star, Lock } from "lucide-react"
+import { Plus, MoreHorizontal, Pencil, FolderInput, Trash2, LayoutTemplate, Star, Lock, Search, LayoutGrid, List } from "lucide-react"
 import Sidebar from "@/components/sidebar"
 import TemplatePickerModal from "@/components/template-picker-modal"
 import { useTabStore } from "@/hooks/use-tab-store"
@@ -43,6 +43,7 @@ function getAccent(index: number) {
 }
 
 type FilterTab = "recent" | "favorites" | "deleted"
+type ViewMode = "grid" | "list"
 
 export default function HomePage() {
   const router = useRouter()
@@ -51,18 +52,26 @@ export default function HomePage() {
   const [sidebarReady, setSidebarReady] = useState(false)
   const [templateModalOpen, setTemplateModalOpen] = useState(false)
   const [limitModalOpen, setLimitModalOpen] = useState(false)
+  const [view, setView] = useState<ViewMode>("grid")
 
   useEffect(() => {
     const saved = localStorage.getItem("sidebar-collapsed")
     if (saved === "true") setCollapsed(true)
+    const savedView = localStorage.getItem("docs-view")
+    if (savedView === "grid" || savedView === "list") setView(savedView)
     setSidebarReady(true)
   }, [])
 
-  const [docs, setDocs] = useState<Doc[]>([])
+  useEffect(() => {
+    localStorage.setItem("docs-view", view)
+  }, [view])
+
+  const [allDocs, setAllDocs] = useState<Doc[]>([])
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<FilterTab>("recent")
   const [hoveredPill, setHoveredPill] = useState<string | null>(null)
   const [userPlan, setUserPlan] = useState<string>("free")
+  const [searchQuery, setSearchQuery] = useState("")
 
   const [openMenuId, setOpenMenuId] = useState<string | null>(null)
   const menuRef = useRef<HTMLDivElement>(null)
@@ -77,7 +86,7 @@ export default function HomePage() {
     fetch("/api/docs")
       .then((r) => r.json())
       .then((data) => {
-        setDocs(Array.isArray(data) ? data.slice(0, 9) : [])
+        setAllDocs(Array.isArray(data) ? data : [])
         setLoading(false)
       })
       .catch(() => setLoading(false))
@@ -115,7 +124,7 @@ export default function HomePage() {
   const handleToggleFavorite = async (doc: Doc, e: React.MouseEvent) => {
     e.stopPropagation()
     const newValue = !doc.is_starred
-    setDocs(prev => prev.map(d => d.uuid === doc.uuid ? { ...d, is_starred: newValue } : d))
+    setAllDocs(prev => prev.map(d => d.uuid === doc.uuid ? { ...d, is_starred: newValue } : d))
     await fetch(`/api/docs/${doc.uuid}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
@@ -130,7 +139,7 @@ export default function HomePage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ title: renameValue.trim() }),
     })
-    setDocs(prev => prev.map(d => d.uuid === renamingDoc.uuid ? { ...d, title: renameValue.trim() } : d))
+    setAllDocs(prev => prev.map(d => d.uuid === renamingDoc.uuid ? { ...d, title: renameValue.trim() } : d))
     setRenamingDoc(null)
   }
 
@@ -141,14 +150,14 @@ export default function HomePage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ folder_id: folderId }),
     })
-    setDocs(prev => prev.filter(d => d.uuid !== movingDoc.uuid))
+    setAllDocs(prev => prev.filter(d => d.uuid !== movingDoc.uuid))
     setMovingDoc(null)
   }
 
   const handleDelete = async () => {
     if (!deletingDoc) return
     await fetch(`/api/docs/${deletingDoc.uuid}`, { method: "DELETE" })
-    setDocs(prev => prev.filter(d => d.uuid !== deletingDoc.uuid))
+    setAllDocs(prev => prev.filter(d => d.uuid !== deletingDoc.uuid))
     setDeletingDoc(null)
   }
 
@@ -166,9 +175,16 @@ export default function HomePage() {
     { key: "deleted", label: "Deleted", href: "/trash" },
   ]
 
-  const visibleDocs = activeTab === "favorites"
-    ? docs.filter(d => d.is_starred)
-    : docs
+  const trimmedQuery = searchQuery.trim().toLowerCase()
+
+  const visibleDocs = trimmedQuery
+    ? allDocs.filter(d =>
+        (d.title || "").toLowerCase().includes(trimmedQuery) ||
+        stripHtml(d.content).toLowerCase().includes(trimmedQuery)
+      )
+    : activeTab === "favorites"
+      ? allDocs.filter(d => d.is_starred)
+      : allDocs.slice(0, 9)
 
   const FREE_LIMIT = 30
 
@@ -238,33 +254,93 @@ export default function HomePage() {
             </div>
           </div>
 
+          {/* Search */}
+          <div className="relative mb-5">
+            <Search
+              size={15}
+              className="absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none"
+              style={{ color: "var(--text-muted)" }}
+            />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              placeholder="Search docs..."
+              className="w-full rounded-lg pl-9 pr-4 py-2.5 text-sm outline-none placeholder-[var(--text-muted)]"
+              style={{ backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border)", color: "var(--text-primary)" }}
+            />
+          </div>
+
           {/* Pills */}
-          <div className="flex gap-2 mb-7">
-            {pills.map(pill => {
-              const isActive = activeTab === pill.key
-              return (
-                <button
-                  key={pill.key}
-                  onClick={() => pill.href ? router.push(pill.href) : setActiveTab(pill.key)}
-                  onMouseEnter={() => setHoveredPill(pill.key)}
-                  onMouseLeave={() => setHoveredPill(null)}
-                  style={{
-                    padding: "6px 16px",
-                    borderRadius: "99px",
-                    fontSize: "13.5px",
-                    fontWeight: isActive ? 500 : 400,
-                    border: "1px solid",
-                    borderColor: isActive ? "var(--text-primary)" : "var(--border)",
-                    backgroundColor: isActive ? "var(--text-primary)" : "transparent",
-                    color: isActive ? "var(--bg)" : "var(--text-muted)",
-                    cursor: "pointer",
-                    transition: "all 0.15s",
-                  }}
-                >
-                  {pill.label}
-                </button>
-              )
-            })}
+          <div className="flex items-center justify-between mb-7">
+            <div className="flex gap-2">
+              {pills.map(pill => {
+                const isActive = activeTab === pill.key
+                return (
+                  <button
+                    key={pill.key}
+                    onClick={() => pill.href ? router.push(pill.href) : setActiveTab(pill.key)}
+                    onMouseEnter={() => setHoveredPill(pill.key)}
+                    onMouseLeave={() => setHoveredPill(null)}
+                    style={{
+                      padding: "6px 16px",
+                      borderRadius: "99px",
+                      fontSize: "13.5px",
+                      fontWeight: isActive ? 500 : 400,
+                      border: "1px solid",
+                      borderColor: isActive ? "var(--text-primary)" : "var(--border)",
+                      backgroundColor: isActive ? "var(--text-primary)" : "transparent",
+                      color: isActive ? "var(--bg)" : "var(--text-muted)",
+                      cursor: "pointer",
+                      transition: "all 0.15s",
+                    }}
+                  >
+                    {pill.label}
+                  </button>
+                )
+              })}
+            </div>
+
+            <div className="flex gap-1">
+              <button
+                onClick={() => setView("grid")}
+                title="Grid view"
+                style={{
+                  width: "32px",
+                  height: "32px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  borderRadius: "8px",
+                  border: "1px solid " + (view === "grid" ? "var(--text-primary)" : "var(--border)"),
+                  backgroundColor: view === "grid" ? "var(--bg-tertiary)" : "transparent",
+                  color: view === "grid" ? "var(--text-primary)" : "var(--text-muted)",
+                  cursor: "pointer",
+                  transition: "all 0.15s",
+                }}
+              >
+                <LayoutGrid size={15} />
+              </button>
+              <button
+                onClick={() => setView("list")}
+                title="List view"
+                style={{
+                  width: "32px",
+                  height: "32px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  borderRadius: "8px",
+                  border: "1px solid " + (view === "list" ? "var(--text-primary)" : "var(--border)"),
+                  backgroundColor: view === "list" ? "var(--bg-tertiary)" : "transparent",
+                  color: view === "list" ? "var(--text-primary)" : "var(--text-muted)",
+                  cursor: "pointer",
+                  transition: "all 0.15s",
+                }}
+              >
+                <List size={15} />
+              </button>
+            </div>
           </div>
 
           {/* Grid */}
@@ -284,9 +360,137 @@ export default function HomePage() {
               </p>
             </div>
           ) : (
-            <div className="grid grid-cols-3 gap-5">
+            <div className={view === "grid" ? "grid grid-cols-3 gap-5" : "flex flex-col gap-2"}>
               {visibleDocs.map((doc, index) => {
                 const isLocked = userPlan === "free" && index >= FREE_LIMIT
+                const isMenuOpen = openMenuId === doc.uuid
+
+                const handleOpenDoc = () => {
+                  if (isLocked) {
+                    setLimitModalOpen(true)
+                  } else {
+                    openTab(doc.uuid, doc.title || "Untitled")
+                    router.push(`/docs/${doc.uuid}`)
+                  }
+                }
+
+                const favoriteButton = isLocked ? (
+                  <Lock size={13} style={{ color: "var(--text-muted)" }} />
+                ) : (
+                  <button
+                    onClick={e => handleToggleFavorite(doc, e)}
+                    title={doc.is_starred ? "Remove from favorites" : "Add to favorites"}
+                    className="transition-opacity"
+                    style={{
+                      color: doc.is_starred ? "#EF9F27" : "var(--text-muted)",
+                      opacity: doc.is_starred ? 1 : 0,
+                    }}
+                    onMouseEnter={e => (e.currentTarget.style.opacity = "1")}
+                    onMouseLeave={e => (e.currentTarget.style.opacity = doc.is_starred ? "1" : "0")}
+                  >
+                    <Star size={13} fill={doc.is_starred ? "#EF9F27" : "none"} />
+                  </button>
+                )
+
+                const menuButton = (
+                  <button
+                    onClick={e => { e.stopPropagation(); setOpenMenuId(isMenuOpen ? null : doc.uuid) }}
+                    className="w-7 h-7 rounded flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                    style={{ color: "var(--text-muted)" }}
+                    onMouseEnter={e => { e.currentTarget.style.backgroundColor = "var(--bg-tertiary)"; e.currentTarget.style.color = "var(--text-primary)" }}
+                    onMouseLeave={e => { e.currentTarget.style.backgroundColor = "transparent"; e.currentTarget.style.color = "var(--text-muted)" }}
+                  >
+                    <MoreHorizontal size={15} />
+                  </button>
+                )
+
+                const menuDropdown = isMenuOpen && (
+                  <div
+                    className="absolute right-0 top-8 w-44 rounded-xl shadow-xl z-50 overflow-hidden py-1"
+                    style={{ backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border)" }}
+                  >
+                    <button
+                      onClick={e => { e.stopPropagation(); setRenamingDoc(doc); setRenameValue(doc.title || ""); setOpenMenuId(null) }}
+                      className="w-full flex items-center gap-2.5 px-3 py-2 text-sm transition-colors"
+                      style={{ color: "var(--text-secondary)" }}
+                      onMouseEnter={e => (e.currentTarget.style.backgroundColor = "var(--bg-tertiary)")}
+                      onMouseLeave={e => (e.currentTarget.style.backgroundColor = "transparent")}
+                    >
+                      <Pencil size={13} style={{ color: "var(--text-muted)" }} /> Rename
+                    </button>
+                    <button
+                      onClick={e => { e.stopPropagation(); openMoveModal(doc) }}
+                      className="w-full flex items-center gap-2.5 px-3 py-2 text-sm transition-colors"
+                      style={{ color: "var(--text-secondary)" }}
+                      onMouseEnter={e => (e.currentTarget.style.backgroundColor = "var(--bg-tertiary)")}
+                      onMouseLeave={e => (e.currentTarget.style.backgroundColor = "transparent")}
+                    >
+                      <FolderInput size={13} style={{ color: "var(--text-muted)" }} /> Move
+                    </button>
+                    <div className="my-1 border-t" style={{ borderColor: "var(--border)" }} />
+                    <button
+                      onClick={e => { e.stopPropagation(); setDeletingDoc(doc); setOpenMenuId(null) }}
+                      className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-red-400 hover:text-red-300 transition-colors"
+                      onMouseEnter={e => (e.currentTarget.style.backgroundColor = "var(--bg-tertiary)")}
+                      onMouseLeave={e => (e.currentTarget.style.backgroundColor = "transparent")}
+                    >
+                      <Trash2 size={13} /> Delete
+                    </button>
+                  </div>
+                )
+
+                if (view === "list") {
+                  return (
+                    <div
+                      key={doc.uuid}
+                      className="relative group rounded-xl flex items-stretch transition-colors overflow-hidden"
+                      style={{
+                        backgroundColor: "var(--bg-secondary)",
+                        border: `1px solid ${isLocked ? "rgba(255,255,255,0.04)" : "var(--border)"}`,
+                        opacity: isLocked ? 0.5 : 1,
+                      }}
+                      onMouseEnter={e => {
+                        if (!isLocked) {
+                          e.currentTarget.style.backgroundColor = "var(--bg-tertiary)"
+                          e.currentTarget.style.borderColor = "var(--text-muted)"
+                        }
+                      }}
+                      onMouseLeave={e => {
+                        if (!isLocked) {
+                          e.currentTarget.style.backgroundColor = "var(--bg-secondary)"
+                          e.currentTarget.style.borderColor = "var(--border)"
+                        }
+                      }}
+                    >
+                      <div style={{ width: "5px", backgroundColor: getAccent(index), flexShrink: 0 }} />
+
+                      <button
+                        onClick={handleOpenDoc}
+                        className="text-left flex items-center gap-4 flex-1 min-w-0 px-5 py-3.5"
+                        style={{ cursor: isLocked ? "default" : "pointer" }}
+                      >
+                        <p className="font-semibold text-[15px] leading-snug flex-shrink-0 w-56 truncate" style={{ color: "var(--text-primary)" }}>
+                          {doc.title || "Untitled"}
+                        </p>
+                        <p className="text-[13px] leading-relaxed flex-1 min-w-0 truncate" style={{ color: "var(--text-secondary)" }}>
+                          {stripHtml(doc.content)}
+                        </p>
+                        <p className="text-[12px] flex-shrink-0" style={{ color: "var(--text-muted)" }}>{formatDate(doc.created_at)}</p>
+                      </button>
+
+                      <div className="flex items-center gap-1 pr-4 flex-shrink-0">
+                        {favoriteButton}
+                        {!isLocked && (
+                          <div className="relative" ref={isMenuOpen ? menuRef : null}>
+                            {menuButton}
+                            {menuDropdown}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )
+                }
+
                 return (
                   <div
                     key={doc.uuid}
@@ -313,14 +517,7 @@ export default function HomePage() {
                     <div style={{ height: "5px", backgroundColor: getAccent(index), width: "100%", flexShrink: 0 }} />
 
                     <button
-                      onClick={() => {
-                        if (isLocked) {
-                          setLimitModalOpen(true)
-                        } else {
-                          openTab(doc.uuid, doc.title || "Untitled")
-                          router.push(`/docs/${doc.uuid}`)
-                        }
-                      }}
+                      onClick={handleOpenDoc}
                       className="text-left px-5 pt-4 pb-3 flex flex-col flex-1 w-full"
                       style={{ cursor: isLocked ? "default" : "pointer" }}
                     >
@@ -334,71 +531,13 @@ export default function HomePage() {
 
                     <div className="flex items-center justify-between px-5 py-3" style={{ borderTop: "1px solid var(--border)" }}>
                       <p className="text-[12px]" style={{ color: "var(--text-muted)" }}>{formatDate(doc.created_at)}</p>
-                      {isLocked ? (
-                        <Lock size={13} style={{ color: "var(--text-muted)" }} />
-                      ) : (
-                        <button
-                          onClick={e => handleToggleFavorite(doc, e)}
-                          title={doc.is_starred ? "Remove from favorites" : "Add to favorites"}
-                          className="transition-opacity"
-                          style={{
-                            color: doc.is_starred ? "#EF9F27" : "var(--text-muted)",
-                            opacity: doc.is_starred ? 1 : 0,
-                          }}
-                          onMouseEnter={e => (e.currentTarget.style.opacity = "1")}
-                          onMouseLeave={e => (e.currentTarget.style.opacity = doc.is_starred ? "1" : "0")}
-                        >
-                          <Star size={13} fill={doc.is_starred ? "#EF9F27" : "none"} />
-                        </button>
-                      )}
+                      {favoriteButton}
                     </div>
 
                     {!isLocked && (
-                      <div className="absolute top-7 right-4" ref={openMenuId === doc.uuid ? menuRef : null}>
-                        <button
-                          onClick={e => { e.stopPropagation(); setOpenMenuId(openMenuId === doc.uuid ? null : doc.uuid) }}
-                          className="w-7 h-7 rounded flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                          style={{ color: "var(--text-muted)" }}
-                          onMouseEnter={e => { e.currentTarget.style.backgroundColor = "var(--bg-tertiary)"; e.currentTarget.style.color = "var(--text-primary)" }}
-                          onMouseLeave={e => { e.currentTarget.style.backgroundColor = "transparent"; e.currentTarget.style.color = "var(--text-muted)" }}
-                        >
-                          <MoreHorizontal size={15} />
-                        </button>
-
-                        {openMenuId === doc.uuid && (
-                          <div
-                            className="absolute right-0 top-8 w-44 rounded-xl shadow-xl z-50 overflow-hidden py-1"
-                            style={{ backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border)" }}
-                          >
-                            <button
-                              onClick={e => { e.stopPropagation(); setRenamingDoc(doc); setRenameValue(doc.title || ""); setOpenMenuId(null) }}
-                              className="w-full flex items-center gap-2.5 px-3 py-2 text-sm transition-colors"
-                              style={{ color: "var(--text-secondary)" }}
-                              onMouseEnter={e => (e.currentTarget.style.backgroundColor = "var(--bg-tertiary)")}
-                              onMouseLeave={e => (e.currentTarget.style.backgroundColor = "transparent")}
-                            >
-                              <Pencil size={13} style={{ color: "var(--text-muted)" }} /> Rename
-                            </button>
-                            <button
-                              onClick={e => { e.stopPropagation(); openMoveModal(doc) }}
-                              className="w-full flex items-center gap-2.5 px-3 py-2 text-sm transition-colors"
-                              style={{ color: "var(--text-secondary)" }}
-                              onMouseEnter={e => (e.currentTarget.style.backgroundColor = "var(--bg-tertiary)")}
-                              onMouseLeave={e => (e.currentTarget.style.backgroundColor = "transparent")}
-                            >
-                              <FolderInput size={13} style={{ color: "var(--text-muted)" }} /> Move
-                            </button>
-                            <div className="my-1 border-t" style={{ borderColor: "var(--border)" }} />
-                            <button
-                              onClick={e => { e.stopPropagation(); setDeletingDoc(doc); setOpenMenuId(null) }}
-                              className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-red-400 hover:text-red-300 transition-colors"
-                              onMouseEnter={e => (e.currentTarget.style.backgroundColor = "var(--bg-tertiary)")}
-                              onMouseLeave={e => (e.currentTarget.style.backgroundColor = "transparent")}
-                            >
-                              <Trash2 size={13} /> Delete
-                            </button>
-                          </div>
-                        )}
+                      <div className="absolute top-7 right-4" ref={isMenuOpen ? menuRef : null}>
+                        {menuButton}
+                        {menuDropdown}
                       </div>
                     )}
                   </div>
