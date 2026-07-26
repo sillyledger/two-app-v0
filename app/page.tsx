@@ -311,8 +311,7 @@ export default function HomePage() {
 
           {/* Folders preview */}
           <div className="mb-7">
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-[13px]" style={{ color: "var(--text-muted)" }}>Folders</span>
+            <div className="flex items-center mb-3">
               <Link
                 href="/folders"
                 className="flex items-center gap-1 text-[13px] transition-colors"
