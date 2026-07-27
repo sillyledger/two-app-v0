@@ -269,9 +269,21 @@ onMouseLeave={e => (e.currentTarget.style.background = '#ffffff')}
             </div>
           )}
 
-          {showOverdue && overdueTasks.length > 0 && <TaskGroup label="Overdue" labelColor="#e05252" tasks={overdueTasks} onToggle={toggle} onDelete={remove} showDate />}
-          {showToday && todayTasks.length > 0 && <TaskGroup label="Today" tasks={todayTasks} onToggle={toggle} onDelete={remove} />}
-          {showUpcoming && upcomingTasks.length > 0 && <TaskGroup label="Upcoming" tasks={upcomingTasks} onToggle={toggle} onDelete={remove} showDate />}
+          {!loading && tasks.length > 0 && (
+            activeTab === 'all' ? (
+              <div className="grid mb-8" style={{ gridTemplateColumns: 'repeat(3, 1fr)', gap: 20 }}>
+                <TaskColumn label="Overdue" dotColor="#e05252" tasks={overdueTasks} onToggle={toggle} onDelete={remove} showDate />
+                <TaskColumn label="Today" dotColor="var(--text-primary)" tasks={todayTasks} onToggle={toggle} onDelete={remove} />
+                <TaskColumn label="Upcoming" dotColor="var(--text-muted)" tasks={upcomingTasks} onToggle={toggle} onDelete={remove} showDate />
+              </div>
+            ) : (
+              <>
+                {showOverdue && overdueTasks.length > 0 && <TaskGroup label="Overdue" labelColor="#e05252" tasks={overdueTasks} onToggle={toggle} onDelete={remove} showDate />}
+                {showToday && todayTasks.length > 0 && <TaskGroup label="Today" tasks={todayTasks} onToggle={toggle} onDelete={remove} />}
+                {showUpcoming && upcomingTasks.length > 0 && <TaskGroup label="Upcoming" tasks={upcomingTasks} onToggle={toggle} onDelete={remove} showDate />}
+              </>
+            )
+          )}
           {showNoDate && nodateTasks.length > 0 && <TaskGroup label="No date" tasks={nodateTasks} onToggle={toggle} onDelete={remove} />}
           {showCompleted && completedTasks.length > 0 && <TaskGroup label="Completed" tasks={completedTasks} onToggle={toggle} onDelete={remove} muted />}
 
@@ -379,57 +391,90 @@ onMouseLeave={e => (e.currentTarget.style.background = '#ffffff')}
   )
 }
 
+function TaskCard({
+  task, onToggle, onDelete, showDate = false, muted = false,
+}: {
+  task: Task; onToggle: (t: Task) => void; onDelete: (id: number) => void; showDate?: boolean; muted?: boolean
+}) {
+  return (
+    <div
+      className="flex items-start gap-3 rounded-xl transition-colors"
+      style={{ padding: 14, opacity: muted ? 0.5 : 1, backgroundColor: 'var(--bg-secondary)' }}
+      onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)')}
+      onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'var(--bg-secondary)')}
+    >
+      <button onClick={() => onToggle(task)} className="mt-[2px] shrink-0" style={{ color: 'var(--text-muted)' }} onMouseEnter={e => (e.currentTarget.style.color = 'var(--text-primary)')} onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-muted)')}>
+        {task.completed ? <CheckCircle2 size={15} /> : <Circle size={15} />}
+      </button>
+      <div className="flex-1 min-w-0">
+        <span style={{ display: 'block', fontSize: '13px', lineHeight: '1.4', color: 'var(--text-primary)', textDecoration: task.completed ? 'line-through' : 'none', opacity: task.completed ? 0.5 : 1 }}>
+          {task.title}
+        </span>
+        <div className="flex items-center gap-2 mt-1 flex-wrap">
+          <Link href={`/docs/${task.doc_id}`} className="flex items-center gap-1 text-[11px] px-1.5 py-0.5 rounded-md" style={{ backgroundColor: 'var(--bg-tertiary)', color: 'var(--text-secondary)' }}>
+            <FileText size={10} /><span>{task.doc_title || 'Untitled doc'}</span>
+          </Link>
+          {showDate && task.due_date && (
+            <span className="flex items-center gap-1 text-[11px]" style={{ color: 'var(--text-muted)' }}>
+              <CalendarDays size={10} />{formatDueDate(task.due_date)}
+            </span>
+          )}
+          {task.priority && (
+            <span className="flex items-center gap-1 text-[11px]" style={{ color: 'var(--text-muted)' }}>
+              <span style={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: PRIORITY_COLORS[task.priority] ?? 'var(--text-muted)', flexShrink: 0 }} />
+              <span style={{ textTransform: 'capitalize' }}>{task.priority}</span>
+            </span>
+          )}
+        </div>
+      </div>
+      <button onClick={() => onDelete(task.id)} className="shrink-0 mt-[2px]" style={{ color: 'transparent' }} onMouseEnter={e => (e.currentTarget.style.color = '#e05252')} onMouseLeave={e => (e.currentTarget.style.color = 'transparent')}>
+        <Trash2 size={13} />
+      </button>
+    </div>
+  )
+}
+
 function TaskGroup({
   label, labelColor, tasks, onToggle, onDelete, showDate = false, muted = false,
 }: {
   label: string; labelColor?: string; tasks: Task[]; onToggle: (t: Task) => void; onDelete: (id: number) => void; showDate?: boolean; muted?: boolean
 }) {
-  const PRIORITY_COLORS: Record<string, string> = { high: '#e05252', medium: '#e09a52', low: '#52a0e0' }
-
   return (
     <div className="mb-8">
       <div className="flex items-center gap-2 mb-3">
         <span className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: labelColor ?? 'var(--text-muted)' }}>{label}</span>
         <span className="text-[11px] font-medium px-1.5 py-0.5 rounded-md" style={{ backgroundColor: 'var(--bg-tertiary)', color: 'var(--text-secondary)' }}>{tasks.length}</span>
       </div>
-      <div className="rounded-xl overflow-hidden" style={{ border: '1px solid var(--border)', backgroundColor: 'var(--bg-secondary)' }}>
-        {tasks.map((task, i) => (
-          <div
-            key={task.id}
-            className="flex items-start gap-3 px-4 py-3"
-            style={{ borderTop: i > 0 ? '1px solid var(--border)' : 'none', opacity: muted ? 0.5 : 1, backgroundColor: 'var(--bg-secondary)' }}
-            onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)')}
-            onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'var(--bg-secondary)')}
-          >
-            <button onClick={() => onToggle(task)} className="mt-[2px] shrink-0" style={{ color: 'var(--text-muted)' }} onMouseEnter={e => (e.currentTarget.style.color = 'var(--text-primary)')} onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-muted)')}>
-              {task.completed ? <CheckCircle2 size={15} /> : <Circle size={15} />}
-            </button>
-            <div className="flex-1 min-w-0">
-              <span style={{ display: 'block', fontSize: '13px', lineHeight: '1.4', color: 'var(--text-primary)', textDecoration: task.completed ? 'line-through' : 'none', opacity: task.completed ? 0.5 : 1 }}>
-                {task.title}
-              </span>
-              <div className="flex items-center gap-2 mt-1 flex-wrap">
-                <Link href={`/docs/${task.doc_id}`} className="flex items-center gap-1 text-[11px] px-1.5 py-0.5 rounded-md" style={{ backgroundColor: 'var(--bg-tertiary)', color: 'var(--text-secondary)' }}>
-                  <FileText size={10} /><span>{task.doc_title || 'Untitled doc'}</span>
-                </Link>
-                {showDate && task.due_date && (
-                  <span className="flex items-center gap-1 text-[11px]" style={{ color: 'var(--text-muted)' }}>
-                    <CalendarDays size={10} />{formatDueDate(task.due_date)}
-                  </span>
-                )}
-                {task.priority && (
-                  <span style={{ fontSize: 10, padding: '1px 6px', borderRadius: 4, background: 'rgba(255,255,255,0.05)', color: PRIORITY_COLORS[task.priority] ?? 'var(--text-muted)', textTransform: 'capitalize', fontWeight: 500 }}>
-                    {task.priority}
-                  </span>
-                )}
-              </div>
-            </div>
-            <button onClick={() => onDelete(task.id)} className="shrink-0 mt-[2px]" style={{ color: 'transparent' }} onMouseEnter={e => (e.currentTarget.style.color = '#e05252')} onMouseLeave={e => (e.currentTarget.style.color = 'transparent')}>
-              <Trash2 size={13} />
-            </button>
-          </div>
+      <div className="flex flex-col" style={{ gap: 10 }}>
+        {tasks.map(task => (
+          <TaskCard key={task.id} task={task} onToggle={onToggle} onDelete={onDelete} showDate={showDate} muted={muted} />
         ))}
       </div>
+    </div>
+  )
+}
+
+function TaskColumn({
+  label, dotColor, tasks, onToggle, onDelete, showDate = false,
+}: {
+  label: string; dotColor: string; tasks: Task[]; onToggle: (t: Task) => void; onDelete: (id: number) => void; showDate?: boolean
+}) {
+  return (
+    <div>
+      <div className="flex items-center gap-2 mb-3">
+        <span style={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: dotColor, flexShrink: 0 }} />
+        <span className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: 'var(--text-secondary)' }}>{label}</span>
+        <span className="text-[11px] font-medium px-1.5 py-0.5 rounded-md" style={{ backgroundColor: 'var(--bg-tertiary)', color: 'var(--text-secondary)' }}>{tasks.length}</span>
+      </div>
+      {tasks.length === 0 ? (
+        <p className="text-[13px]" style={{ color: 'var(--text-muted)' }}>No tasks</p>
+      ) : (
+        <div className="flex flex-col" style={{ gap: 10 }}>
+          {tasks.map(task => (
+            <TaskCard key={task.id} task={task} onToggle={onToggle} onDelete={onDelete} showDate={showDate} />
+          ))}
+        </div>
+      )}
     </div>
   )
 }
