@@ -265,7 +265,7 @@ export default function NotesPage() {
                     onClick={() => router.push(`/notes/${note.uuid}`)}
                     style={{
                       gridColumn: 'span ' + span.col, gridRow: 'span ' + span.row,
-                      background: 'var(--bg-secondary)', border: '1px solid var(--border)', borderRadius: 14,
+                      background: '#1c1c1e', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 14,
                       padding: 16, display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
                       cursor: 'pointer', minWidth: 0,
                     }}
@@ -277,19 +277,19 @@ export default function NotesPage() {
                           <span style={{ fontSize: 11, color: note.category_color || 'var(--text-muted)' }}>{note.category_name}</span>
                         </div>
                       )}
-                      <div style={{ fontSize: span.col > 1 ? 16 : 14, fontWeight: 600, color: 'var(--text-primary)', marginBottom: wide ? 8 : 0, lineHeight: 1.3 }}>
+                      <div style={{ fontSize: span.col > 1 ? 16 : 14, fontWeight: 600, color: '#eeede7', marginBottom: wide ? 8 : 0, lineHeight: 1.3 }}>
                         {note.title || 'Untitled'}
                       </div>
                       {wide && (
                         <div style={{
-                          fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.55,
+                          fontSize: 13, color: '#888890', lineHeight: 1.55,
                           display: '-webkit-box', WebkitLineClamp: (span.row > 1 && span.col > 1) ? 3 : 2, WebkitBoxOrient: 'vertical', overflow: 'hidden',
                         }}>
                           {excerpt(note.content)}
                         </div>
                       )}
                     </div>
-                    <div style={{ fontSize: 11.5, color: 'var(--text-muted)' }}>{timeAgo(note.updated_at)}</div>
+                    <div style={{ fontSize: 11.5, color: '#555560' }}>{timeAgo(note.updated_at)}</div>
                   </div>
                 )
               })}
@@ -297,9 +297,9 @@ export default function NotesPage() {
                 onClick={handleNewNote}
                 disabled={creating}
                 style={{
-                  background: 'transparent', border: '1px dashed var(--border)', borderRadius: 14,
+                  background: 'transparent', border: '1px dashed rgba(255,255,255,0.14)', borderRadius: 14,
                   display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: creating ? 'default' : 'pointer',
-                  color: 'var(--text-muted)', fontFamily: FONT,
+                  color: '#555560', fontFamily: FONT,
                 }}
               >
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
