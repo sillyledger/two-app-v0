@@ -99,7 +99,7 @@ export async function PUT(
     if (folder_id !== undefined) {
       const result = await sql`
         UPDATE docs
-        SET folder_id = ${folder_id}, updated_at = CURRENT_TIMESTAMP
+        SET folder_id = ${folder_id}, last_edited_by = ${payload.userId}, updated_at = CURRENT_TIMESTAMP
         WHERE uuid = ${id}
         RETURNING *
       `
@@ -122,6 +122,7 @@ export async function PUT(
           WHEN ${boardStageValue !== undefined} THEN ${boardStageValue ?? null}
           ELSE board_stage
         END,
+        last_edited_by = ${payload.userId},
         updated_at = CURRENT_TIMESTAMP
       WHERE uuid = ${id}
       RETURNING *
