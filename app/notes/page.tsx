@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
+import { LayoutGrid, List } from 'lucide-react'
 
 interface NoteCategory {
   id: number
@@ -64,6 +65,7 @@ export default function NotesPage() {
   const [loading, setLoading] = useState(true)
   const [activeCategory, setActiveCategory] = useState<number | 'all'>('all')
   const [creating, setCreating] = useState(false)
+  const [view, setView] = useState<'grid' | 'list'>('grid')
 
   const [showCategoryModal, setShowCategoryModal] = useState(false)
   const [newCategoryName, setNewCategoryName] = useState('')
@@ -182,63 +184,96 @@ export default function NotesPage() {
               <button
                 onClick={handleNewNote}
                 disabled={creating}
-                style={{ background: '#6b5ce7', color: '#fff', border: 'none', borderRadius: 8, padding: '9px 16px', fontSize: 13, fontWeight: 600, cursor: creating ? 'default' : 'pointer', opacity: creating ? 0.6 : 1, fontFamily: FONT }}
+                style={{ backgroundColor: 'var(--text-primary)', color: 'var(--bg)', border: 'none', borderRadius: 8, padding: '9px 16px', fontSize: 13, fontWeight: 600, cursor: creating ? 'default' : 'pointer', opacity: creating ? 0.6 : 1, fontFamily: FONT }}
               >
                 + New note
               </button>
             </div>
           </div>
 
-          <div style={{ display: 'flex', gap: 7, flexWrap: 'wrap', marginBottom: 24 }}>
-            <button
-              onClick={() => setActiveCategory('all')}
-              style={{
-                background: activeCategory === 'all' ? 'var(--bg-tertiary)' : 'var(--bg-secondary)',
-                color: 'var(--text-primary)', border: '1px solid var(--border)',
-                fontSize: 12, padding: '6px 13px', borderRadius: 999, cursor: 'pointer', fontFamily: FONT,
-              }}
-            >
-              All
-            </button>
-            {categories.map(cat => (
-              <div key={cat.id} style={{ position: 'relative' }} ref={openCategoryMenuId === cat.id ? categoryMenuRef : undefined}>
-                <button
-                  onClick={() => setActiveCategory(cat.id)}
-                  onContextMenu={e => { e.preventDefault(); setOpenCategoryMenuId(cat.id) }}
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: 6,
-                    background: activeCategory === cat.id ? 'var(--bg-tertiary)' : 'var(--bg-secondary)',
-                    color: 'var(--text-primary)', border: '1px solid var(--border)',
-                    fontSize: 12, padding: '6px 13px', borderRadius: 999, cursor: 'pointer', fontFamily: FONT,
-                  }}
-                >
-                  <span style={{ width: 7, height: 7, borderRadius: '50%', background: cat.color, flexShrink: 0 }} />
-                  {cat.name}
-                  <span
-                    onClick={e => { e.stopPropagation(); setOpenCategoryMenuId(openCategoryMenuId === cat.id ? null : cat.id) }}
-                    style={{ fontSize: 11, color: 'var(--text-muted)', marginLeft: 2, lineHeight: 1 }}
+          <div style={{ display: 'flex', justifyContent: 'space-between', gap: 7, flexWrap: 'wrap', marginBottom: 24 }}>
+            <div style={{ display: 'flex', gap: 7, flexWrap: 'wrap' }}>
+              <button
+                onClick={() => setActiveCategory('all')}
+                style={{
+                  background: activeCategory === 'all' ? 'var(--bg-tertiary)' : 'var(--bg-secondary)',
+                  color: 'var(--text-primary)', border: '1px solid var(--border)',
+                  fontSize: 12, padding: '6px 13px', borderRadius: 999, cursor: 'pointer', fontFamily: FONT,
+                }}
+              >
+                All
+              </button>
+              {categories.map(cat => (
+                <div key={cat.id} style={{ position: 'relative' }} ref={openCategoryMenuId === cat.id ? categoryMenuRef : undefined}>
+                  <button
+                    onClick={() => setActiveCategory(cat.id)}
+                    onContextMenu={e => { e.preventDefault(); setOpenCategoryMenuId(cat.id) }}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 6,
+                      background: activeCategory === cat.id ? 'var(--bg-tertiary)' : 'var(--bg-secondary)',
+                      color: 'var(--text-primary)', border: '1px solid var(--border)',
+                      fontSize: 12, padding: '6px 13px', borderRadius: 999, cursor: 'pointer', fontFamily: FONT,
+                    }}
                   >
-                    ⋯
-                  </span>
-                </button>
-                {openCategoryMenuId === cat.id && (
-                  <div style={{ position: 'absolute', top: 'calc(100% + 4px)', left: 0, zIndex: 20, background: 'var(--bg-secondary)', border: '1px solid var(--border)', borderRadius: 9, padding: 4, minWidth: 140, boxShadow: '0 8px 24px rgba(0,0,0,0.3)' }}>
-                    <button
-                      onClick={() => handleDeleteCategory(cat.id)}
-                      style={{ width: '100%', textAlign: 'left', background: 'transparent', border: 'none', borderRadius: 6, padding: '7px 9px', fontSize: 12.5, color: '#E24B4A', cursor: 'pointer', fontFamily: FONT }}
+                    <span style={{ width: 7, height: 7, borderRadius: '50%', background: cat.color, flexShrink: 0 }} />
+                    {cat.name}
+                    <span
+                      onClick={e => { e.stopPropagation(); setOpenCategoryMenuId(openCategoryMenuId === cat.id ? null : cat.id) }}
+                      style={{ fontSize: 11, color: 'var(--text-muted)', marginLeft: 2, lineHeight: 1 }}
                     >
-                      Delete category
-                    </button>
-                  </div>
-                )}
-              </div>
-            ))}
-            <button
-              onClick={openCategoryModal}
-              style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'transparent', border: '1px dashed var(--border)', color: 'var(--text-muted)', fontSize: 12, padding: '6px 13px', borderRadius: 999, cursor: 'pointer', fontFamily: FONT }}
-            >
-              + Add category
-            </button>
+                      ⋯
+                    </span>
+                  </button>
+                  {openCategoryMenuId === cat.id && (
+                    <div style={{ position: 'absolute', top: 'calc(100% + 4px)', left: 0, zIndex: 20, background: 'var(--bg-secondary)', border: '1px solid var(--border)', borderRadius: 9, padding: 4, minWidth: 140, boxShadow: '0 8px 24px rgba(0,0,0,0.3)' }}>
+                      <button
+                        onClick={() => handleDeleteCategory(cat.id)}
+                        style={{ width: '100%', textAlign: 'left', background: 'transparent', border: 'none', borderRadius: 6, padding: '7px 9px', fontSize: 12.5, color: '#E24B4A', cursor: 'pointer', fontFamily: FONT }}
+                      >
+                        Delete category
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ))}
+              <button
+                onClick={openCategoryModal}
+                style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'transparent', border: '1px dashed var(--border)', color: 'var(--text-muted)', fontSize: 12, padding: '6px 13px', borderRadius: 999, cursor: 'pointer', fontFamily: FONT }}
+              >
+                + Add category
+              </button>
+            </div>
+
+            <div style={{ display: 'flex', gap: 4 }}>
+              <button
+                onClick={() => setView('grid')}
+                title="Grid view"
+                style={{
+                  width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  borderRadius: 8,
+                  border: '1px solid ' + (view === 'grid' ? 'var(--bg-tertiary)' : 'var(--border)'),
+                  backgroundColor: view === 'grid' ? 'var(--bg-tertiary)' : 'transparent',
+                  color: view === 'grid' ? 'var(--text-primary)' : 'var(--text-muted)',
+                  cursor: 'pointer',
+                }}
+              >
+                <LayoutGrid size={15} />
+              </button>
+              <button
+                onClick={() => setView('list')}
+                title="List view"
+                style={{
+                  width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  borderRadius: 8,
+                  border: '1px solid ' + (view === 'list' ? 'var(--bg-tertiary)' : 'var(--border)'),
+                  backgroundColor: view === 'list' ? 'var(--bg-tertiary)' : 'transparent',
+                  color: view === 'list' ? 'var(--text-primary)' : 'var(--text-muted)',
+                  cursor: 'pointer',
+                }}
+              >
+                <List size={15} />
+              </button>
+            </div>
           </div>
 
           {loading ? (
@@ -249,10 +284,44 @@ export default function NotesPage() {
               <button
                 onClick={handleNewNote}
                 disabled={creating}
-                style={{ background: '#6b5ce7', color: '#fff', border: 'none', borderRadius: 8, padding: '9px 16px', fontSize: 13, fontWeight: 600, cursor: creating ? 'default' : 'pointer', fontFamily: FONT }}
+                style={{ backgroundColor: 'var(--text-primary)', color: 'var(--bg)', border: 'none', borderRadius: 8, padding: '9px 16px', fontSize: 13, fontWeight: 600, cursor: creating ? 'default' : 'pointer', fontFamily: FONT }}
               >
                 + New note
               </button>
+            </div>
+          ) : view === 'list' ? (
+            <div className="flex flex-col">
+              {filtered.map(note => (
+                <div
+                  key={note.uuid}
+                  onClick={() => router.push(`/notes/${note.uuid}`)}
+                  className="flex items-center"
+                  style={{ borderBottom: '1px solid var(--border)', padding: '12px 8px', gap: 12, cursor: 'pointer' }}
+                  onMouseEnter={e => { e.currentTarget.style.backgroundColor = 'var(--bg-secondary)' }}
+                  onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'transparent' }}
+                >
+                  <div style={{ width: 28, height: 28, borderRadius: 8, background: '#1c1c1e', border: '1px solid rgba(255,255,255,0.07)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#888890" strokeWidth="2" strokeLinecap="round">
+                      <rect x="4" y="2.5" width="16" height="19" rx="3" />
+                      <line x1="8" y1="8" x2="16" y2="8" />
+                      <line x1="8" y1="12" x2="16" y2="12" />
+                      <line x1="8" y1="16" x2="12.5" y2="16" />
+                    </svg>
+                  </div>
+                  <div className="truncate" style={{ flex: 1, minWidth: 0, fontSize: 15, fontWeight: 600, color: '#eeede7' }}>
+                    {note.title || 'Untitled'}
+                  </div>
+                  {note.category_name && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+                      <span style={{ width: 6, height: 6, borderRadius: '50%', background: note.category_color || '#888890', flexShrink: 0 }} />
+                      <span style={{ fontSize: 11, color: note.category_color || 'var(--text-muted)' }}>{note.category_name}</span>
+                    </div>
+                  )}
+                  <div style={{ fontSize: 11.5, color: 'var(--text-muted)', flexShrink: 0, textAlign: 'right', minWidth: 60 }}>
+                    {timeAgo(note.updated_at)}
+                  </div>
+                </div>
+              ))}
             </div>
           ) : (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gridAutoRows: 148, gap: 14, gridAutoFlow: 'dense' }}>
