@@ -224,7 +224,7 @@ export default function ActivityPage() {
                 const href = entry.type === 'doc' ? `/docs/${entry.uuid}` : `/notes/${entry.uuid}`
                 const isYou = entry.is_you === true
                 const actorName = isYou ? 'You' : (entry.editor_name ? entry.editor_name.split(' ')[0] : 'Someone')
-                const dotColor = entry.type === 'doc' ? folderDotColor(entry.uuid) : entry.context_color
+                const dotColor = entry.type === 'doc' ? folderDotColor(entry.context_id) : entry.context_color
 
                 return (
                   <div key={row.key} style={{ display: 'flex', gap: 14 }}>
