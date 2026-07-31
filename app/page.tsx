@@ -248,11 +248,23 @@ export default function HomePage() {
         <div className="max-w-[1180px] mx-auto px-10 py-10">
 
           {/* Header */}
-          <div className="flex items-center justify-between mb-6">
-            <h1 className="text-[32px] font-bold tracking-tight" style={{ color: "var(--text-primary)" }}>
-              {activeTab === "favorites" ? "Favorites" : "Recent Docs"}
-            </h1>
-            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          <div className="flex items-center justify-between mb-6 gap-4">
+            <div className="relative flex-1" style={{ maxWidth: 420 }}>
+              <Search
+                size={15}
+                className="absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none"
+                style={{ color: "var(--text-muted)" }}
+              />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                placeholder="Search docs..."
+                className="w-full rounded-lg pl-9 pr-4 py-2.5 text-sm outline-none placeholder-[var(--text-muted)]"
+                style={{ backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border)", color: "var(--text-primary)" }}
+              />
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: "8px", flexShrink: 0 }}>
               <button
                 onClick={() => setTemplateModalOpen(true)}
                 style={{
@@ -290,23 +302,6 @@ export default function HomePage() {
                 New Doc
               </button>
             </div>
-          </div>
-
-          {/* Search */}
-          <div className="relative mb-5">
-            <Search
-              size={15}
-              className="absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none"
-              style={{ color: "var(--text-muted)" }}
-            />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              placeholder="Search docs..."
-              className="w-full rounded-lg pl-9 pr-4 py-2.5 text-sm outline-none placeholder-[var(--text-muted)]"
-              style={{ backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border)", color: "var(--text-primary)" }}
-            />
           </div>
 
           {/* Folders preview */}
