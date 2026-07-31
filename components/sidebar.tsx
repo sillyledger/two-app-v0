@@ -522,8 +522,6 @@ export default function Sidebar({ onNewNote, onToggle }: SidebarProps = {}) {
           background: SB, borderRight: BORDER,
           transition: "width 0.22s cubic-bezier(0.4,0,0.2,1), min-width 0.22s cubic-bezier(0.4,0,0.2,1)",
         }}>
-          {!collapsed && (
-            <>
               <div style={{ flexShrink: 0, padding: "12px 10px 0" }}>
                 <div style={{ display: "flex", alignItems: "center", padding: "6px 2px 4px" }}>
                   {renamingWorkspace
@@ -662,10 +660,16 @@ export default function Sidebar({ onNewNote, onToggle }: SidebarProps = {}) {
                   </div>
                 )}
               </div>
-            </>
-          )}
         </div>
       </aside>
+
+      {collapsed && (
+        <button onClick={togglePanel}
+          style={{ position: "fixed", top: 14, left: 14, zIndex: 40, background: "#1c1c1e", border: BORDER, borderRadius: 8, padding: 7, cursor: "pointer", color: MUTED, display: "flex", boxShadow: "0 2px 10px rgba(0,0,0,0.35)" }}
+          onMouseEnter={e => (e.currentTarget.style.color = "#ccc")} onMouseLeave={e => (e.currentTarget.style.color = MUTED)}>
+          <PanelLeftOpen size={16} />
+        </button>
+      )}
 
       {showModal && (
         <div style={{ position: "fixed", inset: 0, zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center" }}>
