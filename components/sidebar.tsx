@@ -652,7 +652,7 @@ export default function Sidebar({ onNewNote, onToggle }: SidebarProps = {}) {
                   <MoreHorizontal size={14} style={{ color: MUTED, flexShrink: 0 }} />
                 </div>
                 {accountMenuOpen && (
-                  <div style={dropdownStyle}>
+                  <div style={{ ...dropdownStyle, top: "auto", bottom: 30, width: 170 }}>
                     <button style={dropdownBtn()} onClick={e => { e.stopPropagation(); setAccountMenuOpen(false); router.push("/settings") }} onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.06)")} onMouseLeave={e => (e.currentTarget.style.background = "transparent")}><Settings size={12} /> Settings</button>
                     <button style={dropdownBtn()} onClick={e => { e.stopPropagation(); setAccountMenuOpen(false); router.push("/trash") }} onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.06)")} onMouseLeave={e => (e.currentTarget.style.background = "transparent")}><Trash2 size={12} /> Trash</button>
                     <button style={dropdownBtn()} onClick={e => { e.stopPropagation(); setAccountMenuOpen(false); setHelpTab("shortcuts"); setShowHelp(true) }} onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.06)")} onMouseLeave={e => (e.currentTarget.style.background = "transparent")}><span style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 12, height: 12, borderRadius: 3, border: "1px solid rgba(255,255,255,0.12)", fontSize: 9, fontFamily: "monospace", color: "#555" }}>?</span> Help & Shortcuts</button>
