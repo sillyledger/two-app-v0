@@ -8,6 +8,7 @@ import {
   Search, ChevronDown, ChevronRight, Settings,
   Layers, Plus, FolderOpen, MoreHorizontal,
   Pencil, Trash2, LogOut, PanelLeftClose, PanelLeftOpen, Pin, PinOff,
+  Home, CalendarDays, StickyNote, Activity, Library,
 } from "lucide-react"
 
 interface Doc { id: string; uuid: string; title: string }
@@ -50,6 +51,14 @@ const FONT = "'DM Sans', system-ui, sans-serif"
 
 const RAIL_WIDTH = 52
 const PANEL_WIDTH = 228
+
+const ACCENT_COLORS = ["#EF9F27", "#85B7EB", "#5DCAA5", "#F0997B", "#AFA9EC", "#97C459", "#ED93B1", "#B4B2A9", "#5DCAA5"]
+function folderDotColor(folderId: string | null) {
+  if (!folderId) return null
+  let hash = 0
+  for (let i = 0; i < folderId.length; i++) hash = (hash * 31 + folderId.charCodeAt(i)) >>> 0
+  return ACCENT_COLORS[hash % ACCENT_COLORS.length]
+}
 
 export default function Sidebar({ onNewNote, onToggle }: SidebarProps = {}) {
   const pathname = usePathname()
@@ -500,7 +509,7 @@ export default function Sidebar({ onNewNote, onToggle }: SidebarProps = {}) {
         onDragLeave={e => { e.stopPropagation(); setDragOverFolderId(null) }}
         onDrop={e => handleDrop(e, folder.id)}
       >
-        <FolderOpen size={14} style={{ color: "#4a4a56", flexShrink: 0 }} />
+        <div style={{ width: 16, height: 12, borderRadius: 3, background: folderDotColor(folder.id) ?? "#4a4a56", flexShrink: 0 }} />
         {renamingFolderId === folder.id
           ? <input ref={folderRenameInputRef} value={folderRenameValue} onChange={e => setFolderRenameValue(e.target.value)} onBlur={() => commitFolderRename(folder.id)} onKeyDown={e => { if (e.key === "Enter") commitFolderRename(folder.id); if (e.key === "Escape") setRenamingFolderId(null) }} onClick={e => e.stopPropagation()} style={{ flex: 1, minWidth: 0, borderRadius: 6, padding: "2px 8px", fontSize: 13, outline: "none", background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.12)", color: "#e0dfd9", fontFamily: FONT }} />
           : <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{folder.name}</span>
@@ -547,11 +556,11 @@ export default function Sidebar({ onNewNote, onToggle }: SidebarProps = {}) {
             </g>
           </svg>
 
-          <RailItem href="/" tooltip="Home" icon={<span style={{ fontSize: 17, lineHeight: 1 }}>⌂</span>} />
-          <RailItem href="/planner" tooltip="Planner" icon={<span style={{ fontSize: 15, lineHeight: 1 }}>◎</span>} />
-          <RailItem href="/notes" tooltip="Notes" icon={<span style={{ fontSize: 15, lineHeight: 1 }}>▤</span>} />
-          <RailItem href="/activity" tooltip="Activity" icon={<span style={{ fontSize: 15, lineHeight: 1 }}>⟳</span>} />
-          <RailItem href="/library" tooltip="Library" icon={<span style={{ fontSize: 15, lineHeight: 1 }}>◫</span>} />
+          <RailItem href="/" tooltip="Home" icon={<Home size={16} />} />
+          <RailItem href="/planner" tooltip="Planner" icon={<CalendarDays size={16} />} />
+          <RailItem href="/notes" tooltip="Notes" icon={<StickyNote size={16} />} />
+          <RailItem href="/activity" tooltip="Activity" icon={<Activity size={16} />} />
+          <RailItem href="/library" tooltip="Library" icon={<Library size={16} />} />
           <RailItem tooltip="Studio — coming soon" icon={<Layers size={16} />} disabled />
 
           <div style={{ flex: 1 }} />
@@ -575,12 +584,10 @@ export default function Sidebar({ onNewNote, onToggle }: SidebarProps = {}) {
           {!collapsed && (
             <>
               <div style={{ flexShrink: 0, padding: "12px 10px 0" }}>
-                <div style={{ display: "flex", alignItems: "center", padding: "6px 2px 4px", cursor: "pointer" }} onClick={() => { if (!renamingWorkspace) setMyDocsOpen(v => !v) }}>
-                  <span style={{ fontSize: 9, color: MUTED, marginRight: 6, display: "inline-block", transform: myDocsOpen ? "rotate(90deg)" : "rotate(0deg)", transition: "transform 0.18s", flexShrink: 0 }}>▶</span>
-                  <span style={{ opacity: 0.5, fontSize: 15, flexShrink: 0, marginRight: 8 }}>☁</span>
+                <div style={{ display: "flex", alignItems: "center", padding: "6px 2px 4px" }}>
                   {renamingWorkspace
                     ? <input ref={workspaceInputRef} value={workspaceRenameValue} onChange={e => setWorkspaceRenameValue(e.target.value)} onBlur={commitWorkspaceRename} onKeyDown={e => { if (e.key === "Enter") commitWorkspaceRename(); if (e.key === "Escape") cancelWorkspaceRename() }} onClick={e => e.stopPropagation()} style={{ flex: 1, minWidth: 0, borderRadius: 6, padding: "2px 8px", fontSize: 13, outline: "none", background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.12)", color: "#e0dfd9", fontFamily: FONT }} />
-                    : <span onDoubleClick={e => { e.stopPropagation(); startRenamingWorkspace() }} title="Double-click to rename" style={{ flex: 1, fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: MUTED, userSelect: "none", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{workspaceName}</span>
+                    : <span onDoubleClick={e => startRenamingWorkspace()} title="Double-click to rename" style={{ flex: 1, fontSize: 14, fontWeight: 500, color: "#e0dfd9", userSelect: "none", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{workspaceName}</span>
                   }
                   <div style={{ position: "relative", marginLeft: 8, flexShrink: 0 }} ref={pickerRef}>
                     <button onClick={e => { e.stopPropagation(); setShowPicker(v => !v) }} disabled={creating}
@@ -601,7 +608,7 @@ export default function Sidebar({ onNewNote, onToggle }: SidebarProps = {}) {
 
                 <div style={{ display: "flex", alignItems: "center", padding: "6px 2px 4px", cursor: "pointer" }} onClick={() => setSharedOpen(v => !v)}>
                   <span style={{ fontSize: 9, color: MUTED, marginRight: 5, display: "inline-block", transform: sharedOpen ? "rotate(90deg)" : "rotate(0)", transition: "transform 0.18s" }}>▶</span>
-                  <span style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: MUTED, flex: 1 }}>Shared Workspaces</span>
+                  <span style={{ fontSize: 12, fontWeight: 500, color: MUTED, flex: 1 }}>Shared workspaces</span>
                   <button onClick={e => { e.stopPropagation(); openModal("workspace") }}
                     style={{ background: "none", border: "none", cursor: "pointer", color: MUTED, padding: 2, display: "flex" }}
                     onMouseEnter={e => (e.currentTarget.style.color = "#888")} onMouseLeave={e => (e.currentTarget.style.color = MUTED)}>
@@ -686,7 +693,7 @@ export default function Sidebar({ onNewNote, onToggle }: SidebarProps = {}) {
               </div>
 
               <div className="sb-scroll">
-                {myDocsOpen && (
+                {(
                   <>
                     {pinnedFolders.length > 0 && (
                       <>
