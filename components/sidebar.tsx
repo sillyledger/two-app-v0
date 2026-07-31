@@ -8,7 +8,7 @@ import {
   Search, ChevronDown, ChevronRight, Settings,
   Layers, Plus, FolderOpen, MoreHorizontal,
   Pencil, Trash2, LogOut, PanelLeftClose, PanelLeftOpen, Pin, PinOff,
-  Home, CalendarDays, StickyNote, Activity, Library,
+  Home, CalendarDays, StickyNote, Activity, Library, FileText,
 } from "lucide-react"
 
 interface Doc { id: string; uuid: string; title: string }
@@ -49,8 +49,7 @@ const MUTED = "var(--sb-muted)"
 const BORDER = "1px solid var(--sb-border)"
 const FONT = "'DM Sans', system-ui, sans-serif"
 
-const RAIL_WIDTH = 52
-const PANEL_WIDTH = 228
+const PANEL_WIDTH = 240
 
 const ACCENT_COLORS = ["#EF9F27", "#85B7EB", "#5DCAA5", "#F0997B", "#AFA9EC", "#97C459", "#ED93B1", "#B4B2A9", "#5DCAA5"]
 function getAccent(index: number) {
@@ -86,6 +85,8 @@ export default function Sidebar({ onNewNote, onToggle }: SidebarProps = {}) {
   const wsRenameInputRef = useRef<HTMLInputElement>(null)
   const [folderMenuId, setFolderMenuId] = useState<string | null>(null)
   const folderMenuRef = useRef<HTMLDivElement>(null)
+  const [accountMenuOpen, setAccountMenuOpen] = useState(false)
+  const accountMenuRef = useRef<HTMLDivElement>(null)
   const [renamingFolderId, setRenamingFolderId] = useState<string | null>(null)
   const [folderRenameValue, setFolderRenameValue] = useState("")
   const folderRenameInputRef = useRef<HTMLInputElement>(null)
@@ -239,6 +240,10 @@ export default function Sidebar({ onNewNote, onToggle }: SidebarProps = {}) {
     const h = (e: MouseEvent) => { if (wsMenuRef.current && !wsMenuRef.current.contains(e.target as Node)) setWsMenuId(null) }
     if (wsMenuId) document.addEventListener("mousedown", h); return () => document.removeEventListener("mousedown", h)
   }, [wsMenuId])
+  useEffect(() => {
+    const h = (e: MouseEvent) => { if (accountMenuRef.current && !accountMenuRef.current.contains(e.target as Node)) setAccountMenuOpen(false) }
+    if (accountMenuOpen) document.addEventListener("mousedown", h); return () => document.removeEventListener("mousedown", h)
+  }, [accountMenuOpen])
   useEffect(() => { if (showModal) setTimeout(() => modalInputRef.current?.focus(), 50) }, [showModal])
   useEffect(() => { if (renamingWorkspace) setTimeout(() => workspaceInputRef.current?.select(), 50) }, [renamingWorkspace])
   useEffect(() => { if (renamingFolderId) setTimeout(() => folderRenameInputRef.current?.select(), 50) }, [renamingFolderId])
@@ -460,45 +465,10 @@ export default function Sidebar({ onNewNote, onToggle }: SidebarProps = {}) {
     </div>
   )
 
-  // Icon-only rail button with a hover tooltip (rail has no room for text labels).
-  const RailItem = ({ href, icon, tooltip, disabled, style: styleOverride }: { href?: string; icon: React.ReactNode; tooltip: string; disabled?: boolean; style?: React.CSSProperties }) => {
-    const isActive = !!href && pathname === href
-    const [hov, setHov] = useState(false)
-    const style: React.CSSProperties = {
-      position: "relative", display: "flex", alignItems: "center", justifyContent: "center",
-      width: 34, height: 34, borderRadius: 9, marginBottom: 4, flexShrink: 0,
-      color: disabled ? MUTED : isActive ? ACTIVE_COLOR : hov ? HOVER_COLOR : ITEM_COLOR,
-      background: disabled ? "transparent" : isActive ? ACTIVE_BG : hov ? HOVER_BG : "transparent",
-      cursor: disabled ? "default" : "pointer", opacity: disabled ? 0.45 : 1,
-      transition: "background 0.12s, color 0.12s", textDecoration: "none",
-      ...styleOverride,
-    }
-    const tooltipNode = hov && (
-      <span style={{ position: "absolute", left: "calc(100% + 10px)", top: "50%", transform: "translateY(-50%)", whiteSpace: "nowrap", background: "#242428", border: "1px solid rgba(255,255,255,0.09)", borderRadius: 6, padding: "4px 9px", fontSize: 12, color: "#e0dfd9", fontFamily: FONT, zIndex: 60, pointerEvents: "none", boxShadow: "0 4px 16px rgba(0,0,0,0.4)" }}>
-        {tooltip}
-      </span>
-    )
-    if (disabled || !href) {
-      return (
-        <div style={style} onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}>
-          {icon}
-          {tooltipNode}
-        </div>
-      )
-    }
-    return (
-      <Link href={href} style={style} onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}>
-        {icon}
-        {tooltipNode}
-      </Link>
-    )
-  }
-
   const FolderRow = ({ folder }: { folder: FolderType }) => {
     const isActive = pathname === `/folders/${folder.id}`
     const isDragOver = dragOverFolderId === folder.id
     const folderIndex = folders.findIndex(f => f.id === folder.id)
-    const docCount = Number(folder.doc_count) || 0
     return (
       <div className="sb-group"
         style={{ position: "relative", display: "flex", alignItems: "center", gap: 9, padding: "7px 10px 7px 16px", borderRadius: 8, fontSize: 13.5, cursor: "pointer", color: isActive || isDragOver ? HOVER_COLOR : "#5a5a64", background: isActive || isDragOver ? HOVER_BG : "transparent", transition: "all 0.12s", marginBottom: 1 }}
@@ -514,9 +484,6 @@ export default function Sidebar({ onNewNote, onToggle }: SidebarProps = {}) {
           ? <input ref={folderRenameInputRef} value={folderRenameValue} onChange={e => setFolderRenameValue(e.target.value)} onBlur={() => commitFolderRename(folder.id)} onKeyDown={e => { if (e.key === "Enter") commitFolderRename(folder.id); if (e.key === "Escape") setRenamingFolderId(null) }} onClick={e => e.stopPropagation()} style={{ flex: 1, minWidth: 0, borderRadius: 6, padding: "2px 8px", fontSize: 13, outline: "none", background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.12)", color: "#e0dfd9", fontFamily: FONT }} />
           : <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{folder.name}</span>
         }
-        {renamingFolderId !== folder.id && (
-          <span style={{ fontSize: 11, color: MUTED, flexShrink: 0 }}>{docCount} {docCount === 1 ? "doc" : "docs"}</span>
-        )}
         {renamingFolderId !== folder.id && (
           <div style={{ position: "relative" }} ref={folderMenuId === folder.id ? folderMenuRef : undefined}>
             <button className="sb-group-btn" onClick={e => { e.stopPropagation(); setFolderMenuId(folderMenuId === folder.id ? null : folder.id) }}
@@ -549,27 +516,6 @@ export default function Sidebar({ onNewNote, onToggle }: SidebarProps = {}) {
 
       <aside style={{ display: "flex", height: "100vh", position: "sticky", top: 0, flexShrink: 0, fontFamily: FONT }}>
 
-        {/* ── RAIL: fixed width, always visible ── */}
-        <div style={{ width: RAIL_WIDTH, minWidth: RAIL_WIDTH, height: "100%", display: "flex", flexDirection: "column", alignItems: "center", padding: "14px 0 12px", background: SB, borderRight: BORDER, flexShrink: 0 }}>
-          <RailItem href="/" tooltip="Home" icon={<Home size={16} />} style={{ marginTop: 14 }} />
-          <RailItem href="/planner" tooltip="Planner" icon={<CalendarDays size={16} />} />
-          <RailItem href="/notes" tooltip="Notes" icon={<StickyNote size={16} />} />
-          <RailItem href="/activity" tooltip="Activity" icon={<Activity size={16} />} />
-          <RailItem href="/library" tooltip="Library" icon={<Library size={16} />} />
-          <RailItem tooltip="Studio — coming soon" icon={<Layers size={16} />} disabled />
-
-          <div style={{ flex: 1 }} />
-
-          <button onClick={togglePanel}
-            style={{ background: "none", border: "none", cursor: "pointer", color: MUTED, padding: 8, display: "flex", marginBottom: 8, borderRadius: 8 }}
-            onMouseEnter={e => (e.currentTarget.style.color = "#ccc")} onMouseLeave={e => (e.currentTarget.style.color = MUTED)}>
-            {collapsed ? <PanelLeftOpen size={16} /> : <PanelLeftClose size={15} />}
-          </button>
-
-          <AvatarBubble />
-        </div>
-
-        {/* ── PANEL: toggleable, animates width via CSS transition ── */}
         <div style={{
           width: collapsed ? 0 : PANEL_WIDTH, minWidth: collapsed ? 0 : PANEL_WIDTH, height: "100%",
           display: "flex", flexDirection: "column", overflow: "hidden", flexShrink: 0,
@@ -597,75 +543,38 @@ export default function Sidebar({ onNewNote, onToggle }: SidebarProps = {}) {
                       </div>
                     )}
                   </div>
+                  <button onClick={togglePanel} style={{ background: "none", border: "none", cursor: "pointer", color: MUTED, padding: 2, display: "flex", marginLeft: 6 }}>
+                    {collapsed ? <PanelLeftOpen size={14} /> : <PanelLeftClose size={14} />}
+                  </button>
                 </div>
 
                 <div style={{ height: 1, background: "rgba(255,255,255,0.06)", margin: "10px 4px" }} />
 
-                {/* TODO: wire to actual scope filtering */}
-                <div style={{ display: "flex", gap: 6, flexWrap: "wrap", padding: "2px 2px 10px" }}>
-                  {["Docs", "Notes", "Planner"].map(tag => (
-                    <span key={tag} style={{ fontSize: 11, padding: "3px 9px", borderRadius: 999, background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)", color: MUTED }}>{tag}</span>
-                  ))}
+                <NavItem href="/" icon={<Home size={16} />} label="Home" />
+                <NavItem href="/docs" icon={<FileText size={16} />} label="Docs" />
+                <NavItem href="/folders" icon={<FolderOpen size={16} />} label="Folders" />
+                <NavItem href="/notes" icon={<StickyNote size={16} />} label="Notes" />
+                <NavItem href="/planner" icon={<CalendarDays size={16} />} label="Planner" />
+                <NavItem href="/activity" icon={<Activity size={16} />} label="Activity" />
+                <NavItem href="/library" icon={<Library size={16} />} label="Library" />
+                <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "9px 12px", borderRadius: 9, fontSize: 14, color: MUTED, opacity: 0.5 }}>
+                  <span style={{ display: "flex", flexShrink: 0 }}><Layers size={16} /></span>
+                  <span style={{ flex: 1 }}>Studio</span>
+                  <span style={{ fontSize: 10 }}>soon</span>
                 </div>
-
-                <button onClick={() => setShowPalette(true)}
-                  style={{ display: "flex", alignItems: "center", gap: 8, width: "100%", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 9, padding: "8px 10px", cursor: "pointer", marginBottom: 10, fontFamily: FONT }}
-                  onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.08)")}
-                  onMouseLeave={e => (e.currentTarget.style.background = "rgba(255,255,255,0.05)")}
-                >
-                  <Search size={13} style={{ color: MUTED, flexShrink: 0 }} />
-                  <span style={{ flex: 1, textAlign: "left", fontSize: 13, color: MUTED }}>Quick jump</span>
-                  <kbd style={{ fontFamily: "monospace", fontSize: 10, padding: "2px 6px", borderRadius: 5, background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", color: "#8a8a92", flexShrink: 0 }}>⌘K</kbd>
-                </button>
               </div>
 
               <div className="sb-scroll">
                 {(
                   <>
-                    {pinnedFolders.length > 0 && (
-                      <>
-                        <div style={{ padding: "4px 12px 4px" }}>
-                          <span style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: MUTED }}>Pinned</span>
-                        </div>
-                        {pinnedFolders.map(folder => <FolderRow key={folder.id} folder={folder} />)}
-                        <div style={{ height: 1, background: "rgba(255,255,255,0.06)", margin: "8px 4px" }} />
-                      </>
-                    )}
-
                     <div style={{ padding: "4px 12px 4px" }}>
-                      <span style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: MUTED }}>Folders</span>
+                      <span style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: MUTED }}>Favorites</span>
                     </div>
 
-                    {unpinnedFolders.map(folder => <FolderRow key={folder.id} folder={folder} />)}
-
-                    {docs.length > 0 && (
-                      <div onClick={() => setUnfiledOpen(v => !v)} style={{ display: "flex", alignItems: "center", gap: 5, padding: "10px 12px 4px", cursor: "pointer", userSelect: "none" }}>
-                        <span style={{ fontSize: 9, color: MUTED, display: "inline-block", transform: unfiledOpen ? "rotate(90deg)" : "rotate(0)", transition: "transform 0.18s" }}>▶</span>
-                        <span style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: MUTED }}>Unfiled</span>
-                      </div>
-                    )}
-
-                    {unfiledOpen && docs.map(doc => {
-                      const isActive = pathname === `/docs/${doc.uuid}`
-                      return (
-                        <div key={doc.uuid} draggable
-                          onDragStart={e => { e.dataTransfer.setData("docId", String(doc.uuid)); e.dataTransfer.effectAllowed = "move"; setDraggingDocId(doc.uuid) }}
-                          onDragEnd={() => { setDraggingDocId(null); setDragOverFolderId(null) }}
-                          onClick={() => { openTab(doc.uuid, doc.title || "Untitled"); router.push(`/docs/${doc.uuid}`) }}
-                          className="sb-group"
-                          style={{ display: "flex", alignItems: "center", gap: 9, padding: "6px 10px 6px 20px", borderRadius: 7, fontSize: 13.5, cursor: "pointer", opacity: draggingDocId === doc.uuid ? 0.4 : 1, color: isActive ? ACTIVE_COLOR : ITEM_COLOR, background: isActive ? ACTIVE_BG : "transparent", transition: "all 0.12s", marginBottom: 1 }}
-                          onMouseEnter={e => { if (!isActive) { e.currentTarget.style.background = HOVER_BG; e.currentTarget.style.color = HOVER_COLOR } }}
-                          onMouseLeave={e => { if (!isActive) { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = ITEM_COLOR } }}
-                        >
-                          <span style={{ fontSize: 13, opacity: isActive ? 1 : 0.5, flexShrink: 0, lineHeight: 1 }}>▣</span>
-                          <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{doc.title || "Untitled"}</span>
-                        </div>
-                      )
-                    })}
-
-                    {folders.length === 0 && docs.length === 0 && (
-                      <p style={{ fontSize: 12, padding: "4px 12px", color: MUTED }}>No docs yet</p>
-                    )}
+                    {pinnedFolders.length > 0
+                      ? pinnedFolders.map(folder => <FolderRow key={folder.id} folder={folder} />)
+                      : <p style={{ fontSize: 12, padding: "4px 12px", color: MUTED }}>Pin a folder to see it here</p>
+                    }
 
                     <div style={{ height: 1, background: "rgba(255,255,255,0.06)", margin: "8px 4px" }} />
 
@@ -738,11 +647,20 @@ export default function Sidebar({ onNewNote, onToggle }: SidebarProps = {}) {
                 )}
               </div>
 
-              <div style={{ borderTop: BORDER, padding: "8px 8px 14px", flexShrink: 0 }}>
-                <NavItem href="/trash" icon={<Trash2 size={16} />} label="Trash" />
-                <NavItem href="/settings" icon={<Settings size={16} />} label="Settings" />
-                <BotBtn icon={<span style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 16, height: 16, borderRadius: 4, border: "1px solid rgba(255,255,255,0.12)", fontSize: 10, fontFamily: "monospace", color: "#4a4a56" }}>?</span>} label="Help & Shortcuts" onClick={() => { setHelpTab("shortcuts"); setShowHelp(true) }} />
-                <BotBtn icon={<LogOut size={16} />} label="Log out" onClick={handleLogout} />
+              <div ref={accountMenuRef} style={{ position: "relative", borderTop: BORDER, padding: "10px 14px", flexShrink: 0, cursor: "pointer" }} onClick={() => setAccountMenuOpen(v => !v)}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <AvatarBubble />
+                  <span style={{ flex: 1, fontSize: 14, fontWeight: 500, color: "#e0dfd9", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{userName || "Account"}</span>
+                  <MoreHorizontal size={14} style={{ color: MUTED, flexShrink: 0 }} />
+                </div>
+                {accountMenuOpen && (
+                  <div style={dropdownStyle}>
+                    <button style={dropdownBtn()} onClick={e => { e.stopPropagation(); setAccountMenuOpen(false); router.push("/settings") }} onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.06)")} onMouseLeave={e => (e.currentTarget.style.background = "transparent")}><Settings size={12} /> Settings</button>
+                    <button style={dropdownBtn()} onClick={e => { e.stopPropagation(); setAccountMenuOpen(false); router.push("/trash") }} onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.06)")} onMouseLeave={e => (e.currentTarget.style.background = "transparent")}><Trash2 size={12} /> Trash</button>
+                    <button style={dropdownBtn()} onClick={e => { e.stopPropagation(); setAccountMenuOpen(false); setHelpTab("shortcuts"); setShowHelp(true) }} onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.06)")} onMouseLeave={e => (e.currentTarget.style.background = "transparent")}><span style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 12, height: 12, borderRadius: 3, border: "1px solid rgba(255,255,255,0.12)", fontSize: 9, fontFamily: "monospace", color: "#555" }}>?</span> Help & Shortcuts</button>
+                    <button style={dropdownBtn(true)} onClick={e => { e.stopPropagation(); setAccountMenuOpen(false); handleLogout() }} onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.06)")} onMouseLeave={e => (e.currentTarget.style.background = "transparent")}><LogOut size={12} /> Log out</button>
+                  </div>
+                )}
               </div>
             </>
           )}
