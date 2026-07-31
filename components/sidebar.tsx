@@ -461,7 +461,7 @@ export default function Sidebar({ onNewNote, onToggle }: SidebarProps = {}) {
   )
 
   // Icon-only rail button with a hover tooltip (rail has no room for text labels).
-  const RailItem = ({ href, icon, tooltip, disabled }: { href?: string; icon: React.ReactNode; tooltip: string; disabled?: boolean }) => {
+  const RailItem = ({ href, icon, tooltip, disabled, style: styleOverride }: { href?: string; icon: React.ReactNode; tooltip: string; disabled?: boolean; style?: React.CSSProperties }) => {
     const isActive = !!href && pathname === href
     const [hov, setHov] = useState(false)
     const style: React.CSSProperties = {
@@ -471,6 +471,7 @@ export default function Sidebar({ onNewNote, onToggle }: SidebarProps = {}) {
       background: disabled ? "transparent" : isActive ? ACTIVE_BG : hov ? HOVER_BG : "transparent",
       cursor: disabled ? "default" : "pointer", opacity: disabled ? 0.45 : 1,
       transition: "background 0.12s, color 0.12s", textDecoration: "none",
+      ...styleOverride,
     }
     const tooltipNode = hov && (
       <span style={{ position: "absolute", left: "calc(100% + 10px)", top: "50%", transform: "translateY(-50%)", whiteSpace: "nowrap", background: "#242428", border: "1px solid rgba(255,255,255,0.09)", borderRadius: 6, padding: "4px 9px", fontSize: 12, color: "#e0dfd9", fontFamily: FONT, zIndex: 60, pointerEvents: "none", boxShadow: "0 4px 16px rgba(0,0,0,0.4)" }}>
@@ -550,15 +551,7 @@ export default function Sidebar({ onNewNote, onToggle }: SidebarProps = {}) {
 
         {/* ── RAIL: fixed width, always visible ── */}
         <div style={{ width: RAIL_WIDTH, minWidth: RAIL_WIDTH, height: "100%", display: "flex", flexDirection: "column", alignItems: "center", padding: "14px 0 12px", background: SB, borderRight: BORDER, flexShrink: 0 }}>
-          <svg width="28" height="28" viewBox="0 0 180 180" fill="none" style={{ flexShrink: 0, marginBottom: 14 }}>
-            <rect fill="var(--text-primary)" width="180" height="180" rx="37" />
-            <g style={{ transform: "scale(0.95)", transformOrigin: "center" }}>
-              <path fill="var(--sb-bg)" d="M101.141 53H136.632C151.023 53 162.689 64.6662 162.689 79.0573V112.904H148.112V79.0573C148.112 78.7105 148.098 78.3662 148.072 78.0251L112.581 112.898C112.701 112.902 112.821 112.904 112.941 112.904H148.112V126.672H112.941C98.5504 126.672 86.5638 114.891 86.5638 100.5V66.7434H101.141V100.5C101.141 101.15 101.191 101.792 101.289 102.422L137.56 66.7816C137.255 66.7563 136.945 66.7434 136.632 66.7434H101.141V53Z" />
-              <path fill="var(--sb-bg)" d="M65.2926 124.136L14 66.7372H34.6355L64.7495 100.436V66.7372H80.1365V118.47C80.1365 126.278 70.4953 129.958 65.2926 124.136Z" />
-            </g>
-          </svg>
-
-          <RailItem href="/" tooltip="Home" icon={<Home size={16} />} />
+          <RailItem href="/" tooltip="Home" icon={<Home size={16} />} style={{ marginTop: 14 }} />
           <RailItem href="/planner" tooltip="Planner" icon={<CalendarDays size={16} />} />
           <RailItem href="/notes" tooltip="Notes" icon={<StickyNote size={16} />} />
           <RailItem href="/activity" tooltip="Activity" icon={<Activity size={16} />} />
