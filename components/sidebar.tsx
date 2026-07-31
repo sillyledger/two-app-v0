@@ -5,21 +5,37 @@ import { useTabStore } from "@/hooks/use-tab-store"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import {
-  Search, FileText, ChevronDown, ChevronRight, Settings,
-  Layers, Activity, Home, Plus, FolderOpen, MoreHorizontal,
-  Pencil, Trash2, LogOut, PanelLeftClose, PanelLeftOpen, CheckSquare,
+  Search, ChevronDown, ChevronRight, Settings,
+  Layers, Plus, FolderOpen, MoreHorizontal,
+  Pencil, Trash2, LogOut, PanelLeftClose, PanelLeftOpen, Pin, PinOff,
 } from "lucide-react"
 
 interface Doc { id: string; uuid: string; title: string }
-interface FolderType { id: string; name: string }
+interface FolderType { id: string; name: string; pinned?: boolean }
 interface Workspace { id: string; name: string }
 interface SidebarProps { onNewNote?: () => void; collapsed?: boolean; onToggle?: () => void }
+
+type PaletteItem =
+  | { kind: "folder"; id: string; name: string }
+  | { kind: "doc"; id: string; uuid: string; title: string }
 
 function cacheGet<T>(key: string): T | null {
   try { const raw = sessionStorage.getItem(key); return raw ? (JSON.parse(raw) as T) : null } catch { return null }
 }
 function cacheSet(key: string, value: unknown) {
   try { sessionStorage.setItem(key, JSON.stringify(value)) } catch {}
+}
+
+// Subsequence-based fuzzy match — matches if every query char appears in order within text.
+function fuzzyMatch(query: string, text: string): boolean {
+  if (!query.trim()) return true
+  const q = query.toLowerCase()
+  const t = text.toLowerCase()
+  let qi = 0
+  for (let ti = 0; ti < t.length && qi < q.length; ti++) {
+    if (t[ti] === q[qi]) qi++
+  }
+  return qi === q.length
 }
 
 const SB = "var(--sb-bg)"
@@ -32,6 +48,9 @@ const MUTED = "var(--sb-muted)"
 const BORDER = "1px solid var(--sb-border)"
 const FONT = "'DM Sans', system-ui, sans-serif"
 
+const RAIL_WIDTH = 52
+const PANEL_WIDTH = 228
+
 export default function Sidebar({ onNewNote, onToggle }: SidebarProps = {}) {
   const pathname = usePathname()
   const router = useRouter()
@@ -40,7 +59,6 @@ export default function Sidebar({ onNewNote, onToggle }: SidebarProps = {}) {
   const [myDocsOpen, setMyDocsOpen] = useState(true)
   const [unfiledOpen, setUnfiledOpen] = useState(true)
   const [sharedOpen, setSharedOpen] = useState(true)
-  const [searchQuery, setSearchQuery] = useState("")
   const [userName, setUserName] = useState(() => cacheGet<string>("sb_userName") ?? "")
   const [userAvatar, setUserAvatar] = useState<string | null>(() => cacheGet<string>("sb_userAvatar"))
   const [workspaceName, setWorkspaceName] = useState(() => cacheGet<string>("sb_workspaceName") ?? "My Workspace")
@@ -77,6 +95,12 @@ export default function Sidebar({ onNewNote, onToggle }: SidebarProps = {}) {
   const [showHelp, setShowHelp] = useState(false)
   const [helpTab, setHelpTab] = useState<"shortcuts" | "started" | "tips" | "new">("shortcuts")
 
+  // ── Quick jump / command palette state ──
+  const [showPalette, setShowPalette] = useState(false)
+  const [paletteQuery, setPaletteQuery] = useState("")
+  const [paletteIndex, setPaletteIndex] = useState(0)
+  const paletteInputRef = useRef<HTMLInputElement>(null)
+
   // ── Invite modal state ──
   const [showInviteModal, setShowInviteModal] = useState(false)
   const [inviteWorkspaceId, setInviteWorkspaceId] = useState<string | null>(null)
@@ -93,13 +117,25 @@ export default function Sidebar({ onNewNote, onToggle }: SidebarProps = {}) {
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if (e.key === "Escape") { setShowHelp(false); setShowInviteModal(false) }
+      if (e.key === "Escape") { setShowHelp(false); setShowInviteModal(false); setShowPalette(false) }
       const isTyping = (e.target as HTMLElement)?.tagName === "INPUT" || (e.target as HTMLElement)?.tagName === "TEXTAREA" || (e.target as HTMLElement)?.isContentEditable
-      if (e.key === "?" && !showModal && !isTyping && !e.shiftKey) setShowHelp(v => !v)
+      if (e.key === "?" && !showModal && !showPalette && !isTyping && !e.shiftKey) setShowHelp(v => !v)
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k" && !isTyping && !showModal) {
+        e.preventDefault()
+        setShowPalette(v => !v)
+      }
     }
     document.addEventListener("keydown", handler)
     return () => document.removeEventListener("keydown", handler)
-  }, [showModal])
+  }, [showModal, showPalette])
+
+  useEffect(() => {
+    if (showPalette) {
+      setPaletteQuery("")
+      setPaletteIndex(0)
+      setTimeout(() => paletteInputRef.current?.focus(), 50)
+    }
+  }, [showPalette])
 
   useEffect(() => {
     const handler = (e: Event) => {
@@ -241,6 +277,13 @@ export default function Sidebar({ onNewNote, onToggle }: SidebarProps = {}) {
     const updated = folders.filter(f => f.id !== folderId); setFolders(updated); cacheSet("sb_folders", updated)
     try { await fetch(`/api/folders/${folderId}`, { method: "DELETE" }) } catch {}
   }
+  const toggleFolderPinned = async (folder: FolderType) => {
+    setFolderMenuId(null)
+    const nextPinned = !folder.pinned
+    const updated = folders.map(f => f.id === folder.id ? { ...f, pinned: nextPinned } : f)
+    setFolders(updated); cacheSet("sb_folders", updated)
+    try { await fetch(`/api/folders/${folder.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ pinned: nextPinned }) }) } catch {}
+  }
   const handleLogout = async () => { sessionStorage.clear(); await fetch("/api/auth", { method: "DELETE" }); router.push("/login") }
   const handleDrop = async (e: React.DragEvent, folderId: string) => {
     e.preventDefault(); e.stopPropagation()
@@ -339,7 +382,27 @@ export default function Sidebar({ onNewNote, onToggle }: SidebarProps = {}) {
     if (isExpanding && !wsData[wsId]) { fetchDocsForWorkspace(wsId, false); fetchFoldersForWorkspace(wsId, false) }
   }
 
+  const togglePanel = () => {
+    const next = !collapsed
+    localStorage.setItem("sidebar-collapsed", String(next))
+    setCollapsed(next)
+    onToggle?.()
+  }
+
   const extraWorkspaces = workspaces.filter(w => w.id !== workspaceId)
+  const pinnedFolders = folders.filter(f => f.pinned)
+  const unpinnedFolders = folders.filter(f => !f.pinned)
+
+  const paletteItems: PaletteItem[] = [
+    ...folders.filter(f => fuzzyMatch(paletteQuery, f.name)).map((f): PaletteItem => ({ kind: "folder", id: f.id, name: f.name })),
+    ...docs.filter(d => fuzzyMatch(paletteQuery, d.title || "Untitled")).map((d): PaletteItem => ({ kind: "doc", id: d.id, uuid: d.uuid, title: d.title })),
+  ]
+
+  const selectPaletteItem = (item: PaletteItem) => {
+    setShowPalette(false)
+    if (item.kind === "folder") router.push(`/folders/${item.id}?name=${encodeURIComponent(item.name)}`)
+    else { openTab(item.uuid, item.title || "Untitled"); router.push(`/docs/${item.uuid}`) }
+  }
 
   const dropdownStyle: React.CSSProperties = {
     position: "absolute", right: 0, top: 30, zIndex: 50,
@@ -358,12 +421,12 @@ export default function Sidebar({ onNewNote, onToggle }: SidebarProps = {}) {
     const [hov, setHov] = useState(false)
     return (
       <Link href={href}
-        style={{ display: "flex", alignItems: "center", gap: 12, padding: collapsed ? "9px 0" : "9px 12px", justifyContent: collapsed ? "center" : "flex-start", borderRadius: 9, marginBottom: 2, fontSize: 14, fontWeight: isActive ? 500 : 400, letterSpacing: "-0.01em", color: isActive ? ACTIVE_COLOR : hov ? HOVER_COLOR : ITEM_COLOR, background: isActive ? ACTIVE_BG : hov ? HOVER_BG : "transparent", textDecoration: "none", position: "relative", transition: "background 0.12s, color 0.12s", fontFamily: FONT }}
+        style={{ display: "flex", alignItems: "center", gap: 12, padding: "9px 12px", borderRadius: 9, marginBottom: 2, fontSize: 14, fontWeight: isActive ? 500 : 400, letterSpacing: "-0.01em", color: isActive ? ACTIVE_COLOR : hov ? HOVER_COLOR : ITEM_COLOR, background: isActive ? ACTIVE_BG : hov ? HOVER_BG : "transparent", textDecoration: "none", position: "relative", transition: "background 0.12s, color 0.12s", fontFamily: FONT }}
         onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
       >
-        {isActive && !collapsed && <span style={{ position: "absolute", left: 0, top: "50%", transform: "translateY(-50%)", width: 3, height: 20, background: "#6b5ce7", borderRadius: "0 3px 3px 0" }} />}
+        {isActive && <span style={{ position: "absolute", left: 0, top: "50%", transform: "translateY(-50%)", width: 3, height: 20, background: "#6b5ce7", borderRadius: "0 3px 3px 0" }} />}
         <span style={{ opacity: isActive ? 1 : 0.65, display: "flex", flexShrink: 0 }}>{icon}</span>
-        {!collapsed && label}
+        {label}
       </Link>
     )
   }
@@ -372,10 +435,10 @@ export default function Sidebar({ onNewNote, onToggle }: SidebarProps = {}) {
     const [hov, setHov] = useState(false)
     return (
       <button onClick={onClick} onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
-        style={{ display: "flex", alignItems: "center", gap: 12, padding: collapsed ? "9px 0" : "9px 12px", justifyContent: collapsed ? "center" : "flex-start", borderRadius: 9, marginBottom: 2, fontSize: 14, fontWeight: 400, letterSpacing: "-0.01em", color: hov ? HOVER_COLOR : ITEM_COLOR, background: hov ? HOVER_BG : "transparent", border: "none", cursor: "pointer", width: "100%", fontFamily: FONT, transition: "background 0.12s, color 0.12s" }}
+        style={{ display: "flex", alignItems: "center", gap: 12, padding: "9px 12px", borderRadius: 9, marginBottom: 2, fontSize: 14, fontWeight: 400, letterSpacing: "-0.01em", color: hov ? HOVER_COLOR : ITEM_COLOR, background: hov ? HOVER_BG : "transparent", border: "none", cursor: "pointer", width: "100%", fontFamily: FONT, transition: "background 0.12s, color 0.12s" }}
       >
         <span style={{ opacity: 0.65, display: "flex", flexShrink: 0 }}>{icon}</span>
-        {!collapsed && label}
+        {label}
       </button>
     )
   }
@@ -391,7 +454,77 @@ export default function Sidebar({ onNewNote, onToggle }: SidebarProps = {}) {
     </div>
   )
 
-  const sidebarWidth = collapsed ? 56 : 256
+  // Icon-only rail button with a hover tooltip (rail has no room for text labels).
+  const RailItem = ({ href, icon, tooltip, disabled }: { href?: string; icon: React.ReactNode; tooltip: string; disabled?: boolean }) => {
+    const isActive = !!href && pathname === href
+    const [hov, setHov] = useState(false)
+    const style: React.CSSProperties = {
+      position: "relative", display: "flex", alignItems: "center", justifyContent: "center",
+      width: 34, height: 34, borderRadius: 9, marginBottom: 4, flexShrink: 0,
+      color: disabled ? MUTED : isActive ? ACTIVE_COLOR : hov ? HOVER_COLOR : ITEM_COLOR,
+      background: disabled ? "transparent" : isActive ? ACTIVE_BG : hov ? HOVER_BG : "transparent",
+      cursor: disabled ? "default" : "pointer", opacity: disabled ? 0.45 : 1,
+      transition: "background 0.12s, color 0.12s", textDecoration: "none",
+    }
+    const tooltipNode = hov && (
+      <span style={{ position: "absolute", left: "calc(100% + 10px)", top: "50%", transform: "translateY(-50%)", whiteSpace: "nowrap", background: "#242428", border: "1px solid rgba(255,255,255,0.09)", borderRadius: 6, padding: "4px 9px", fontSize: 12, color: "#e0dfd9", fontFamily: FONT, zIndex: 60, pointerEvents: "none", boxShadow: "0 4px 16px rgba(0,0,0,0.4)" }}>
+        {tooltip}
+      </span>
+    )
+    if (disabled || !href) {
+      return (
+        <div style={style} onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}>
+          {icon}
+          {tooltipNode}
+        </div>
+      )
+    }
+    return (
+      <Link href={href} style={style} onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}>
+        {icon}
+        {tooltipNode}
+      </Link>
+    )
+  }
+
+  const FolderRow = ({ folder }: { folder: FolderType }) => {
+    const isActive = pathname === `/folders/${folder.id}`
+    const isDragOver = dragOverFolderId === folder.id
+    return (
+      <div className="sb-group"
+        style={{ position: "relative", display: "flex", alignItems: "center", gap: 9, padding: "7px 10px 7px 16px", borderRadius: 8, fontSize: 13.5, cursor: "pointer", color: isActive || isDragOver ? HOVER_COLOR : "#5a5a64", background: isActive || isDragOver ? HOVER_BG : "transparent", transition: "all 0.12s", marginBottom: 1 }}
+        onMouseEnter={e => { e.currentTarget.style.background = HOVER_BG; e.currentTarget.style.color = HOVER_COLOR }}
+        onMouseLeave={e => { e.currentTarget.style.background = isActive ? HOVER_BG : "transparent"; e.currentTarget.style.color = isActive ? HOVER_COLOR : "#5a5a64" }}
+        onClick={() => { if (renamingFolderId !== folder.id) router.push(`/folders/${folder.id}?name=${encodeURIComponent(folder.name)}`) }}
+        onDragOver={e => { e.preventDefault(); e.stopPropagation(); setDragOverFolderId(folder.id) }}
+        onDragLeave={e => { e.stopPropagation(); setDragOverFolderId(null) }}
+        onDrop={e => handleDrop(e, folder.id)}
+      >
+        <FolderOpen size={14} style={{ color: "#4a4a56", flexShrink: 0 }} />
+        {renamingFolderId === folder.id
+          ? <input ref={folderRenameInputRef} value={folderRenameValue} onChange={e => setFolderRenameValue(e.target.value)} onBlur={() => commitFolderRename(folder.id)} onKeyDown={e => { if (e.key === "Enter") commitFolderRename(folder.id); if (e.key === "Escape") setRenamingFolderId(null) }} onClick={e => e.stopPropagation()} style={{ flex: 1, minWidth: 0, borderRadius: 6, padding: "2px 8px", fontSize: 13, outline: "none", background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.12)", color: "#e0dfd9", fontFamily: FONT }} />
+          : <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{folder.name}</span>
+        }
+        {renamingFolderId !== folder.id && (
+          <div style={{ position: "relative" }} ref={folderMenuId === folder.id ? folderMenuRef : undefined}>
+            <button className="sb-group-btn" onClick={e => { e.stopPropagation(); setFolderMenuId(folderMenuId === folder.id ? null : folder.id) }}
+              style={{ opacity: 0, color: "#555", background: "none", border: "none", cursor: "pointer", padding: 2, borderRadius: 4, display: "flex", transition: "opacity 0.1s" }}>
+              <MoreHorizontal size={13} />
+            </button>
+            {folderMenuId === folder.id && (
+              <div style={dropdownStyle}>
+                <button style={dropdownBtn()} onClick={e => { e.stopPropagation(); toggleFolderPinned(folder) }} onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.06)")} onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
+                  {folder.pinned ? <PinOff size={12} style={{ color: "#555" }} /> : <Pin size={12} style={{ color: "#555" }} />} {folder.pinned ? "Unpin" : "Pin"}
+                </button>
+                <button style={dropdownBtn()} onClick={e => { e.stopPropagation(); startRenamingFolder(folder) }} onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.06)")} onMouseLeave={e => (e.currentTarget.style.background = "transparent")}><Pencil size={12} style={{ color: "#555" }} /> Rename</button>
+                <button style={dropdownBtn(true)} onClick={e => { e.stopPropagation(); deleteFolder(folder.id) }} onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.06)")} onMouseLeave={e => (e.currentTarget.style.background = "transparent")}><Trash2 size={12} /> Delete</button>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    )
+  }
 
   return (
     <>
@@ -402,219 +535,215 @@ export default function Sidebar({ onNewNote, onToggle }: SidebarProps = {}) {
         .sb-group:hover .sb-group-btn { opacity: 1 !important; }
       `}</style>
 
-      <aside style={{ width: sidebarWidth, minWidth: sidebarWidth, height: "100vh", display: "flex", flexDirection: "column", position: "sticky", top: 0, overflow: "hidden", flexShrink: 0, background: SB, borderRight: BORDER, transition: "width 0.22s cubic-bezier(0.4,0,0.2,1), min-width 0.22s cubic-bezier(0.4,0,0.2,1)", fontFamily: FONT }}>
+      <aside style={{ display: "flex", height: "100vh", position: "sticky", top: 0, flexShrink: 0, fontFamily: FONT }}>
 
-        {collapsed ? (
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "16px 0 12px", gap: 12, borderBottom: BORDER, flexShrink: 0 }}>
-            <AvatarBubble />
-            <button onClick={() => { const next = !collapsed; localStorage.setItem("sidebar-collapsed", String(next)); setCollapsed(next); onToggle?.() }}
-              style={{ background: "none", border: "none", cursor: "pointer", color: MUTED, padding: 4, display: "flex" }}
-              onMouseEnter={e => (e.currentTarget.style.color = "#ccc")} onMouseLeave={e => (e.currentTarget.style.color = MUTED)}>
-              <PanelLeftOpen size={16} />
-            </button>
-          </div>
-        ) : (
-          <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "18px 14px 16px", borderBottom: BORDER, flexShrink: 0 }}>
-            <AvatarBubble />
-            <span style={{ fontSize: 15, fontWeight: 600, color: "#eeede7", letterSpacing: "-0.02em", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{userName || "…"}</span>
-            <button onClick={() => { const next = !collapsed; localStorage.setItem("sidebar-collapsed", String(next)); setCollapsed(next); onToggle?.() }}
-              style={{ background: "none", border: "none", cursor: "pointer", color: MUTED, padding: 4, flexShrink: 0, display: "flex" }}
-              onMouseEnter={e => (e.currentTarget.style.color = "#ccc")} onMouseLeave={e => (e.currentTarget.style.color = MUTED)}>
-              <PanelLeftClose size={15} />
-            </button>
-          </div>
-        )}
+        {/* ── RAIL: fixed width, always visible ── */}
+        <div style={{ width: RAIL_WIDTH, minWidth: RAIL_WIDTH, height: "100%", display: "flex", flexDirection: "column", alignItems: "center", padding: "14px 0 12px", background: SB, borderRight: BORDER, flexShrink: 0 }}>
+          <svg width="28" height="28" viewBox="0 0 180 180" fill="none" style={{ flexShrink: 0, marginBottom: 14 }}>
+            <rect fill="var(--text-primary)" width="180" height="180" rx="37" />
+            <g style={{ transform: "scale(0.95)", transformOrigin: "center" }}>
+              <path fill="var(--sb-bg)" d="M101.141 53H136.632C151.023 53 162.689 64.6662 162.689 79.0573V112.904H148.112V79.0573C148.112 78.7105 148.098 78.3662 148.072 78.0251L112.581 112.898C112.701 112.902 112.821 112.904 112.941 112.904H148.112V126.672H112.941C98.5504 126.672 86.5638 114.891 86.5638 100.5V66.7434H101.141V100.5C101.141 101.15 101.191 101.792 101.289 102.422L137.56 66.7816C137.255 66.7563 136.945 66.7434 136.632 66.7434H101.141V53Z" />
+              <path fill="var(--sb-bg)" d="M65.2926 124.136L14 66.7372H34.6355L64.7495 100.436V66.7372H80.1365V118.47C80.1365 126.278 70.4953 129.958 65.2926 124.136Z" />
+            </g>
+          </svg>
 
-        {!collapsed && (
-          <div style={{ padding: "12px 10px 6px", flexShrink: 0 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, background: "rgba(255,255,255,0.05)", borderRadius: 9, padding: "8px 12px" }}>
-              <Search size={13} style={{ color: MUTED, flexShrink: 0 }} />
-              <input type="text" placeholder="Search..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
-                style={{ background: "transparent", border: "none", outline: "none", fontSize: 13.5, color: ITEM_COLOR, width: "100%", fontFamily: FONT }} />
-            </div>
-          </div>
-        )}
+          <RailItem href="/" tooltip="Home" icon={<span style={{ fontSize: 17, lineHeight: 1 }}>⌂</span>} />
+          <RailItem href="/planner" tooltip="Planner" icon={<span style={{ fontSize: 15, lineHeight: 1 }}>◎</span>} />
+          <RailItem href="/notes" tooltip="Notes" icon={<span style={{ fontSize: 15, lineHeight: 1 }}>▤</span>} />
+          <RailItem href="/activity" tooltip="Activity" icon={<span style={{ fontSize: 15, lineHeight: 1 }}>⟳</span>} />
+          <RailItem href="/library" tooltip="Library" icon={<span style={{ fontSize: 15, lineHeight: 1 }}>◫</span>} />
+          <RailItem tooltip="Studio — coming soon" icon={<Layers size={16} />} disabled />
 
-        <div className="sb-scroll">
-          <NavItem href="/" icon={<span style={{fontSize:17,lineHeight:1}}>⌂</span>} label="Home" />
-          <NavItem href="/planner" icon={<span style={{fontSize:15,lineHeight:1}}>◎</span>} label="Planner" />
-          <NavItem href="/notes" icon={<span style={{fontSize:15,lineHeight:1}}>▤</span>} label="Notes" />
-          <NavItem href="/activity" icon={<span style={{fontSize:15,lineHeight:1}}>⟳</span>} label="Activity" />
-          <NavItem href="/library" icon={<span style={{fontSize:15,lineHeight:1}}>◫</span>} label="Library" />
+          <div style={{ flex: 1 }} />
 
+          <button onClick={togglePanel}
+            style={{ background: "none", border: "none", cursor: "pointer", color: MUTED, padding: 8, display: "flex", marginBottom: 8, borderRadius: 8 }}
+            onMouseEnter={e => (e.currentTarget.style.color = "#ccc")} onMouseLeave={e => (e.currentTarget.style.color = MUTED)}>
+            {collapsed ? <PanelLeftOpen size={16} /> : <PanelLeftClose size={15} />}
+          </button>
+
+          <AvatarBubble />
+        </div>
+
+        {/* ── PANEL: toggleable, animates width via CSS transition ── */}
+        <div style={{
+          width: collapsed ? 0 : PANEL_WIDTH, minWidth: collapsed ? 0 : PANEL_WIDTH, height: "100%",
+          display: "flex", flexDirection: "column", overflow: "hidden", flexShrink: 0,
+          background: SB, borderRight: BORDER,
+          transition: "width 0.22s cubic-bezier(0.4,0,0.2,1), min-width 0.22s cubic-bezier(0.4,0,0.2,1)",
+        }}>
           {!collapsed && (
             <>
-              <div style={{ height: 1, background: "rgba(255,255,255,0.06)", margin: "10px 4px" }} />
+              <div style={{ flexShrink: 0, padding: "12px 10px 0" }}>
+                <div style={{ display: "flex", alignItems: "center", padding: "6px 2px 4px", cursor: "pointer" }} onClick={() => { if (!renamingWorkspace) setMyDocsOpen(v => !v) }}>
+                  <span style={{ fontSize: 9, color: MUTED, marginRight: 6, display: "inline-block", transform: myDocsOpen ? "rotate(90deg)" : "rotate(0deg)", transition: "transform 0.18s", flexShrink: 0 }}>▶</span>
+                  <span style={{ opacity: 0.5, fontSize: 15, flexShrink: 0, marginRight: 8 }}>☁</span>
+                  {renamingWorkspace
+                    ? <input ref={workspaceInputRef} value={workspaceRenameValue} onChange={e => setWorkspaceRenameValue(e.target.value)} onBlur={commitWorkspaceRename} onKeyDown={e => { if (e.key === "Enter") commitWorkspaceRename(); if (e.key === "Escape") cancelWorkspaceRename() }} onClick={e => e.stopPropagation()} style={{ flex: 1, minWidth: 0, borderRadius: 6, padding: "2px 8px", fontSize: 13, outline: "none", background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.12)", color: "#e0dfd9", fontFamily: FONT }} />
+                    : <span onDoubleClick={e => { e.stopPropagation(); startRenamingWorkspace() }} title="Double-click to rename" style={{ flex: 1, fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: MUTED, userSelect: "none", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{workspaceName}</span>
+                  }
+                  <div style={{ position: "relative", marginLeft: 8, flexShrink: 0 }} ref={pickerRef}>
+                    <button onClick={e => { e.stopPropagation(); setShowPicker(v => !v) }} disabled={creating}
+                      style={{ background: "none", border: "none", cursor: "pointer", color: MUTED, padding: 2, display: "flex" }}
+                      onMouseEnter={e => (e.currentTarget.style.color = "#888")} onMouseLeave={e => (e.currentTarget.style.color = MUTED)}>
+                      <Plus size={13} />
+                    </button>
+                    {showPicker && (
+                      <div style={dropdownStyle}>
+                        <button style={dropdownBtn()} onClick={() => openModal("doc", workspaceId ?? undefined)} onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.06)")} onMouseLeave={e => (e.currentTarget.style.background = "transparent")}><span style={{fontSize:13}}>▣</span> New Doc</button>
+                        <button style={dropdownBtn()} onClick={() => openModal("folder", workspaceId ?? undefined)} onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.06)")} onMouseLeave={e => (e.currentTarget.style.background = "transparent")}><FolderOpen size={12} style={{ color: "#888" }} /> New Folder</button>
+                      </div>
+                    )}
+                  </div>
+                </div>
 
-              <div style={{ display: "flex", alignItems: "center", padding: "6px 12px 4px", cursor: "pointer" }} onClick={() => { if (!renamingWorkspace) setMyDocsOpen(v => !v) }}>
-                <span style={{ fontSize: 9, color: MUTED, marginRight: 6, display: "inline-block", transform: myDocsOpen ? "rotate(90deg)" : "rotate(0deg)", transition: "transform 0.18s", flexShrink: 0 }}>▶</span>
-                <span style={{ opacity: 0.5, fontSize: 15, flexShrink: 0, marginRight: 8 }}>☁</span>
-                {renamingWorkspace
-                  ? <input ref={workspaceInputRef} value={workspaceRenameValue} onChange={e => setWorkspaceRenameValue(e.target.value)} onBlur={commitWorkspaceRename} onKeyDown={e => { if (e.key === "Enter") commitWorkspaceRename(); if (e.key === "Escape") cancelWorkspaceRename() }} onClick={e => e.stopPropagation()} style={{ flex: 1, minWidth: 0, borderRadius: 6, padding: "2px 8px", fontSize: 13, outline: "none", background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.12)", color: "#e0dfd9", fontFamily: FONT }} />
-                  : <span onDoubleClick={e => { e.stopPropagation(); startRenamingWorkspace() }} title="Double-click to rename" style={{ flex: 1, fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: MUTED, userSelect: "none" }}>{workspaceName}</span>
-                }
-                <div style={{ position: "relative", marginLeft: 8, flexShrink: 0 }} ref={pickerRef}>
-                  <button onClick={e => { e.stopPropagation(); setShowPicker(v => !v) }} disabled={creating}
+                <div style={{ height: 1, background: "rgba(255,255,255,0.06)", margin: "10px 4px" }} />
+
+                <div style={{ display: "flex", alignItems: "center", padding: "6px 2px 4px", cursor: "pointer" }} onClick={() => setSharedOpen(v => !v)}>
+                  <span style={{ fontSize: 9, color: MUTED, marginRight: 5, display: "inline-block", transform: sharedOpen ? "rotate(90deg)" : "rotate(0)", transition: "transform 0.18s" }}>▶</span>
+                  <span style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: MUTED, flex: 1 }}>Shared Workspaces</span>
+                  <button onClick={e => { e.stopPropagation(); openModal("workspace") }}
                     style={{ background: "none", border: "none", cursor: "pointer", color: MUTED, padding: 2, display: "flex" }}
                     onMouseEnter={e => (e.currentTarget.style.color = "#888")} onMouseLeave={e => (e.currentTarget.style.color = MUTED)}>
                     <Plus size={13} />
                   </button>
-                  {showPicker && (
-                    <div style={dropdownStyle}>
-                      <button style={dropdownBtn()} onClick={() => openModal("doc", workspaceId ?? undefined)} onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.06)")} onMouseLeave={e => (e.currentTarget.style.background = "transparent")}><span style={{fontSize:13}}>▣</span> New Doc</button>
-                      <button style={dropdownBtn()} onClick={() => openModal("folder", workspaceId ?? undefined)} onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.06)")} onMouseLeave={e => (e.currentTarget.style.background = "transparent")}><FolderOpen size={12} style={{ color: "#888" }} /> New Folder</button>
-                    </div>
-                  )}
                 </div>
-              </div>
 
-              {myDocsOpen && (
-                <>
-                  {folders.map(folder => {
-                    const isActive = pathname === `/folders/${folder.id}`
-                    const isDragOver = dragOverFolderId === folder.id
-                    return (
-                      <div key={folder.id} className="sb-group"
-                        style={{ position: "relative", display: "flex", alignItems: "center", gap: 9, padding: "7px 10px 7px 16px", borderRadius: 8, fontSize: 13.5, cursor: "pointer", color: isActive || isDragOver ? HOVER_COLOR : "#5a5a64", background: isActive || isDragOver ? HOVER_BG : "transparent", transition: "all 0.12s", marginBottom: 1 }}
-                        onMouseEnter={e => { e.currentTarget.style.background = HOVER_BG; e.currentTarget.style.color = HOVER_COLOR }}
-                        onMouseLeave={e => { e.currentTarget.style.background = isActive ? HOVER_BG : "transparent"; e.currentTarget.style.color = isActive ? HOVER_COLOR : "#5a5a64" }}
-                        onClick={() => { if (renamingFolderId !== folder.id) router.push(`/folders/${folder.id}?name=${encodeURIComponent(folder.name)}`) }}
-                        onDragOver={e => { e.preventDefault(); e.stopPropagation(); setDragOverFolderId(folder.id) }}
-                        onDragLeave={e => { e.stopPropagation(); setDragOverFolderId(null) }}
-                        onDrop={e => handleDrop(e, folder.id)}
-                      >
-                        <FolderOpen size={14} style={{ color: "#4a4a56", flexShrink: 0 }} />
-                        {renamingFolderId === folder.id
-                          ? <input ref={folderRenameInputRef} value={folderRenameValue} onChange={e => setFolderRenameValue(e.target.value)} onBlur={() => commitFolderRename(folder.id)} onKeyDown={e => { if (e.key === "Enter") commitFolderRename(folder.id); if (e.key === "Escape") setRenamingFolderId(null) }} onClick={e => e.stopPropagation()} style={{ flex: 1, minWidth: 0, borderRadius: 6, padding: "2px 8px", fontSize: 13, outline: "none", background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.12)", color: "#e0dfd9", fontFamily: FONT }} />
-                          : <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{folder.name}</span>
-                        }
-                        {renamingFolderId !== folder.id && (
-                          <div style={{ position: "relative" }} ref={folderMenuId === folder.id ? folderMenuRef : undefined}>
-                            <button className="sb-group-btn" onClick={e => { e.stopPropagation(); setFolderMenuId(folderMenuId === folder.id ? null : folder.id) }}
-                              style={{ opacity: 0, color: "#555", background: "none", border: "none", cursor: "pointer", padding: 2, borderRadius: 4, display: "flex", transition: "opacity 0.1s" }}>
-                              <MoreHorizontal size={13} />
-                            </button>
-                            {folderMenuId === folder.id && (
-                              <div style={dropdownStyle}>
-                                <button style={dropdownBtn()} onClick={e => { e.stopPropagation(); startRenamingFolder(folder) }} onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.06)")} onMouseLeave={e => (e.currentTarget.style.background = "transparent")}><Pencil size={12} style={{ color: "#555" }} /> Rename</button>
-                                <button style={dropdownBtn(true)} onClick={e => { e.stopPropagation(); deleteFolder(folder.id) }} onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.06)")} onMouseLeave={e => (e.currentTarget.style.background = "transparent")}><Trash2 size={12} /> Delete</button>
-                              </div>
-                            )}
-                          </div>
-                        )}
+                {sharedOpen && extraWorkspaces.map(ws => (
+                  <div key={ws.id} style={{ marginBottom: 2 }}>
+                    <div className="sb-group" style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 4px", borderRadius: 9, cursor: "pointer", fontSize: 13.5, color: "#5a5a64", transition: "all 0.12s" }}
+                      onClick={() => toggleExtraWorkspace(ws.id)}
+                      onMouseEnter={e => { e.currentTarget.style.background = HOVER_BG; e.currentTarget.style.color = HOVER_COLOR }}
+                      onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#5a5a64" }}
+                    >
+                      {expandedWorkspaces[ws.id] ? <ChevronDown size={12} style={{ color: MUTED, flexShrink: 0 }} /> : <ChevronRight size={12} style={{ color: MUTED, flexShrink: 0 }} />}
+                      {renamingWsId === ws.id
+                        ? <input ref={wsRenameInputRef} value={wsRenameValue} onChange={e => setWsRenameValue(e.target.value)} onBlur={() => commitExtraWsRename(ws.id)} onKeyDown={e => { if (e.key === "Enter") commitExtraWsRename(ws.id); if (e.key === "Escape") setRenamingWsId(null) }} onClick={e => e.stopPropagation()} style={{ flex: 1, minWidth: 0, borderRadius: 6, padding: "2px 8px", fontSize: 13, outline: "none", background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.12)", color: "#e0dfd9", fontFamily: FONT }} />
+                        : <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{ws.name}</span>
+                      }
+                      <div style={{ display: "flex", gap: 2, flexShrink: 0 }}>
+                        <button className="sb-group-btn" onClick={e => { e.stopPropagation(); openModal("doc", ws.id) }} style={{ opacity: 0, background: "none", border: "none", cursor: "pointer", color: MUTED, padding: 2, display: "flex", transition: "opacity 0.1s" }} onMouseEnter={e => (e.currentTarget.style.color = "#888")} onMouseLeave={e => (e.currentTarget.style.color = MUTED)}><Plus size={12} /></button>
+                        <div style={{ position: "relative" }} ref={wsMenuId === ws.id ? wsMenuRef : undefined}>
+                          <button className="sb-group-btn" onClick={e => { e.stopPropagation(); setWsMenuId(wsMenuId === ws.id ? null : ws.id) }} style={{ opacity: 0, background: "none", border: "none", cursor: "pointer", color: MUTED, padding: 2, display: "flex", borderRadius: 4, transition: "opacity 0.1s" }} onMouseEnter={e => (e.currentTarget.style.color = "#888")} onMouseLeave={e => (e.currentTarget.style.color = MUTED)}><MoreHorizontal size={12} /></button>
+                          {wsMenuId === ws.id && (
+                            <div style={dropdownStyle}>
+                              <button style={dropdownBtn()} onClick={e => { e.stopPropagation(); setWsMenuId(null); setWsRenameValue(ws.name); setRenamingWsId(ws.id) }} onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.06)")} onMouseLeave={e => (e.currentTarget.style.background = "transparent")}><Pencil size={12} style={{ color: "#555" }} /> Rename</button>
+                              <button style={dropdownBtn()} onClick={e => { e.stopPropagation(); openModal("folder", ws.id); setWsMenuId(null) }} onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.06)")} onMouseLeave={e => (e.currentTarget.style.background = "transparent")}><FolderOpen size={12} style={{ color: "#555" }} /> New Folder</button>
+                              <button style={dropdownBtn()} onClick={e => { e.stopPropagation(); setWsMenuId(null); openInviteModal(ws.id, ws.name) }} onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.06)")} onMouseLeave={e => (e.currentTarget.style.background = "transparent")}><Plus size={12} style={{ color: "#555" }} /> Invite people</button>
+                              <button style={dropdownBtn(true)} onClick={e => { e.stopPropagation(); deleteExtraWorkspace(ws.id) }} onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.06)")} onMouseLeave={e => (e.currentTarget.style.background = "transparent")}><Trash2 size={12} /> Delete</button>
+                            </div>
+                          )}
+                        </div>
                       </div>
-                    )
-                  })}
-
-                  {docs.length > 0 && (
-                    <div onClick={() => setUnfiledOpen(v => !v)} style={{ display: "flex", alignItems: "center", gap: 5, padding: "10px 12px 4px", cursor: "pointer", userSelect: "none" }}>
-                      <span style={{ fontSize: 9, color: MUTED, display: "inline-block", transform: unfiledOpen ? "rotate(90deg)" : "rotate(0)", transition: "transform 0.18s" }}>▶</span>
-                      <span style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: MUTED }}>Unfiled</span>
                     </div>
-                  )}
-
-                  {unfiledOpen && docs.map(doc => {
-                    const isActive = pathname === `/docs/${doc.uuid}`
-                    return (
-                      <div key={doc.uuid} draggable
-                        onDragStart={e => { e.dataTransfer.setData("docId", String(doc.uuid)); e.dataTransfer.effectAllowed = "move"; setDraggingDocId(doc.uuid) }}
-                        onDragEnd={() => { setDraggingDocId(null); setDragOverFolderId(null) }}
-                        onClick={() => { openTab(doc.uuid, doc.title || "Untitled"); router.push(`/docs/${doc.uuid}`) }}
-                        className="sb-group"
-                        style={{ display: "flex", alignItems: "center", gap: 9, padding: "6px 10px 6px 20px", borderRadius: 7, fontSize: 13.5, cursor: "pointer", opacity: draggingDocId === doc.uuid ? 0.4 : 1, color: isActive ? ACTIVE_COLOR : ITEM_COLOR, background: isActive ? ACTIVE_BG : "transparent", transition: "all 0.12s", marginBottom: 1 }}
-                        onMouseEnter={e => { if (!isActive) { e.currentTarget.style.background = HOVER_BG; e.currentTarget.style.color = HOVER_COLOR } }}
-                        onMouseLeave={e => { if (!isActive) { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = ITEM_COLOR } }}
-                      >
-                        <span style={{ fontSize: 13, opacity: isActive ? 1 : 0.5, flexShrink: 0, lineHeight: 1 }}>▣</span>
-                        <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{doc.title || "Untitled"}</span>
+                    {expandedWorkspaces[ws.id] && (
+                      <div style={{ paddingLeft: 8 }}>
+                        {(wsData[ws.id]?.folders ?? []).map(f => (
+                          <div key={f.id} style={{ display: "flex", alignItems: "center", gap: 9, padding: "7px 10px 7px 16px", borderRadius: 8, fontSize: 13.5, cursor: "pointer", color: "#5a5a64", marginBottom: 1, transition: "all 0.12s" }}
+                            onMouseEnter={e => { e.currentTarget.style.background = HOVER_BG; e.currentTarget.style.color = HOVER_COLOR }}
+                            onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#5a5a64" }}
+                            onClick={() => router.push(`/folders/${f.id}?name=${encodeURIComponent(f.name)}`)}>
+                            <FolderOpen size={13} style={{ color: "#4a4a56", flexShrink: 0 }} />
+                            <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{f.name}</span>
+                          </div>
+                        ))}
+                        {(wsData[ws.id]?.docs ?? []).map(doc => (
+                          <div key={doc.uuid} style={{ display: "flex", alignItems: "center", gap: 9, padding: "6px 10px 6px 20px", borderRadius: 7, fontSize: 13, cursor: "pointer", color: "#4a4a54", marginBottom: 1, transition: "all 0.12s" }}
+                            onMouseEnter={e => { e.currentTarget.style.background = HOVER_BG; e.currentTarget.style.color = "#a0a0aa" }}
+                            onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#4a4a54" }}
+                            onClick={() => { openTab(doc.uuid, doc.title || "Untitled"); router.push(`/docs/${doc.uuid}`) }}>
+                            <span style={{ width: 5, height: 5, borderRadius: "50%", background: "#3a3a44", flexShrink: 0, display: "inline-block" }} />
+                            <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{doc.title || "Untitled"}</span>
+                          </div>
+                        ))}
                       </div>
-                    )
-                  })}
+                    )}
+                  </div>
+                ))}
 
-                  {folders.length === 0 && docs.length === 0 && (
-                    <p style={{ fontSize: 12, padding: "4px 12px", color: MUTED }}>No docs yet</p>
-                  )}
-                </>
-              )}
+                {sharedOpen && extraWorkspaces.length === 0 && (
+                  <p style={{ fontSize: 12, padding: "4px 2px", color: MUTED }}>No shared workspaces yet</p>
+                )}
 
-              <div style={{ height: 1, background: "rgba(255,255,255,0.06)", margin: "10px 4px" }} />
+                <div style={{ height: 1, background: "rgba(255,255,255,0.06)", margin: "10px 4px" }} />
 
-              <div style={{ display: "flex", alignItems: "center", padding: "6px 12px 4px", cursor: "pointer" }} onClick={() => setSharedOpen(v => !v)}>
-                <span style={{ fontSize: 9, color: MUTED, marginRight: 5, display: "inline-block", transform: sharedOpen ? "rotate(90deg)" : "rotate(0)", transition: "transform 0.18s" }}>▶</span>
-                <span style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: MUTED, flex: 1 }}>Shared Workspaces</span>
-                <button onClick={e => { e.stopPropagation(); openModal("workspace") }}
-                  style={{ background: "none", border: "none", cursor: "pointer", color: MUTED, padding: 2, display: "flex" }}
-                  onMouseEnter={e => (e.currentTarget.style.color = "#888")} onMouseLeave={e => (e.currentTarget.style.color = MUTED)}>
-                  <Plus size={13} />
+                {/* TODO: wire to actual scope filtering */}
+                <div style={{ display: "flex", gap: 6, flexWrap: "wrap", padding: "2px 2px 10px" }}>
+                  {["Docs", "Notes", "Planner"].map(tag => (
+                    <span key={tag} style={{ fontSize: 11, padding: "3px 9px", borderRadius: 999, background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)", color: MUTED }}>{tag}</span>
+                  ))}
+                </div>
+
+                <button onClick={() => setShowPalette(true)}
+                  style={{ display: "flex", alignItems: "center", gap: 8, width: "100%", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 9, padding: "8px 10px", cursor: "pointer", marginBottom: 10, fontFamily: FONT }}
+                  onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.08)")}
+                  onMouseLeave={e => (e.currentTarget.style.background = "rgba(255,255,255,0.05)")}
+                >
+                  <Search size={13} style={{ color: MUTED, flexShrink: 0 }} />
+                  <span style={{ flex: 1, textAlign: "left", fontSize: 13, color: MUTED }}>Quick jump</span>
+                  <kbd style={{ fontFamily: "monospace", fontSize: 10, padding: "2px 6px", borderRadius: 5, background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", color: "#8a8a92", flexShrink: 0 }}>⌘K</kbd>
                 </button>
               </div>
 
-              {sharedOpen && extraWorkspaces.map(ws => (
-                <div key={ws.id} style={{ marginBottom: 2 }}>
-                  <div className="sb-group" style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 12px", borderRadius: 9, cursor: "pointer", fontSize: 13.5, color: "#5a5a64", transition: "all 0.12s" }}
-                    onClick={() => toggleExtraWorkspace(ws.id)}
-                    onMouseEnter={e => { e.currentTarget.style.background = HOVER_BG; e.currentTarget.style.color = HOVER_COLOR }}
-                    onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#5a5a64" }}
-                  >
-                    {expandedWorkspaces[ws.id] ? <ChevronDown size={12} style={{ color: MUTED, flexShrink: 0 }} /> : <ChevronRight size={12} style={{ color: MUTED, flexShrink: 0 }} />}
-                    {renamingWsId === ws.id
-                      ? <input ref={wsRenameInputRef} value={wsRenameValue} onChange={e => setWsRenameValue(e.target.value)} onBlur={() => commitExtraWsRename(ws.id)} onKeyDown={e => { if (e.key === "Enter") commitExtraWsRename(ws.id); if (e.key === "Escape") setRenamingWsId(null) }} onClick={e => e.stopPropagation()} style={{ flex: 1, minWidth: 0, borderRadius: 6, padding: "2px 8px", fontSize: 13, outline: "none", background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.12)", color: "#e0dfd9", fontFamily: FONT }} />
-                      : <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{ws.name}</span>
-                    }
-                    <div style={{ display: "flex", gap: 2, flexShrink: 0 }}>
-                      <button className="sb-group-btn" onClick={e => { e.stopPropagation(); openModal("doc", ws.id) }} style={{ opacity: 0, background: "none", border: "none", cursor: "pointer", color: MUTED, padding: 2, display: "flex", transition: "opacity 0.1s" }} onMouseEnter={e => (e.currentTarget.style.color = "#888")} onMouseLeave={e => (e.currentTarget.style.color = MUTED)}><Plus size={12} /></button>
-                      <div style={{ position: "relative" }} ref={wsMenuId === ws.id ? wsMenuRef : undefined}>
-                        <button className="sb-group-btn" onClick={e => { e.stopPropagation(); setWsMenuId(wsMenuId === ws.id ? null : ws.id) }} style={{ opacity: 0, background: "none", border: "none", cursor: "pointer", color: MUTED, padding: 2, display: "flex", borderRadius: 4, transition: "opacity 0.1s" }} onMouseEnter={e => (e.currentTarget.style.color = "#888")} onMouseLeave={e => (e.currentTarget.style.color = MUTED)}><MoreHorizontal size={12} /></button>
-                        {wsMenuId === ws.id && (
-                          <div style={dropdownStyle}>
-                            <button style={dropdownBtn()} onClick={e => { e.stopPropagation(); setWsMenuId(null); setWsRenameValue(ws.name); setRenamingWsId(ws.id) }} onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.06)")} onMouseLeave={e => (e.currentTarget.style.background = "transparent")}><Pencil size={12} style={{ color: "#555" }} /> Rename</button>
-                            <button style={dropdownBtn()} onClick={e => { e.stopPropagation(); openModal("folder", ws.id); setWsMenuId(null) }} onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.06)")} onMouseLeave={e => (e.currentTarget.style.background = "transparent")}><FolderOpen size={12} style={{ color: "#555" }} /> New Folder</button>
-                            <button style={dropdownBtn()} onClick={e => { e.stopPropagation(); setWsMenuId(null); openInviteModal(ws.id, ws.name) }} onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.06)")} onMouseLeave={e => (e.currentTarget.style.background = "transparent")}><Plus size={12} style={{ color: "#555" }} /> Invite people</button>
-                            <button style={dropdownBtn(true)} onClick={e => { e.stopPropagation(); deleteExtraWorkspace(ws.id) }} onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.06)")} onMouseLeave={e => (e.currentTarget.style.background = "transparent")}><Trash2 size={12} /> Delete</button>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                  {expandedWorkspaces[ws.id] && (
-                    <div style={{ paddingLeft: 8 }}>
-                      {(wsData[ws.id]?.folders ?? []).map(f => (
-                        <div key={f.id} style={{ display: "flex", alignItems: "center", gap: 9, padding: "7px 10px 7px 16px", borderRadius: 8, fontSize: 13.5, cursor: "pointer", color: "#5a5a64", marginBottom: 1, transition: "all 0.12s" }}
-                          onMouseEnter={e => { e.currentTarget.style.background = HOVER_BG; e.currentTarget.style.color = HOVER_COLOR }}
-                          onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#5a5a64" }}
-                          onClick={() => router.push(`/folders/${f.id}?name=${encodeURIComponent(f.name)}`)}>
-                          <FolderOpen size={13} style={{ color: "#4a4a56", flexShrink: 0 }} />
-                          <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{f.name}</span>
+              <div className="sb-scroll">
+                {myDocsOpen && (
+                  <>
+                    {pinnedFolders.length > 0 && (
+                      <>
+                        <div style={{ padding: "4px 12px 4px" }}>
+                          <span style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: MUTED }}>Pinned</span>
                         </div>
-                      ))}
-                      {(wsData[ws.id]?.docs ?? []).map(doc => (
-                        <div key={doc.uuid} style={{ display: "flex", alignItems: "center", gap: 9, padding: "6px 10px 6px 20px", borderRadius: 7, fontSize: 13, cursor: "pointer", color: "#4a4a54", marginBottom: 1, transition: "all 0.12s" }}
-                          onMouseEnter={e => { e.currentTarget.style.background = HOVER_BG; e.currentTarget.style.color = "#a0a0aa" }}
-                          onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#4a4a54" }}
-                          onClick={() => { openTab(doc.uuid, doc.title || "Untitled"); router.push(`/docs/${doc.uuid}`) }}>
-                          <span style={{ width: 5, height: 5, borderRadius: "50%", background: "#3a3a44", flexShrink: 0, display: "inline-block" }} />
+                        {pinnedFolders.map(folder => <FolderRow key={folder.id} folder={folder} />)}
+                        <div style={{ height: 1, background: "rgba(255,255,255,0.06)", margin: "8px 4px" }} />
+                      </>
+                    )}
+
+                    <div style={{ padding: "4px 12px 4px" }}>
+                      <span style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: MUTED }}>Folders</span>
+                    </div>
+
+                    {unpinnedFolders.map(folder => <FolderRow key={folder.id} folder={folder} />)}
+
+                    {docs.length > 0 && (
+                      <div onClick={() => setUnfiledOpen(v => !v)} style={{ display: "flex", alignItems: "center", gap: 5, padding: "10px 12px 4px", cursor: "pointer", userSelect: "none" }}>
+                        <span style={{ fontSize: 9, color: MUTED, display: "inline-block", transform: unfiledOpen ? "rotate(90deg)" : "rotate(0)", transition: "transform 0.18s" }}>▶</span>
+                        <span style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: MUTED }}>Unfiled</span>
+                      </div>
+                    )}
+
+                    {unfiledOpen && docs.map(doc => {
+                      const isActive = pathname === `/docs/${doc.uuid}`
+                      return (
+                        <div key={doc.uuid} draggable
+                          onDragStart={e => { e.dataTransfer.setData("docId", String(doc.uuid)); e.dataTransfer.effectAllowed = "move"; setDraggingDocId(doc.uuid) }}
+                          onDragEnd={() => { setDraggingDocId(null); setDragOverFolderId(null) }}
+                          onClick={() => { openTab(doc.uuid, doc.title || "Untitled"); router.push(`/docs/${doc.uuid}`) }}
+                          className="sb-group"
+                          style={{ display: "flex", alignItems: "center", gap: 9, padding: "6px 10px 6px 20px", borderRadius: 7, fontSize: 13.5, cursor: "pointer", opacity: draggingDocId === doc.uuid ? 0.4 : 1, color: isActive ? ACTIVE_COLOR : ITEM_COLOR, background: isActive ? ACTIVE_BG : "transparent", transition: "all 0.12s", marginBottom: 1 }}
+                          onMouseEnter={e => { if (!isActive) { e.currentTarget.style.background = HOVER_BG; e.currentTarget.style.color = HOVER_COLOR } }}
+                          onMouseLeave={e => { if (!isActive) { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = ITEM_COLOR } }}
+                        >
+                          <span style={{ fontSize: 13, opacity: isActive ? 1 : 0.5, flexShrink: 0, lineHeight: 1 }}>▣</span>
                           <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{doc.title || "Untitled"}</span>
                         </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              ))}
+                      )
+                    })}
 
-              {sharedOpen && extraWorkspaces.length === 0 && (
-                <p style={{ fontSize: 12, padding: "4px 12px", color: MUTED }}>No shared workspaces yet</p>
-              )}
+                    {folders.length === 0 && docs.length === 0 && (
+                      <p style={{ fontSize: 12, padding: "4px 12px", color: MUTED }}>No docs yet</p>
+                    )}
+                  </>
+                )}
+              </div>
+
+              <div style={{ borderTop: BORDER, padding: "8px 8px 14px", flexShrink: 0 }}>
+                <NavItem href="/trash" icon={<Trash2 size={16} />} label="Trash" />
+                <NavItem href="/settings" icon={<Settings size={16} />} label="Settings" />
+                <BotBtn icon={<span style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 16, height: 16, borderRadius: 4, border: "1px solid rgba(255,255,255,0.12)", fontSize: 10, fontFamily: "monospace", color: "#4a4a56" }}>?</span>} label="Help & Shortcuts" onClick={() => { setHelpTab("shortcuts"); setShowHelp(true) }} />
+                <BotBtn icon={<LogOut size={16} />} label="Log out" onClick={handleLogout} />
+              </div>
             </>
           )}
-        </div>
-
-        <div style={{ borderTop: BORDER, padding: "8px 8px 14px", flexShrink: 0 }}>
-          <NavItem href="/settings" icon={<Settings size={16} />} label="Settings" />
-          {!collapsed && <NavItem href="/trash" icon={<Trash2 size={16} />} label="Trash" />}
-          {!collapsed && (
-            <BotBtn icon={<span style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 16, height: 16, borderRadius: 4, border: "1px solid rgba(255,255,255,0.12)", fontSize: 10, fontFamily: "monospace", color: "#4a4a56" }}>?</span>} label="Help & Shortcuts" onClick={() => { setHelpTab("shortcuts"); setShowHelp(true) }} />
-          )}
-          <BotBtn icon={<LogOut size={16} />} label="Log out" onClick={handleLogout} />
         </div>
       </aside>
 
@@ -672,6 +801,60 @@ export default function Sidebar({ onNewNote, onToggle }: SidebarProps = {}) {
               <button onClick={handleSendInvites} disabled={inviteSending} style={{ padding: "9px 20px", borderRadius: 8, fontSize: 13, fontWeight: 600, color: "#fff", background: inviteSending ? "#4a3fa0" : "#6b5ce7", border: "none", cursor: inviteSending ? "default" : "pointer", fontFamily: FONT }}>
                 {inviteSending ? "Sending…" : "Send invites"}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showPalette && (
+        <div style={{ position: "fixed", inset: 0, zIndex: 50, display: "flex", alignItems: "flex-start", justifyContent: "center", paddingTop: "96px" }}>
+          <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.65)", backdropFilter: "blur(3px)" }} onClick={() => setShowPalette(false)} />
+          <div style={{ position: "relative", borderRadius: 14, boxShadow: "0 24px 64px rgba(0,0,0,0.6)", width: 480, maxWidth: "calc(100vw - 32px)", zIndex: 10, overflow: "hidden", background: "#1c1c1f", border: "1px solid rgba(255,255,255,0.09)", fontFamily: FONT }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 16px", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+              <Search size={14} style={{ color: MUTED, flexShrink: 0 }} />
+              <input
+                ref={paletteInputRef}
+                type="text"
+                placeholder="Jump to a doc or folder..."
+                value={paletteQuery}
+                onChange={e => { setPaletteQuery(e.target.value); setPaletteIndex(0) }}
+                onKeyDown={e => {
+                  if (e.key === "ArrowDown") { e.preventDefault(); setPaletteIndex(i => Math.min(i + 1, paletteItems.length - 1)) }
+                  else if (e.key === "ArrowUp") { e.preventDefault(); setPaletteIndex(i => Math.max(i - 1, 0)) }
+                  else if (e.key === "Enter") { e.preventDefault(); const item = paletteItems[paletteIndex]; if (item) selectPaletteItem(item) }
+                }}
+                style={{ flex: 1, background: "transparent", border: "none", outline: "none", fontSize: 14, color: "#e0dfd9", fontFamily: FONT }}
+              />
+            </div>
+            <div style={{ maxHeight: 320, overflowY: "auto", padding: "6px 0" }}>
+              {paletteItems.length === 0 && (
+                <p style={{ padding: 16, fontSize: 13, color: MUTED, textAlign: "center" }}>
+                  {paletteQuery ? `No docs or folders matching "${paletteQuery}"` : "No docs or folders found"}
+                </p>
+              )}
+              {paletteItems.map((item, i) => (
+                <button
+                  key={item.kind + "-" + (item.kind === "doc" ? item.uuid : item.id)}
+                  onClick={() => selectPaletteItem(item)}
+                  onMouseEnter={() => setPaletteIndex(i)}
+                  style={{ display: "flex", alignItems: "center", gap: 10, width: "100%", padding: "9px 16px", background: i === paletteIndex ? "rgba(255,255,255,0.06)" : "transparent", border: "none", cursor: "pointer", textAlign: "left", fontFamily: FONT, transition: "background 0.1s" }}
+                >
+                  {item.kind === "folder"
+                    ? <FolderOpen size={14} style={{ color: MUTED, flexShrink: 0 }} />
+                    : <span style={{ fontSize: 13, opacity: 0.6, flexShrink: 0 }}>▣</span>
+                  }
+                  <span style={{ flex: 1, fontSize: 13, color: "#e0dfd9", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {item.kind === "folder" ? item.name : (item.title || "Untitled")}
+                  </span>
+                </button>
+              ))}
+            </div>
+            <div style={{ padding: "8px 16px", borderTop: "1px solid rgba(255,255,255,0.06)", display: "flex", alignItems: "center", gap: 6 }}>
+              <span style={{ fontSize: 11, color: MUTED }}>↑↓ navigate</span>
+              <span style={{ fontSize: 11, color: MUTED }}>·</span>
+              <span style={{ fontSize: 11, color: MUTED }}>Enter select</span>
+              <span style={{ fontSize: 11, color: MUTED }}>·</span>
+              <span style={{ fontSize: 11, color: MUTED }}>Esc close</span>
             </div>
           </div>
         </div>
