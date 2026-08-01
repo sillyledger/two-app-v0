@@ -2,7 +2,6 @@
 import { useEffect, useState, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { Plus, MoreHorizontal, Pencil, FolderInput, Trash2, LayoutTemplate, Star, Lock, Search, LayoutGrid, List, Users, ChevronLeft, ChevronRight } from "lucide-react"
-import Sidebar from "@/components/sidebar"
 import TemplatePickerModal from "@/components/template-picker-modal"
 import { useTabStore } from "@/hooks/use-tab-store"
 
@@ -55,19 +54,14 @@ const FREE_LIMIT = 30
 export default function DocsPage() {
   const router = useRouter()
   const { openTab } = useTabStore()
-  const [collapsed, setCollapsed] = useState(false)
-  const [sidebarReady, setSidebarReady] = useState(false)
   const [templateModalOpen, setTemplateModalOpen] = useState(false)
   const [limitModalOpen, setLimitModalOpen] = useState(false)
   const [view, setView] = useState<ViewMode>("grid")
   const [page, setPage] = useState(1)
 
   useEffect(() => {
-    const saved = localStorage.getItem("sidebar-collapsed")
-    if (saved === "true") setCollapsed(true)
     const savedView = localStorage.getItem("docs-view")
     if (savedView === "grid" || savedView === "list") setView(savedView)
-    setSidebarReady(true)
   }, [])
 
   useEffect(() => {
@@ -202,11 +196,8 @@ export default function DocsPage() {
   }
 
   return (
-    <div className="flex h-screen overflow-hidden" style={{ backgroundColor: "var(--bg)" }}>
-      {sidebarReady && <Sidebar collapsed={collapsed} onToggle={() => setCollapsed(v => !v)} />}
-
-      <main className="flex-1 overflow-y-auto transition-all duration-200">
-        <div className="max-w-[1180px] mx-auto px-10 py-10">
+    <div className="flex-1 overflow-y-auto" style={{ backgroundColor: "var(--bg)" }}>
+      <div className="max-w-[1180px] mx-auto px-10 py-10">
 
           <div className="flex items-center justify-between mb-6 gap-4">
             <div className="relative flex-1" style={{ maxWidth: 420 }}>
@@ -425,8 +416,7 @@ export default function DocsPage() {
               )}
             </>
           )}
-        </div>
-      </main>
+      </div>
 
       <TemplatePickerModal open={templateModalOpen} onClose={() => setTemplateModalOpen(false)} />
 
