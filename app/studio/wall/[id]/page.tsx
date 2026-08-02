@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef, useCallback } from 'react'
 import { useParams } from 'next/navigation'
 import Sidebar from '@/components/sidebar'
-import { Plus, FileText, StickyNote, Image as ImageIcon, Palette, Search, X } from 'lucide-react'
+import { Plus, FileText, StickyNote, Image as ImageIcon, Search, X } from 'lucide-react'
 
 interface BoardItem {
   id: number
@@ -16,6 +16,12 @@ interface BoardItem {
   rotation: number
 }
 
+interface BoardConnector {
+  id: number
+  from_item_id: number
+  to_item_id: number
+}
+
 interface DocOrNote {
   uuid: string
   title: string
@@ -23,12 +29,19 @@ interface DocOrNote {
 
 const SWATCHES = ["#EF9F27", "#85B7EB", "#5DCAA5", "#F0997B", "#AFA9EC", "#97C459", "#ED93B1"]
 
+function cardSize(type: BoardItem['type']) {
+  if (type === 'swatch') return { w: 130, h: 100 }
+  if (type === 'image') return { w: 150, h: 110 }
+  return { w: 160, h: 70 }
+}
+
 export default function BoardPage() {
   const params = useParams()
   const boardId = params.id as string
   const [collapsed, setCollapsed] = useState(false)
   const [board, setBoard] = useState<{ name: string; type: string } | null>(null)
   const [items, setItems] = useState<BoardItem[]>([])
+  const [connectors, setConnectors] = useState<BoardConnector[]>([])
   const [docs, setDocs] = useState<DocOrNote[]>([])
   const [notes, setNotes] = useState<DocOrNote[]>([])
 
@@ -38,12 +51,18 @@ export default function BoardPage() {
   const [contextMenuId, setContextMenuId] = useState<number | null>(null)
   const [editingTitle, setEditingTitle] = useState(false)
   const [titleValue, setTitleValue] = useState('')
+  const [hoveredCardId, setHoveredCardId] = useState<number | null>(null)
+  const [connectDrag, setConnectDrag] = useState<{ fromId: number; x: number; y: number } | null>(null)
+  const [hoverTargetId, setHoverTargetId] = useState<number | null>(null)
 
   const addMenuRef = useRef<HTMLDivElement>(null)
   const pickerRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const boardRef = useRef<HTMLDivElement>(null)
   const dragState = useRef<{ id: number; offsetX: number; offsetY: number } | null>(null)
+  const connectState = useRef<{ fromId: number } | null>(null)
+  const itemsRef = useRef<BoardItem[]>([])
+  itemsRef.current = items
 
   useEffect(() => {
     const saved = localStorage.getItem('sidebar-collapsed')
@@ -53,6 +72,7 @@ export default function BoardPage() {
   useEffect(() => {
     fetch('/api/boards').then(r => r.json()).then((data: any[]) => setBoard(data.find(b => b.uuid === boardId) ?? null))
     fetch(`/api/boards/${boardId}/items`).then(r => r.json()).then(data => setItems(Array.isArray(data) ? data : []))
+    fetch(`/api/boards/${boardId}/connectors`).then(r => r.json()).then(data => setConnectors(Array.isArray(data) ? data : []))
     fetch('/api/docs').then(r => r.json()).then(data => setDocs(Array.isArray(data) ? data.map((d: any) => ({ uuid: d.uuid, title: d.title || 'Untitled' })) : []))
     fetch('/api/notes').then(r => r.json()).then(data => setNotes(Array.isArray(data) ? data.map((n: any) => ({ uuid: n.uuid, title: n.title || 'Untitled' })) : []))
   }, [boardId])
@@ -115,8 +135,14 @@ export default function BoardPage() {
 
   const deleteItem = async (id: number) => {
     setItems(prev => prev.filter(i => i.id !== id))
+    setConnectors(prev => prev.filter(c => c.from_item_id !== id && c.to_item_id !== id))
     setContextMenuId(null)
     await fetch(`/api/boards/${boardId}/items/${id}`, { method: 'DELETE' })
+  }
+
+  const deleteConnector = async (id: number) => {
+    setConnectors(prev => prev.filter(c => c.id !== id))
+    await fetch(`/api/boards/${boardId}/connectors/${id}`, { method: 'DELETE' })
   }
 
   const onCardMouseDown = (e: React.MouseEvent, item: BoardItem) => {
@@ -148,6 +174,48 @@ export default function BoardPage() {
       return prev
     })
   }, [boardId, onMouseMove])
+
+  const onHandleMouseDown = (e: React.MouseEvent, item: BoardItem) => {
+    e.stopPropagation()
+    const boardRect = boardRef.current?.getBoundingClientRect()
+    if (!boardRect) return
+    const size = cardSize(item.type)
+    connectState.current = { fromId: item.id }
+    setConnectDrag({ fromId: item.id, x: item.x + size.w, y: item.y + size.h })
+    document.addEventListener('mousemove', onConnectMove)
+    document.addEventListener('mouseup', onConnectUp)
+  }
+
+  const onConnectMove = useCallback((e: MouseEvent) => {
+    const boardRect = boardRef.current?.getBoundingClientRect()
+    if (!boardRect || !connectState.current) return
+    const x = e.clientX - boardRect.left
+    const y = e.clientY - boardRect.top
+    setConnectDrag(prev => (prev ? { ...prev, x, y } : prev))
+
+    const target = itemsRef.current.find(i => {
+      if (i.id === connectState.current!.fromId) return false
+      const size = cardSize(i.type)
+      return x >= i.x && x <= i.x + size.w && y >= i.y && y <= i.y + size.h
+    })
+    setHoverTargetId(target ? target.id : null)
+  }, [])
+
+  const onConnectUp = useCallback(async () => {
+    document.removeEventListener('mousemove', onConnectMove)
+    document.removeEventListener('mouseup', onConnectUp)
+    const fromId = connectState.current?.fromId
+    connectState.current = null
+    setConnectDrag(null)
+    const toId = hoverTargetId
+    setHoverTargetId(null)
+    if (!fromId || !toId || fromId === toId) return
+    const res = await fetch(`/api/boards/${boardId}/connectors`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ from_item_id: fromId, to_item_id: toId }),
+    })
+    const connector = await res.json()
+    setConnectors(prev => [...prev, connector])
+  }, [boardId, hoverTargetId, onConnectMove])
 
   const filteredPickerItems = (pickerType === 'doc' ? docs : notes).filter(d => d.title.toLowerCase().includes(pickerQuery.toLowerCase()))
 
@@ -223,29 +291,73 @@ export default function BoardPage() {
         </div>
 
         <div ref={boardRef} style={{ flex: 1, position: 'relative', overflow: 'auto', backgroundColor: 'var(--bg)' }}>
+
+          <svg style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', overflow: 'visible', pointerEvents: 'none' }}>
+            {connectors.map(c => {
+              const from = items.find(i => i.id === c.from_item_id)
+              const to = items.find(i => i.id === c.to_item_id)
+              if (!from || !to) return null
+              const fromSize = cardSize(from.type)
+              const toSize = cardSize(to.type)
+              const x1 = from.x + fromSize.w
+              const y1 = from.y + fromSize.h
+              const x2 = to.x + toSize.w / 2
+              const y2 = to.y + toSize.h / 2
+              return (
+                <g key={c.id} style={{ pointerEvents: 'stroke', cursor: 'pointer' }} onClick={() => deleteConnector(c.id)}>
+                  <line x1={x1} y1={y1} x2={x2} y2={y2} stroke="transparent" strokeWidth={10} />
+                  <line x1={x1} y1={y1} x2={x2} y2={y2} stroke="#8f89e6" strokeWidth={1.3} strokeDasharray="3,4" />
+                  <circle cx={x1} cy={y1} r={3} fill="var(--bg)" stroke="#8f89e6" strokeWidth={1.3} />
+                </g>
+              )
+            })}
+            {connectDrag && (() => {
+              const from = items.find(i => i.id === connectDrag.fromId)
+              if (!from) return null
+              const size = cardSize(from.type)
+              return (
+                <>
+                  <line x1={from.x + size.w} y1={from.y + size.h} x2={connectDrag.x} y2={connectDrag.y} stroke="#8f89e6" strokeWidth={1.3} strokeDasharray="3,4" />
+                  <circle cx={from.x + size.w} cy={from.y + size.h} r={3} fill="var(--bg)" stroke="#8f89e6" strokeWidth={1.3} />
+                </>
+              )
+            })()}
+          </svg>
+
           {items.map(item => {
             const title = item.type === 'doc' ? docs.find(d => d.uuid === item.ref_id)?.title : item.type === 'note' ? notes.find(d => d.uuid === item.ref_id)?.title : null
+            const size = cardSize(item.type)
+            const isHovered = hoveredCardId === item.id
+            const isConnectTarget = hoverTargetId === item.id
             return (
               <div
                 key={item.id}
                 onMouseDown={e => onCardMouseDown(e, item)}
+                onMouseEnter={() => setHoveredCardId(item.id)}
+                onMouseLeave={() => setHoveredCardId(null)}
                 onContextMenu={e => { e.preventDefault(); setContextMenuId(item.id) }}
                 style={{ position: 'absolute', left: item.x, top: item.y, transform: `rotate(${item.rotation}deg)`, cursor: 'grab', userSelect: 'none' }}
               >
                 {item.type === 'swatch' ? (
-                  <div style={{ width: 130, height: 100, borderRadius: 8, backgroundColor: item.color ?? '#888', boxShadow: '0 4px 12px rgba(0,0,0,0.3)' }} />
+                  <div style={{ width: size.w, height: size.h, borderRadius: 8, backgroundColor: item.color ?? '#888', boxShadow: '0 4px 12px rgba(0,0,0,0.3)', border: isConnectTarget ? '1.5px solid #8f89e6' : 'none' }} />
                 ) : item.type === 'image' ? (
-                  <div style={{ width: 150, borderRadius: 8, overflow: 'hidden', boxShadow: '0 4px 12px rgba(0,0,0,0.3)' }}>
+                  <div style={{ width: size.w, borderRadius: 8, overflow: 'hidden', boxShadow: '0 4px 12px rgba(0,0,0,0.3)', border: isConnectTarget ? '1.5px solid #8f89e6' : '1.5px solid transparent' }}>
                     <img src={item.content ?? ''} style={{ width: '100%', display: 'block' }} />
                   </div>
                 ) : (
-                  <div style={{ width: 160, backgroundColor: 'var(--bg-secondary)', borderRadius: 8, padding: 12, boxShadow: '0 4px 12px rgba(0,0,0,0.3)' }}>
+                  <div style={{ width: size.w, backgroundColor: 'var(--bg-secondary)', borderRadius: 8, padding: 12, boxShadow: '0 4px 12px rgba(0,0,0,0.3)', border: isConnectTarget ? '1.5px solid #8f89e6' : '1.5px solid transparent' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
                       {item.type === 'doc' ? <FileText size={13} style={{ color: '#8f89e6' }} /> : <StickyNote size={13} style={{ color: '#c98a5e' }} />}
                       <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{item.type === 'doc' ? 'Doc' : 'Note'}</span>
                     </div>
                     <p style={{ fontSize: 12.5, fontWeight: 500, color: 'var(--text-primary)', margin: 0 }}>{title ?? 'Untitled'}</p>
                   </div>
+                )}
+                {isHovered && !connectDrag && (
+                  <div
+                    onMouseDown={e => onHandleMouseDown(e, item)}
+                    style={{ position: 'absolute', bottom: -6, right: -6, width: 12, height: 12, borderRadius: '50%', backgroundColor: 'var(--bg)', border: '1.5px solid #8f89e6', cursor: 'crosshair' }}
+                  />
                 )}
                 {contextMenuId === item.id && (
                   <div style={{ position: 'absolute', top: '100%', left: 0, marginTop: 4, backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border)', borderRadius: 8, boxShadow: '0 6px 20px rgba(0,0,0,0.4)', overflow: 'hidden', zIndex: 10, width: 130 }}>
