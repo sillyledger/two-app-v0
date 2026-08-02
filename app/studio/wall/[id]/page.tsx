@@ -61,6 +61,7 @@ export default function BoardPage() {
   const boardRef = useRef<HTMLDivElement>(null)
   const dragState = useRef<{ id: number; offsetX: number; offsetY: number } | null>(null)
   const connectState = useRef<{ fromId: number } | null>(null)
+  const hoverTargetRef = useRef<number | null>(null)
   const itemsRef = useRef<BoardItem[]>([])
   itemsRef.current = items
 
@@ -198,6 +199,7 @@ export default function BoardPage() {
       const size = cardSize(i.type)
       return x >= i.x && x <= i.x + size.w && y >= i.y && y <= i.y + size.h
     })
+    hoverTargetRef.current = target ? target.id : null
     setHoverTargetId(target ? target.id : null)
   }, [])
 
@@ -207,7 +209,8 @@ export default function BoardPage() {
     const fromId = connectState.current?.fromId
     connectState.current = null
     setConnectDrag(null)
-    const toId = hoverTargetId
+    const toId = hoverTargetRef.current
+    hoverTargetRef.current = null
     setHoverTargetId(null)
     if (!fromId || !toId || fromId === toId) return
     const res = await fetch(`/api/boards/${boardId}/connectors`, {
@@ -215,7 +218,7 @@ export default function BoardPage() {
     })
     const connector = await res.json()
     setConnectors(prev => [...prev, connector])
-  }, [boardId, hoverTargetId, onConnectMove])
+  }, [boardId, onConnectMove])
 
   const filteredPickerItems = (pickerType === 'doc' ? docs : notes).filter(d => d.title.toLowerCase().includes(pickerQuery.toLowerCase()))
 
@@ -336,7 +339,7 @@ export default function BoardPage() {
                 onMouseEnter={() => setHoveredCardId(item.id)}
                 onMouseLeave={() => setHoveredCardId(null)}
                 onContextMenu={e => { e.preventDefault(); setContextMenuId(item.id) }}
-                style={{ position: 'absolute', left: item.x, top: item.y, transform: `rotate(${item.rotation}deg)`, cursor: 'grab', userSelect: 'none' }}
+                style={{ position: 'absolute', left: item.x, top: item.y, transform: `rotate(${item.rotation}deg)`, cursor: 'grab', userSelect: 'none', WebkitUserSelect: 'none' }}
               >
                 {item.type === 'swatch' ? (
                   <div style={{ width: size.w, height: size.h, borderRadius: 8, backgroundColor: item.color ?? '#888', boxShadow: '0 4px 12px rgba(0,0,0,0.3)', border: isConnectTarget ? '1.5px solid #8f89e6' : 'none' }} />
