@@ -27,7 +27,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     const board = await sql`SELECT id FROM boards WHERE uuid = ${id} AND user_id = ${session.userId}`
     if (!board[0]) return NextResponse.json({ error: 'Not found' }, { status: 404 })
     const { type, ref_id, content, color, x, y, rotation } = await request.json()
-    if (!['doc', 'note', 'image', 'swatch'].includes(type)) {
+    if (!['doc', 'note', 'image', 'swatch', 'text'].includes(type)) {
       return NextResponse.json({ error: 'Invalid type' }, { status: 400 })
     }
     const result = await sql`
