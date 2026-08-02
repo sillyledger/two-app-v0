@@ -36,6 +36,8 @@ export default function BoardPage() {
   const [pickerType, setPickerType] = useState<'doc' | 'note' | null>(null)
   const [pickerQuery, setPickerQuery] = useState('')
   const [contextMenuId, setContextMenuId] = useState<number | null>(null)
+  const [editingTitle, setEditingTitle] = useState(false)
+  const [titleValue, setTitleValue] = useState('')
 
   const addMenuRef = useRef<HTMLDivElement>(null)
   const pickerRef = useRef<HTMLDivElement>(null)
@@ -94,6 +96,15 @@ export default function BoardPage() {
     e.target.value = ''
   }
 
+  const saveTitle = async () => {
+    setEditingTitle(false)
+    if (!titleValue.trim() || titleValue === board?.name) return
+    setBoard(prev => (prev ? { ...prev, name: titleValue.trim() } : prev))
+    await fetch(`/api/boards/${boardId}`, {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: titleValue.trim() }),
+    })
+  }
+
   const straighten = async (id: number) => {
     setItems(prev => prev.map(i => (i.id === id ? { ...i, rotation: 0 } : i)))
     setContextMenuId(null)
@@ -145,8 +156,26 @@ export default function BoardPage() {
       <Sidebar collapsed={collapsed} onToggle={() => setCollapsed(v => !v)} />
 
       <main className="flex-1 overflow-hidden flex flex-col">
-        <div className="flex items-center justify-between px-8 py-5" style={{ borderBottom: '1px solid var(--border)' }}>
-          <p className="text-[16px] font-medium" style={{ color: 'var(--text-primary)' }}>{board?.name ?? 'Board'}</p>
+        <div className="flex items-center justify-between px-8 py-5">
+          {editingTitle ? (
+            <input
+              autoFocus
+              value={titleValue}
+              onChange={e => setTitleValue(e.target.value)}
+              onBlur={saveTitle}
+              onKeyDown={e => { if (e.key === 'Enter') saveTitle(); if (e.key === 'Escape') setEditingTitle(false) }}
+              className="text-[16px] font-medium bg-transparent outline-none"
+              style={{ color: 'var(--text-primary)', border: 'none' }}
+            />
+          ) : (
+            <p
+              className="text-[16px] font-medium cursor-text"
+              style={{ color: 'var(--text-primary)' }}
+              onDoubleClick={() => { setTitleValue(board?.name ?? ''); setEditingTitle(true) }}
+            >
+              {board?.name ?? 'Board'}
+            </p>
+          )}
           <div style={{ position: 'relative' }} ref={addMenuRef}>
             <button
               onClick={() => setAddMenuOpen(v => !v)}
