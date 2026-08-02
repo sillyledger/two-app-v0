@@ -121,27 +121,31 @@ export default function LibraryPage() {
       .then(data => setFolderDocs(Array.isArray(data) ? data : []))
       .catch(() => setFolderDocs([]))
 
-    fetch('/api/workspaces')
-      .then(r => r.json())
-      .then(data => {
-        const shared = Array.isArray(data?.shared) ? data.shared : []
-        setSharedWorkspaces(shared)
-        shared.forEach((ws: { id: string; name: string }) => {
-          Promise.all([
-            fetch(`/api/folders?workspace_id=${ws.id}`).then(r => r.json()),
-            fetch(`/api/docs?workspace_id=${ws.id}`).then(r => r.json()),
-          ]).then(([folders, docs]) => {
-            setSharedData(prev => ({
-              ...prev,
-              [ws.id]: {
-                folders: Array.isArray(folders) ? folders : [],
-                docs: Array.isArray(docs) ? docs : [],
-              },
-            }))
-          }).catch(() => {})
+    fetch('/api/workspace').then(r => r.json()).then(primary => {
+      fetch('/api/workspaces')
+        .then(r => r.json())
+        .then(data => {
+          const owned = Array.isArray(data?.owned) ? data.owned : []
+          const shared = Array.isArray(data?.shared) ? data.shared : []
+          const extra = [...owned, ...shared].filter((w: { id: string }) => w.id !== primary?.id)
+          setSharedWorkspaces(extra)
+          extra.forEach((ws: { id: string; name: string }) => {
+            Promise.all([
+              fetch(`/api/folders?workspace_id=${ws.id}`).then(r => r.json()),
+              fetch(`/api/docs?workspace_id=${ws.id}`).then(r => r.json()),
+            ]).then(([folders, docs]) => {
+              setSharedData(prev => ({
+                ...prev,
+                [ws.id]: {
+                  folders: Array.isArray(folders) ? folders : [],
+                  docs: Array.isArray(docs) ? docs : [],
+                },
+              }))
+            }).catch(() => {})
+          })
         })
-      })
-      .catch(() => setSharedWorkspaces([]))
+        .catch(() => setSharedWorkspaces([]))
+    }).catch(() => {})
   }, [])
 
   const mostRecent = allDocs.length > 0
