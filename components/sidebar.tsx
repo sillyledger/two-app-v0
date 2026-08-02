@@ -60,7 +60,7 @@ export default function Sidebar({ onNewNote, onToggle }: SidebarProps = {}) {
   const pathname = usePathname()
   const router = useRouter()
   const { openTab } = useTabStore()
-  const [collapsed, setCollapsed] = useState(() => typeof window !== "undefined" ? localStorage.getItem("sidebar-collapsed") === "true" : false)
+  const [collapsed, setCollapsed] = useState(false)
   const [myDocsOpen, setMyDocsOpen] = useState(true)
   const [unfiledOpen, setUnfiledOpen] = useState(true)
   const [sharedOpen, setSharedOpen] = useState(true)
@@ -118,6 +118,11 @@ export default function Sidebar({ onNewNote, onToggle }: SidebarProps = {}) {
 
   const workspacesRef = useRef<Workspace[]>([])
   const workspaceIdRef = useRef<string | null>(null)
+
+  useEffect(() => {
+    const saved = localStorage.getItem("sidebar-collapsed")
+    if (saved === "true") setCollapsed(true)
+  }, [])
 
   useEffect(() => { workspacesRef.current = workspaces }, [workspaces])
   useEffect(() => { workspaceIdRef.current = workspaceId }, [workspaceId])
