@@ -8,6 +8,12 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   const { itemId } = await params
 
   try {
+    const owned = await sql`
+      SELECT bi.id FROM board_items bi
+      JOIN boards b ON b.id = bi.board_id
+      WHERE bi.id = ${itemId} AND b.user_id = ${session.userId}
+    `
+    if (!owned[0]) return NextResponse.json({ error: 'Not found' }, { status: 404 })
     const body = await request.json()
     if (typeof body.x === 'number' && typeof body.y === 'number') {
       const result = await sql`UPDATE board_items SET x = ${body.x}, y = ${body.y} WHERE id = ${itemId} RETURNING *`
@@ -30,6 +36,12 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
   const { itemId } = await params
 
   try {
+    const owned = await sql`
+      SELECT bi.id FROM board_items bi
+      JOIN boards b ON b.id = bi.board_id
+      WHERE bi.id = ${itemId} AND b.user_id = ${session.userId}
+    `
+    if (!owned[0]) return NextResponse.json({ error: 'Not found' }, { status: 404 })
     await sql`DELETE FROM board_items WHERE id = ${itemId}`
     return NextResponse.json({ success: true })
   } catch (error) {

@@ -11,7 +11,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     const { name } = await request.json()
     if (!name?.trim()) return NextResponse.json({ error: 'Name required' }, { status: 400 })
     const result = await sql`
-      UPDATE boards SET name = ${name.trim()} WHERE id = ${id} AND user_id = ${session.userId} RETURNING *
+      UPDATE boards SET name = ${name.trim()} WHERE uuid = ${id} AND user_id = ${session.userId} RETURNING *
     `
     return NextResponse.json(result[0])
   } catch (error) {

@@ -8,7 +8,9 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
   const { id } = await params
 
   try {
-    const items = await sql`SELECT * FROM board_items WHERE board_id = ${id} ORDER BY created_at ASC`
+    const board = await sql`SELECT id FROM boards WHERE uuid = ${id} AND user_id = ${session.userId}`
+    if (!board[0]) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+    const items = await sql`SELECT * FROM board_items WHERE board_id = ${board[0].id} ORDER BY created_at ASC`
     return NextResponse.json(items)
   } catch (error) {
     console.error('Failed to fetch board items:', error)
@@ -22,13 +24,15 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   const { id } = await params
 
   try {
+    const board = await sql`SELECT id FROM boards WHERE uuid = ${id} AND user_id = ${session.userId}`
+    if (!board[0]) return NextResponse.json({ error: 'Not found' }, { status: 404 })
     const { type, ref_id, content, color, x, y, rotation } = await request.json()
     if (!['doc', 'note', 'image', 'swatch'].includes(type)) {
       return NextResponse.json({ error: 'Invalid type' }, { status: 400 })
     }
     const result = await sql`
       INSERT INTO board_items (board_id, type, ref_id, content, color, x, y, rotation)
-      VALUES (${id}, ${type}, ${ref_id ?? null}, ${content ?? null}, ${color ?? null}, ${x ?? 40}, ${y ?? 40}, ${rotation ?? 0})
+      VALUES (${board[0].id}, ${type}, ${ref_id ?? null}, ${content ?? null}, ${color ?? null}, ${x ?? 40}, ${y ?? 40}, ${rotation ?? 0})
       RETURNING *
     `
     return NextResponse.json(result[0], { status: 201 })

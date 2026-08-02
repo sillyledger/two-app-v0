@@ -7,6 +7,7 @@ import { Plus, LayoutGrid, Atom } from 'lucide-react'
 
 interface Board {
   id: number
+  uuid: string
   name: string
   type: 'wall' | 'canvas'
   created_at: string
@@ -50,7 +51,7 @@ export default function StudioPage() {
       body: JSON.stringify({ name: 'Untitled board', type, workspace_id: workspace.id }),
     })
     const board = await res.json()
-    router.push(`/studio/${board.id}`)
+    router.push(`/studio/${board.type}/${board.uuid}`)
   }
 
   return (
@@ -116,7 +117,7 @@ export default function StudioPage() {
               {boards.map(board => (
                 <div
                   key={board.id}
-                  onClick={() => router.push(`/studio/${board.id}`)}
+                  onClick={() => router.push(`/studio/${board.type}/${board.uuid}`)}
                   className="rounded-xl p-4 flex flex-col justify-between cursor-pointer transition-colors"
                   style={{ backgroundColor: 'var(--bg-secondary)', height: 110 }}
                   onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)')}
