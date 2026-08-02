@@ -276,12 +276,12 @@ export default function LibraryPage() {
                     filteredFolders.length === 0 ? (
                       <p className="text-sm mb-10" style={{ color: 'var(--text-muted)' }}>No folders yet.</p>
                     ) : (
-                      <div className="flex gap-6 mb-10">
+                      <div className="grid gap-4 mb-10" style={{ gridTemplateColumns: 'repeat(5, minmax(0, 1fr))' }}>
                         {filteredFolders.map(({ folder, color, docs }) => (
                           <div
                             key={folder.id}
                             onClick={() => router.push(`/folders/${folder.id}?name=${encodeURIComponent(folder.name)}`)}
-                            className="relative flex-1 cursor-pointer"
+                            className="relative cursor-pointer"
                             style={{ height: '150px' }}
                           >
                             {docs.length > 0 && (
@@ -306,9 +306,9 @@ export default function LibraryPage() {
                     filteredLabelCollections.length === 0 ? (
                       <p className="text-sm mb-10" style={{ color: 'var(--text-muted)' }}>No labels yet.</p>
                     ) : (
-                      <div className="flex gap-6 mb-10">
+                      <div className="grid gap-4 mb-10" style={{ gridTemplateColumns: 'repeat(5, minmax(0, 1fr))' }}>
                         {filteredLabelCollections.map(({ label, docs }) => (
-                          <div key={label.id} className="relative flex-1" style={{ height: '150px' }}>
+                          <div key={label.id} className="relative" style={{ height: '150px' }}>
                             {docs.length > 0 && (
                               <>
                                 <div style={{ position: 'absolute', top: 14, left: 10, right: -10, bottom: 0, borderRadius: 12, backgroundColor: 'var(--bg-secondary)', opacity: 0.35 }} />
