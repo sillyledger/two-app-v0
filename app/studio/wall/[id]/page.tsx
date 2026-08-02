@@ -157,25 +157,29 @@ export default function BoardPage() {
 
       <main className="flex-1 overflow-hidden flex flex-col">
         <div className="flex items-center justify-between px-8 py-5">
-          {editingTitle ? (
-            <input
-              autoFocus
-              value={titleValue}
-              onChange={e => setTitleValue(e.target.value)}
-              onBlur={saveTitle}
-              onKeyDown={e => { if (e.key === 'Enter') saveTitle(); if (e.key === 'Escape') setEditingTitle(false) }}
-              className="text-[16px] font-medium bg-transparent outline-none"
-              style={{ color: 'var(--text-primary)', border: 'none' }}
-            />
-          ) : (
-            <p
-              className="text-[16px] font-medium cursor-text"
-              style={{ color: 'var(--text-primary)' }}
-              onDoubleClick={() => { setTitleValue(board?.name ?? ''); setEditingTitle(true) }}
-            >
-              {board?.name ?? 'Board'}
-            </p>
-          )}
+          <div className="flex items-center gap-0.5 min-w-0 flex-1">
+            <a href="/studio" className="text-[12px] font-medium truncate transition-colors hover:underline" style={{ color: 'var(--text-muted)' }}>Studio</a>
+            <span className="mx-1 text-[12px]" style={{ color: 'var(--text-muted)' }}>/</span>
+            {editingTitle ? (
+              <input
+                autoFocus
+                value={titleValue}
+                onChange={e => setTitleValue(e.target.value)}
+                onBlur={saveTitle}
+                onKeyDown={e => { if (e.key === 'Enter') saveTitle(); if (e.key === 'Escape') setEditingTitle(false) }}
+                className="text-[13px] font-medium bg-transparent outline-none"
+                style={{ color: 'var(--text-secondary)', border: 'none' }}
+              />
+            ) : (
+              <span
+                className="text-[13px] font-medium truncate max-w-[220px] cursor-text"
+                style={{ color: 'var(--text-secondary)' }}
+                onDoubleClick={() => { setTitleValue(board?.name ?? ''); setEditingTitle(true) }}
+              >
+                {board?.name ?? 'Board'}
+              </span>
+            )}
+          </div>
           <div style={{ position: 'relative' }} ref={addMenuRef}>
             <button
               onClick={() => setAddMenuOpen(v => !v)}

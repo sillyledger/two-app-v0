@@ -21,9 +21,16 @@ export default function CanvasBoardPage() {
   return (
     <div className="flex h-screen overflow-hidden" style={{ backgroundColor: 'var(--bg)' }}>
       <Sidebar collapsed={collapsed} onToggle={() => setCollapsed(v => !v)} />
-      <main className="flex-1 flex flex-col items-center justify-center gap-2">
-        <p className="text-lg font-medium" style={{ color: 'var(--text-primary)' }}>{board?.name ?? 'Board'}</p>
-        <p className="text-sm" style={{ color: 'var(--text-muted)' }}>The infinite canvas is coming next.</p>
+      <main className="flex-1 flex flex-col">
+        <div className="flex items-center px-8 py-5">
+          <a href="/studio" className="text-[12px] font-medium truncate transition-colors hover:underline" style={{ color: 'var(--text-muted)' }}>Studio</a>
+          <span className="mx-1 text-[12px]" style={{ color: 'var(--text-muted)' }}>/</span>
+          <span className="text-[13px] font-medium truncate max-w-[220px]" style={{ color: 'var(--text-secondary)' }}>{board?.name ?? 'Board'}</span>
+        </div>
+        <div className="flex-1 flex flex-col items-center justify-center gap-2">
+          <p className="text-lg font-medium" style={{ color: 'var(--text-primary)' }}>{board?.name ?? 'Board'}</p>
+          <p className="text-sm" style={{ color: 'var(--text-muted)' }}>The infinite canvas is coming next.</p>
+        </div>
       </main>
     </div>
   )
