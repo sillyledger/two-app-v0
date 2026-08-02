@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Sidebar from '@/components/sidebar'
 import TemplatePickerModal from '@/components/template-picker-modal'
-import { FileText, Search, Plus } from 'lucide-react'
+import { FileText, Search, Plus, ArrowRight, Users } from 'lucide-react'
 
 interface Label {
   id: number
@@ -26,7 +26,26 @@ interface Collection {
   docs: Doc[]
 }
 
-type LibraryPill = 'all' | 'collections' | 'unlabeled' | 'templates' | 'shared'
+interface FolderItem {
+  id: string
+  name: string
+  doc_count: number | string
+}
+
+interface FolderDoc {
+  uuid: string
+  title: string
+  folder_id?: string | null
+  folder_name?: string | null
+}
+
+type LibraryPill = 'all' | 'group' | 'other' | 'templates' | 'shared'
+type GroupBy = 'folders' | 'labels'
+
+const ACCENT_COLORS = ["#EF9F27", "#85B7EB", "#5DCAA5", "#F0997B", "#AFA9EC", "#97C459", "#ED93B1", "#B4B2A9", "#5DCAA5"]
+function getAccent(index: number) {
+  return ACCENT_COLORS[index % ACCENT_COLORS.length]
+}
 
 function timeAgo(dateStr: string) {
   const date = new Date(dateStr)
@@ -39,12 +58,24 @@ function timeAgo(dateStr: string) {
   return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
 }
 
+function previewText(titles: string[]) {
+  if (titles.length === 0) return 'Empty folder'
+  const shown = titles.slice(0, 2).join(', ')
+  return titles.length > 2 ? `${shown} +${titles.length - 2}` : shown
+}
+
 export default function LibraryPage() {
   const router = useRouter()
   const [collapsed, setCollapsed] = useState(false)
+  const [groupBy, setGroupBy] = useState<GroupBy>('folders')
+
   const [collections, setCollections] = useState<Collection[]>([])
   const [unlabeled, setUnlabeled] = useState<Doc[]>([])
   const [allDocs, setAllDocs] = useState<Doc[]>([])
+
+  const [folders, setFolders] = useState<FolderItem[]>([])
+  const [folderDocs, setFolderDocs] = useState<FolderDoc[]>([])
+
   const [search, setSearch] = useState('')
   const [loading, setLoading] = useState(true)
   const [activePill, setActivePill] = useState<LibraryPill>('all')
@@ -54,529 +85,288 @@ export default function LibraryPage() {
   useEffect(() => {
     const saved = localStorage.getItem('sidebar-collapsed')
     if (saved === 'true') setCollapsed(true)
+    const savedGroup = localStorage.getItem('library-group-by')
+    if (savedGroup === 'folders' || savedGroup === 'labels') setGroupBy(savedGroup)
   }, [])
+
+  useEffect(() => {
+    localStorage.setItem('library-group-by', groupBy)
+  }, [groupBy])
 
   useEffect(() => {
     fetch('/api/library')
       .then(r => r.json())
       .then(({ labels, docs }) => {
         if (!Array.isArray(labels) || !Array.isArray(docs)) return
-
         const built: Collection[] = labels.map((label: Label) => ({
           label,
-          docs: docs.filter((d: Doc) =>
-            d.labels.some(l => l.id === label.id)
-          ),
+          docs: docs.filter((d: Doc) => d.labels.some(l => l.id === label.id)),
         })).filter(c => c.docs.length > 0)
-
         const noLabel = docs.filter((d: Doc) => d.labels.length === 0)
-
         setCollections(built)
         setUnlabeled(noLabel)
         setAllDocs(docs)
         setLoading(false)
       })
+
+    fetch('/api/folders')
+      .then(r => r.json())
+      .then(data => setFolders(Array.isArray(data) ? data : []))
+      .catch(() => setFolders([]))
+
+    fetch('/api/docs')
+      .then(r => r.json())
+      .then(data => setFolderDocs(Array.isArray(data) ? data : []))
+      .catch(() => setFolderDocs([]))
   }, [])
-
-  const filtered = collections.filter(c =>
-    c.label.name.toLowerCase().includes(search.toLowerCase()) ||
-    c.docs.some(d => d.title.toLowerCase().includes(search.toLowerCase()))
-  )
-
-  function cardSize(count: number) {
-    if (count >= 8) return 'col-span-2 row-span-2'
-    if (count >= 4) return 'col-span-2 row-span-1'
-    return 'col-span-1 row-span-1'
-  }
 
   const mostRecent = allDocs.length > 0
     ? [...allDocs].sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())[0]
     : null
 
-  const docsThisWeek = (() => {
-    const buckets = [0, 0, 0, 0, 0, 0, 0]
-    const now = new Date()
-    allDocs.forEach(d => {
-      const diff = Math.floor((now.getTime() - new Date(d.created_at).getTime()) / 86400000)
-      if (diff >= 0 && diff < 7) buckets[6 - diff]++
-    })
-    return buckets
-  })()
+  const foldersWithDocs = folders.map((folder, index) => ({
+    folder,
+    color: getAccent(index),
+    docs: folderDocs.filter(d => d.folder_id === folder.id),
+  }))
 
-  const maxBucket = Math.max(...docsThisWeek, 1)
+  const unfiledDocs = folderDocs.filter(d => !d.folder_id)
+
+  const filteredLabelCollections = collections.filter(c =>
+    c.label.name.toLowerCase().includes(search.toLowerCase()) ||
+    c.docs.some(d => d.title.toLowerCase().includes(search.toLowerCase()))
+  )
+
+  const filteredFolders = foldersWithDocs.filter(f =>
+    f.folder.name.toLowerCase().includes(search.toLowerCase()) ||
+    f.docs.some(d => d.title.toLowerCase().includes(search.toLowerCase()))
+  )
+
+  const groupCount = groupBy === 'folders' ? folders.length : collections.length
+  const totalDocs = folderDocs.length || allDocs.length
 
   const pills: { key: LibraryPill; label: string; soon?: boolean }[] = [
     { key: 'all', label: 'All' },
-    { key: 'collections', label: 'Collections' },
-    { key: 'unlabeled', label: 'Unlabeled' },
+    { key: 'group', label: groupBy === 'folders' ? 'Folders' : 'Labels' },
+    { key: 'other', label: groupBy === 'folders' ? 'Unfiled' : 'Unlabeled' },
     { key: 'templates', label: 'Templates', soon: true },
     { key: 'shared', label: 'Shared', soon: true },
   ]
 
   return (
-    <div
-      className="flex h-screen overflow-hidden"
-      style={{ backgroundColor: 'var(--bg)' }}
-    >
-      <Sidebar
-        collapsed={collapsed}
-        onToggle={() => setCollapsed(v => !v)}
-      />
+    <div className="flex h-screen overflow-hidden" style={{ backgroundColor: 'var(--bg)' }}>
+      <Sidebar collapsed={collapsed} onToggle={() => setCollapsed(v => !v)} />
 
       <main className="flex-1 overflow-y-auto">
-        <div className="max-w-5xl mx-auto px-10 py-10">
+        <div className="max-w-5xl mx-auto px-10 py-14">
 
-          {/* Header */}
-          <div className="flex items-center justify-between mb-6">
-            <h1 className="text-[32px] font-bold tracking-tight" style={{ color: 'var(--text-primary)' }}>
-              Library
-            </h1>
-            <div className="flex items-center gap-3">
-              <div
-                className="flex items-center gap-2 px-2.5 py-1 rounded-md"
-                style={{
-                  backgroundColor: 'var(--bg-secondary)',
-                  border: '1px solid var(--border)',
-                }}
-              >
-                <Search size={11} style={{ color: 'var(--text-muted)' }} />
+          <div className="flex items-end justify-between mb-1.5">
+            <h1 className="text-[34px] font-semibold tracking-tight" style={{ color: 'var(--text-primary)' }}>Library</h1>
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 px-3 py-2 rounded-lg" style={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border)' }}>
+                <Search size={13} style={{ color: 'var(--text-muted)' }} />
                 <input
                   value={search}
                   onChange={e => setSearch(e.target.value)}
-                  placeholder="Search labels..."
-                  className="bg-transparent text-xs focus:outline-none w-32"
+                  placeholder="Search library..."
+                  className="bg-transparent text-[13px] focus:outline-none w-36"
                   style={{ color: 'var(--text-secondary)' }}
                 />
               </div>
               <button
                 onClick={() => setTemplateModalOpen(true)}
-                className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-[13px] font-medium transition-opacity"
-                style={{
-                  backgroundColor: 'var(--text-primary)',
-                  color: 'var(--bg)',
-                }}
+                className="flex items-center gap-2 px-3.5 py-2 rounded-lg text-[13.5px] font-medium"
+                style={{ backgroundColor: 'var(--text-primary)', color: 'var(--bg)' }}
                 onMouseEnter={e => (e.currentTarget.style.opacity = '0.85')}
                 onMouseLeave={e => (e.currentTarget.style.opacity = '1')}
               >
-                <Plus size={13} />
-                New Doc
+                <Plus size={14} /> New Doc
               </button>
             </div>
           </div>
+          <p className="text-[13.5px] mb-7" style={{ color: 'var(--text-muted)' }}>
+            {totalDocs} documents across {groupCount} {groupBy}
+          </p>
 
-          {/* Pills */}
-          <div className="flex gap-2 mb-7">
-            {pills.map(pill => {
-              const isActive = activePill === pill.key
-              const isHovered = hoveredPill === pill.key
-              return (
-                <div key={pill.key} style={{ position: 'relative' }}>
-                  <button
-                    onClick={() => !pill.soon && setActivePill(pill.key)}
-                    onMouseEnter={() => setHoveredPill(pill.key)}
-                    onMouseLeave={() => setHoveredPill(null)}
-                    style={{
-                      padding: '6px 16px',
-                      borderRadius: '99px',
-                      fontSize: '13.5px',
-                      fontWeight: isActive ? 500 : 400,
-                      border: '1px solid',
-                      borderColor: isActive ? 'var(--text-primary)' : 'var(--border)',
-                      backgroundColor: isActive ? 'var(--text-primary)' : 'transparent',
-                      color: isActive ? 'var(--bg)' : 'var(--text-muted)',
-                      cursor: pill.soon ? 'default' : 'pointer',
-                      transition: 'all 0.15s',
-                      opacity: pill.soon ? 0.6 : 1,
-                    }}
-                  >
-                    {pill.label}
-                  </button>
-                  {pill.soon && isHovered && (
-                    <div
+          <div className="flex items-center justify-between mb-8">
+            <div className="flex gap-2">
+              {pills.map(pill => {
+                const isActive = activePill === pill.key
+                const isHovered = hoveredPill === pill.key
+                return (
+                  <div key={pill.key} style={{ position: 'relative' }}>
+                    <button
+                      onClick={() => !pill.soon && setActivePill(pill.key)}
+                      onMouseEnter={() => setHoveredPill(pill.key)}
+                      onMouseLeave={() => setHoveredPill(null)}
                       style={{
-                        position: 'absolute',
-                        top: 'calc(100% + 8px)',
-                        left: '50%',
-                        transform: 'translateX(-50%)',
-                        backgroundColor: 'var(--bg-secondary)',
-                        border: '1px solid var(--border)',
-                        borderRadius: '8px',
-                        padding: '5px 10px',
-                        fontSize: '11px',
-                        color: 'var(--text-muted)',
-                        whiteSpace: 'nowrap',
-                        zIndex: 50,
-                        pointerEvents: 'none',
+                        padding: '7px 16px', borderRadius: '99px', fontSize: '13px',
+                        fontWeight: isActive ? 500 : 400,
+                        border: '1px solid', borderColor: isActive ? 'var(--text-primary)' : 'var(--border)',
+                        backgroundColor: isActive ? 'var(--text-primary)' : 'transparent',
+                        color: isActive ? 'var(--bg)' : 'var(--text-muted)',
+                        cursor: pill.soon ? 'default' : 'pointer', transition: 'all 0.15s',
+                        opacity: pill.soon ? 0.6 : 1,
                       }}
                     >
-                      Coming soon
-                    </div>
-                  )}
-                </div>
-              )
-            })}
+                      {pill.label}
+                    </button>
+                    {pill.soon && isHovered && (
+                      <div style={{ position: 'absolute', top: 'calc(100% + 8px)', left: '50%', transform: 'translateX(-50%)', backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border)', borderRadius: '8px', padding: '5px 10px', fontSize: '11px', color: 'var(--text-muted)', whiteSpace: 'nowrap', zIndex: 50, pointerEvents: 'none' }}>
+                        Coming soon
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+
+            <div className="flex items-center gap-2">
+              <span className="text-[12px]" style={{ color: 'var(--text-muted)' }}>Group by</span>
+              <div className="flex p-[3px] rounded-full" style={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border)' }}>
+                {(['folders', 'labels'] as GroupBy[]).map(mode => (
+                  <button
+                    key={mode}
+                    onClick={() => setGroupBy(mode)}
+                    style={{
+                      padding: '6px 14px', borderRadius: '99px', fontSize: '12.5px',
+                      fontWeight: groupBy === mode ? 500 : 400,
+                      backgroundColor: groupBy === mode ? 'var(--text-primary)' : 'transparent',
+                      color: groupBy === mode ? 'var(--bg)' : 'var(--text-muted)',
+                      cursor: 'pointer', transition: 'all 0.15s', textTransform: 'capitalize',
+                    }}
+                  >
+                    {mode}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
 
           {loading ? (
             <div className="flex items-center justify-center h-64">
-              <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
-                Loading...
-              </span>
+              <span className="text-xs" style={{ color: 'var(--text-muted)' }}>Loading...</span>
             </div>
           ) : (
             <>
-              {/* Bento grid */}
-              <div
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(12, 1fr)',
-                  gridAutoRows: '88px',
-                  gap: '10px',
-                  marginBottom: '40px',
-                }}
-              >
-                {/* Hero — most recent doc */}
+              {activePill === 'all' && (
                 <div
                   onClick={() => mostRecent && router.push(`/docs/${mostRecent.uuid}`)}
-                  style={{
-                    gridColumn: '1 / 8',
-                    gridRow: '1 / 3',
-                    borderRadius: '14px',
-                    border: '1px solid var(--border)',
-                    borderTop: '3px solid #7F77DD',
-                    backgroundColor: 'var(--bg-secondary)',
-                    padding: '20px 22px',
-                    cursor: mostRecent ? 'pointer' : 'default',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    justifyContent: 'space-between',
-                    overflow: 'hidden',
-                  }}
+                  className="flex items-center gap-4 px-5 py-4 rounded-xl mb-10 cursor-pointer transition-colors"
+                  style={{ border: '1px solid var(--border)' }}
+                  onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--text-muted)')}
+                  onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--border)')}
                 >
-                  <div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
-                      <span style={{
-                        width: '7px', height: '7px', borderRadius: '50%',
-                        backgroundColor: '#1D9E75', display: 'inline-block', flexShrink: 0,
-                      }} />
-                      <span style={{ fontSize: '11px', color: 'var(--text-muted)', letterSpacing: '0.03em' }}>
-                        Most recent
-                      </span>
-                    </div>
-                    <div style={{
-                      fontSize: '17px', fontWeight: 500,
-                      color: 'var(--text-primary)', lineHeight: 1.35,
-                      maxWidth: '340px',
-                    }}>
-                      {mostRecent ? (mostRecent.title || 'Untitled') : 'No documents yet'}
-                    </div>
-                    {mostRecent && (
-                      <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '6px' }}>
-                        Updated {timeAgo(mostRecent.updated_at)}
-                      </div>
-                    )}
-                  </div>
-                  {mostRecent && mostRecent.labels.length > 0 && (
-                    <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                      {mostRecent.labels.slice(0, 3).map(l => (
-                        <span key={l.id} style={{
-                          fontSize: '11px', padding: '3px 9px',
-                          borderRadius: '99px',
-                          backgroundColor: l.color + '22',
-                          color: l.color,
-                          border: `1px solid ${l.color}44`,
-                        }}>
-                          {l.name}
-                        </span>
-                      ))}
-                    </div>
-                  )}
+                  <span className="text-[11.5px] flex-shrink-0" style={{ color: '#1D9E75' }}>Continue writing</span>
+                  <span className="text-[15px] font-medium flex-1" style={{ color: 'var(--text-primary)' }}>
+                    {mostRecent ? (mostRecent.title || 'Untitled') : 'No documents yet'}
+                  </span>
+                  {mostRecent && <span className="text-[12.5px] flex-shrink-0" style={{ color: 'var(--text-muted)' }}>Updated {timeAgo(mostRecent.updated_at)}</span>}
+                  <ArrowRight size={14} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
                 </div>
+              )}
 
-                {/* Stat — total docs */}
-                <div style={{
-                  gridColumn: '8 / 10', gridRow: '1 / 2',
-                  borderRadius: '14px',
-                  border: '1px solid var(--border)',
-                  borderTop: '3px solid #1D9E75',
-                  backgroundColor: 'var(--bg-secondary)',
-                  padding: '16px 18px',
-                }}>
-                  <div style={{ fontSize: '30px', fontWeight: 500, color: 'var(--text-primary)', lineHeight: 1 }}>
-                    {allDocs.length}
-                  </div>
-                  <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '5px' }}>
-                    Total documents
-                  </div>
-                </div>
-
-                {/* Stat — collections */}
-                <div style={{
-                  gridColumn: '10 / 13', gridRow: '1 / 2',
-                  borderRadius: '14px',
-                  border: '1px solid var(--border)',
-                  borderTop: '3px solid #D85A30',
-                  backgroundColor: 'var(--bg-secondary)',
-                  padding: '16px 18px',
-                }}>
-                  <div style={{ fontSize: '30px', fontWeight: 500, color: 'var(--text-primary)', lineHeight: 1 }}>
-                    {collections.length}
-                  </div>
-                  <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '5px' }}>
-                    Collections
-                  </div>
-                </div>
-
-                {/* Mini chart */}
-                <div style={{
-                  gridColumn: '8 / 13', gridRow: '2 / 3',
-                  borderRadius: '14px',
-                  border: '1px solid var(--border)',
-                  backgroundColor: 'var(--bg-secondary)',
-                  padding: '16px 18px',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  justifyContent: 'space-between',
-                }}>
-                  <div style={{ fontSize: '11px', color: 'var(--text-muted)', letterSpacing: '0.03em' }}>
-                    Docs created this week
-                  </div>
-                  <div style={{ display: 'flex', gap: '4px', alignItems: 'flex-end', height: '36px' }}>
-                    {docsThisWeek.map((count, i) => (
-                      <div
-                        key={i}
-                        style={{
-                          flex: 1,
-                          borderRadius: '2px',
-                          backgroundColor: i === 6 ? '#7F77DD' : 'var(--border)',
-                          height: `${Math.max(12, (count / maxBucket) * 100)}%`,
-                        }}
-                      />
-                    ))}
-                  </div>
-                </div>
-
-                {/* Doc card — first collection */}
-                {collections[0] && collections[0].docs[0] ? (
-                  <div
-                    onClick={() => router.push(`/docs/${collections[0].docs[0].uuid}`)}
-                    style={{
-                      gridColumn: '1 / 5', gridRow: '3 / 4',
-                      borderRadius: '14px',
-                      border: '1px solid var(--border)',
-                      borderTop: `3px solid ${collections[0].label.color}`,
-                      backgroundColor: 'var(--bg-secondary)',
-                      padding: '16px 18px',
-                      cursor: 'pointer',
-                      overflow: 'hidden',
-                    }}
-                  >
-                    <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '6px' }}>
-                      {collections[0].label.name}
-                    </div>
-                    <div style={{ fontSize: '14px', fontWeight: 500, color: 'var(--text-primary)', lineHeight: 1.35 }}>
-                      {collections[0].docs[0].title || 'Untitled'}
-                    </div>
-                    <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '6px' }}>
-                      {timeAgo(collections[0].docs[0].updated_at)}
-                    </div>
-                  </div>
-                ) : (
-                  <div style={{
-                    gridColumn: '1 / 5', gridRow: '3 / 4',
-                    borderRadius: '14px',
-                    border: '1px solid var(--border)',
-                    backgroundColor: 'var(--bg-secondary)',
-                    padding: '16px 18px',
-                  }}>
-                    <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '6px' }}>Document</div>
-                    <div style={{ fontSize: '14px', color: 'var(--text-muted)' }}>No collections yet</div>
-                  </div>
-                )}
-
-                {/* Doc card — second collection */}
-                {collections[1] && collections[1].docs[0] ? (
-                  <div
-                    onClick={() => router.push(`/docs/${collections[1].docs[0].uuid}`)}
-                    style={{
-                      gridColumn: '5 / 9', gridRow: '3 / 4',
-                      borderRadius: '14px',
-                      border: '1px solid var(--border)',
-                      borderTop: `3px solid ${collections[1].label.color}`,
-                      backgroundColor: 'var(--bg-secondary)',
-                      padding: '16px 18px',
-                      cursor: 'pointer',
-                      overflow: 'hidden',
-                    }}
-                  >
-                    <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '6px' }}>
-                      {collections[1].label.name}
-                    </div>
-                    <div style={{ fontSize: '14px', fontWeight: 500, color: 'var(--text-primary)', lineHeight: 1.35 }}>
-                      {collections[1].docs[0].title || 'Untitled'}
-                    </div>
-                    <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '6px' }}>
-                      {timeAgo(collections[1].docs[0].updated_at)}
-                    </div>
-                  </div>
-                ) : (
-                  <div style={{
-                    gridColumn: '5 / 9', gridRow: '3 / 4',
-                    borderRadius: '14px',
-                    border: '1px solid var(--border)',
-                    backgroundColor: 'var(--bg-secondary)',
-                    padding: '16px 18px',
-                  }}>
-                    <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '6px' }}>Document</div>
-                    <div style={{ fontSize: '14px', color: 'var(--text-muted)' }}>No second collection yet</div>
-                  </div>
-                )}
-
-                {/* New document CTA — now opens template picker */}
-                <div
-                  onClick={() => setTemplateModalOpen(true)}
-                  style={{
-                    gridColumn: '9 / 13', gridRow: '3 / 4',
-                    borderRadius: '14px',
-                    border: '1px dashed var(--border)',
-                    backgroundColor: 'transparent',
-                    padding: '16px 18px',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '10px',
-                  }}
-                  onMouseEnter={e => {
-                    e.currentTarget.style.backgroundColor = 'var(--bg-secondary)'
-                    e.currentTarget.style.borderColor = 'var(--text-muted)'
-                  }}
-                  onMouseLeave={e => {
-                    e.currentTarget.style.backgroundColor = 'transparent'
-                    e.currentTarget.style.borderColor = 'var(--border)'
-                  }}
-                >
-                  <Plus size={18} style={{ color: 'var(--text-muted)' }} />
-                  <span style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>New document</span>
-                </div>
-              </div>
-
-              {/* Collections + Unlabeled */}
-              {(activePill === 'all' || activePill === 'collections' || activePill === 'unlabeled') && (
+              {(activePill === 'all' || activePill === 'group') && (
                 <>
-                  {collections.length === 0 && unlabeled.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center h-64 gap-3">
-                      <div
-                        className="w-12 h-12 rounded-2xl flex items-center justify-center"
-                        style={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border)' }}
-                      >
-                        <FileText size={20} style={{ color: 'var(--text-muted)' }} />
-                      </div>
-                      <p className="text-sm" style={{ color: 'var(--text-muted)' }}>No docs yet</p>
-                      <button
-                        onClick={() => setTemplateModalOpen(true)}
-                        className="text-xs underline underline-offset-2"
-                        style={{ color: 'var(--text-muted)' }}
-                      >
-                        Create your first doc
-                      </button>
-                    </div>
-                  ) : filtered.length === 0 && search ? (
-                    <div className="flex items-center justify-center h-64">
-                      <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
-                        No results for &ldquo;{search}&rdquo;
-                      </p>
-                    </div>
-                  ) : (
-                    <>
-                      {(activePill === 'all' || activePill === 'collections') && filtered.length > 0 && (
-                        <>
-                          <div className="flex items-center gap-3 mb-4">
-                            <span className="text-[10px] font-medium uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>
-                              Collections · {filtered.length}
-                            </span>
-                            <div className="flex-1 h-px" style={{ backgroundColor: 'var(--border)' }} />
-                          </div>
-                          <div className="grid grid-cols-3 gap-3 auto-rows-auto mb-10">
-                            {filtered.map(({ label, docs }) => (
-                              <div
-                                key={label.id}
-                                className={`${cardSize(docs.length)} rounded-2xl p-5 flex flex-col gap-3`}
-                                style={{
-                                  backgroundColor: 'var(--bg-secondary)',
-                                  border: '1px solid var(--border)',
-                                  borderTop: `2px solid ${label.color}`,
-                                }}
-                              >
-                                <div className="flex items-center justify-between">
-                                  <div className="flex items-center gap-2">
-                                    <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: label.color }} />
-                                    <span className="text-[13px] font-semibold" style={{ color: 'var(--text-primary)' }}>
-                                      {label.name}
-                                    </span>
-                                  </div>
-                                  <span className="text-[11px]" style={{ color: 'var(--text-muted)' }}>
-                                    {docs.length} doc{docs.length !== 1 ? 's' : ''}
-                                  </span>
-                                </div>
-                                <div className="flex flex-col gap-1.5">
-                                  {docs.slice(0, 5).map(doc => (
-                                    <button
-                                      key={doc.uuid}
-                                      onClick={() => router.push(`/docs/${doc.uuid}`)}
-                                      className="flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-lg text-left transition-colors"
-                                      style={{ backgroundColor: 'var(--bg-tertiary)', border: '1px solid var(--border)' }}
-                                      onMouseEnter={e => { e.currentTarget.style.backgroundColor = 'var(--bg)' }}
-                                      onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)' }}
-                                    >
-                                      <span className="text-[12px] truncate" style={{ color: 'var(--text-secondary)' }}>
-                                        {doc.title || 'Untitled'}
-                                      </span>
-                                      <span className="text-[10px] shrink-0" style={{ color: 'var(--text-muted)' }}>
-                                        {timeAgo(doc.updated_at)}
-                                      </span>
-                                    </button>
-                                  ))}
-                                  {docs.length > 5 && (
-                                    <p className="text-[11px] px-2.5 pt-1" style={{ color: 'var(--text-muted)' }}>
-                                      +{docs.length - 5} more
-                                    </p>
-                                  )}
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </>
-                      )}
+                  <div className="text-[11px] font-medium uppercase tracking-wider mb-4" style={{ color: 'var(--text-muted)' }}>
+                    {groupBy === 'folders' ? 'Folders' : 'Labels'}
+                  </div>
 
-                      {(activePill === 'all' || activePill === 'unlabeled') && unlabeled.length > 0 && !search && (
-                        <>
-                          <div className="flex items-center gap-3 mb-4">
-                            <span className="text-[10px] font-medium uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>
-                              Unlabeled · {unlabeled.length}
-                            </span>
-                            <div className="flex-1 h-px" style={{ backgroundColor: 'var(--border)' }} />
-                          </div>
-                          <div className="rounded-2xl p-5" style={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border)' }}>
-                            <div className="flex flex-wrap gap-2">
-                              {unlabeled.map(doc => (
-                                <button
-                                  key={doc.uuid}
-                                  onClick={() => router.push(`/docs/${doc.uuid}`)}
-                                  className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg transition-colors"
-                                  style={{ backgroundColor: 'var(--bg-tertiary)', border: '1px solid var(--border)', color: 'var(--text-secondary)' }}
-                                  onMouseEnter={e => { e.currentTarget.style.backgroundColor = 'var(--bg)' }}
-                                  onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)' }}
-                                >
-                                  <FileText size={10} style={{ color: 'var(--text-muted)' }} />
-                                  <span className="text-[12px]">{doc.title || 'Untitled'}</span>
-                                </button>
-                              ))}
+                  {groupBy === 'folders' ? (
+                    filteredFolders.length === 0 ? (
+                      <p className="text-sm mb-10" style={{ color: 'var(--text-muted)' }}>No folders yet.</p>
+                    ) : (
+                      <div className="flex gap-6 mb-10">
+                        {filteredFolders.map(({ folder, color, docs }) => (
+                          <div
+                            key={folder.id}
+                            onClick={() => router.push(`/folders/${folder.id}?name=${encodeURIComponent(folder.name)}`)}
+                            className="relative flex-1 cursor-pointer"
+                            style={{ height: '150px' }}
+                          >
+                            {docs.length > 0 && (
+                              <>
+                                <div style={{ position: 'absolute', top: 14, left: 10, right: -10, bottom: 0, borderRadius: 12, backgroundColor: 'var(--bg-secondary)', opacity: 0.35 }} />
+                                <div style={{ position: 'absolute', top: 7, left: 5, right: -5, bottom: 0, borderRadius: 12, backgroundColor: 'var(--bg-secondary)', opacity: 0.6 }} />
+                              </>
+                            )}
+                            <div style={{ position: 'absolute', inset: 0, borderRadius: 12, backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border)', padding: '18px 20px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                              <div className="flex items-center gap-2">
+                                <span style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: color, flexShrink: 0 }} />
+                                <span className="text-[15px] font-medium" style={{ color: 'var(--text-primary)' }}>{folder.name}</span>
+                              </div>
+                              <p className="text-[12px] truncate" style={{ color: 'var(--text-muted)' }}>{previewText(docs.map(d => d.title || 'Untitled'))}</p>
+                              <span className="text-[12.5px]" style={{ color: 'var(--text-secondary)' }}>{docs.length} {docs.length === 1 ? 'doc' : 'docs'}</span>
                             </div>
                           </div>
-                        </>
-                      )}
-                    </>
+                        ))}
+                      </div>
+                    )
+                  ) : (
+                    filteredLabelCollections.length === 0 ? (
+                      <p className="text-sm mb-10" style={{ color: 'var(--text-muted)' }}>No labels yet.</p>
+                    ) : (
+                      <div className="flex gap-6 mb-10">
+                        {filteredLabelCollections.map(({ label, docs }) => (
+                          <div key={label.id} className="relative flex-1" style={{ height: '150px' }}>
+                            {docs.length > 0 && (
+                              <>
+                                <div style={{ position: 'absolute', top: 14, left: 10, right: -10, bottom: 0, borderRadius: 12, backgroundColor: 'var(--bg-secondary)', opacity: 0.35 }} />
+                                <div style={{ position: 'absolute', top: 7, left: 5, right: -5, bottom: 0, borderRadius: 12, backgroundColor: 'var(--bg-secondary)', opacity: 0.6 }} />
+                              </>
+                            )}
+                            <div style={{ position: 'absolute', inset: 0, borderRadius: 12, backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border)', padding: '18px 20px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                              <div className="flex items-center gap-2">
+                                <span style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: label.color, flexShrink: 0 }} />
+                                <span className="text-[15px] font-medium" style={{ color: 'var(--text-primary)' }}>{label.name}</span>
+                              </div>
+                              <p className="text-[12px] truncate" style={{ color: 'var(--text-muted)' }}>{previewText(docs.map(d => d.title || 'Untitled'))}</p>
+                              <button onClick={() => docs[0] && router.push(`/docs/${docs[0].uuid}`)} className="text-[12.5px] text-left" style={{ color: 'var(--text-secondary)' }}>{docs.length} {docs.length === 1 ? 'doc' : 'docs'}</button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )
+                  )}
+                </>
+              )}
+
+              {(activePill === 'all' || activePill === 'other') && !search && (
+                <>
+                  {groupBy === 'folders' ? (
+                    unfiledDocs.length > 0 && (
+                      <>
+                        <div className="text-[11px] font-medium uppercase tracking-wider mb-4" style={{ color: 'var(--text-muted)' }}>Unfiled · {unfiledDocs.length}</div>
+                        <div className="flex flex-wrap gap-2">
+                          {unfiledDocs.map(doc => (
+                            <button key={doc.uuid} onClick={() => router.push(`/docs/${doc.uuid}`)} className="flex items-center gap-1.5 px-3 py-2 rounded-lg transition-colors" style={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border)', color: 'var(--text-secondary)' }}
+                              onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)')}
+                              onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'var(--bg-secondary)')}
+                            >
+                              <FileText size={11} style={{ color: 'var(--text-muted)' }} />
+                              <span className="text-[12.5px]">{doc.title || 'Untitled'}</span>
+                            </button>
+                          ))}
+                        </div>
+                      </>
+                    )
+                  ) : (
+                    unlabeled.length > 0 && (
+                      <>
+                        <div className="text-[11px] font-medium uppercase tracking-wider mb-4" style={{ color: 'var(--text-muted)' }}>Unlabeled · {unlabeled.length}</div>
+                        <div className="flex flex-wrap gap-2">
+                          {unlabeled.map(doc => (
+                            <button key={doc.uuid} onClick={() => router.push(`/docs/${doc.uuid}`)} className="flex items-center gap-1.5 px-3 py-2 rounded-lg transition-colors" style={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border)', color: 'var(--text-secondary)' }}
+                              onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)')}
+                              onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'var(--bg-secondary)')}
+                            >
+                              <FileText size={11} style={{ color: 'var(--text-muted)' }} />
+                              <span className="text-[12.5px]">{doc.title || 'Untitled'}</span>
+                            </button>
+                          ))}
+                        </div>
+                      </>
+                    )
                   )}
                 </>
               )}
@@ -585,11 +375,7 @@ export default function LibraryPage() {
         </div>
       </main>
 
-      {/* Template picker modal */}
-      <TemplatePickerModal
-        open={templateModalOpen}
-        onClose={() => setTemplateModalOpen(false)}
-      />
+      <TemplatePickerModal open={templateModalOpen} onClose={() => setTemplateModalOpen(false)} />
     </div>
   )
 }
