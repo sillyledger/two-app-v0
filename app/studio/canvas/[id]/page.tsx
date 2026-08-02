@@ -306,7 +306,7 @@ export default function CanvasBoardPage() {
       <Sidebar collapsed={collapsed} onToggle={() => setCollapsed(v => !v)} />
 
       <main className="flex-1 overflow-hidden flex flex-col">
-        <div className="flex items-center justify-between py-5" style={{ paddingLeft: collapsed ? 56 : 32, paddingRight: 32 }}>
+        <div className="flex items-center justify-between py-5" style={{ position: 'relative', paddingLeft: collapsed ? 56 : 32, paddingRight: 32 }}>
           <div className="flex items-center gap-0.5 min-w-0 flex-1">
             <a href="/studio" className="text-[12px] font-medium truncate transition-colors hover:underline" style={{ color: 'var(--text-muted)' }}>Studio</a>
             <span className="mx-1 text-[12px]" style={{ color: 'var(--text-muted)' }}>/</span>
@@ -330,7 +330,7 @@ export default function CanvasBoardPage() {
               </span>
             )}
           </div>
-          <div style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 2, padding: 5, borderRadius: 12, backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border)' }} ref={addMenuRef}>
+          <div style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', display: 'flex', alignItems: 'center', gap: 2, padding: 5, borderRadius: 12, backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border)' }} ref={addMenuRef}>
             <button
               onClick={() => setPickerType('doc')}
               onMouseEnter={() => setHoveredTool('doc')}
