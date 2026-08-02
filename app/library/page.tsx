@@ -39,7 +39,7 @@ interface FolderDoc {
   folder_name?: string | null
 }
 
-type LibraryPill = 'all' | 'group' | 'other' | 'templates' | 'shared'
+type LibraryPill = 'all' | 'other' | 'shared'
 type GroupBy = 'folders' | 'labels'
 
 const ACCENT_COLORS = ["#EF9F27", "#85B7EB", "#5DCAA5", "#F0997B", "#AFA9EC", "#97C459", "#ED93B1", "#B4B2A9", "#5DCAA5"]
@@ -75,6 +75,8 @@ export default function LibraryPage() {
 
   const [folders, setFolders] = useState<FolderItem[]>([])
   const [folderDocs, setFolderDocs] = useState<FolderDoc[]>([])
+  const [sharedWorkspaces, setSharedWorkspaces] = useState<{ id: string; name: string }[]>([])
+  const [sharedData, setSharedData] = useState<Record<string, { folders: FolderItem[]; docs: FolderDoc[] }>>({})
 
   const [search, setSearch] = useState('')
   const [loading, setLoading] = useState(true)
@@ -118,6 +120,28 @@ export default function LibraryPage() {
       .then(r => r.json())
       .then(data => setFolderDocs(Array.isArray(data) ? data : []))
       .catch(() => setFolderDocs([]))
+
+    fetch('/api/workspaces')
+      .then(r => r.json())
+      .then(data => {
+        const shared = Array.isArray(data?.shared) ? data.shared : []
+        setSharedWorkspaces(shared)
+        shared.forEach((ws: { id: string; name: string }) => {
+          Promise.all([
+            fetch(`/api/folders?workspace_id=${ws.id}`).then(r => r.json()),
+            fetch(`/api/docs?workspace_id=${ws.id}`).then(r => r.json()),
+          ]).then(([folders, docs]) => {
+            setSharedData(prev => ({
+              ...prev,
+              [ws.id]: {
+                folders: Array.isArray(folders) ? folders : [],
+                docs: Array.isArray(docs) ? docs : [],
+              },
+            }))
+          }).catch(() => {})
+        })
+      })
+      .catch(() => setSharedWorkspaces([]))
   }, [])
 
   const mostRecent = allDocs.length > 0
@@ -147,10 +171,8 @@ export default function LibraryPage() {
 
   const pills: { key: LibraryPill; label: string; soon?: boolean }[] = [
     { key: 'all', label: 'All' },
-    { key: 'group', label: groupBy === 'folders' ? 'Folders' : 'Labels' },
     { key: 'other', label: groupBy === 'folders' ? 'Unfiled' : 'Unlabeled' },
-    { key: 'templates', label: 'Templates', soon: true },
-    { key: 'shared', label: 'Shared', soon: true },
+    { key: 'shared', label: 'Shared' },
   ]
 
   return (
@@ -266,7 +288,7 @@ export default function LibraryPage() {
                 </div>
               )}
 
-              {(activePill === 'all' || activePill === 'group') && (
+              {activePill === 'all' && (
                 <>
                   <div className="text-[11px] font-medium uppercase tracking-wider mb-4" style={{ color: 'var(--text-muted)' }}>
                     {groupBy === 'folders' ? 'Folders' : 'Labels'}
@@ -367,6 +389,70 @@ export default function LibraryPage() {
                         </div>
                       </>
                     )
+                  )}
+                </>
+              )}
+
+              {activePill === 'shared' && (
+                <>
+                  {sharedWorkspaces.length === 0 ? (
+                    <p className="text-sm" style={{ color: 'var(--text-muted)' }}>No shared workspaces yet.</p>
+                  ) : (
+                    sharedWorkspaces.map(ws => {
+                      const data = sharedData[ws.id]
+                      const wsFolders = (data?.folders ?? []).map((folder, index) => ({
+                        folder, color: getAccent(index),
+                        docs: (data?.docs ?? []).filter(d => d.folder_id === folder.id),
+                      }))
+                      const wsUnfiled = (data?.docs ?? []).filter(d => !d.folder_id)
+                      return (
+                        <div key={ws.id} className="mb-10">
+                          <div className="text-[11px] font-medium uppercase tracking-wider mb-4" style={{ color: 'var(--text-muted)' }}>{ws.name}</div>
+                          {wsFolders.length === 0 ? (
+                            <p className="text-sm mb-4" style={{ color: 'var(--text-muted)' }}>No folders yet.</p>
+                          ) : (
+                            <div className="grid gap-4 mb-4" style={{ gridTemplateColumns: 'repeat(5, minmax(0, 1fr))' }}>
+                              {wsFolders.map(({ folder, color, docs }) => (
+                                <div
+                                  key={folder.id}
+                                  onClick={() => router.push(`/folders/${folder.id}?name=${encodeURIComponent(folder.name)}`)}
+                                  className="relative cursor-pointer"
+                                  style={{ height: '150px' }}
+                                >
+                                  {docs.length > 0 && (
+                                    <>
+                                      <div style={{ position: 'absolute', top: 14, left: 10, right: -10, bottom: 0, borderRadius: 12, backgroundColor: 'var(--bg-secondary)', opacity: 0.35 }} />
+                                      <div style={{ position: 'absolute', top: 7, left: 5, right: -5, bottom: 0, borderRadius: 12, backgroundColor: 'var(--bg-secondary)', opacity: 0.6 }} />
+                                    </>
+                                  )}
+                                  <div style={{ position: 'absolute', inset: 0, borderRadius: 12, backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border)', padding: '18px 20px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                                    <div className="flex items-center gap-2">
+                                      <span style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: color, flexShrink: 0 }} />
+                                      <span className="text-[15px] font-medium" style={{ color: 'var(--text-primary)' }}>{folder.name}</span>
+                                    </div>
+                                    <p className="text-[12px] truncate" style={{ color: 'var(--text-muted)' }}>{previewText(docs.map(d => d.title || 'Untitled'))}</p>
+                                    <span className="text-[12.5px]" style={{ color: 'var(--text-secondary)' }}>{docs.length} {docs.length === 1 ? 'doc' : 'docs'}</span>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                          {wsUnfiled.length > 0 && (
+                            <div className="flex flex-wrap gap-2">
+                              {wsUnfiled.map(doc => (
+                                <button key={doc.uuid} onClick={() => router.push(`/docs/${doc.uuid}`)} className="flex items-center gap-1.5 px-3 py-2 rounded-lg transition-colors" style={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border)', color: 'var(--text-secondary)' }}
+                                  onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)')}
+                                  onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'var(--bg-secondary)')}
+                                >
+                                  <FileText size={11} style={{ color: 'var(--text-muted)' }} />
+                                  <span className="text-[12.5px]">{doc.title || 'Untitled'}</span>
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      )
+                    })
                   )}
                 </>
               )}
