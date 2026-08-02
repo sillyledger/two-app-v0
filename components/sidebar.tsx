@@ -60,13 +60,13 @@ export default function Sidebar({ onNewNote, onToggle }: SidebarProps = {}) {
   const pathname = usePathname()
   const router = useRouter()
   const { openTab } = useTabStore()
-  const [collapsed, setCollapsed] = useState(false)
+  const [collapsed, setCollapsed] = useState(() => typeof window !== "undefined" ? localStorage.getItem("sidebar-collapsed") === "true" : false)
   const [myDocsOpen, setMyDocsOpen] = useState(true)
   const [unfiledOpen, setUnfiledOpen] = useState(true)
   const [sharedOpen, setSharedOpen] = useState(true)
-  const [userName, setUserName] = useState("")
+  const [userName, setUserName] = useState(() => cacheGet<string>("sb_userName") ?? "")
   const [userAvatar, setUserAvatar] = useState<string | null>(() => cacheGet<string>("sb_userAvatar"))
-  const [workspaceName, setWorkspaceName] = useState("My Workspace")
+  const [workspaceName, setWorkspaceName] = useState(() => cacheGet<string>("sb_workspaceName") ?? "My Workspace")
   const [workspaceId, setWorkspaceId] = useState<string | null>(() => cacheGet<string>("sb_workspaceId"))
   const [workspaces, setWorkspaces] = useState<Workspace[]>(() => cacheGet<Workspace[]>("sb_workspaces") ?? [])
   const [activeWorkspaceId, setActiveWorkspaceId] = useState<string | null>(() => cacheGet<string>("sb_workspaceId"))
@@ -118,15 +118,6 @@ export default function Sidebar({ onNewNote, onToggle }: SidebarProps = {}) {
 
   const workspacesRef = useRef<Workspace[]>([])
   const workspaceIdRef = useRef<string | null>(null)
-
-  useEffect(() => {
-    const saved = localStorage.getItem("sidebar-collapsed")
-    if (saved === "true") setCollapsed(true)
-    const cachedName = cacheGet<string>("sb_userName")
-    if (cachedName) setUserName(cachedName)
-    const cachedWorkspace = cacheGet<string>("sb_workspaceName")
-    if (cachedWorkspace) setWorkspaceName(cachedWorkspace)
-  }, [])
 
   useEffect(() => { workspacesRef.current = workspaces }, [workspaces])
   useEffect(() => { workspaceIdRef.current = workspaceId }, [workspaceId])
