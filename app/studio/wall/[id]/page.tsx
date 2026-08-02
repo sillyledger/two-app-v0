@@ -66,6 +66,7 @@ export default function BoardPage() {
   const dragState = useRef<{ id: number; offsetX: number; offsetY: number } | null>(null)
   const connectState = useRef<{ fromId: number } | null>(null)
   const hoverTargetRef = useRef<number | null>(null)
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const itemsRef = useRef<BoardItem[]>([])
   itemsRef.current = items
 
@@ -391,8 +392,18 @@ export default function BoardPage() {
                     <textarea
                       autoFocus
                       value={editingText}
-                      onChange={e => setEditingText(e.target.value)}
-                      onBlur={() => saveText(item.id)}
+                      onChange={e => {
+                        const value = e.target.value
+                        setEditingText(value)
+                        if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
+                        saveTimerRef.current = setTimeout(() => {
+                          setItems(prev => prev.map(i => (i.id === item.id ? { ...i, content: value } : i)))
+                          fetch(`/api/boards/${boardId}/items/${item.id}`, {
+                            method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ content: value }),
+                          })
+                        }, 500)
+                      }}
+                      onBlur={() => { if (saveTimerRef.current) clearTimeout(saveTimerRef.current); saveText(item.id) }}
                       onKeyDown={e => { if (e.key === 'Escape') saveText(item.id) }}
                       onMouseDown={e => e.stopPropagation()}
                       style={{ width: size.w, minHeight: size.h, background: 'transparent', border: '1px dashed rgba(255,255,255,0.25)', borderRadius: 6, padding: 8, fontSize: 14, color: 'var(--text-primary)', outline: 'none', resize: 'both', fontFamily: 'inherit' }}
