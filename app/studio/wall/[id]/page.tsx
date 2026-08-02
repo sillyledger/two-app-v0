@@ -46,7 +46,8 @@ export default function BoardPage() {
   const [docs, setDocs] = useState<DocOrNote[]>([])
   const [notes, setNotes] = useState<DocOrNote[]>([])
 
-  const [addMenuOpen, setAddMenuOpen] = useState(false)
+  const [swatchMenuOpen, setSwatchMenuOpen] = useState(false)
+  const [hoveredTool, setHoveredTool] = useState<string | null>(null)
   const [pickerType, setPickerType] = useState<'doc' | 'note' | null>(null)
   const [pickerQuery, setPickerQuery] = useState('')
   const [contextMenuId, setContextMenuId] = useState<number | null>(null)
@@ -83,7 +84,7 @@ export default function BoardPage() {
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {
-      if (addMenuRef.current && !addMenuRef.current.contains(e.target as Node)) setAddMenuOpen(false)
+      if (addMenuRef.current && !addMenuRef.current.contains(e.target as Node)) setSwatchMenuOpen(false)
       if (pickerRef.current && !pickerRef.current.contains(e.target as Node)) setPickerType(null)
       setContextMenuId(null)
     }
@@ -106,7 +107,6 @@ export default function BoardPage() {
   }
 
   const handleUploadClick = () => {
-    setAddMenuOpen(false)
     fileInputRef.current?.click()
   }
 
@@ -264,28 +264,58 @@ export default function BoardPage() {
               </span>
             )}
           </div>
-          <div style={{ position: 'relative' }} ref={addMenuRef}>
+          <div style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 2, padding: 5, borderRadius: 12, backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border)' }} ref={addMenuRef}>
             <button
-              onClick={() => setAddMenuOpen(v => !v)}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-[13px] font-medium"
-              style={{ backgroundColor: 'var(--text-primary)', color: 'var(--bg)' }}
+              onClick={() => setPickerType('doc')}
+              onMouseEnter={() => setHoveredTool('doc')}
+              onMouseLeave={() => setHoveredTool(null)}
+              style={{ position: 'relative', width: 36, height: 36, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#8f89e6' }}
             >
-              <Plus size={13} /> Add card
+              <FileText size={16} />
+              {hoveredTool === 'doc' && <div style={{ position: 'absolute', top: -38, left: '50%', transform: 'translateX(-50%)', backgroundColor: 'var(--bg-tertiary)', color: 'var(--text-primary)', fontSize: 11, padding: '5px 9px', borderRadius: 6, whiteSpace: 'nowrap', boxShadow: '0 4px 12px rgba(0,0,0,0.3)' }}>Doc</div>}
             </button>
-            {addMenuOpen && (
-              <div style={{ position: 'absolute', top: 'calc(100% + 8px)', right: 0, width: 180, backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border)', borderRadius: 10, boxShadow: '0 10px 30px rgba(0,0,0,0.4)', overflow: 'hidden', zIndex: 50, padding: 6 }}>
-                <button onClick={() => { setPickerType('doc'); setAddMenuOpen(false) }} className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-[13px]" style={{ color: 'var(--text-secondary)' }} onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)')} onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}><FileText size={13} /> Doc</button>
-                <button onClick={() => { setPickerType('note'); setAddMenuOpen(false) }} className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-[13px]" style={{ color: 'var(--text-secondary)' }} onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)')} onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}><StickyNote size={13} /> Note</button>
-                <button onClick={async () => { setAddMenuOpen(false); const item = await addItem({ type: 'text', content: '' }); if (item) { setEditingItemId(item.id); setEditingText('') } }} className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-[13px]" style={{ color: 'var(--text-secondary)' }} onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)')} onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}><Type size={13} /> Text</button>
-                <button onClick={handleUploadClick} className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-[13px]" style={{ color: 'var(--text-secondary)' }} onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)')} onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}><ImageIcon size={13} /> Image</button>
-                <div style={{ padding: '6px 10px 2px' }}>
-                  <p style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 6 }}>Color swatch</p>
-                  <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
-                    {SWATCHES.map(c => (
-                      <div key={c} onClick={() => { addItem({ type: 'swatch', color: c }); setAddMenuOpen(false) }} style={{ width: 20, height: 20, borderRadius: 5, backgroundColor: c, cursor: 'pointer' }} />
-                    ))}
-                  </div>
-                </div>
+            <button
+              onClick={() => setPickerType('note')}
+              onMouseEnter={() => setHoveredTool('note')}
+              onMouseLeave={() => setHoveredTool(null)}
+              style={{ position: 'relative', width: 36, height: 36, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#c98a5e' }}
+            >
+              <StickyNote size={16} />
+              {hoveredTool === 'note' && <div style={{ position: 'absolute', top: -38, left: '50%', transform: 'translateX(-50%)', backgroundColor: 'var(--bg-tertiary)', color: 'var(--text-primary)', fontSize: 11, padding: '5px 9px', borderRadius: 6, whiteSpace: 'nowrap', boxShadow: '0 4px 12px rgba(0,0,0,0.3)' }}>Note</div>}
+            </button>
+            <button
+              onClick={async () => { const item = await addItem({ type: 'text', content: '' }); if (item) { setEditingItemId(item.id); setEditingText('') } }}
+              onMouseEnter={() => setHoveredTool('text')}
+              onMouseLeave={() => setHoveredTool(null)}
+              style={{ position: 'relative', width: 36, height: 36, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-primary)', backgroundColor: 'rgba(255,255,255,0.06)' }}
+            >
+              <Type size={16} />
+              {hoveredTool === 'text' && <div style={{ position: 'absolute', top: -38, left: '50%', transform: 'translateX(-50%)', backgroundColor: 'var(--bg-tertiary)', color: 'var(--text-primary)', fontSize: 11, padding: '5px 9px', borderRadius: 6, whiteSpace: 'nowrap', boxShadow: '0 4px 12px rgba(0,0,0,0.3)' }}>Text</div>}
+            </button>
+            <button
+              onClick={handleUploadClick}
+              onMouseEnter={() => setHoveredTool('image')}
+              onMouseLeave={() => setHoveredTool(null)}
+              style={{ position: 'relative', width: 36, height: 36, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#5DCAA5' }}
+            >
+              <ImageIcon size={16} />
+              {hoveredTool === 'image' && <div style={{ position: 'absolute', top: -38, left: '50%', transform: 'translateX(-50%)', backgroundColor: 'var(--bg-tertiary)', color: 'var(--text-primary)', fontSize: 11, padding: '5px 9px', borderRadius: 6, whiteSpace: 'nowrap', boxShadow: '0 4px 12px rgba(0,0,0,0.3)' }}>Image</div>}
+            </button>
+            <div style={{ width: 1, height: 20, backgroundColor: 'var(--border)', margin: '0 4px' }} />
+            <button
+              onClick={() => setSwatchMenuOpen(v => !v)}
+              onMouseEnter={() => setHoveredTool('swatch')}
+              onMouseLeave={() => setHoveredTool(null)}
+              style={{ position: 'relative', width: 36, height: 36, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+            >
+              <span style={{ width: 16, height: 16, borderRadius: 5, backgroundColor: '#EF9F27', display: 'block' }} />
+              {hoveredTool === 'swatch' && !swatchMenuOpen && <div style={{ position: 'absolute', top: -38, left: '50%', transform: 'translateX(-50%)', backgroundColor: 'var(--bg-tertiary)', color: 'var(--text-primary)', fontSize: 11, padding: '5px 9px', borderRadius: 6, whiteSpace: 'nowrap', boxShadow: '0 4px 12px rgba(0,0,0,0.3)' }}>Color</div>}
+            </button>
+            {swatchMenuOpen && (
+              <div style={{ position: 'absolute', top: 'calc(100% + 8px)', right: 0, backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border)', borderRadius: 10, boxShadow: '0 10px 30px rgba(0,0,0,0.4)', padding: 10, zIndex: 50, display: 'flex', gap: 6, flexWrap: 'wrap', width: 140 }}>
+                {SWATCHES.map(c => (
+                  <div key={c} onClick={() => { addItem({ type: 'swatch', color: c }); setSwatchMenuOpen(false) }} style={{ width: 22, height: 22, borderRadius: 6, backgroundColor: c, cursor: 'pointer' }} />
+                ))}
               </div>
             )}
             {pickerType && (
