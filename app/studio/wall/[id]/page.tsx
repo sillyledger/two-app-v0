@@ -3,11 +3,11 @@
 import { useEffect, useState, useRef, useCallback } from 'react'
 import { useParams } from 'next/navigation'
 import Sidebar from '@/components/sidebar'
-import { Plus, FileText, StickyNote, Image as ImageIcon, Search, X } from 'lucide-react'
+import { Plus, FileText, StickyNote, Image as ImageIcon, Search, X, Type } from 'lucide-react'
 
 interface BoardItem {
   id: number
-  type: 'doc' | 'note' | 'image' | 'swatch'
+  type: 'doc' | 'note' | 'image' | 'swatch' | 'text'
   ref_id: string | null
   content: string | null
   color: string | null
@@ -32,6 +32,7 @@ const SWATCHES = ["#EF9F27", "#85B7EB", "#5DCAA5", "#F0997B", "#AFA9EC", "#97C45
 function cardSize(type: BoardItem['type']) {
   if (type === 'swatch') return { w: 130, h: 100 }
   if (type === 'image') return { w: 150, h: 110 }
+  if (type === 'text') return { w: 200, h: 80 }
   return { w: 160, h: 70 }
 }
 
@@ -51,6 +52,8 @@ export default function BoardPage() {
   const [contextMenuId, setContextMenuId] = useState<number | null>(null)
   const [editingTitle, setEditingTitle] = useState(false)
   const [titleValue, setTitleValue] = useState('')
+  const [editingItemId, setEditingItemId] = useState<number | null>(null)
+  const [editingText, setEditingText] = useState('')
   const [hoveredCardId, setHoveredCardId] = useState<number | null>(null)
   const [connectDrag, setConnectDrag] = useState<{ fromId: number; x: number; y: number } | null>(null)
   const [hoverTargetId, setHoverTargetId] = useState<number | null>(null)
@@ -99,6 +102,7 @@ export default function BoardPage() {
     })
     const item = await res.json()
     setItems(prev => [...prev, item])
+    return item
   }
 
   const handleUploadClick = () => {
@@ -123,6 +127,15 @@ export default function BoardPage() {
     setBoard(prev => (prev ? { ...prev, name: titleValue.trim() } : prev))
     await fetch(`/api/boards/${boardId}`, {
       method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: titleValue.trim() }),
+    })
+  }
+
+  const saveText = async (id: number) => {
+    const value = editingText
+    setEditingItemId(null)
+    setItems(prev => prev.map(i => (i.id === id ? { ...i, content: value } : i)))
+    await fetch(`/api/boards/${boardId}/items/${id}`, {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ content: value }),
     })
   }
 
@@ -263,6 +276,7 @@ export default function BoardPage() {
               <div style={{ position: 'absolute', top: 'calc(100% + 8px)', right: 0, width: 180, backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border)', borderRadius: 10, boxShadow: '0 10px 30px rgba(0,0,0,0.4)', overflow: 'hidden', zIndex: 50, padding: 6 }}>
                 <button onClick={() => { setPickerType('doc'); setAddMenuOpen(false) }} className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-[13px]" style={{ color: 'var(--text-secondary)' }} onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)')} onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}><FileText size={13} /> Doc</button>
                 <button onClick={() => { setPickerType('note'); setAddMenuOpen(false) }} className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-[13px]" style={{ color: 'var(--text-secondary)' }} onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)')} onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}><StickyNote size={13} /> Note</button>
+                <button onClick={async () => { setAddMenuOpen(false); const item = await addItem({ type: 'text', content: '' }); if (item) { setEditingItemId(item.id); setEditingText('') } }} className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-[13px]" style={{ color: 'var(--text-secondary)' }} onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)')} onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}><Type size={13} /> Text</button>
                 <button onClick={handleUploadClick} className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-[13px]" style={{ color: 'var(--text-secondary)' }} onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)')} onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}><ImageIcon size={13} /> Image</button>
                 <div style={{ padding: '6px 10px 2px' }}>
                   <p style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 6 }}>Color swatch</p>
@@ -335,13 +349,30 @@ export default function BoardPage() {
             return (
               <div
                 key={item.id}
-                onMouseDown={e => onCardMouseDown(e, item)}
+                onMouseDown={e => { if (editingItemId !== item.id) onCardMouseDown(e, item) }}
+                onDoubleClick={() => { if (item.type === 'text') { setEditingItemId(item.id); setEditingText(item.content ?? '') } }}
                 onMouseEnter={() => setHoveredCardId(item.id)}
                 onMouseLeave={() => setHoveredCardId(null)}
                 onContextMenu={e => { e.preventDefault(); setContextMenuId(item.id) }}
                 style={{ position: 'absolute', left: item.x, top: item.y, transform: `rotate(${item.rotation}deg)`, cursor: 'grab', userSelect: 'none', WebkitUserSelect: 'none' }}
               >
-                {item.type === 'swatch' ? (
+                {item.type === 'text' ? (
+                  editingItemId === item.id ? (
+                    <textarea
+                      autoFocus
+                      value={editingText}
+                      onChange={e => setEditingText(e.target.value)}
+                      onBlur={() => saveText(item.id)}
+                      onKeyDown={e => { if (e.key === 'Escape') saveText(item.id) }}
+                      onMouseDown={e => e.stopPropagation()}
+                      style={{ width: size.w, minHeight: size.h, background: 'transparent', border: '1px dashed rgba(255,255,255,0.25)', borderRadius: 6, padding: 8, fontSize: 14, color: 'var(--text-primary)', outline: 'none', resize: 'both', fontFamily: 'inherit' }}
+                    />
+                  ) : (
+                    <div style={{ width: size.w, minHeight: 24, padding: 8, fontSize: 14, color: 'var(--text-primary)', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+                      {item.content || <span style={{ color: 'var(--text-muted)' }}>Empty text</span>}
+                    </div>
+                  )
+                ) : item.type === 'swatch' ? (
                   <div style={{ width: size.w, height: size.h, borderRadius: 8, backgroundColor: item.color ?? '#888', boxShadow: '0 4px 12px rgba(0,0,0,0.3)', border: isConnectTarget ? '1.5px solid #8f89e6' : 'none' }} />
                 ) : item.type === 'image' ? (
                   <div style={{ width: size.w, borderRadius: 8, overflow: 'hidden', boxShadow: '0 4px 12px rgba(0,0,0,0.3)', border: isConnectTarget ? '1.5px solid #8f89e6' : '1.5px solid transparent' }}>
