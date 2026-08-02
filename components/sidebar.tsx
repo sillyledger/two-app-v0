@@ -555,11 +555,7 @@ export default function Sidebar({ onNewNote, onToggle }: SidebarProps = {}) {
                 <NavItem href="/planner" icon={<CalendarDays size={16} />} label="Planner" />
                 <NavItem href="/activity" icon={<Activity size={16} />} label="Activity" />
                 <NavItem href="/library" icon={<Library size={16} />} label="Library" />
-                <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "9px 12px", borderRadius: 9, fontSize: 14, color: MUTED, opacity: 0.5 }}>
-                  <span style={{ display: "flex", flexShrink: 0 }}><Layers size={16} /></span>
-                  <span style={{ flex: 1 }}>Studio</span>
-                  <span style={{ fontSize: 10 }}>soon</span>
-                </div>
+                <NavItem href="/studio" icon={<Layers size={16} />} label="Studio" />
               </div>
 
               <div className="sb-scroll">
