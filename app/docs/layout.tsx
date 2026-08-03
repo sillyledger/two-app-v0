@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import Sidebar from '@/components/sidebar'
 import TabBar from '@/components/tab-bar'
 import { useTabStore } from '@/hooks/use-tab-store'
-import { useRouter } from 'next/navigation'
+import { useRouter, usePathname } from 'next/navigation'
 import { Search, X, FileText, StickyNote } from 'lucide-react'
 import SplitPane from '@/components/split-pane'
 
@@ -27,6 +27,7 @@ type SplitTarget = { type: 'doc' | 'note'; id: string }
 
 export default function DocsLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter()
+  const pathname = usePathname()
   const { openTab } = useTabStore()
 
   const [collapsed, setCollapsed] = useState(false)
@@ -180,7 +181,7 @@ export default function DocsLayout({ children }: { children: React.ReactNode }) 
         className="flex-1 flex flex-col min-w-0 transition-all duration-300 ease-in-out"
         style={{ ['--sidebar-width' as string]: sidebarWidth }}
       >
-        <TabBar />
+        {pathname !== '/docs' && <TabBar />}
 
         {/* Main content area — single or split */}
         {splitActive && splitTarget ? (
