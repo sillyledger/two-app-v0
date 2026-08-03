@@ -80,6 +80,8 @@ export default function Sidebar({ onNewNote, onToggle }: SidebarProps = {}) {
   const workspaceInputRef = useRef<HTMLInputElement>(null)
   const [wsMenuId, setWsMenuId] = useState<string | null>(null)
   const wsMenuRef = useRef<HTMLDivElement>(null)
+  const [wsPlusMenuId, setWsPlusMenuId] = useState<string | null>(null)
+  const wsPlusMenuRef = useRef<HTMLDivElement>(null)
   const [renamingWsId, setRenamingWsId] = useState<string | null>(null)
   const [wsRenameValue, setWsRenameValue] = useState("")
   const wsRenameInputRef = useRef<HTMLInputElement>(null)
@@ -236,6 +238,10 @@ export default function Sidebar({ onNewNote, onToggle }: SidebarProps = {}) {
     const h = (e: MouseEvent) => { if (folderMenuRef.current && !folderMenuRef.current.contains(e.target as Node)) setFolderMenuId(null) }
     if (folderMenuId) document.addEventListener("mousedown", h); return () => document.removeEventListener("mousedown", h)
   }, [folderMenuId])
+  useEffect(() => {
+    const h = (e: MouseEvent) => { if (wsPlusMenuRef.current && !wsPlusMenuRef.current.contains(e.target as Node)) setWsPlusMenuId(null) }
+    if (wsPlusMenuId) document.addEventListener("mousedown", h); return () => document.removeEventListener("mousedown", h)
+  }, [wsPlusMenuId])
   useEffect(() => {
     const h = (e: MouseEvent) => { if (wsMenuRef.current && !wsMenuRef.current.contains(e.target as Node)) setWsMenuId(null) }
     if (wsMenuId) document.addEventListener("mousedown", h); return () => document.removeEventListener("mousedown", h)
@@ -595,13 +601,20 @@ export default function Sidebar({ onNewNote, onToggle }: SidebarProps = {}) {
                             : <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{ws.name}</span>
                           }
                           <div style={{ display: "flex", gap: 2, flexShrink: 0 }}>
-                            <button className="sb-group-btn" onClick={e => { e.stopPropagation(); openModal("doc", ws.id) }} style={{ opacity: 0, background: "none", border: "none", cursor: "pointer", color: MUTED, padding: 2, display: "flex", transition: "opacity 0.1s" }} onMouseEnter={e => (e.currentTarget.style.color = "#888")} onMouseLeave={e => (e.currentTarget.style.color = MUTED)}><Plus size={12} /></button>
+                            <div style={{ position: "relative" }} ref={wsPlusMenuId === ws.id ? wsPlusMenuRef : undefined}>
+                              <button className="sb-group-btn" onClick={e => { e.stopPropagation(); setWsPlusMenuId(wsPlusMenuId === ws.id ? null : ws.id) }} style={{ opacity: 0, background: "none", border: "none", cursor: "pointer", color: MUTED, padding: 2, display: "flex", transition: "opacity 0.1s" }} onMouseEnter={e => (e.currentTarget.style.color = "#888")} onMouseLeave={e => (e.currentTarget.style.color = MUTED)}><Plus size={12} /></button>
+                              {wsPlusMenuId === ws.id && (
+                                <div style={dropdownStyle}>
+                                  <button style={dropdownBtn()} onClick={e => { e.stopPropagation(); setWsPlusMenuId(null); openModal("doc", ws.id) }} onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.06)")} onMouseLeave={e => (e.currentTarget.style.background = "transparent")}><span style={{fontSize:13}}>▣</span> New Doc</button>
+                                  <button style={dropdownBtn()} onClick={e => { e.stopPropagation(); setWsPlusMenuId(null); openModal("folder", ws.id) }} onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.06)")} onMouseLeave={e => (e.currentTarget.style.background = "transparent")}><FolderOpen size={12} style={{ color: "#888" }} /> New Folder</button>
+                                </div>
+                              )}
+                            </div>
                             <div style={{ position: "relative" }} ref={wsMenuId === ws.id ? wsMenuRef : undefined}>
                               <button className="sb-group-btn" onClick={e => { e.stopPropagation(); setWsMenuId(wsMenuId === ws.id ? null : ws.id) }} style={{ opacity: 0, background: "none", border: "none", cursor: "pointer", color: MUTED, padding: 2, display: "flex", borderRadius: 4, transition: "opacity 0.1s" }} onMouseEnter={e => (e.currentTarget.style.color = "#888")} onMouseLeave={e => (e.currentTarget.style.color = MUTED)}><MoreHorizontal size={12} /></button>
                               {wsMenuId === ws.id && (
                                 <div style={dropdownStyle}>
                                   <button style={dropdownBtn()} onClick={e => { e.stopPropagation(); setWsMenuId(null); setWsRenameValue(ws.name); setRenamingWsId(ws.id) }} onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.06)")} onMouseLeave={e => (e.currentTarget.style.background = "transparent")}><Pencil size={12} style={{ color: "#555" }} /> Rename</button>
-                                  <button style={dropdownBtn()} onClick={e => { e.stopPropagation(); openModal("folder", ws.id); setWsMenuId(null) }} onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.06)")} onMouseLeave={e => (e.currentTarget.style.background = "transparent")}><FolderOpen size={12} style={{ color: "#555" }} /> New Folder</button>
                                   <button style={dropdownBtn()} onClick={e => { e.stopPropagation(); setWsMenuId(null); openInviteModal(ws.id, ws.name) }} onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.06)")} onMouseLeave={e => (e.currentTarget.style.background = "transparent")}><Plus size={12} style={{ color: "#555" }} /> Invite people</button>
                                   <button style={dropdownBtn(true)} onClick={e => { e.stopPropagation(); deleteExtraWorkspace(ws.id) }} onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.06)")} onMouseLeave={e => (e.currentTarget.style.background = "transparent")}><Trash2 size={12} /> Delete</button>
                                 </div>
