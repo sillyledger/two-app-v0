@@ -263,6 +263,21 @@ export default function HomePage() {
                 className="w-full rounded-lg pl-9 pr-4 py-2.5 text-sm outline-none placeholder-[var(--text-muted)]"
                 style={{ backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border)", color: "var(--text-primary)" }}
               />
+              {!searchQuery && (
+                <span
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none"
+                  style={{
+                    fontSize: "11px",
+                    padding: "2px 6px",
+                    borderRadius: "4px",
+                    border: "1px solid var(--border)",
+                    color: "var(--text-muted)",
+                    backgroundColor: "var(--bg-tertiary)",
+                  }}
+                >
+                  ⌘K
+                </span>
+              )}
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: "8px", flexShrink: 0 }}>
               <button
