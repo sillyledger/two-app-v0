@@ -2,87 +2,13 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { X, FileText, Users, BookOpen, Layers, Calendar, Target, Search, Mic } from "lucide-react"
+import { X } from "lucide-react"
+import { TEMPLATES } from "@/lib/templates"
 
 interface Props {
   open: boolean
   onClose: () => void
 }
-
-const TEMPLATES = [
-  {
-    id: "blank",
-    label: "Blank",
-    description: "Start from scratch with an empty doc.",
-    icon: FileText,
-    accentColor: "#B4B2A9",
-    category: null,
-    content: "",
-  },
-  {
-    id: "meeting-notes",
-    label: "Meeting Notes",
-    description: "Capture agenda, decisions, and action items.",
-    icon: Users,
-    accentColor: "#85B7EB",
-    category: "business",
-    content: `<h1>Meeting Notes</h1><div data-callout="info"><p>Fill in the date, attendees, and agenda before the meeting. Use the Action Items section to assign owners and due dates after.</p></div><p><strong>Date:</strong> </p><p><strong>Attendees:</strong> </p><p><strong>Location / Link:</strong> </p><h2>Agenda</h2><ul data-type="taskList"><li data-checked="false"><label><input type="checkbox" /></label><div><p>Topic 1 — replace with your agenda item</p></div></li><li data-checked="false"><label><input type="checkbox" /></label><div><p>Topic 2</p></div></li><li data-checked="false"><label><input type="checkbox" /></label><div><p>Topic 3</p></div></li></ul><h2>Notes</h2><p>Write your meeting notes here. What was discussed, what decisions were made?</p><h2>Decisions made</h2><ul><li><p>Decision 1 — replace with actual decisions</p></li></ul><h2>Action items</h2><ul data-type="taskList"><li data-checked="false"><label><input type="checkbox" /></label><div><p>Owner name — action description — due date</p></div></li><li data-checked="false"><label><input type="checkbox" /></label><div><p>Owner name — action description — due date</p></div></li></ul><div data-callout="tip"><p>Tip: Share these notes with attendees within 24 hours while context is fresh.</p></div>`,
-  },
-  {
-    id: "blog-post",
-    label: "Blog Post",
-    description: "Structure your ideas into a compelling article.",
-    icon: BookOpen,
-    accentColor: "#5DCAA5",
-    category: "creative",
-    content: `<h1>Post title</h1><p><strong>Category:</strong> &nbsp; &nbsp;<strong>Read time:</strong> &nbsp;min</p><div data-callout="tip"><p>A great post makes one strong point and supports it three ways. Write your hook first — if it doesn't grab you, it won't grab anyone else either.</p></div><h2>Hook</h2><blockquote><p>Open with a question, a surprising fact, or a short story that pulls the reader in. Replace this with your actual opening.</p></blockquote><h2>Section 1 — the problem or context</h2><p>Set up the situation. What does the reader need to understand before your main argument lands?</p><h2>Section 2 — your main point</h2><p>This is the core of the post. Be direct. One strong idea, well explained, beats three vague ones.</p><h2>Section 3 — evidence, examples, or how-to</h2><p>Back up your point. Use a specific example, a story, data, or a step-by-step if this is a how-to post.</p><hr /><h2>Conclusion</h2><p>Restate the key takeaway in one sentence. Then add a call to action — what should the reader do, think, or feel next?</p><div data-callout="note"><p>Before publishing: check the title is under 60 characters, add a meta description, and confirm all links work.</p></div>`,
-  },
-  {
-    id: "product-brief",
-    label: "Product Brief",
-    description: "Define the problem, solution, and scope.",
-    icon: Layers,
-    accentColor: "#AFA9EC",
-    category: "strategy",
-    content: `<h1>Product Brief</h1><div data-callout="tip"><p>A product brief answers three questions: what problem are we solving, who is it for, and how will we know it worked? Fill in every section before starting design or development.</p></div><h2>Problem statement</h2><p>What problem are we solving, and for whom? Be specific — name the user and the pain.</p><h2>Target users</h2><ul data-type="taskList"><li data-checked="true"><label><input type="checkbox" checked /></label><div><p>Primary user — describe them here</p></div></li><li data-checked="false"><label><input type="checkbox" /></label><div><p>Secondary user — describe them here</p></div></li></ul><h2>Goals</h2><ul data-type="taskList"><li data-checked="false"><label><input type="checkbox" /></label><div><p>Goal 1 — make it measurable</p></div></li><li data-checked="false"><label><input type="checkbox" /></label><div><p>Goal 2</p></div></li><li data-checked="false"><label><input type="checkbox" /></label><div><p>Goal 3</p></div></li></ul><h2>Scope</h2><table><tbody><tr><th><p>In scope</p></th><th><p>Out of scope</p></th></tr><tr><td><p>Feature or capability to build</p></td><td><p>Something explicitly not included</p></td></tr><tr><td><p>Feature or capability to build</p></td><td><p>Something explicitly not included</p></td></tr><tr><td><p>Feature or capability to build</p></td><td><p>Something explicitly not included</p></td></tr></tbody></table><h2>Success metrics</h2><ul><li><p>Metric 1 — e.g. 80% of users complete onboarding</p></li><li><p>Metric 2</p></li></ul><h2>Open questions</h2><ul><li><p>Question that still needs an answer</p></li></ul><div data-callout="warning"><p>Assumptions &amp; risks: List anything this brief assumes to be true, and any risks that could block delivery.</p></div>`,
-  },
-  {
-    id: "weekly-review",
-    label: "Weekly Review",
-    description: "Reflect on the week and plan what's next.",
-    icon: Calendar,
-    accentColor: "#EF9F27",
-    category: "personal",
-    content: `<h1>Weekly Review</h1><p><strong>Week of:</strong> </p><div data-callout="tip"><p>Block 30 minutes every Friday to fill this in. Honest reflection — not just what looked good — is what makes it useful.</p></div><h2>Wins this week</h2><ul data-type="taskList"><li data-checked="true"><label><input type="checkbox" checked /></label><div><p>Win 1 — what went well and why?</p></div></li><li data-checked="true"><label><input type="checkbox" checked /></label><div><p>Win 2</p></div></li></ul><h2>What didn't go well</h2><p>Be honest here. What slipped, what was blocked, what took longer than expected?</p><h2>What did I learn?</h2><p>One or two sentences on the most useful thing you figured out this week.</p><h2>Next week priorities</h2><ul data-type="taskList"><li data-checked="false"><label><input type="checkbox" /></label><div><p>Priority 1 — the most important thing</p></div></li><li data-checked="false"><label><input type="checkbox" /></label><div><p>Priority 2</p></div></li><li data-checked="false"><label><input type="checkbox" /></label><div><p>Priority 3</p></div></li></ul><h2>Metrics snapshot</h2><table><tbody><tr><th><p>Metric</p></th><th><p>Last week</p></th><th><p>This week</p></th></tr><tr><td><p>Metric 1</p></td><td><p></p></td><td><p></p></td></tr><tr><td><p>Metric 2</p></td><td><p></p></td><td><p></p></td></tr><tr><td><p>Metric 3</p></td><td><p></p></td><td><p></p></td></tr></tbody></table><div data-callout="note"><p>Reflection: Any broader thoughts on the week — energy levels, focus, blockers, or patterns you're noticing?</p></div>`,
-  },
-  {
-    id: "okr-tracker",
-    label: "OKR Tracker",
-    description: "Set objectives, track key results, measure progress.",
-    icon: Target,
-    accentColor: "#1D9E75",
-    category: "strategy",
-    content: `<h1>OKR Tracker</h1><p><strong>Quarter:</strong> &nbsp; &nbsp;<strong>Team / Owner:</strong> </p><div data-callout="info"><p>Objectives are qualitative goals that inspire. Key Results are measurable outcomes that prove you got there. Aim for 3 objectives, each with 2–4 key results. Update numbers weekly.</p></div><h2>Objective 1</h2><p><em>Write your objective here — make it ambitious and inspiring.</em></p><table><tbody><tr><th><p>Key result</p></th><th><p>Current</p></th><th><p>Target</p></th><th><p>% complete</p></th></tr><tr><td><p>Key result 1 — describe the measurable outcome</p></td><td><p>0</p></td><td><p>100</p></td><td><p>0%</p></td></tr><tr><td><p>Key result 2</p></td><td><p>0</p></td><td><p>100</p></td><td><p>0%</p></td></tr><tr><td><p>Key result 3</p></td><td><p>0</p></td><td><p>100</p></td><td><p>0%</p></td></tr></tbody></table><h2>Objective 2</h2><p><em>Write your second objective here.</em></p><table><tbody><tr><th><p>Key result</p></th><th><p>Current</p></th><th><p>Target</p></th><th><p>% complete</p></th></tr><tr><td><p>Key result 1 — describe the measurable outcome</p></td><td><p>0</p></td><td><p>100</p></td><td><p>0%</p></td></tr><tr><td><p>Key result 2</p></td><td><p>0</p></td><td><p>100</p></td><td><p>0%</p></td></tr><tr><td><p>Key result 3</p></td><td><p>0</p></td><td><p>100</p></td><td><p>0%</p></td></tr></tbody></table><h2>Objective 3</h2><p><em>Write your third objective here.</em></p><table><tbody><tr><th><p>Key result</p></th><th><p>Current</p></th><th><p>Target</p></th><th><p>% complete</p></th></tr><tr><td><p>Key result 1 — describe the measurable outcome</p></td><td><p>0</p></td><td><p>100</p></td><td><p>0%</p></td></tr><tr><td><p>Key result 2</p></td><td><p>0</p></td><td><p>100</p></td><td><p>0%</p></td></tr></tbody></table><div data-callout="tip"><p>Review OKRs every Monday. Update the Current column, recalculate % complete, and flag anything that's off track early — don't wait until end of quarter.</p></div>`,
-  },
-  {
-    id: "competitor-analysis",
-    label: "Competitor Analysis",
-    description: "Compare competitors side by side — strengths, weaknesses, and pricing.",
-    icon: Search,
-    accentColor: "#8f89e6",
-    category: "research",
-    content: `<h1>Competitor Analysis</h1><div data-callout="tip"><p>A quick look at who else is solving this problem, and where the gaps are. Fill in each row honestly — the goal is to spot real opportunities, not just list features.</p></div><h2>Overview</h2><p>Briefly describe the market and who you're comparing.</p><table><tbody><tr><th><p>Competitor</p></th><th><p>Strengths</p></th><th><p>Weaknesses</p></th><th><p>Pricing</p></th></tr><tr><td><p>Competitor A</p></td><td><p></p></td><td><p></p></td><td><p></p></td></tr><tr><td><p>Competitor B</p></td><td><p></p></td><td><p></p></td><td><p></p></td></tr><tr><td><p>Competitor C</p></td><td><p></p></td><td><p></p></td><td><p></p></td></tr></tbody></table><h2>Key takeaways</h2><ul><li><p>Takeaway 1 — the most important pattern you noticed</p></li><li><p>Takeaway 2</p></li></ul><h2>Opportunities</h2><p>Where are the gaps? What could you do better or differently?</p><div data-callout="note"><p>Revisit this quarterly — competitive landscapes shift faster than they feel like they do.</p></div>`,
-  },
-  {
-    id: "podcast-episode",
-    label: "Podcast Episode",
-    description: "Plan an episode end to end — outline, guest notes, and show notes ready to publish.",
-    icon: Mic,
-    accentColor: "#c98a5e",
-    category: "creative",
-    content: `<h1>Podcast Episode</h1><p><strong>Episode #:</strong> &nbsp; <strong>Guest:</strong> &nbsp; <strong>Record date:</strong> </p><div data-callout="tip"><p>Fill in the outline before recording. Use timestamps loosely as a guide, not a script — the best moments usually happen off-outline.</p></div><h2>Episode outline</h2><table><tbody><tr><th><p>Segment</p></th><th><p>Notes</p></th><th><p>Target time</p></th></tr><tr><td><p>Intro / hook</p></td><td><p>Why this episode, why now</p></td><td><p>0:00</p></td></tr><tr><td><p>Guest intro</p></td><td><p>Background, why they're here</p></td><td><p>2:00</p></td></tr><tr><td><p>Main discussion</p></td><td><p>Core topic, 2–3 key questions</p></td><td><p>5:00</p></td></tr><tr><td><p>Wrap-up</p></td><td><p>Takeaway, where to find guest</p></td><td><p>35:00</p></td></tr></tbody></table><h2>Guest bio</h2><p>Short bio for the intro read and show notes — who they are, what they're known for.</p><h2>Key questions to ask</h2><ul><li><p>Question 1 — the one you most want answered</p></li><li><p>Question 2</p></li><li><p>Question 3</p></li></ul><h2>Resources mentioned</h2><ul><li><p>Link or reference to add during/after recording</p></li></ul><h2>Show notes draft</h2><p>One paragraph summary for the episode page — written after recording, using the outline as a guide.</p><h2>Publish checklist</h2><ul data-type="taskList"><li data-checked="false"><label><input type="checkbox" /></label><div><p>Episode edited and exported</p></div></li><li data-checked="false"><label><input type="checkbox" /></label><div><p>Show notes finalized</p></div></li><li data-checked="false"><label><input type="checkbox" /></label><div><p>Social clips cut</p></div></li><li data-checked="false"><label><input type="checkbox" /></label><div><p>Scheduled / published</p></div></li></ul>`,
-  },
-]
 
 export default function TemplatePickerModal({ open, onClose }: Props) {
   const router = useRouter()
