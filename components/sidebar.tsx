@@ -8,7 +8,7 @@ import {
   Search, ChevronDown, ChevronRight, Settings,
   Layers, Plus, FolderOpen, MoreHorizontal,
   Pencil, Trash2, LogOut, PanelLeftClose, PanelLeftOpen, Pin, PinOff,
-  Home, CalendarDays, StickyNote, Activity, Library, FileText,
+  Home, CalendarDays, StickyNote, Activity, Library, FileText, Users,
 } from "lucide-react"
 
 interface Doc { id: string; uuid: string; title: string }
@@ -709,7 +709,10 @@ export default function Sidebar({ onNewNote, onToggle }: SidebarProps = {}) {
 
                     <div style={{ display: "flex", alignItems: "center", padding: "6px 2px 4px", cursor: "pointer" }} onClick={() => setSharedOpen(v => !v)}>
                       <span style={{ fontSize: 9, color: MUTED, marginRight: 5, display: "inline-block", transform: sharedOpen ? "rotate(90deg)" : "rotate(0)", transition: "transform 0.18s" }}>▶</span>
-                      <span style={{ fontSize: 12, fontWeight: 500, color: MUTED, flex: 1 }}>Shared workspaces</span>
+                      <span style={{ display: "flex", alignItems: "center", gap: 6, flex: 1 }}>
+                        <Users size={14} style={{ color: "#8f89e6", flexShrink: 0 }} />
+                        <span style={{ fontSize: 14, fontWeight: 500, color: MUTED }}>Shared workspaces</span>
+                      </span>
                       <button onClick={e => { e.stopPropagation(); openModal("workspace") }}
                         style={{ background: "none", border: "none", cursor: "pointer", color: MUTED, padding: 2, display: "flex" }}
                         onMouseEnter={e => (e.currentTarget.style.color = "#888")} onMouseLeave={e => (e.currentTarget.style.color = MUTED)}>
