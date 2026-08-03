@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { X, FileText, Users, BookOpen, Layers, Calendar, Target } from "lucide-react"
+import { X, FileText, Users, BookOpen, Layers, Calendar, Target, Search } from "lucide-react"
 
 interface Props {
   open: boolean
@@ -63,6 +63,15 @@ const TEMPLATES = [
     accentColor: "#1D9E75",
     category: "strategy",
     content: `<h1>OKR Tracker</h1><p><strong>Quarter:</strong> &nbsp; &nbsp;<strong>Team / Owner:</strong> </p><div data-callout="info"><p>Objectives are qualitative goals that inspire. Key Results are measurable outcomes that prove you got there. Aim for 3 objectives, each with 2–4 key results. Update numbers weekly.</p></div><h2>Objective 1</h2><p><em>Write your objective here — make it ambitious and inspiring.</em></p><table><tbody><tr><th><p>Key result</p></th><th><p>Current</p></th><th><p>Target</p></th><th><p>% complete</p></th></tr><tr><td><p>Key result 1 — describe the measurable outcome</p></td><td><p>0</p></td><td><p>100</p></td><td><p>0%</p></td></tr><tr><td><p>Key result 2</p></td><td><p>0</p></td><td><p>100</p></td><td><p>0%</p></td></tr><tr><td><p>Key result 3</p></td><td><p>0</p></td><td><p>100</p></td><td><p>0%</p></td></tr></tbody></table><h2>Objective 2</h2><p><em>Write your second objective here.</em></p><table><tbody><tr><th><p>Key result</p></th><th><p>Current</p></th><th><p>Target</p></th><th><p>% complete</p></th></tr><tr><td><p>Key result 1 — describe the measurable outcome</p></td><td><p>0</p></td><td><p>100</p></td><td><p>0%</p></td></tr><tr><td><p>Key result 2</p></td><td><p>0</p></td><td><p>100</p></td><td><p>0%</p></td></tr><tr><td><p>Key result 3</p></td><td><p>0</p></td><td><p>100</p></td><td><p>0%</p></td></tr></tbody></table><h2>Objective 3</h2><p><em>Write your third objective here.</em></p><table><tbody><tr><th><p>Key result</p></th><th><p>Current</p></th><th><p>Target</p></th><th><p>% complete</p></th></tr><tr><td><p>Key result 1 — describe the measurable outcome</p></td><td><p>0</p></td><td><p>100</p></td><td><p>0%</p></td></tr><tr><td><p>Key result 2</p></td><td><p>0</p></td><td><p>100</p></td><td><p>0%</p></td></tr></tbody></table><div data-callout="tip"><p>Review OKRs every Monday. Update the Current column, recalculate % complete, and flag anything that's off track early — don't wait until end of quarter.</p></div>`,
+  },
+  {
+    id: "competitor-analysis",
+    label: "Competitor Analysis",
+    description: "Compare competitors side by side — strengths, weaknesses, and pricing.",
+    icon: Search,
+    accentColor: "#8f89e6",
+    category: "research",
+    content: `<h1>Competitor Analysis</h1><div data-callout="tip"><p>A quick look at who else is solving this problem, and where the gaps are. Fill in each row honestly — the goal is to spot real opportunities, not just list features.</p></div><h2>Overview</h2><p>Briefly describe the market and who you're comparing.</p><table><tbody><tr><th><p>Competitor</p></th><th><p>Strengths</p></th><th><p>Weaknesses</p></th><th><p>Pricing</p></th></tr><tr><td><p>Competitor A</p></td><td><p></p></td><td><p></p></td><td><p></p></td></tr><tr><td><p>Competitor B</p></td><td><p></p></td><td><p></p></td><td><p></p></td></tr><tr><td><p>Competitor C</p></td><td><p></p></td><td><p></p></td><td><p></p></td></tr></tbody></table><h2>Key takeaways</h2><ul><li><p>Takeaway 1 — the most important pattern you noticed</p></li><li><p>Takeaway 2</p></li></ul><h2>Opportunities</h2><p>Where are the gaps? What could you do better or differently?</p><div data-callout="note"><p>Revisit this quarterly — competitive landscapes shift faster than they feel like they do.</p></div>`,
   },
 ]
 
