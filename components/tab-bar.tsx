@@ -145,13 +145,14 @@ export default function TabBar() {
         className="tabbar-wrap fixed z-30 flex items-center overflow-x-auto gap-1.5"
         style={{
           top: "44px",
-          left: "var(--sidebar-width, 0px)",
-          right: 0,
+          left: 0,
+          width: "calc(100% - var(--sidebar-width, 0px))",
           height: "40px",
           backgroundColor: "var(--bg)",
           borderBottom: "1px solid var(--border)",
           scrollbarWidth: "none",
-          transition: "left 0.2s",
+          transform: "translateX(var(--sidebar-width, 0px))",
+          transition: "transform 0.3s",
         }}
       >
         {tabs.map((tab, index) => {
