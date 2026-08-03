@@ -84,8 +84,12 @@ export async function DELETE(request: Request) {
   if (!payload) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   try {
-    const { id } = await request.json()
-    await sql`DELETE FROM tasks WHERE id = ${id} AND user_id = ${payload.userId}`
+    const { id, completed } = await request.json()
+    if (id) {
+      await sql`DELETE FROM tasks WHERE id = ${id} AND user_id = ${payload.userId}`
+    } else if (completed === true) {
+      await sql`DELETE FROM tasks WHERE user_id = ${payload.userId} AND completed = true`
+    }
     return NextResponse.json({ success: true })
   } catch (error) {
     console.error('Failed to delete task:', error)

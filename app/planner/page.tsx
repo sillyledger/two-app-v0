@@ -178,6 +178,19 @@ export default function PlannerPage() {
     })
   }
 
+  const clearCompleted = async () => {
+    const confirmed = window.confirm(
+      `Clear ${completedTasks.length} completed task${completedTasks.length === 1 ? '' : 's'}?`
+    )
+    if (!confirmed) return
+    setTasks(prev => prev.filter(t => !t.completed))
+    await fetch('/api/tasks', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ completed: true }),
+    })
+  }
+
   const active = tasks.filter(t => !t.completed)
   const todayTasks = active.filter(t => t.due_date && isToday(t.due_date))
   const overdueTasks = active.filter(t => t.due_date && isPast(t.due_date))
@@ -285,7 +298,7 @@ onMouseLeave={e => (e.currentTarget.style.background = '#ffffff')}
             )
           )}
           {showNoDate && nodateTasks.length > 0 && <TaskGroup label="No date" tasks={nodateTasks} onToggle={toggle} onDelete={remove} />}
-          {showCompleted && completedTasks.length > 0 && <TaskGroup label="Completed" tasks={completedTasks} onToggle={toggle} onDelete={remove} muted />}
+          {showCompleted && completedTasks.length > 0 && <TaskGroup label="Completed" tasks={completedTasks} onToggle={toggle} onDelete={remove} muted onClearAll={clearCompleted} />}
 
           {!loading && tasks.length > 0 && activeTab === 'today' && todayTasks.length === 0 && <p className="text-[13px]" style={{ color: 'var(--text-muted)' }}>No tasks due today.</p>}
           {!loading && tasks.length > 0 && activeTab === 'upcoming' && upcomingTasks.length === 0 && <p className="text-[13px]" style={{ color: 'var(--text-muted)' }}>No upcoming tasks.</p>}
@@ -435,15 +448,26 @@ function TaskCard({
 }
 
 function TaskGroup({
-  label, labelColor, tasks, onToggle, onDelete, showDate = false, muted = false,
+  label, labelColor, tasks, onToggle, onDelete, showDate = false, muted = false, onClearAll,
 }: {
-  label: string; labelColor?: string; tasks: Task[]; onToggle: (t: Task) => void; onDelete: (id: number) => void; showDate?: boolean; muted?: boolean
+  label: string; labelColor?: string; tasks: Task[]; onToggle: (t: Task) => void; onDelete: (id: number) => void; showDate?: boolean; muted?: boolean; onClearAll?: () => void
 }) {
   return (
     <div className="mb-8">
       <div className="flex items-center gap-2 mb-3">
         <span className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: labelColor ?? 'var(--text-muted)' }}>{label}</span>
         <span className="text-[11px] font-medium px-1.5 py-0.5 rounded-md" style={{ backgroundColor: 'var(--bg-tertiary)', color: 'var(--text-secondary)' }}>{tasks.length}</span>
+        {onClearAll && (
+          <button
+            onClick={onClearAll}
+            className="text-[11px] font-medium transition-colors"
+            style={{ color: 'var(--text-muted)' }}
+            onMouseEnter={e => (e.currentTarget.style.color = '#e05252')}
+            onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-muted)')}
+          >
+            Clear completed
+          </button>
+        )}
       </div>
       <div className="flex flex-col" style={{ gap: 10 }}>
         {tasks.map(task => (
