@@ -1,8 +1,8 @@
 "use client"
 
 import { useEffect, useState, useRef } from "react"
-import { useParams, useRouter, useSearchParams, usePathname } from "next/navigation"
-import { Plus, FileText, MoreHorizontal, Folder, Minus, SignalLow, SignalMedium, SignalHigh, Pencil, FolderInput, Trash2 } from "lucide-react"
+import { useParams, useRouter, usePathname, useSearchParams } from "next/navigation"
+import { Plus, MoreHorizontal, Pencil, FolderInput, Trash2, Star, LayoutGrid, List, Users, Folder } from "lucide-react"
 import Sidebar from "@/components/sidebar"
 
 interface Doc {
@@ -11,10 +11,8 @@ interface Doc {
   title: string
   content: string
   created_at: string
-  updated_at: string
-  priority?: string | null
-  author_name?: string
-  author_email?: string
+  is_starred: boolean
+  is_workspace_shared?: boolean
 }
 
 interface FolderType {
@@ -26,11 +24,7 @@ function formatDate(dateStr: string) {
   if (!dateStr) return ""
   const date = new Date(dateStr)
   if (isNaN(date.getTime())) return ""
-  return date.toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  })
+  return date.toLocaleDateString("en-US", { month: "short", day: "numeric" })
 }
 
 function stripHtml(html: string) {
@@ -38,13 +32,7 @@ function stripHtml(html: string) {
   return html.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim()
 }
 
-function PriorityBadge({ priority }: { priority?: string | null }) {
-  if (!priority) return <span className="flex items-center gap-1 text-[11px]" style={{ color: "var(--text-muted)" }}><Minus size={11} /> None</span>
-  if (priority === "low") return <span className="flex items-center gap-1 text-[11px]" style={{ color: "var(--text-secondary)" }}><SignalLow size={11} /> Low</span>
-  if (priority === "medium") return <span className="flex items-center gap-1 text-[11px] text-[#f5a623]"><SignalMedium size={11} /> Medium</span>
-  if (priority === "high") return <span className="flex items-center gap-1 text-[11px] text-[#e05252]"><SignalHigh size={11} /> High</span>
-  return null
-}
+type ViewMode = "grid" | "list"
 
 export default function FolderPage() {
   const { id } = useParams()
@@ -57,11 +45,21 @@ export default function FolderPage() {
   const [loading, setLoading] = useState(true)
   const [creating, setCreating] = useState(false)
   const [collapsed, setCollapsed] = useState(false)
+  const [view, setView] = useState<ViewMode>("grid")
 
   useEffect(() => {
     const saved = localStorage.getItem("sidebar-collapsed")
     if (saved === "true") setCollapsed(true)
   }, [])
+
+  useEffect(() => {
+    const savedView = localStorage.getItem("folder-docs-view")
+    if (savedView === "grid" || savedView === "list") setView(savedView)
+  }, [])
+
+  useEffect(() => {
+    localStorage.setItem("folder-docs-view", view)
+  }, [view])
 
   const [openMenuId, setOpenMenuId] = useState<string | null>(null)
   const menuRef = useRef<HTMLDivElement>(null)
@@ -124,6 +122,17 @@ export default function FolderPage() {
     }
   }
 
+  const handleToggleFavorite = async (doc: Doc, e: React.MouseEvent) => {
+    e.stopPropagation()
+    const newValue = !doc.is_starred
+    setDocs(prev => prev.map(d => d.uuid === doc.uuid ? { ...d, is_starred: newValue } : d))
+    await fetch(`/api/docs/${doc.uuid}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ is_starred: newValue }),
+    })
+  }
+
   const handleRename = async () => {
     if (!renamingDoc || !renameValue.trim()) return
     await fetch(`/api/docs/${renamingDoc.uuid}`, {
@@ -154,15 +163,6 @@ export default function FolderPage() {
     setMovingDoc(null)
   }
 
-  const handlePriorityChange = async (docUuid: string, value: string | null) => {
-    setDocs((prev) => prev.map((d) => d.uuid === docUuid ? { ...d, priority: value } : d))
-    await fetch(`/api/docs/${docUuid}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ priority: value }),
-    })
-  }
-
   const handleDelete = async () => {
     if (!deletingDoc) return
     await fetch(`/api/docs/${deletingDoc.uuid}`, { method: "DELETE" })
@@ -175,7 +175,7 @@ export default function FolderPage() {
       <Sidebar collapsed={collapsed} onToggle={() => setCollapsed((v) => !v)} />
 
       <main className="flex-1 overflow-y-auto">
-        <div className="max-w-5xl mx-auto px-8 py-8">
+        <div className="max-w-[1180px] mx-auto px-10 py-10">
 
           {/* Header */}
           <div className="flex items-center justify-between mb-8">
@@ -187,27 +187,46 @@ export default function FolderPage() {
               <span className="text-[12px]" style={{ color: "var(--text-muted)" }}>{docs.length} docs</span>
             </div>
             <button
-  onClick={handleCreateDoc}
-  disabled={creating}
-  className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-opacity"
-  style={{
-    backgroundColor: "var(--text-primary)",
-    border: "1px solid var(--border)",
-    color: "var(--bg)",
-  }}
-  onMouseEnter={e => (e.currentTarget.style.opacity = "0.85")}
-  onMouseLeave={e => (e.currentTarget.style.opacity = "1")}
->
-  <Plus size={15} />
-  {creating ? "Creating..." : "New Doc"}
-</button>
+              onClick={handleCreateDoc}
+              disabled={creating}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-opacity"
+              style={{
+                backgroundColor: "var(--text-primary)",
+                border: "1px solid var(--border)",
+                color: "var(--bg)",
+              }}
+              onMouseEnter={e => (e.currentTarget.style.opacity = "0.85")}
+              onMouseLeave={e => (e.currentTarget.style.opacity = "1")}
+            >
+              <Plus size={15} />
+              {creating ? "Creating..." : "New Doc"}
+            </button>
+          </div>
+
+          <div className="flex items-center justify-end mb-7">
+            <div className="flex gap-1">
+              <button
+                onClick={() => setView("grid")}
+                title="Grid view"
+                style={{ width: "32px", height: "32px", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "8px", border: "1px solid " + (view === "grid" ? "var(--text-primary)" : "var(--border)"), backgroundColor: view === "grid" ? "var(--bg-tertiary)" : "transparent", color: view === "grid" ? "var(--text-primary)" : "var(--text-muted)", cursor: "pointer", transition: "all 0.15s" }}
+              >
+                <LayoutGrid size={15} />
+              </button>
+              <button
+                onClick={() => setView("list")}
+                title="List view"
+                style={{ width: "32px", height: "32px", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "8px", border: "1px solid " + (view === "list" ? "var(--text-primary)" : "var(--border)"), backgroundColor: view === "list" ? "var(--bg-tertiary)" : "transparent", color: view === "list" ? "var(--text-primary)" : "var(--text-muted)", cursor: "pointer", transition: "all 0.15s" }}
+              >
+                <List size={15} />
+              </button>
+            </div>
           </div>
 
           {/* Doc list */}
           {loading ? (
-            <div className="space-y-1">
-              {Array.from({ length: 5 }).map((_, i) => (
-                <div key={i} className="h-12 rounded-lg animate-pulse" style={{ backgroundColor: "var(--bg-tertiary)" }} />
+            <div className="grid grid-cols-4 gap-4">
+              {Array.from({ length: 8 }).map((_, i) => (
+                <div key={i} className="h-52 rounded-xl animate-pulse" style={{ backgroundColor: "var(--bg-tertiary)" }} />
               ))}
             </div>
           ) : docs.length === 0 ? (
@@ -217,156 +236,116 @@ export default function FolderPage() {
               <p className="text-[13px]" style={{ color: "var(--text-muted)" }}>Click New Doc to get started</p>
             </div>
           ) : (
-            <div>
-              {/* Column headers */}
-              <div className="grid grid-cols-[1fr_120px_120px_100px_80px_36px] items-center px-3 py-2 mb-1">
-                <span className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>Name</span>
-                <span className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>Created</span>
-                <span className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>Last Edited</span>
-                <span className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>Author</span>
-                <span className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>Priority</span>
-                <span />
-              </div>
-
-              {/* Rows */}
-              {docs.map((doc) => (
-                <div
-                  key={doc.uuid}
-                  onClick={() => router.push(`/docs/${doc.uuid}`)}
-                  className="group grid grid-cols-[1fr_120px_120px_100px_80px_36px] items-center px-3 py-2.5 rounded-lg cursor-pointer transition-colors mb-[1px]"
-                  onMouseEnter={e => (e.currentTarget.style.backgroundColor = "var(--bg-secondary)")}
-                  onMouseLeave={e => (e.currentTarget.style.backgroundColor = "transparent")}
-                >
-                  {/* Name */}
-                  <div className="flex items-center gap-3 min-w-0">
-                    <FileText size={13} className="shrink-0" style={{ color: "var(--text-muted)" }} />
-                    <div className="min-w-0">
-                      <p className="text-[14px] font-medium truncate leading-snug" style={{ color: "var(--text-primary)" }}>
-                        {doc.title || "Untitled"}
-                      </p>
-                      <p className="text-[11px] truncate leading-snug mt-0.5" style={{ color: "var(--text-muted)" }}>
-                        {stripHtml(doc.content).slice(0, 80) || "No content"}
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Created */}
-                  <span className="text-[12px]" style={{ color: "var(--text-muted)" }}>{formatDate(doc.created_at)}</span>
-
-                  {/* Last Edited */}
-                  <span className="text-[12px]" style={{ color: "var(--text-muted)" }}>{formatDate(doc.updated_at)}</span>
-
-                  {/* Author */}
-                  <div className="flex items-center gap-1.5 min-w-0">
-                    <div
-                      className="w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-medium shrink-0"
-                      style={{
-                        backgroundColor: "var(--bg-tertiary)",
-                        border: "1px solid var(--border)",
-                        color: "var(--text-secondary)",
-                      }}
-                    >
-                      {(doc.author_name || doc.author_email || "?")[0].toUpperCase()}
-                    </div>
-                    <span className="text-[12px] truncate" style={{ color: "var(--text-muted)" }}>
-                      {doc.author_name || doc.author_email?.split("@")[0] || "—"}
-                    </span>
-                  </div>
-
-                  {/* Priority */}
-                  <div className="relative" onClick={e => e.stopPropagation()}>
-                    <button
-                      onClick={() => setOpenMenuId(openMenuId === `priority-${doc.uuid}` ? null : `priority-${doc.uuid}`)}
-                      className="flex items-center gap-1 px-2 py-1 rounded-md text-[11px] transition-colors"
-                      style={{ color: "var(--text-muted)" }}
-                      onMouseEnter={e => (e.currentTarget.style.backgroundColor = "var(--bg-tertiary)")}
-                      onMouseLeave={e => (e.currentTarget.style.backgroundColor = "transparent")}
-                    >
-                      <PriorityBadge priority={doc.priority} />
-                    </button>
-                    {openMenuId === `priority-${doc.uuid}` && (
-                      <div className="absolute left-0 top-full mt-1 z-50 w-36 rounded-lg shadow-xl py-1" style={{ backgroundColor: "var(--bg-tertiary)", border: "1px solid var(--border)" }}>
-                        {[
-                          { value: null, label: "None", icon: <Minus size={11} />, color: "var(--text-muted)" },
-                          { value: "low", label: "Low", icon: <SignalLow size={11} />, color: "var(--text-secondary)" },
-                          { value: "medium", label: "Medium", icon: <SignalMedium size={11} />, color: "#f5a623" },
-                          { value: "high", label: "High", icon: <SignalHigh size={11} />, color: "#e05252" },
-                        ].map((p) => (
-                          <button key={String(p.value)} onClick={() => { handlePriorityChange(doc.uuid, p.value); setOpenMenuId(null) }}
-                            className="w-full flex items-center gap-2 px-3 py-1.5 text-[11px] transition-colors"
-                            style={{ color: p.color }}
-                            onMouseEnter={e => (e.currentTarget.style.backgroundColor = "var(--border)")}
-                            onMouseLeave={e => (e.currentTarget.style.backgroundColor = "transparent")}
-                          >
-                            {p.icon}
-                            {p.label}
-                            {doc.priority === p.value && <span className="ml-auto">✓</span>}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Three-dot menu */}
-                  <div
-                    className="relative"
-                    ref={openMenuId === doc.uuid ? menuRef : null}
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <button
-                      onClick={() => setOpenMenuId(openMenuId === doc.uuid ? null : doc.uuid)}
-                      className="opacity-0 group-hover:opacity-100 p-1 rounded transition-all"
-                      style={{ color: "var(--text-muted)" }}
-                      onMouseEnter={e => {
-                        e.currentTarget.style.backgroundColor = "var(--bg-tertiary)"
-                        e.currentTarget.style.color = "var(--text-primary)"
-                      }}
-                      onMouseLeave={e => {
-                        e.currentTarget.style.backgroundColor = "transparent"
-                        e.currentTarget.style.color = "var(--text-muted)"
-                      }}
-                    >
-                      <MoreHorizontal size={14} />
-                    </button>
-
-                    {openMenuId === doc.uuid && (
-                      <div
-                        className="absolute right-0 top-7 w-44 rounded-xl shadow-xl z-50 overflow-hidden py-1"
-                        style={{ backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border)" }}
-                      >
-                        <button
-                          onClick={() => { setRenamingDoc(doc); setRenameValue(doc.title || ""); setOpenMenuId(null) }}
-                          className="w-full flex items-center gap-2.5 px-3 py-2 text-sm transition-colors"
-                          style={{ color: "var(--text-secondary)" }}
-                          onMouseEnter={e => (e.currentTarget.style.backgroundColor = "var(--bg-tertiary)")}
-                          onMouseLeave={e => (e.currentTarget.style.backgroundColor = "transparent")}
-                        >
-                          <Pencil size={13} style={{ color: "var(--text-muted)" }} /> Rename
-                        </button>
-                        <button
-                          onClick={() => openMoveModal(doc)}
-                          className="w-full flex items-center gap-2.5 px-3 py-2 text-sm transition-colors"
-                          style={{ color: "var(--text-secondary)" }}
-                          onMouseEnter={e => (e.currentTarget.style.backgroundColor = "var(--bg-tertiary)")}
-                          onMouseLeave={e => (e.currentTarget.style.backgroundColor = "transparent")}
-                        >
-                          <FolderInput size={13} style={{ color: "var(--text-muted)" }} /> Move
-                        </button>
-                        <div className="my-1 border-t" style={{ borderColor: "var(--border)" }} />
-                        <button
-                          onClick={() => { setDeletingDoc(doc); setOpenMenuId(null) }}
-                          className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-red-400 hover:text-red-300 transition-colors"
-                          onMouseEnter={e => (e.currentTarget.style.backgroundColor = "var(--bg-tertiary)")}
-                          onMouseLeave={e => (e.currentTarget.style.backgroundColor = "transparent")}
-                        >
-                          <Trash2 size={13} /> Delete
-                        </button>
-                      </div>
-                    )}
-                  </div>
+            <>
+              {view === "list" && (
+                <div style={{ display: "flex", alignItems: "center", gap: 16, padding: "0 20px 8px", fontSize: 11, color: "var(--text-muted)" }}>
+                  <div style={{ width: 28 }} />
+                  <span style={{ flex: 1 }}>Name</span>
+                  <span>Edited</span>
                 </div>
-              ))}
-            </div>
+              )}
+
+              <div className={view === "grid" ? "grid grid-cols-4 gap-4" : "flex flex-col gap-2"}>
+              {docs.map((doc) => {
+                const isMenuOpen = openMenuId === doc.uuid
+
+                const favoriteButton = (
+                  <button
+                    onClick={e => handleToggleFavorite(doc, e)}
+                    title={doc.is_starred ? "Remove from favorites" : "Add to favorites"}
+                    className="transition-opacity"
+                    style={{ color: doc.is_starred ? "#EF9F27" : "var(--text-muted)", opacity: doc.is_starred ? 1 : 0 }}
+                    onMouseEnter={e => (e.currentTarget.style.opacity = "1")}
+                    onMouseLeave={e => (e.currentTarget.style.opacity = doc.is_starred ? "1" : "0")}
+                  >
+                    <Star size={13} fill={doc.is_starred ? "#EF9F27" : "none"} />
+                  </button>
+                )
+
+                const menuButton = (
+                  <button
+                    onClick={e => { e.stopPropagation(); setOpenMenuId(isMenuOpen ? null : doc.uuid) }}
+                    className="w-7 h-7 rounded flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                    style={{ color: "var(--text-muted)" }}
+                    onMouseEnter={e => { e.currentTarget.style.backgroundColor = "var(--bg-tertiary)"; e.currentTarget.style.color = "var(--text-primary)" }}
+                    onMouseLeave={e => { e.currentTarget.style.backgroundColor = "transparent"; e.currentTarget.style.color = "var(--text-muted)" }}
+                  >
+                    <MoreHorizontal size={15} />
+                  </button>
+                )
+
+                const menuDropdown = isMenuOpen && (
+                  <div className="absolute right-0 top-8 w-44 rounded-xl shadow-xl z-50 overflow-hidden py-1" style={{ backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border)" }}>
+                    <button onClick={e => { e.stopPropagation(); setRenamingDoc(doc); setRenameValue(doc.title || ""); setOpenMenuId(null) }} className="w-full flex items-center gap-2.5 px-3 py-2 text-sm transition-colors" style={{ color: "var(--text-secondary)" }} onMouseEnter={e => (e.currentTarget.style.backgroundColor = "var(--bg-tertiary)")} onMouseLeave={e => (e.currentTarget.style.backgroundColor = "transparent")}>
+                      <Pencil size={13} style={{ color: "var(--text-muted)" }} /> Rename
+                    </button>
+                    <button onClick={e => { e.stopPropagation(); openMoveModal(doc) }} className="w-full flex items-center gap-2.5 px-3 py-2 text-sm transition-colors" style={{ color: "var(--text-secondary)" }} onMouseEnter={e => (e.currentTarget.style.backgroundColor = "var(--bg-tertiary)")} onMouseLeave={e => (e.currentTarget.style.backgroundColor = "transparent")}>
+                      <FolderInput size={13} style={{ color: "var(--text-muted)" }} /> Move
+                    </button>
+                    <div className="my-1 border-t" style={{ borderColor: "var(--border)" }} />
+                    <button onClick={e => { e.stopPropagation(); setDeletingDoc(doc); setOpenMenuId(null) }} className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-red-400 hover:text-red-300 transition-colors" onMouseEnter={e => (e.currentTarget.style.backgroundColor = "var(--bg-tertiary)")} onMouseLeave={e => (e.currentTarget.style.backgroundColor = "transparent")}>
+                      <Trash2 size={13} /> Delete
+                    </button>
+                  </div>
+                )
+
+                if (view === "list") {
+                  return (
+                    <div key={doc.uuid} className="relative group flex items-stretch transition-colors overflow-hidden" style={{ borderBottom: "1px solid var(--border)" }}
+                      onMouseEnter={e => { e.currentTarget.style.backgroundColor = "var(--bg-secondary)" }}
+                      onMouseLeave={e => { e.currentTarget.style.backgroundColor = "transparent" }}
+                    >
+                      <button onClick={() => router.push(`/docs/${doc.uuid}`)} className="text-left flex items-center gap-4 flex-1 min-w-0 px-5 py-3.5" style={{ cursor: "pointer" }}>
+                        <div style={{ width: 28, height: 28, borderRadius: 8, backgroundColor: "#3a393f", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#d4d2c8" strokeWidth="2" strokeLinecap="round">
+                            <rect x="4" y="2.5" width="16" height="19" rx="3" />
+                            <line x1="8" y1="8" x2="16" y2="8" />
+                            <line x1="8" y1="12" x2="16" y2="12" />
+                            <line x1="8" y1="16" x2="12.5" y2="16" />
+                          </svg>
+                        </div>
+                        <p className="font-semibold text-[15px] leading-snug flex-1 min-w-0 truncate" style={{ color: "var(--text-primary)" }}>{doc.title || "Untitled"}</p>
+                        {doc.is_workspace_shared && (
+                          <span style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 11, color: "#e0b48c", backgroundColor: "#e0b48c1a", borderRadius: 20, padding: "2px 8px", flexShrink: 0 }}>
+                            <Users size={10} /> Shared
+                          </span>
+                        )}
+                        <p className="text-[12px] flex-shrink-0" style={{ color: "var(--text-muted)" }}>{formatDate(doc.created_at)}</p>
+                      </button>
+                      <div className="flex items-center gap-1 pr-4 flex-shrink-0">
+                        {favoriteButton}
+                        <div className="relative" ref={isMenuOpen ? menuRef : null}>
+                          {menuButton}
+                          {menuDropdown}
+                        </div>
+                      </div>
+                    </div>
+                  )
+                }
+
+                return (
+                  <div key={doc.uuid} className="relative group rounded-xl flex flex-col transition-colors overflow-hidden" style={{ backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border)", minHeight: "200px" }}
+                    onMouseEnter={e => { e.currentTarget.style.backgroundColor = "var(--bg-tertiary)"; e.currentTarget.style.borderColor = "var(--text-muted)" }}
+                    onMouseLeave={e => { e.currentTarget.style.backgroundColor = "var(--bg-secondary)"; e.currentTarget.style.borderColor = "var(--border)" }}
+                  >
+                    <div style={{ height: "5px", backgroundColor: "#4a4948", width: "100%", flexShrink: 0 }} />
+                    <button onClick={() => router.push(`/docs/${doc.uuid}`)} className="text-left px-5 pt-4 pb-3 flex flex-col flex-1 w-full" style={{ cursor: "pointer" }}>
+                      <p className="font-semibold text-[15px] leading-snug mb-3 pr-6" style={{ color: "var(--text-primary)" }}>{doc.title || "Untitled"}</p>
+                      <p className="text-[13px] leading-relaxed line-clamp-3 flex-1" style={{ color: "var(--text-secondary)" }}>{stripHtml(doc.content)}</p>
+                    </button>
+                    <div className="flex items-center justify-between px-5 py-3" style={{ borderTop: "1px solid var(--border)" }}>
+                      <p className="text-[12px]" style={{ color: "var(--text-muted)" }}>{formatDate(doc.created_at)}</p>
+                      {favoriteButton}
+                    </div>
+                    <div className="absolute top-7 right-4" ref={isMenuOpen ? menuRef : null}>
+                      {menuButton}
+                      {menuDropdown}
+                    </div>
+                  </div>
+                )
+              })}
+              </div>
+            </>
           )}
         </div>
       </main>
