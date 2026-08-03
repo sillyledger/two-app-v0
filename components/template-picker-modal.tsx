@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { X, FileText, Users, BookOpen, Layers, Calendar, Target, Search } from "lucide-react"
+import { X, FileText, Users, BookOpen, Layers, Calendar, Target, Search, Mic } from "lucide-react"
 
 interface Props {
   open: boolean
@@ -72,6 +72,15 @@ const TEMPLATES = [
     accentColor: "#8f89e6",
     category: "research",
     content: `<h1>Competitor Analysis</h1><div data-callout="tip"><p>A quick look at who else is solving this problem, and where the gaps are. Fill in each row honestly — the goal is to spot real opportunities, not just list features.</p></div><h2>Overview</h2><p>Briefly describe the market and who you're comparing.</p><table><tbody><tr><th><p>Competitor</p></th><th><p>Strengths</p></th><th><p>Weaknesses</p></th><th><p>Pricing</p></th></tr><tr><td><p>Competitor A</p></td><td><p></p></td><td><p></p></td><td><p></p></td></tr><tr><td><p>Competitor B</p></td><td><p></p></td><td><p></p></td><td><p></p></td></tr><tr><td><p>Competitor C</p></td><td><p></p></td><td><p></p></td><td><p></p></td></tr></tbody></table><h2>Key takeaways</h2><ul><li><p>Takeaway 1 — the most important pattern you noticed</p></li><li><p>Takeaway 2</p></li></ul><h2>Opportunities</h2><p>Where are the gaps? What could you do better or differently?</p><div data-callout="note"><p>Revisit this quarterly — competitive landscapes shift faster than they feel like they do.</p></div>`,
+  },
+  {
+    id: "podcast-episode",
+    label: "Podcast Episode",
+    description: "Plan an episode end to end — outline, guest notes, and show notes ready to publish.",
+    icon: Mic,
+    accentColor: "#c98a5e",
+    category: "creative",
+    content: `<h1>Podcast Episode</h1><p><strong>Episode #:</strong> &nbsp; <strong>Guest:</strong> &nbsp; <strong>Record date:</strong> </p><div data-callout="tip"><p>Fill in the outline before recording. Use timestamps loosely as a guide, not a script — the best moments usually happen off-outline.</p></div><h2>Episode outline</h2><table><tbody><tr><th><p>Segment</p></th><th><p>Notes</p></th><th><p>Target time</p></th></tr><tr><td><p>Intro / hook</p></td><td><p>Why this episode, why now</p></td><td><p>0:00</p></td></tr><tr><td><p>Guest intro</p></td><td><p>Background, why they're here</p></td><td><p>2:00</p></td></tr><tr><td><p>Main discussion</p></td><td><p>Core topic, 2–3 key questions</p></td><td><p>5:00</p></td></tr><tr><td><p>Wrap-up</p></td><td><p>Takeaway, where to find guest</p></td><td><p>35:00</p></td></tr></tbody></table><h2>Guest bio</h2><p>Short bio for the intro read and show notes — who they are, what they're known for.</p><h2>Key questions to ask</h2><ul><li><p>Question 1 — the one you most want answered</p></li><li><p>Question 2</p></li><li><p>Question 3</p></li></ul><h2>Resources mentioned</h2><ul><li><p>Link or reference to add during/after recording</p></li></ul><h2>Show notes draft</h2><p>One paragraph summary for the episode page — written after recording, using the outline as a guide.</p><h2>Publish checklist</h2><ul data-type="taskList"><li data-checked="false"><label><input type="checkbox" /></label><div><p>Episode edited and exported</p></div></li><li data-checked="false"><label><input type="checkbox" /></label><div><p>Show notes finalized</p></div></li><li data-checked="false"><label><input type="checkbox" /></label><div><p>Social clips cut</p></div></li><li data-checked="false"><label><input type="checkbox" /></label><div><p>Scheduled / published</p></div></li></ul>`,
   },
 ]
 
