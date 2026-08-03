@@ -130,6 +130,28 @@ export async function PUT(
           INSERT INTO doc_versions (doc_id, title, content, edited_by)
           VALUES (${docId}, ${currentTitle}, ${currentContent}, ${payload.userId})
         `
+
+        const ownerPlan = await sql`
+          SELECT users.plan
+          FROM docs
+          LEFT JOIN workspaces ON workspaces.id::text = docs.workspace_id::text
+          INNER JOIN users ON users.id = COALESCE(workspaces.user_id, docs.user_id)
+          WHERE docs.id = ${docId}
+        `
+        const plan = ownerPlan[0]?.plan ?? 'free'
+
+        if (plan === 'free') {
+          await sql`
+            DELETE FROM doc_versions
+            WHERE doc_id = ${docId}
+              AND id NOT IN (
+                SELECT id FROM doc_versions
+                WHERE doc_id = ${docId}
+                ORDER BY created_at DESC
+                LIMIT 3
+              )
+          `
+        }
       }
     }
 

@@ -45,6 +45,19 @@ export async function GET(
       return NextResponse.json({ error: 'Doc not found' }, { status: 404 })
     }
 
+    const ownerPlan = await sql`
+      SELECT users.plan
+      FROM docs
+      LEFT JOIN workspaces ON workspaces.id::text = docs.workspace_id::text
+      INNER JOIN users ON users.id = COALESCE(workspaces.user_id, docs.user_id)
+      WHERE docs.id = ${docId}
+    `
+    const plan = ownerPlan[0]?.plan ?? 'free'
+
+    // Free tier is already capped to 3 rows at insert time, so no extra filter
+    // needed there. Pro/Founding get a 30-day read-time window — a display
+    // filter only, nothing is deleted, so downgrading and re-upgrading later
+    // doesn't lose history.
     const versions = await sql`
       SELECT
         doc_versions.id,
@@ -55,6 +68,7 @@ export async function GET(
       FROM doc_versions
       LEFT JOIN users ON users.id = doc_versions.edited_by
       WHERE doc_versions.doc_id = ${docId}
+        AND (${plan === 'free'} OR doc_versions.created_at > NOW() - INTERVAL '30 days')
       ORDER BY doc_versions.created_at DESC
     `
 
