@@ -657,6 +657,12 @@ export default function DocPage() {
             splitViewActive={splitViewActive}
             onToggleSplitView={handleToggleSplitView}
             presenceMembers={presenceMembers}
+            onRestore={(newTitle, newContent) => {
+              setTitle(newTitle)
+              if (remoteUpdateRef.current) remoteUpdateRef.current(newContent)
+              else setContent(newContent)
+              updateTabTitle(docId, newTitle || 'Untitled')
+            }}
           />
 
           <main className="flex-1 overflow-y-auto flex flex-col items-center" style={{ paddingTop: '80px' }}>

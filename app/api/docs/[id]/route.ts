@@ -77,7 +77,7 @@ export async function PUT(
     const { title, content, color, is_starred, type, folder_id, priority, board_stage } = body
 
     const accessCheck = await sql`
-      SELECT docs.uuid FROM docs
+      SELECT docs.id, docs.uuid FROM docs
       LEFT JOIN workspace_members wm ON wm.workspace_id::text = docs.workspace_id::text
         AND wm.user_id = ${payload.userId}
         AND wm.status = 'accepted'
@@ -108,6 +108,30 @@ export async function PUT(
 
     // board_stage can be set to null (remove from board) or a string value
     const boardStageValue = board_stage !== undefined ? board_stage : undefined
+
+    if (content !== undefined) {
+      const docId = accessCheck[0].id
+      const preUpdate = await sql`SELECT title, content FROM docs WHERE id = ${docId}`
+      const currentTitle = preUpdate[0]?.title ?? null
+      const currentContent = preUpdate[0]?.content ?? null
+
+      const recentVersion = await sql`
+        SELECT created_at FROM doc_versions
+        WHERE doc_id = ${docId}
+        ORDER BY created_at DESC
+        LIMIT 1
+      `
+      const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000)
+      const hasRecentVersion = recentVersion.length > 0 && new Date(recentVersion[0].created_at) > tenMinutesAgo
+      const titleChanged = title !== undefined && title !== null && title !== currentTitle
+
+      if (!hasRecentVersion || titleChanged) {
+        await sql`
+          INSERT INTO doc_versions (doc_id, title, content, edited_by)
+          VALUES (${docId}, ${currentTitle}, ${currentContent}, ${payload.userId})
+        `
+      }
+    }
 
     const result = await sql`
       UPDATE docs

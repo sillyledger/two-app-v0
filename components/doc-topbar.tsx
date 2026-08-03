@@ -1,8 +1,9 @@
 "use client"
 
 import Link from "next/link"
-import { MoreHorizontal, Copy, Download, Trash2, Globe, Lock, FolderInput, Star, FileText, PanelRight, Share2, Columns2, ArrowLeftRight } from "lucide-react"
+import { MoreHorizontal, Copy, Download, Trash2, Globe, Lock, FolderInput, Star, FileText, PanelRight, Share2, Columns2, ArrowLeftRight, History } from "lucide-react"
 import { useState, useRef, useEffect } from "react"
+import VersionHistoryModal from "./version-history-modal"
 
 interface Folder {
   id: string
@@ -33,6 +34,7 @@ interface DocTopbarProps {
   splitViewActive?: boolean
   onToggleSplitView?: () => void
   presenceMembers?: PresenceMember[]
+  onRestore?: (title: string, content: string) => void
 }
 
 function stripTags(html: string): string {
@@ -353,10 +355,12 @@ export default function DocTopbar({
   splitViewActive = false,
   onToggleSplitView,
   presenceMembers,
+  onRestore,
 }: DocTopbarProps) {
   const [menuOpen, setMenuOpen] = useState(false)
   const [shareOpen, setShareOpen] = useState(false)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [showVersionHistory, setShowVersionHistory] = useState(false)
   const [copyToast, setCopyToast] = useState(false)
   const [publicEnabled, setPublicEnabled] = useState(isPublic)
   const [linkCopied, setLinkCopied] = useState(false)
@@ -573,6 +577,13 @@ export default function DocTopbar({
 
                 <div className="my-1 mx-2" style={{ borderTop: "1px solid var(--border)" }} />
 
+                {/* HISTORY */}
+                <p className="px-3 pt-2 pb-1 text-[10px] font-medium uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>History</p>
+                <button onClick={() => { setMenuOpen(false); setShowVersionHistory(true) }} className="flex items-center gap-2.5 w-full px-3 py-2 text-[12px] transition-colors" style={{ color: "var(--text-secondary)" }}
+                  onMouseEnter={e => (e.currentTarget.style.backgroundColor = "var(--bg-tertiary)")} onMouseLeave={e => (e.currentTarget.style.backgroundColor = "transparent")}
+                ><History size={12} style={{ color: "var(--text-muted)" }} /> Version history</button>
+                <div className="my-1 mx-2" style={{ borderTop: "1px solid var(--border)" }} />
+
                 {/* EXPORT */}
                 <p className="px-3 pt-2 pb-1 text-[10px] font-medium uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>Export</p>
                 <button onClick={handleCopyDoc} className="flex items-center gap-2.5 w-full px-3 py-2 text-[12px] transition-colors" style={{ color: "var(--text-secondary)" }}
@@ -676,6 +687,19 @@ export default function DocTopbar({
             </div>
           </div>
         </div>
+      )}
+
+      {/* Version history modal */}
+      {showVersionHistory && docId && (
+        <VersionHistoryModal
+          docId={String(docId)}
+          docTitle={docTitle}
+          onClose={() => setShowVersionHistory(false)}
+          onRestore={(title, content) => {
+            setShowVersionHistory(false)
+            onRestore?.(title, content)
+          }}
+        />
       )}
     </>
   )
