@@ -27,6 +27,10 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       const result = await sql`UPDATE board_items SET content = ${body.content} WHERE id = ${itemId} RETURNING *`
       return NextResponse.json(result[0])
     }
+    if (typeof body.color === 'string') {
+      const result = await sql`UPDATE board_items SET color = ${body.color} WHERE id = ${itemId} RETURNING *`
+      return NextResponse.json(result[0])
+    }
     return NextResponse.json({ error: 'No valid fields to update' }, { status: 400 })
   } catch (error) {
     console.error('Failed to update board item:', error)

@@ -58,15 +58,19 @@ export default function BoardPage() {
   const [hoveredCardId, setHoveredCardId] = useState<number | null>(null)
   const [connectDrag, setConnectDrag] = useState<{ fromId: number; x: number; y: number } | null>(null)
   const [hoverTargetId, setHoverTargetId] = useState<number | null>(null)
+  const [copiedItemId, setCopiedItemId] = useState<number | null>(null)
 
   const addMenuRef = useRef<HTMLDivElement>(null)
   const pickerRef = useRef<HTMLDivElement>(null)
+  const contextMenuRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const boardRef = useRef<HTMLDivElement>(null)
   const dragState = useRef<{ id: number; offsetX: number; offsetY: number } | null>(null)
   const connectState = useRef<{ fromId: number } | null>(null)
   const hoverTargetRef = useRef<number | null>(null)
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const copyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const skipBlurSaveRef = useRef(false)
   const itemsRef = useRef<BoardItem[]>([])
   itemsRef.current = items
 
@@ -87,7 +91,7 @@ export default function BoardPage() {
     function handleClick(e: MouseEvent) {
       if (addMenuRef.current && !addMenuRef.current.contains(e.target as Node)) setSwatchMenuOpen(false)
       if (pickerRef.current && !pickerRef.current.contains(e.target as Node)) setPickerType(null)
-      setContextMenuId(null)
+      if (!contextMenuRef.current || !contextMenuRef.current.contains(e.target as Node)) setContextMenuId(null)
     }
     document.addEventListener('mousedown', handleClick)
     return () => document.removeEventListener('mousedown', handleClick)
@@ -138,6 +142,36 @@ export default function BoardPage() {
     await fetch(`/api/boards/${boardId}/items/${id}`, {
       method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ content: value }),
     })
+  }
+
+  const normalizeHex = (input: string): string | null => {
+    let v = input.trim()
+    if (v.startsWith('#')) v = v.slice(1)
+    if (/^[0-9a-fA-F]{3}$/.test(v)) v = v.split('').map(c => c + c).join('')
+    if (!/^[0-9a-fA-F]{6}$/.test(v)) return null
+    return `#${v.toUpperCase()}`
+  }
+
+  const saveSwatchColor = async (id: number) => {
+    const canceled = skipBlurSaveRef.current
+    skipBlurSaveRef.current = false
+    setEditingItemId(null)
+    if (canceled) return
+    const current = itemsRef.current.find(i => i.id === id)
+    const normalized = normalizeHex(editingText)
+    if (!normalized || normalized === current?.color) return
+    setItems(prev => prev.map(i => (i.id === id ? { ...i, color: normalized } : i)))
+    await fetch(`/api/boards/${boardId}/items/${id}`, {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ color: normalized }),
+    })
+  }
+
+  const copyColor = (item: BoardItem) => {
+    if (!item.color) return
+    navigator.clipboard.writeText(item.color)
+    setCopiedItemId(item.id)
+    if (copyTimerRef.current) clearTimeout(copyTimerRef.current)
+    copyTimerRef.current = setTimeout(() => setCopiedItemId(null), 1000)
   }
 
   const straighten = async (id: number) => {
@@ -414,7 +448,33 @@ export default function BoardPage() {
                     </div>
                   )
                 ) : item.type === 'swatch' ? (
-                  <div style={{ width: size.w, height: size.h, borderRadius: 8, backgroundColor: item.color ?? '#888', boxShadow: '0 4px 12px rgba(0,0,0,0.3)', border: isConnectTarget ? '1.5px solid #8f89e6' : 'none' }} />
+                  <div style={{ width: size.w, height: size.h, borderRadius: 8, position: 'relative', overflow: 'hidden', backgroundColor: item.color ?? '#888', boxShadow: '0 4px 12px rgba(0,0,0,0.3)', border: isConnectTarget ? '1.5px solid #8f89e6' : '1.5px solid transparent' }}>
+                    {editingItemId === item.id ? (
+                      <input
+                        autoFocus
+                        value={editingText}
+                        onChange={e => setEditingText(e.target.value)}
+                        onFocus={e => e.target.select()}
+                        onBlur={() => saveSwatchColor(item.id)}
+                        onKeyDown={e => {
+                          if (e.key === 'Enter') { e.preventDefault(); (e.target as HTMLInputElement).blur() }
+                          if (e.key === 'Escape') { e.preventDefault(); skipBlurSaveRef.current = true; (e.target as HTMLInputElement).blur() }
+                        }}
+                        onMouseDown={e => e.stopPropagation()}
+                        onClick={e => e.stopPropagation()}
+                        style={{ position: 'absolute', left: 0, right: 0, bottom: 0, width: '100%', boxSizing: 'border-box', background: 'rgba(0,0,0,0.55)', color: '#fff', fontFamily: 'ui-monospace, monospace', fontSize: 11, border: 'none', outline: 'none', padding: '4px 6px' }}
+                      />
+                    ) : (
+                      <div
+                        onMouseDown={e => e.stopPropagation()}
+                        onClick={e => { e.stopPropagation(); copyColor(item) }}
+                        onDoubleClick={e => { e.stopPropagation(); setEditingItemId(item.id); setEditingText(item.color ?? '') }}
+                        style={{ position: 'absolute', left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.55)', color: '#fff', fontFamily: 'ui-monospace, monospace', fontSize: 11, padding: '4px 6px', cursor: 'pointer', userSelect: 'none' }}
+                      >
+                        {copiedItemId === item.id ? 'Copied' : (item.color ?? '#888888').toUpperCase()}
+                      </div>
+                    )}
+                  </div>
                 ) : item.type === 'image' ? (
                   <div style={{ width: size.w, borderRadius: 8, overflow: 'hidden', boxShadow: '0 4px 12px rgba(0,0,0,0.3)', border: isConnectTarget ? '1.5px solid #8f89e6' : '1.5px solid transparent' }}>
                     <img src={item.content ?? ''} style={{ width: '100%', display: 'block' }} />
@@ -435,7 +495,7 @@ export default function BoardPage() {
                   />
                 )}
                 {contextMenuId === item.id && (
-                  <div style={{ position: 'absolute', top: '100%', left: 0, marginTop: 4, backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border)', borderRadius: 8, boxShadow: '0 6px 20px rgba(0,0,0,0.4)', overflow: 'hidden', zIndex: 10, width: 130 }}>
+                  <div ref={contextMenuRef} style={{ position: 'absolute', top: '100%', left: 0, marginTop: 4, backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border)', borderRadius: 8, boxShadow: '0 6px 20px rgba(0,0,0,0.4)', overflow: 'hidden', zIndex: 10, width: 130 }}>
                     <button onClick={() => straighten(item.id)} className="w-full text-left px-3 py-2 text-[12px]" style={{ color: 'var(--text-secondary)' }} onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)')} onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}>Straighten</button>
                     <button onClick={() => deleteItem(item.id)} className="w-full text-left px-3 py-2 text-[12px] text-red-400" onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)')} onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}>Delete</button>
                   </div>
