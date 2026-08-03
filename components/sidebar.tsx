@@ -92,6 +92,11 @@ export default function Sidebar({ onNewNote, onToggle }: SidebarProps = {}) {
   const [renamingFolderId, setRenamingFolderId] = useState<string | null>(null)
   const [folderRenameValue, setFolderRenameValue] = useState("")
   const folderRenameInputRef = useRef<HTMLInputElement>(null)
+  const [wsFolderMenuId, setWsFolderMenuId] = useState<string | null>(null)
+  const wsFolderMenuRef = useRef<HTMLDivElement>(null)
+  const [renamingWsFolderId, setRenamingWsFolderId] = useState<string | null>(null)
+  const [wsFolderRenameValue, setWsFolderRenameValue] = useState("")
+  const wsFolderRenameInputRef = useRef<HTMLInputElement>(null)
   const [draggingDocId, setDraggingDocId] = useState<string | null>(null)
   const [dragOverFolderId, setDragOverFolderId] = useState<string | null>(null)
   const [showPicker, setShowPicker] = useState(false)
@@ -247,6 +252,10 @@ export default function Sidebar({ onNewNote, onToggle }: SidebarProps = {}) {
     if (wsMenuId) document.addEventListener("mousedown", h); return () => document.removeEventListener("mousedown", h)
   }, [wsMenuId])
   useEffect(() => {
+    const h = (e: MouseEvent) => { if (wsFolderMenuRef.current && !wsFolderMenuRef.current.contains(e.target as Node)) setWsFolderMenuId(null) }
+    if (wsFolderMenuId) document.addEventListener("mousedown", h); return () => document.removeEventListener("mousedown", h)
+  }, [wsFolderMenuId])
+  useEffect(() => {
     const h = (e: MouseEvent) => { if (accountMenuRef.current && !accountMenuRef.current.contains(e.target as Node)) setAccountMenuOpen(false) }
     if (accountMenuOpen) document.addEventListener("mousedown", h); return () => document.removeEventListener("mousedown", h)
   }, [accountMenuOpen])
@@ -254,6 +263,7 @@ export default function Sidebar({ onNewNote, onToggle }: SidebarProps = {}) {
   useEffect(() => { if (renamingWorkspace) setTimeout(() => workspaceInputRef.current?.select(), 50) }, [renamingWorkspace])
   useEffect(() => { if (renamingFolderId) setTimeout(() => folderRenameInputRef.current?.select(), 50) }, [renamingFolderId])
   useEffect(() => { if (renamingWsId) setTimeout(() => wsRenameInputRef.current?.select(), 50) }, [renamingWsId])
+  useEffect(() => { if (renamingWsFolderId) setTimeout(() => wsFolderRenameInputRef.current?.select(), 50) }, [renamingWsFolderId])
 
   const startRenamingWorkspace = () => { setWorkspaceRenameValue(workspaceName); setRenamingWorkspace(true) }
   const commitWorkspaceRename = async () => {
@@ -300,6 +310,20 @@ export default function Sidebar({ onNewNote, onToggle }: SidebarProps = {}) {
     const updated = folders.map(f => f.id === folder.id ? { ...f, pinned: nextPinned } : f)
     setFolders(updated); cacheSet("sb_folders", updated)
     try { await fetch(`/api/folders/${folder.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ pinned: nextPinned }) }) } catch {}
+  }
+  const startRenamingWsFolder = (folder: FolderType) => { setWsFolderMenuId(null); setWsFolderRenameValue(folder.name); setRenamingWsFolderId(folder.id) }
+  const commitWsFolderRename = async (wsId: string, folderId: string) => {
+    const trimmed = wsFolderRenameValue.trim(); setRenamingWsFolderId(null); if (!trimmed) return
+    setWsData(prev => ({ ...prev, [wsId]: { ...prev[wsId], docs: prev[wsId]?.docs ?? [], folders: (prev[wsId]?.folders ?? []).map(f => f.id === folderId ? { ...f, name: trimmed } : f) } }))
+    try { await fetch(`/api/folders/${folderId}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: trimmed }) }) } catch {}
+  }
+  const deleteWsFolder = async (wsId: string, folderId: string) => {
+    setWsFolderMenuId(null)
+    const folder = (wsData[wsId]?.folders ?? []).find(f => f.id === folderId)
+    const confirmed = window.confirm(`Delete "${folder?.name}"?\n\nAll docs inside will be moved to Trash and can be recovered within 30 days.`)
+    if (!confirmed) return
+    setWsData(prev => ({ ...prev, [wsId]: { ...prev[wsId], docs: prev[wsId]?.docs ?? [], folders: (prev[wsId]?.folders ?? []).filter(f => f.id !== folderId) } }))
+    try { await fetch(`/api/folders/${folderId}`, { method: "DELETE" }) } catch {}
   }
   const handleLogout = async () => { sessionStorage.clear(); await fetch("/api/auth", { method: "DELETE" }); router.push("/login") }
   const handleDrop = async (e: React.DragEvent, folderId: string) => {
@@ -511,6 +535,38 @@ export default function Sidebar({ onNewNote, onToggle }: SidebarProps = {}) {
     )
   }
 
+  const WsFolderRow = ({ wsId, folder, index }: { wsId: string; folder: FolderType; index: number }) => {
+    const isActive = pathname === `/folders/${folder.id}`
+    return (
+      <div className="sb-group"
+        style={{ position: "relative", display: "flex", alignItems: "center", gap: 9, padding: "7px 10px 7px 16px", borderRadius: 8, fontSize: 13.5, cursor: "pointer", color: isActive ? HOVER_COLOR : "#5a5a64", background: isActive ? HOVER_BG : "transparent", transition: "all 0.12s", marginBottom: 1 }}
+        onMouseEnter={e => { e.currentTarget.style.background = HOVER_BG; e.currentTarget.style.color = HOVER_COLOR }}
+        onMouseLeave={e => { e.currentTarget.style.background = isActive ? HOVER_BG : "transparent"; e.currentTarget.style.color = isActive ? HOVER_COLOR : "#5a5a64" }}
+        onClick={() => { if (renamingWsFolderId !== folder.id) router.push(`/folders/${folder.id}?name=${encodeURIComponent(folder.name)}`) }}
+      >
+        <div style={{ width: 16, height: 12, borderRadius: 3, background: getAccent(index), flexShrink: 0 }} />
+        {renamingWsFolderId === folder.id
+          ? <input ref={wsFolderRenameInputRef} value={wsFolderRenameValue} onChange={e => setWsFolderRenameValue(e.target.value)} onBlur={() => commitWsFolderRename(wsId, folder.id)} onKeyDown={e => { if (e.key === "Enter") commitWsFolderRename(wsId, folder.id); if (e.key === "Escape") setRenamingWsFolderId(null) }} onClick={e => e.stopPropagation()} style={{ flex: 1, minWidth: 0, borderRadius: 6, padding: "2px 8px", fontSize: 13, outline: "none", background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.12)", color: "#e0dfd9", fontFamily: FONT }} />
+          : <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{folder.name}</span>
+        }
+        {renamingWsFolderId !== folder.id && (
+          <div style={{ position: "relative" }} ref={wsFolderMenuId === folder.id ? wsFolderMenuRef : undefined}>
+            <button className="sb-group-btn" onClick={e => { e.stopPropagation(); setWsFolderMenuId(wsFolderMenuId === folder.id ? null : folder.id) }}
+              style={{ opacity: 0, color: "#555", background: "none", border: "none", cursor: "pointer", padding: 2, borderRadius: 4, display: "flex", transition: "opacity 0.1s" }}>
+              <MoreHorizontal size={13} />
+            </button>
+            {wsFolderMenuId === folder.id && (
+              <div style={dropdownStyle}>
+                <button style={dropdownBtn()} onClick={e => { e.stopPropagation(); startRenamingWsFolder(folder) }} onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.06)")} onMouseLeave={e => (e.currentTarget.style.background = "transparent")}><Pencil size={12} style={{ color: "#555" }} /> Rename</button>
+                <button style={dropdownBtn(true)} onClick={e => { e.stopPropagation(); deleteWsFolder(wsId, folder.id) }} onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.06)")} onMouseLeave={e => (e.currentTarget.style.background = "transparent")}><Trash2 size={12} /> Delete</button>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    )
+  }
+
   return (
     <>
       <style>{`
@@ -624,14 +680,8 @@ export default function Sidebar({ onNewNote, onToggle }: SidebarProps = {}) {
                         </div>
                         {expandedWorkspaces[ws.id] && (
                           <div style={{ paddingLeft: 8 }}>
-                            {(wsData[ws.id]?.folders ?? []).map(f => (
-                              <div key={f.id} style={{ display: "flex", alignItems: "center", gap: 9, padding: "7px 10px 7px 16px", borderRadius: 8, fontSize: 13.5, cursor: "pointer", color: "#5a5a64", marginBottom: 1, transition: "all 0.12s" }}
-                                onMouseEnter={e => { e.currentTarget.style.background = HOVER_BG; e.currentTarget.style.color = HOVER_COLOR }}
-                                onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#5a5a64" }}
-                                onClick={() => router.push(`/folders/${f.id}?name=${encodeURIComponent(f.name)}`)}>
-                                <FolderOpen size={13} style={{ color: "#4a4a56", flexShrink: 0 }} />
-                                <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{f.name}</span>
-                              </div>
+                            {(wsData[ws.id]?.folders ?? []).map((f, i) => (
+                              <WsFolderRow key={f.id} wsId={ws.id} folder={f} index={i} />
                             ))}
                             {(wsData[ws.id]?.docs ?? []).map(doc => (
                               <div key={doc.uuid} style={{ display: "flex", alignItems: "center", gap: 9, padding: "6px 10px 6px 20px", borderRadius: 7, fontSize: 13, cursor: "pointer", color: "#4a4a54", marginBottom: 1, transition: "all 0.12s" }}
