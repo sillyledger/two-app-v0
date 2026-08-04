@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
+import bcrypt from 'bcryptjs'
 import { verifyToken } from '@/lib/auth'
 import { sql } from '@/lib/db'
 
@@ -28,13 +29,15 @@ export async function PUT(request: Request) {
     if (!currentPassword) {
       return NextResponse.json({ error: 'Current password is required' }, { status: 400 })
     }
-    if (user.password !== currentPassword) {
+    const passwordMatch = await bcrypt.compare(currentPassword, user.password)
+    if (!passwordMatch) {
       return NextResponse.json({ error: 'Current password is incorrect' }, { status: 400 })
     }
     // Update with new password
+    const hashedPassword = await bcrypt.hash(newPassword, 10)
     const updated = await sql`
-      UPDATE users 
-      SET name = ${name || user.name}, email = ${email || user.email}, password = ${newPassword}
+      UPDATE users
+      SET name = ${name || user.name}, email = ${email || user.email}, password = ${hashedPassword}
       WHERE id = ${payload.userId}
       RETURNING id, email, name
     `
