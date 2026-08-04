@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { X, RotateCcw } from "lucide-react"
+import { formatDayHeader, dayKey, getUserDatePrefs } from "@/lib/format-date"
 
 interface Version {
   id: number
@@ -36,11 +37,10 @@ function initials(name: string | null | undefined): string {
 }
 
 // Same day-bucketing key format used by app/activity/page.tsx's groupByDay.
-function groupByDay(versions: Version[]): Record<string, Version[]> {
+function groupByDay(versions: Version[], timezone: string): Record<string, Version[]> {
   const groups: Record<string, Version[]> = {}
   for (const v of versions) {
-    const date = new Date(v.created_at)
-    const key = date.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })
+    const key = dayKey(v.created_at, timezone)
     if (!groups[key]) groups[key] = []
     groups[key].push(v)
   }
@@ -75,7 +75,8 @@ export default function VersionHistoryModal({ docId, docTitle, onClose, onRestor
   }, [docId])
 
   const selected = versions.find(v => v.id === selectedId) ?? null
-  const grouped = groupByDay(versions)
+  const { timezone } = getUserDatePrefs()
+  const grouped = groupByDay(versions, timezone)
   const days = Object.keys(grouped)
 
   const handleRestore = async () => {
@@ -117,7 +118,7 @@ export default function VersionHistoryModal({ docId, docTitle, onClose, onRestor
             )}
             {!loading && days.map(day => (
               <div key={day}>
-                <p className="px-3 pt-3 pb-1 text-[10px] font-medium uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>{day}</p>
+                <p className="px-3 pt-3 pb-1 text-[10px] font-medium uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>{formatDayHeader(grouped[day][0].created_at, timezone)}</p>
                 {grouped[day].map(v => {
                   const isSelected = v.id === selectedId
                   return (

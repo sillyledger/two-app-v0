@@ -7,6 +7,7 @@ import DocTopbar from '@/components/doc-topbar'
 import { useTabStore } from '@/hooks/use-tab-store'
 import { CalendarDays, SignalLow, SignalMedium, SignalHigh, Minus, PanelRight, X, FileText, User, Clock, Plus, Check, Send, Trash2, Circle, CheckCircle2, Pencil, PanelLeftOpen } from 'lucide-react'
 import type { Doc } from '@/lib/db'
+import { formatDate as formatDateI18n, getUserDatePrefs } from '@/lib/format-date'
 import PusherJS, { type PresenceChannel } from 'pusher-js'
 
 interface Folder {
@@ -78,14 +79,16 @@ function formatDate(dateStr: string) {
   if (!dateStr) return ''
   const date = new Date(dateStr)
   if (isNaN(date.getTime())) return ''
-  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+  const { timezone, dateFormat } = getUserDatePrefs()
+  return formatDateI18n(date, dateFormat, timezone)
 }
 
 function formatDateTime(dateStr: string) {
   if (!dateStr) return ''
   const date = new Date(dateStr)
   if (isNaN(date.getTime())) return ''
-  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) +
+  const { timezone, dateFormat } = getUserDatePrefs()
+  return formatDateI18n(date, dateFormat, timezone) +
     ' · ' + date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
 }
 

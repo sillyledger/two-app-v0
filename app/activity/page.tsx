@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Users } from 'lucide-react'
 import Sidebar from '@/components/sidebar'
+import { formatDate, formatDayHeader, dayKey, getUserDatePrefs } from '@/lib/format-date'
 
 type FilterTab = 'all' | 'created' | 'edited'
 type SpaceTab = 'all' | 'mine' | 'shared'
@@ -33,14 +34,14 @@ function timeAgo(dateStr: string): string {
   const days = Math.floor(hours / 24)
   if (days === 1) return 'yesterday'
   if (days < 30) return `${days} days ago`
-  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+  const { timezone, dateFormat } = getUserDatePrefs()
+  return formatDate(date, dateFormat, timezone)
 }
 
-function groupByDay(docs: any[]) {
+function groupByDay(docs: any[], timezone: string) {
   const groups: Record<string, any[]> = {}
   for (const doc of docs) {
-    const date = new Date(doc.updated_at)
-    const key = date.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })
+    const key = dayKey(doc.updated_at, timezone)
     if (!groups[key]) groups[key] = []
     groups[key].push(doc)
   }
@@ -97,7 +98,8 @@ export default function ActivityPage() {
     spaceTab === 'shared' ? tabFiltered.filter(e => e.is_shared) :
     tabFiltered
 
-  const grouped = groupByDay(spaceFiltered)
+  const { timezone } = getUserDatePrefs()
+  const grouped = groupByDay(spaceFiltered, timezone)
   const days = Object.keys(grouped)
 
   const tabs: { key: FilterTab; label: string; count: number }[] = [
@@ -118,7 +120,8 @@ export default function ActivityPage() {
 
   const rows: Row[] = []
   for (const day of days) {
-    rows.push({ kind: 'day', key: `day-${day}`, label: day })
+    const label = formatDayHeader(grouped[day][0].updated_at, timezone)
+    rows.push({ kind: 'day', key: `day-${day}`, label })
     for (const entry of grouped[day]) {
       rows.push({ kind: 'item', key: `${entry.type}-${entry.uuid}`, entry })
     }
