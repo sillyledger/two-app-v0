@@ -529,7 +529,6 @@ export default function SettingsPage() {
                 <div className="flex items-center justify-between py-4">
                   <div>
                     <p className={labelClass} style={{ color: "var(--text-secondary)" }}>Default page width</p>
-                    <p className={descClass} style={{ color: "var(--text-muted)" }}>Applied to all new docs</p>
                   </div>
                   <div className="flex items-center gap-1 rounded-lg p-0.5" style={{ backgroundColor: "var(--bg-tertiary)", border: "1px solid var(--border)" }}>
                     {(['narrow', 'wide'] as const).map((w) => (
