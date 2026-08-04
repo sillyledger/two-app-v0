@@ -4,6 +4,7 @@ import { useEffect, useState, useRef } from "react"
 import { useParams, useRouter, usePathname, useSearchParams } from "next/navigation"
 import { Plus, MoreHorizontal, Pencil, FolderInput, Trash2, Star, LayoutGrid, List, Users, Folder } from "lucide-react"
 import Sidebar from "@/components/sidebar"
+import { formatDate as formatDateI18n, getUserDatePrefs } from "@/lib/format-date"
 
 interface Doc {
   id: string
@@ -24,7 +25,8 @@ function formatDate(dateStr: string) {
   if (!dateStr) return ""
   const date = new Date(dateStr)
   if (isNaN(date.getTime())) return ""
-  return date.toLocaleDateString("en-US", { month: "short", day: "numeric" })
+  const { timezone, dateFormat } = getUserDatePrefs()
+  return formatDateI18n(date, dateFormat, timezone)
 }
 
 function stripHtml(html: string) {

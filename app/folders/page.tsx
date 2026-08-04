@@ -3,6 +3,7 @@ import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { Plus, Search, Pin } from "lucide-react"
 import Sidebar from "@/components/sidebar"
+import { formatDate, getUserDatePrefs } from "@/lib/format-date"
 
 interface FolderData {
   id: string
@@ -29,7 +30,10 @@ function formatRelative(dateStr: string | null) {
   const diffMin = Math.floor(diffMs / 60000)
   const diffHr = Math.floor(diffMin / 60)
   const diffDay = Math.floor(diffHr / 24)
-  if (diffDay >= 30) return date.toLocaleDateString("en-US", { month: "short", day: "numeric" })
+  if (diffDay >= 30) {
+    const { timezone, dateFormat } = getUserDatePrefs()
+    return formatDate(date, dateFormat, timezone)
+  }
   if (diffDay >= 1) return `${diffDay}d ago`
   if (diffHr >= 1) return `${diffHr}h ago`
   if (diffMin >= 1) return `${diffMin}m ago`

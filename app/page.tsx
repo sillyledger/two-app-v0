@@ -6,6 +6,7 @@ import Link from "next/link"
 import Sidebar from "@/components/sidebar"
 import TemplatePickerModal from "@/components/template-picker-modal"
 import { useTabStore } from "@/hooks/use-tab-store"
+import { formatDate as formatDateI18n, getUserDatePrefs } from "@/lib/format-date"
 
 interface Doc {
   id: string
@@ -35,7 +36,8 @@ function formatDate(dateStr: string) {
   if (!dateStr) return ""
   const date = new Date(dateStr)
   if (isNaN(date.getTime())) return ""
-  return date.toLocaleDateString("en-US", { month: "short", day: "numeric" })
+  const { timezone, dateFormat } = getUserDatePrefs()
+  return formatDateI18n(date, dateFormat, timezone)
 }
 
 function stripHtml(html: string) {

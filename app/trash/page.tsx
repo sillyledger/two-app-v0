@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { RotateCcw, Trash2 } from "lucide-react"
 import Sidebar from "@/components/sidebar"
+import { formatDate as formatDateI18n, getUserDatePrefs } from "@/lib/format-date"
 
 interface Doc {
   id: string
@@ -19,7 +20,8 @@ function formatDate(dateStr: string) {
   if (!dateStr) return ""
   const date = new Date(dateStr)
   if (isNaN(date.getTime())) return ""
-  return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+  const { timezone, dateFormat } = getUserDatePrefs()
+  return formatDateI18n(date, dateFormat, timezone)
 }
 
 export default function TrashPage() {

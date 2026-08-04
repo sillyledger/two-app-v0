@@ -3,6 +3,7 @@ import { useEffect, useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { Sun, Moon, Monitor, Camera, User, Palette, FileText, Lock, X, CreditCard, Settings2, HardDrive } from 'lucide-react'
 import Sidebar from '@/components/sidebar'
+import { formatDate } from '@/lib/format-date'
 
 type Section = 'account' | 'appearance' | 'preferences' | 'editor' | 'security' | 'billing' | 'storage'
 type Theme = 'dark' | 'light' | 'system'
@@ -655,7 +656,7 @@ export default function SettingsPage() {
                     <div>
                       <p className="text-[13px] font-semibold" style={{ color: "#a78bfa" }}>Pro trial active</p>
                       <p className="text-[12px]" style={{ color: "var(--text-muted)" }}>
-                        Your trial ends on {new Date(trialEndsAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}. Add a payment method to keep Pro.
+                        Your trial ends on {formatDate(trialEndsAt, dateFormat, timezone)}. Add a payment method to keep Pro.
                       </p>
                     </div>
                     <button

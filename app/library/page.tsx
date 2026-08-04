@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import Sidebar from '@/components/sidebar'
 import TemplatePickerModal from '@/components/template-picker-modal'
 import { FileText, Search, Plus, ArrowRight, Users } from 'lucide-react'
+import { formatDate, getUserDatePrefs } from '@/lib/format-date'
 
 interface Label {
   id: number
@@ -55,7 +56,8 @@ function timeAgo(dateStr: string) {
   if (diff < 3600) return `${Math.floor(diff / 60)}m ago`
   if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`
   if (diff < 604800) return `${Math.floor(diff / 86400)}d ago`
-  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+  const { timezone, dateFormat } = getUserDatePrefs()
+  return formatDate(date, dateFormat, timezone)
 }
 
 function previewText(titles: string[]) {
