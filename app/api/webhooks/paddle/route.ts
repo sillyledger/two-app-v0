@@ -49,10 +49,11 @@ export async function POST(req: NextRequest) {
       const email = data.customer?.email
       const priceId = data.items?.[0]?.price?.id
       const trialEndsAt = data.trial_dates?.ends_at ?? null
+      const customerId = data.customer_id ?? null
       if (email && priceId) {
         const plan = getPlanFromPriceId(priceId)
         await sql`
-          UPDATE users SET plan = ${plan}, trial_ends_at = ${trialEndsAt}
+          UPDATE users SET plan = ${plan}, trial_ends_at = ${trialEndsAt}, paddle_customer_id = COALESCE(${customerId}, paddle_customer_id)
           WHERE email = ${email}
         `
       }
@@ -61,9 +62,13 @@ export async function POST(req: NextRequest) {
     if (eventType === 'transaction.completed') {
       const email = data.customer?.email
       const priceId = data.items?.[0]?.price?.id
+      const customerId = data.customer_id ?? null
       if (email && priceId) {
         const plan = getPlanFromPriceId(priceId)
-        await sql`UPDATE users SET plan = ${plan} WHERE email = ${email}`
+        await sql`
+          UPDATE users SET plan = ${plan}, paddle_customer_id = COALESCE(${customerId}, paddle_customer_id)
+          WHERE email = ${email}
+        `
       }
     }
 

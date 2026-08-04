@@ -45,6 +45,8 @@ export default function SettingsPage() {
   const [section, setSection] = useState<Section>('account')
   const [collapsed, setCollapsed] = useState(false)
   const [billingYearly, setBillingYearly] = useState(false)
+  const [portalLoading, setPortalLoading] = useState(false)
+  const [portalError, setPortalError] = useState<string | null>(null)
 
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
@@ -271,6 +273,24 @@ export default function SettingsPage() {
       items: [{ priceId: PRICE_FOUNDING, quantity: 1 }],
       settings: { successUrl: 'https://app.two.so/welcome' }
     })
+  }
+
+  const handleManageSubscription = async () => {
+    setPortalLoading(true)
+    setPortalError(null)
+    try {
+      const res = await fetch('/api/billing/portal')
+      const data = await res.json()
+      if (!res.ok || !data.url) {
+        setPortalError(data.error || 'Could not open billing portal')
+        setPortalLoading(false)
+        return
+      }
+      window.location.href = data.url
+    } catch {
+      setPortalError('Could not open billing portal')
+      setPortalLoading(false)
+    }
   }
 
   const initial = name ? name.charAt(0).toUpperCase() : '?'
@@ -755,6 +775,27 @@ export default function SettingsPage() {
                     )}
                   </div>
                 </div>
+
+                {(plan === 'pro' || plan === 'founding') && (
+                  <div className="mt-5">
+                    <button
+                      onClick={handleManageSubscription}
+                      disabled={portalLoading}
+                      className="px-3 py-1.5 rounded-lg text-[12px] font-medium transition-colors"
+                      style={{
+                        backgroundColor: "var(--bg-tertiary)",
+                        color: "var(--text-secondary)",
+                        border: "1px solid var(--border)",
+                        cursor: portalLoading ? "wait" : "pointer",
+                      }}
+                    >
+                      {portalLoading ? 'Opening portal...' : 'Manage subscription'}
+                    </button>
+                    {portalError && (
+                      <p className="text-[12px] mt-2" style={{ color: "#dc2626" }}>{portalError}</p>
+                    )}
+                  </div>
+                )}
               </div>
             )}
 
