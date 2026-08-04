@@ -11,15 +11,31 @@ export async function GET() {
   const payload = await verifyToken(token.value)
   if (!payload) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const result = await sql`SELECT paddle_customer_id FROM users WHERE id = ${payload.userId}`
-  const customerId = result[0]?.paddle_customer_id
-  if (!customerId) {
-    return NextResponse.json({ error: 'No active subscription found' }, { status: 404 })
-  }
+  const result = await sql`SELECT email, paddle_customer_id FROM users WHERE id = ${payload.userId}`
+  const user = result[0]
+  let customerId = user?.paddle_customer_id
 
   const paddleEnv = process.env.PADDLE_ENVIRONMENT === 'production'
     ? 'https://api.paddle.com'
     : 'https://sandbox-api.paddle.com'
+
+  if (!customerId && user?.email) {
+    const lookupRes = await fetch(`${paddleEnv}/customers?email=${encodeURIComponent(user.email)}`, {
+      headers: { 'Authorization': `Bearer ${process.env.PADDLE_API_KEY}` },
+    })
+    if (lookupRes.ok) {
+      const lookupData = await lookupRes.json()
+      const found = lookupData?.data?.[0]?.id
+      if (found) {
+        customerId = found
+        await sql`UPDATE users SET paddle_customer_id = ${found} WHERE id = ${payload.userId}`
+      }
+    }
+  }
+
+  if (!customerId) {
+    return NextResponse.json({ error: 'No active subscription found' }, { status: 404 })
+  }
 
   const res = await fetch(`${paddleEnv}/customers/${customerId}/portal-sessions`, {
     method: 'POST',
