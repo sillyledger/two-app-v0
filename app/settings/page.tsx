@@ -286,7 +286,7 @@ export default function SettingsPage() {
         setPortalLoading(false)
         return
       }
-      window.location.href = data.url
+      window.open(data.url, '_blank')
     } catch {
       setPortalError('Could not open billing portal')
       setPortalLoading(false)
