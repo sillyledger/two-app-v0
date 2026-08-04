@@ -348,6 +348,26 @@ export default function Sidebar({ onNewNote, onToggle }: SidebarProps = {}) {
         const avatar = data.user.avatar_url || null
         setUserName(name); setUserAvatar(avatar)
         cacheSet("sb_userName", name); cacheSet("sb_userAvatar", avatar)
+
+        if (data.user.theme) {
+          localStorage.setItem('theme', data.user.theme)
+          document.documentElement.classList.remove('dark', 'light')
+          if (data.user.theme === 'system') {
+            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
+            document.documentElement.classList.add(prefersDark ? 'dark' : 'light')
+          } else {
+            document.documentElement.classList.add(data.user.theme)
+          }
+        }
+        if (data.user.font_size) {
+          localStorage.setItem('font-size-px', String(data.user.font_size))
+          document.documentElement.style.setProperty('--editor-font-size', `${data.user.font_size}px`)
+        }
+        if (data.user.doc_wide_mode !== null && data.user.doc_wide_mode !== undefined) {
+          localStorage.setItem('doc-wide-mode', String(data.user.doc_wide_mode))
+        }
+        if (data.user.timezone) localStorage.setItem('timezone', data.user.timezone)
+        if (data.user.date_format) localStorage.setItem('date-format', data.user.date_format)
       }
     }).catch(() => {})
     fetch("/api/workspace").then(r => r.json()).then(data => {

@@ -124,6 +124,11 @@ export default function SettingsPage() {
   const handleTheme = (t: Theme) => {
     setTheme(t)
     localStorage.setItem('theme', t)
+    fetch('/api/settings', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ theme: t }),
+    }).catch(() => {})
     applyTheme(t)
     if (t === 'system') {
       const mq = window.matchMedia('(prefers-color-scheme: dark)')
@@ -139,22 +144,42 @@ export default function SettingsPage() {
     const next = Math.min(22, Math.max(12, fontSize + delta))
     setFontSize(next)
     localStorage.setItem('font-size-px', String(next))
+    fetch('/api/settings', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ fontSize: next }),
+    }).catch(() => {})
     document.documentElement.style.setProperty('--editor-font-size', `${next}px`)
   }
 
   const handleDefaultWidth = (w: 'narrow' | 'wide') => {
     setDefaultWidth(w)
     localStorage.setItem('doc-wide-mode', w === 'wide' ? 'true' : 'false')
+    fetch('/api/settings', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ docWideMode: w === 'wide' }),
+    }).catch(() => {})
   }
 
   const handleTimezone = (tz: string) => {
     setTimezone(tz)
     localStorage.setItem('timezone', tz)
+    fetch('/api/settings', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ timezone: tz }),
+    }).catch(() => {})
   }
 
   const handleDateFormat = (df: string) => {
     setDateFormat(df)
     localStorage.setItem('date-format', df)
+    fetch('/api/settings', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ dateFormat: df }),
+    }).catch(() => {})
   }
 
   const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {

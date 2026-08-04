@@ -12,7 +12,7 @@ export async function PUT(request: Request) {
   const payload = await verifyToken(token.value)
   if (!payload) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const { name, email, currentPassword, newPassword } = await request.json()
+  const { name, email, currentPassword, newPassword, theme, fontSize, docWideMode, timezone, dateFormat } = await request.json()
 
   // Get current user
   const userResult = await sql`
@@ -44,10 +44,16 @@ export async function PUT(request: Request) {
     return NextResponse.json({ user: updated[0] })
   }
 
-  // Update name and email only
+  // Update name, email, and account-level preferences
   const updated = await sql`
-    UPDATE users 
-    SET name = ${name || user.name}, email = ${email || user.email}
+    UPDATE users
+    SET name = ${name ?? user.name},
+        email = ${email ?? user.email},
+        theme = ${theme ?? user.theme},
+        font_size = ${fontSize ?? user.font_size},
+        doc_wide_mode = ${docWideMode ?? user.doc_wide_mode},
+        timezone = ${timezone ?? user.timezone},
+        date_format = ${dateFormat ?? user.date_format}
     WHERE id = ${payload.userId}
     RETURNING id, email, name
   `
