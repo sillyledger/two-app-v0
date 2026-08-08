@@ -17,7 +17,7 @@ export const metadata: Metadata = {
   description: 'Beautiful docs for individuals and small teams who live on Apple devices. Fast, focused, and nothing you don\'t need.',
   applicationName: 'TWO',
   icons: {
-    icon: '/logo-two.svg',
+    icon: '/icon.svg',
     apple: '/apple-icon.png',
   },
 }
