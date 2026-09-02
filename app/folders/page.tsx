@@ -1,7 +1,7 @@
 "use client"
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
-import { Plus, Search, Pin } from "lucide-react"
+import { Plus, Search, Pin, MoreHorizontal, Trash2 } from "lucide-react"
 import Sidebar from "@/components/sidebar"
 import { formatDate, getUserDatePrefs } from "@/lib/format-date"
 
@@ -68,6 +68,15 @@ export default function FoldersPage() {
   const [createModalOpen, setCreateModalOpen] = useState(false)
   const [newFolderName, setNewFolderName] = useState("")
 
+  const [menuOpenId, setMenuOpenId] = useState<string | null>(null)
+  const menuRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const h = (e: MouseEvent) => { if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenuOpenId(null) }
+    if (menuOpenId) document.addEventListener("mousedown", h)
+    return () => document.removeEventListener("mousedown", h)
+  }, [menuOpenId])
+
   useEffect(() => {
     fetch("/api/folders")
       .then(r => r.json())
@@ -92,6 +101,15 @@ export default function FoldersPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ pinned: newValue }),
     })
+  }
+
+  const handleDeleteFolder = async (folder: FolderData, e: React.MouseEvent) => {
+    e.stopPropagation()
+    setMenuOpenId(null)
+    const confirmed = window.confirm(`Delete "${folder.name}"?\n\nAll docs inside will be moved to Trash and can be recovered within 30 days.`)
+    if (!confirmed) return
+    setFolders(prev => prev.filter(f => f.id !== folder.id))
+    try { await fetch(`/api/folders/${folder.id}`, { method: "DELETE" }) } catch {}
   }
 
   const openCreateModal = () => {
@@ -147,19 +165,56 @@ export default function FoldersPage() {
         onMouseEnter={e => { e.currentTarget.style.backgroundColor = "var(--bg-tertiary)"; e.currentTarget.style.borderColor = "var(--text-muted)" }}
         onMouseLeave={e => { e.currentTarget.style.backgroundColor = "var(--bg-secondary)"; e.currentTarget.style.borderColor = "var(--border)" }}
       >
-        <button
-          onClick={e => handleTogglePin(folder, e)}
-          title={folder.pinned ? "Unpin from homepage" : "Pin to homepage"}
-          className="absolute top-3.5 right-3.5 transition-opacity"
-          style={{
-            color: folder.pinned ? "#EF9F27" : "var(--text-muted)",
-            opacity: folder.pinned ? 1 : 0.4,
-          }}
-          onMouseEnter={e => (e.currentTarget.style.opacity = "1")}
-          onMouseLeave={e => (e.currentTarget.style.opacity = folder.pinned ? "1" : "0.4")}
-        >
-          <Pin size={14} fill={folder.pinned ? "#EF9F27" : "none"} />
-        </button>
+        <div className="absolute top-3.5 right-3.5 flex items-center gap-1.5">
+          <div style={{ position: "relative" }} ref={menuOpenId === folder.id ? menuRef : undefined}>
+            <button
+              onClick={e => { e.stopPropagation(); setMenuOpenId(menuOpenId === folder.id ? null : folder.id) }}
+              title="More options"
+              className="transition-opacity"
+              style={{ color: "var(--text-muted)", opacity: menuOpenId === folder.id ? 1 : 0.4 }}
+              onMouseEnter={e => (e.currentTarget.style.opacity = "1")}
+              onMouseLeave={e => (e.currentTarget.style.opacity = menuOpenId === folder.id ? "1" : "0.4")}
+            >
+              <MoreHorizontal size={14} />
+            </button>
+            {menuOpenId === folder.id && (
+              <div
+                style={{
+                  position: "absolute", right: 0, top: 20, zIndex: 50,
+                  borderRadius: 10, boxShadow: "0 8px 32px rgba(0,0,0,0.5)",
+                  width: 130, padding: "4px 0", overflow: "hidden",
+                  background: "#242428", border: "1px solid rgba(255,255,255,0.09)",
+                }}
+              >
+                <button
+                  onClick={e => handleDeleteFolder(folder, e)}
+                  style={{
+                    display: "flex", alignItems: "center", gap: 8, width: "100%", padding: "8px 12px",
+                    fontSize: 13, color: "#f87171", background: "transparent", border: "none",
+                    cursor: "pointer", textAlign: "left",
+                  }}
+                  onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.06)")}
+                  onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
+                >
+                  <Trash2 size={12} /> Delete
+                </button>
+              </div>
+            )}
+          </div>
+          <button
+            onClick={e => handleTogglePin(folder, e)}
+            title={folder.pinned ? "Unpin from homepage" : "Pin to homepage"}
+            className="transition-opacity"
+            style={{
+              color: folder.pinned ? "#EF9F27" : "var(--text-muted)",
+              opacity: folder.pinned ? 1 : 0.4,
+            }}
+            onMouseEnter={e => (e.currentTarget.style.opacity = "1")}
+            onMouseLeave={e => (e.currentTarget.style.opacity = folder.pinned ? "1" : "0.4")}
+          >
+            <Pin size={14} fill={folder.pinned ? "#EF9F27" : "none"} />
+          </button>
+        </div>
 
         <FolderIcon color={getAccent(index)} />
 
