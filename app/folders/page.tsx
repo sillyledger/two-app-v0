@@ -49,6 +49,139 @@ function FolderIcon({ color }: { color: string }) {
   )
 }
 
+function FolderCard({
+  folder,
+  accentColor,
+  isMenuOpen,
+  menuRef,
+  onToggleMenu,
+  onTogglePin,
+  onOpen,
+  isRenaming,
+  renameValue,
+  onRenameChange,
+  renameInputRef,
+  onCommitRename,
+  onCancelRename,
+  onStartRename,
+  onDelete,
+}: {
+  folder: FolderData
+  accentColor: string
+  isMenuOpen: boolean
+  menuRef: React.RefObject<HTMLDivElement | null>
+  onToggleMenu: (id: string, e: React.MouseEvent) => void
+  onTogglePin: (folder: FolderData, e: React.MouseEvent) => void
+  onOpen: (folder: FolderData) => void
+  isRenaming: boolean
+  renameValue: string
+  onRenameChange: (v: string) => void
+  renameInputRef: React.RefObject<HTMLInputElement | null>
+  onCommitRename: (folder: FolderData) => void
+  onCancelRename: () => void
+  onStartRename: (folder: FolderData, e: React.MouseEvent) => void
+  onDelete: (folder: FolderData, e: React.MouseEvent) => void
+}) {
+  const docCount = Number(folder.doc_count) || 0
+  const relative = formatRelative(folder.last_edited)
+  return (
+    <div
+      className="relative rounded-xl p-[18px] transition-colors cursor-pointer"
+      style={{ backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border)" }}
+      onClick={() => { if (!isRenaming) onOpen(folder) }}
+      onMouseEnter={e => { e.currentTarget.style.backgroundColor = "var(--bg-tertiary)"; e.currentTarget.style.borderColor = "var(--text-muted)" }}
+      onMouseLeave={e => { e.currentTarget.style.backgroundColor = "var(--bg-secondary)"; e.currentTarget.style.borderColor = "var(--border)" }}
+    >
+      <div className="absolute top-3.5 right-3.5 flex items-center gap-1.5">
+        <div style={{ position: "relative" }} ref={isMenuOpen ? menuRef : undefined}>
+          <button
+            onClick={e => onToggleMenu(folder.id, e)}
+            title="More options"
+            className="transition-opacity"
+            style={{ color: "var(--text-muted)", opacity: isMenuOpen ? 1 : 0.4 }}
+            onMouseEnter={e => (e.currentTarget.style.opacity = "1")}
+            onMouseLeave={e => (e.currentTarget.style.opacity = isMenuOpen ? "1" : "0.4")}
+          >
+            <MoreHorizontal size={14} />
+          </button>
+          {isMenuOpen && (
+            <div
+              style={{
+                position: "absolute", right: 0, top: 20, zIndex: 50,
+                borderRadius: 10, boxShadow: "0 8px 32px rgba(0,0,0,0.5)",
+                width: 130, padding: "4px 0", overflow: "hidden",
+                background: "#242428", border: "1px solid rgba(255,255,255,0.09)",
+              }}
+            >
+              <button
+                onClick={e => onStartRename(folder, e)}
+                style={{
+                  display: "flex", alignItems: "center", gap: 8, width: "100%", padding: "8px 12px",
+                  fontSize: 13, color: "var(--text-muted)", background: "transparent", border: "none",
+                  cursor: "pointer", textAlign: "left",
+                }}
+                onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.06)")}
+                onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
+              >
+                <Pencil size={12} /> Rename
+              </button>
+              <button
+                onClick={e => onDelete(folder, e)}
+                style={{
+                  display: "flex", alignItems: "center", gap: 8, width: "100%", padding: "8px 12px",
+                  fontSize: 13, color: "#f87171", background: "transparent", border: "none",
+                  cursor: "pointer", textAlign: "left",
+                }}
+                onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.06)")}
+                onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
+              >
+                <Trash2 size={12} /> Delete
+              </button>
+            </div>
+          )}
+        </div>
+        <button
+          onClick={e => onTogglePin(folder, e)}
+          title={folder.pinned ? "Unpin from homepage" : "Pin to homepage"}
+          className="transition-opacity"
+          style={{
+            color: folder.pinned ? "#EF9F27" : "var(--text-muted)",
+            opacity: folder.pinned ? 1 : 0.4,
+          }}
+          onMouseEnter={e => (e.currentTarget.style.opacity = "1")}
+          onMouseLeave={e => (e.currentTarget.style.opacity = folder.pinned ? "1" : "0.4")}
+        >
+          <Pin size={14} fill={folder.pinned ? "#EF9F27" : "none"} />
+        </button>
+      </div>
+
+      <FolderIcon color={accentColor} />
+
+      {isRenaming ? (
+        <input
+          ref={renameInputRef}
+          value={renameValue}
+          onChange={e => onRenameChange(e.target.value)}
+          onClick={e => e.stopPropagation()}
+          onBlur={() => onCommitRename(folder)}
+          onKeyDown={e => {
+            if (e.key === "Enter") onCommitRename(folder)
+            if (e.key === "Escape") onCancelRename()
+          }}
+          className="font-semibold text-[14px] mb-1 w-full rounded outline-none"
+          style={{ backgroundColor: "var(--bg-tertiary)", border: "1px solid var(--border)", color: "var(--text-primary)", padding: "1px 4px" }}
+        />
+      ) : (
+        <p className="font-semibold text-[14px] mb-1" style={{ color: "var(--text-primary)" }}>{folder.name}</p>
+      )}
+      <p className="text-[12px]" style={{ color: "var(--text-muted)" }}>{docCount} {docCount === 1 ? "doc" : "docs"}</p>
+      <p className="text-[11px] mt-2" style={{ color: "var(--text-muted)" }}>
+        {relative ? `Edited ${relative}` : "No docs yet"}
+      </p>
+    </div>
+  )
+}
+
 export default function FoldersPage() {
   const router = useRouter()
   const [collapsed, setCollapsed] = useState(false)
@@ -185,107 +318,31 @@ export default function FoldersPage() {
     transition: "opacity 0.15s, background-color 0.15s, border-color 0.15s, color 0.15s",
   }
 
-  const FolderCard = ({ folder }: { folder: FolderData }) => {
-    const index = folders.findIndex(f => f.id === folder.id)
-    const docCount = Number(folder.doc_count) || 0
-    const relative = formatRelative(folder.last_edited)
-    return (
-      <div
-        className="relative rounded-xl p-[18px] transition-colors cursor-pointer"
-        style={{ backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border)" }}
-        onClick={() => router.push(`/folders/${folder.id}?name=${encodeURIComponent(folder.name)}`)}
-        onMouseEnter={e => { e.currentTarget.style.backgroundColor = "var(--bg-tertiary)"; e.currentTarget.style.borderColor = "var(--text-muted)" }}
-        onMouseLeave={e => { e.currentTarget.style.backgroundColor = "var(--bg-secondary)"; e.currentTarget.style.borderColor = "var(--border)" }}
-      >
-        <div className="absolute top-3.5 right-3.5 flex items-center gap-1.5">
-          <div style={{ position: "relative" }} ref={menuOpenId === folder.id ? menuRef : undefined}>
-            <button
-              onClick={e => { e.stopPropagation(); setMenuOpenId(menuOpenId === folder.id ? null : folder.id) }}
-              title="More options"
-              className="transition-opacity"
-              style={{ color: "var(--text-muted)", opacity: menuOpenId === folder.id ? 1 : 0.4 }}
-              onMouseEnter={e => (e.currentTarget.style.opacity = "1")}
-              onMouseLeave={e => (e.currentTarget.style.opacity = menuOpenId === folder.id ? "1" : "0.4")}
-            >
-              <MoreHorizontal size={14} />
-            </button>
-            {menuOpenId === folder.id && (
-              <div
-                style={{
-                  position: "absolute", right: 0, top: 20, zIndex: 50,
-                  borderRadius: 10, boxShadow: "0 8px 32px rgba(0,0,0,0.5)",
-                  width: 130, padding: "4px 0", overflow: "hidden",
-                  background: "#242428", border: "1px solid rgba(255,255,255,0.09)",
-                }}
-              >
-                <button
-                  onClick={e => startRenaming(folder, e)}
-                  style={{
-                    display: "flex", alignItems: "center", gap: 8, width: "100%", padding: "8px 12px",
-                    fontSize: 13, color: "var(--text-muted)", background: "transparent", border: "none",
-                    cursor: "pointer", textAlign: "left",
-                  }}
-                  onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.06)")}
-                  onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
-                >
-                  <Pencil size={12} /> Rename
-                </button>
-                <button
-                  onClick={e => handleDeleteFolder(folder, e)}
-                  style={{
-                    display: "flex", alignItems: "center", gap: 8, width: "100%", padding: "8px 12px",
-                    fontSize: 13, color: "#f87171", background: "transparent", border: "none",
-                    cursor: "pointer", textAlign: "left",
-                  }}
-                  onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.06)")}
-                  onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
-                >
-                  <Trash2 size={12} /> Delete
-                </button>
-              </div>
-            )}
-          </div>
-          <button
-            onClick={e => handleTogglePin(folder, e)}
-            title={folder.pinned ? "Unpin from homepage" : "Pin to homepage"}
-            className="transition-opacity"
-            style={{
-              color: folder.pinned ? "#EF9F27" : "var(--text-muted)",
-              opacity: folder.pinned ? 1 : 0.4,
-            }}
-            onMouseEnter={e => (e.currentTarget.style.opacity = "1")}
-            onMouseLeave={e => (e.currentTarget.style.opacity = folder.pinned ? "1" : "0.4")}
-          >
-            <Pin size={14} fill={folder.pinned ? "#EF9F27" : "none"} />
-          </button>
-        </div>
-
-        <FolderIcon color={getAccent(index)} />
-
-        {renamingId === folder.id ? (
-          <input
-            ref={renameInputRef}
-            value={renameValue}
-            onChange={e => setRenameValue(e.target.value)}
-            onClick={e => e.stopPropagation()}
-            onBlur={() => commitRename(folder)}
-            onKeyDown={e => {
-              if (e.key === "Enter") commitRename(folder)
-              if (e.key === "Escape") setRenamingId(null)
-            }}
-            className="font-semibold text-[14px] mb-1 w-full rounded outline-none"
-            style={{ backgroundColor: "var(--bg-tertiary)", border: "1px solid var(--border)", color: "var(--text-primary)", padding: "1px 4px" }}
-          />
-        ) : (
-          <p className="font-semibold text-[14px] mb-1" style={{ color: "var(--text-primary)" }}>{folder.name}</p>
-        )}
-        <p className="text-[12px]" style={{ color: "var(--text-muted)" }}>{docCount} {docCount === 1 ? "doc" : "docs"}</p>
-        <p className="text-[11px] mt-2" style={{ color: "var(--text-muted)" }}>
-          {relative ? `Edited ${relative}` : "No docs yet"}
-        </p>
-      </div>
-    )
+  const handleToggleMenu = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation()
+    setMenuOpenId(prev => prev === id ? null : id)
   }
+
+  const renderFolderCard = (folder: FolderData) => (
+    <FolderCard
+      key={folder.id}
+      folder={folder}
+      accentColor={getAccent(folders.findIndex(f => f.id === folder.id))}
+      isMenuOpen={menuOpenId === folder.id}
+      menuRef={menuRef}
+      onToggleMenu={handleToggleMenu}
+      onTogglePin={handleTogglePin}
+      onOpen={f => router.push(`/folders/${f.id}?name=${encodeURIComponent(f.name)}`)}
+      isRenaming={renamingId === folder.id}
+      renameValue={renameValue}
+      onRenameChange={setRenameValue}
+      renameInputRef={renameInputRef}
+      onCommitRename={commitRename}
+      onCancelRename={() => setRenamingId(null)}
+      onStartRename={startRenaming}
+      onDelete={handleDeleteFolder}
+    />
+  )
 
   return (
     <div className="flex h-screen overflow-hidden" style={{ backgroundColor: "var(--bg)" }}>
@@ -345,7 +402,7 @@ export default function FoldersPage() {
                     Pinned to homepage
                   </p>
                   <div className="grid grid-cols-4 gap-4 mb-9">
-                    {pinnedFolders.map(folder => <FolderCard key={folder.id} folder={folder} />)}
+                    {pinnedFolders.map(renderFolderCard)}
                   </div>
                 </>
               )}
@@ -362,7 +419,7 @@ export default function FoldersPage() {
                 </div>
               ) : (
                 <div className="grid grid-cols-4 gap-4">
-                  {filteredFolders.map(folder => <FolderCard key={folder.id} folder={folder} />)}
+                  {filteredFolders.map(renderFolderCard)}
                 </div>
               )}
             </>
