@@ -12,6 +12,20 @@ const pusher = new Pusher({
   useTLS: true,
 })
 
+async function attachFolderPath(doc: any) {
+  if (!doc?.folder_id) return doc
+  const path = await sql`
+    WITH RECURSIVE ancestors AS (
+      SELECT id, name, parent_id, 0 AS depth FROM folders WHERE id::text = ${doc.folder_id}
+      UNION ALL
+      SELECT f.id, f.name, f.parent_id, a.depth + 1
+      FROM folders f INNER JOIN ancestors a ON f.id = a.parent_id
+    )
+    SELECT id, name FROM ancestors ORDER BY depth DESC
+  `
+  return { ...doc, folder_path: path }
+}
+
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -30,7 +44,7 @@ export async function GET(
       LEFT JOIN folders ON folders.id::text = docs.folder_id::text
       WHERE docs.uuid = ${id} AND docs.user_id = ${payload.userId} AND docs.deleted_at IS NULL
     `
-    if (ownResult.length > 0) return NextResponse.json(ownResult[0])
+    if (ownResult.length > 0) return NextResponse.json(await attachFolderPath(ownResult[0]))
 
     const sharedResult = await sql`
       SELECT docs.*, folders.name AS folder_name, folders.id AS folder_uuid
@@ -42,7 +56,7 @@ export async function GET(
         AND wm.user_id = ${payload.userId}
         AND wm.status = 'accepted'
     `
-    if (sharedResult.length > 0) return NextResponse.json(sharedResult[0])
+    if (sharedResult.length > 0) return NextResponse.json(await attachFolderPath(sharedResult[0]))
 
     const ownerResult = await sql`
       SELECT docs.*, folders.name AS folder_name, folders.id AS folder_uuid
@@ -53,7 +67,7 @@ export async function GET(
         AND docs.deleted_at IS NULL
         AND w.user_id = ${payload.userId}
     `
-    if (ownerResult.length > 0) return NextResponse.json(ownerResult[0])
+    if (ownerResult.length > 0) return NextResponse.json(await attachFolderPath(ownerResult[0]))
 
     return NextResponse.json({ error: 'Doc not found' }, { status: 404 })
   } catch (error) {

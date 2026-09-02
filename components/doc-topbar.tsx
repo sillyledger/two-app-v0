@@ -8,6 +8,7 @@ import VersionHistoryModal from "./version-history-modal"
 interface Folder {
   id: string
   name: string
+  path?: { id: string; name: string }[]
 }
 
 interface PresenceMember {
@@ -463,10 +464,12 @@ export default function DocTopbar({
           {folder ? (
             <>
               <span className="mx-1 text-[12px]" style={{ color: "var(--text-muted)" }}>/</span>
-              <Link href={`/folders/${folder.id}`} className="text-[12px] font-medium truncate transition-colors hover:underline" style={{ color: "var(--text-muted)" }}>
-                {folder.name}
-              </Link>
-              <span className="mx-1 text-[12px]" style={{ color: "var(--text-muted)" }}>/</span>
+              {(folder.path && folder.path.length > 0 ? folder.path : [{ id: folder.id, name: folder.name }]).flatMap((crumb) => [
+                <Link key={`${crumb.id}-link`} href={`/folders/${crumb.id}`} className="text-[12px] font-medium truncate transition-colors hover:underline" style={{ color: "var(--text-muted)" }}>
+                  {crumb.name}
+                </Link>,
+                <span key={`${crumb.id}-sep`} className="mx-1 text-[12px]" style={{ color: "var(--text-muted)" }}>/</span>,
+              ])}
             </>
           ) : (
             <span className="mx-1 text-[12px]" style={{ color: "var(--text-muted)" }}>/</span>
