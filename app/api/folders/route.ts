@@ -12,34 +12,68 @@ export async function GET(request: Request) {
 
   const { searchParams } = new URL(request.url)
   const workspaceId = searchParams.get('workspace_id')
+  const parentId = searchParams.get('parent_id')
 
   try {
-    const folders = workspaceId
+    const folders = workspaceId && parentId
       ? await sql`
           SELECT
             folders.id, folders.workspace_id, folders.created_at, folders.pinned,
-            folders.name, folders.user_id,
+            folders.name, folders.user_id, folders.parent_id,
             COUNT(docs.id) FILTER (WHERE docs.deleted_at IS NULL) AS doc_count,
             MAX(docs.updated_at) FILTER (WHERE docs.deleted_at IS NULL) AS last_edited
           FROM folders
           LEFT JOIN docs ON docs.folder_id::text = folders.id::text
           WHERE folders.user_id = ${payload.userId}
             AND folders.workspace_id = ${workspaceId}
+            AND folders.parent_id::text = ${parentId}
           GROUP BY folders.id, folders.workspace_id, folders.created_at, folders.pinned,
-            folders.name, folders.user_id
+            folders.name, folders.user_id, folders.parent_id
           ORDER BY folders.created_at ASC
         `
-      : await sql`
+      : workspaceId
+      ? await sql`
           SELECT
             folders.id, folders.workspace_id, folders.created_at, folders.pinned,
-            folders.name, folders.user_id,
+            folders.name, folders.user_id, folders.parent_id,
             COUNT(docs.id) FILTER (WHERE docs.deleted_at IS NULL) AS doc_count,
             MAX(docs.updated_at) FILTER (WHERE docs.deleted_at IS NULL) AS last_edited
           FROM folders
           LEFT JOIN docs ON docs.folder_id::text = folders.id::text
           WHERE folders.user_id = ${payload.userId}
+            AND folders.workspace_id = ${workspaceId}
+            AND folders.parent_id IS NULL
           GROUP BY folders.id, folders.workspace_id, folders.created_at, folders.pinned,
-            folders.name, folders.user_id
+            folders.name, folders.user_id, folders.parent_id
+          ORDER BY folders.created_at ASC
+        `
+      : parentId
+      ? await sql`
+          SELECT
+            folders.id, folders.workspace_id, folders.created_at, folders.pinned,
+            folders.name, folders.user_id, folders.parent_id,
+            COUNT(docs.id) FILTER (WHERE docs.deleted_at IS NULL) AS doc_count,
+            MAX(docs.updated_at) FILTER (WHERE docs.deleted_at IS NULL) AS last_edited
+          FROM folders
+          LEFT JOIN docs ON docs.folder_id::text = folders.id::text
+          WHERE folders.user_id = ${payload.userId}
+            AND folders.parent_id::text = ${parentId}
+          GROUP BY folders.id, folders.workspace_id, folders.created_at, folders.pinned,
+            folders.name, folders.user_id, folders.parent_id
+          ORDER BY folders.created_at ASC
+        `
+      : await sql`
+          SELECT
+            folders.id, folders.workspace_id, folders.created_at, folders.pinned,
+            folders.name, folders.user_id, folders.parent_id,
+            COUNT(docs.id) FILTER (WHERE docs.deleted_at IS NULL) AS doc_count,
+            MAX(docs.updated_at) FILTER (WHERE docs.deleted_at IS NULL) AS last_edited
+          FROM folders
+          LEFT JOIN docs ON docs.folder_id::text = folders.id::text
+          WHERE folders.user_id = ${payload.userId}
+            AND folders.parent_id IS NULL
+          GROUP BY folders.id, folders.workspace_id, folders.created_at, folders.pinned,
+            folders.name, folders.user_id, folders.parent_id
           ORDER BY folders.created_at ASC
         `
 
@@ -58,10 +92,10 @@ export async function POST(request: Request) {
   if (!payload) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   try {
-    const { name, workspace_id } = await request.json()
+    const { name, workspace_id, parent_id } = await request.json()
     const result = await sql`
-      INSERT INTO folders (name, workspace_id, user_id)
-      VALUES (${name}, ${workspace_id}, ${payload.userId})
+      INSERT INTO folders (name, workspace_id, user_id, parent_id)
+      VALUES (${name}, ${workspace_id}, ${payload.userId}, ${parent_id ?? null})
       RETURNING *
     `
     return NextResponse.json(result[0], { status: 201 })

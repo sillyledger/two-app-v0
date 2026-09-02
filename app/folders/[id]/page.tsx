@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from "react"
 import { useParams, useRouter, usePathname, useSearchParams } from "next/navigation"
-import { Plus, MoreHorizontal, Pencil, FolderInput, Trash2, Star, LayoutGrid, List, Users, Folder } from "lucide-react"
+import { Plus, MoreHorizontal, Pencil, FolderInput, Trash2, Star, LayoutGrid, List, Users, Folder, ChevronRight } from "lucide-react"
 import Sidebar from "@/components/sidebar"
 import { formatDate as formatDateI18n, getUserDatePrefs } from "@/lib/format-date"
 
@@ -19,6 +19,25 @@ interface Doc {
 interface FolderType {
   id: string
   name: string
+  parent_id?: string | null
+  workspace_id?: string | null
+  path?: { id: string; name: string }[]
+}
+
+interface FolderData {
+  id: string
+  name: string
+  doc_count: number | string
+  last_edited: string | null
+}
+
+const ACCENT_COLORS = [
+  "#EF9F27", "#85B7EB", "#5DCAA5", "#F0997B",
+  "#AFA9EC", "#97C459", "#ED93B1", "#B4B2A9", "#5DCAA5",
+]
+
+function getAccent(index: number) {
+  return ACCENT_COLORS[index % ACCENT_COLORS.length]
 }
 
 function formatDate(dateStr: string) {
@@ -74,6 +93,10 @@ export default function FolderPage() {
 
   const [deletingDoc, setDeletingDoc] = useState<Doc | null>(null)
 
+  const [subfolders, setSubfolders] = useState<FolderData[]>([])
+  const [newSubfolderModalOpen, setNewSubfolderModalOpen] = useState(false)
+  const [newSubfolderName, setNewSubfolderName] = useState("")
+
   useEffect(() => {
     fetch("/api/auth/me").then((res) => {
       if (!res.ok) router.push("/login")
@@ -106,6 +129,11 @@ export default function FolderPage() {
         setLoading(false)
       })
       .catch(() => setLoading(false))
+
+    fetch(`/api/folders?parent_id=${id}`)
+      .then((r) => r.json())
+      .then((data: FolderData[]) => setSubfolders(Array.isArray(data) ? data : []))
+      .catch(() => {})
   }, [id, pathname])
 
   const handleCreateDoc = async () => {
@@ -172,12 +200,51 @@ export default function FolderPage() {
     setDeletingDoc(null)
   }
 
+  const handleCreateSubfolder = async () => {
+    if (!newSubfolderName.trim() || !folder?.workspace_id) return
+    const res = await fetch("/api/folders", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: newSubfolderName.trim(), workspace_id: folder.workspace_id, parent_id: id }),
+    })
+    if (res.ok) {
+      const created = await res.json()
+      setSubfolders(prev => [...prev, { ...created, doc_count: 0, last_edited: null }])
+    }
+    setNewSubfolderModalOpen(false)
+    setNewSubfolderName("")
+  }
+
   return (
     <div className="flex h-screen overflow-hidden" style={{ backgroundColor: "var(--bg)" }}>
       <Sidebar collapsed={collapsed} onToggle={() => setCollapsed((v) => !v)} />
 
       <main className="flex-1 overflow-y-auto">
         <div className="max-w-[1180px] mx-auto px-10 py-10">
+
+          {/* Breadcrumb */}
+          {folder?.path && folder.path.length > 0 && (
+            <div className="flex items-center flex-wrap gap-1 mb-3 text-[12px]" style={{ color: "var(--text-muted)" }}>
+              <button onClick={() => router.push("/folders")} className="transition-colors" style={{ color: "var(--text-muted)" }} onMouseEnter={e => (e.currentTarget.style.color = "var(--text-primary)")} onMouseLeave={e => (e.currentTarget.style.color = "var(--text-muted)")}>
+                Docs
+              </button>
+              {folder.path.map((crumb, i) => {
+                const isLast = i === folder.path!.length - 1
+                return (
+                  <span key={crumb.id} className="flex items-center gap-1">
+                    <ChevronRight size={12} />
+                    {isLast ? (
+                      <span className="font-semibold" style={{ color: "var(--text-primary)" }}>{crumb.name}</span>
+                    ) : (
+                      <button onClick={() => router.push(`/folders/${crumb.id}?name=${encodeURIComponent(crumb.name)}`)} className="transition-colors" style={{ color: "var(--text-muted)" }} onMouseEnter={e => (e.currentTarget.style.color = "var(--text-primary)")} onMouseLeave={e => (e.currentTarget.style.color = "var(--text-muted)")}>
+                        {crumb.name}
+                      </button>
+                    )}
+                  </span>
+                )
+              })}
+            </div>
+          )}
 
           {/* Header */}
           <div className="flex items-center justify-between mb-8">
@@ -223,6 +290,42 @@ export default function FolderPage() {
               </button>
             </div>
           </div>
+
+          {/* Subfolders */}
+          <div className="mb-6">
+            <p className="text-[12px] mb-3" style={{ color: "var(--text-muted)" }}>Folders · {subfolders.length}</p>
+            <div className="flex flex-wrap gap-2">
+              {subfolders.map((sub, i) => {
+                const subDocCount = Number(sub.doc_count) || 0
+                return (
+                  <button
+                    key={sub.id}
+                    onClick={() => router.push(`/folders/${sub.id}?name=${encodeURIComponent(sub.name)}`)}
+                    className="flex items-center gap-2 rounded-full transition-colors"
+                    style={{ height: "34px", padding: "0 14px 0 10px", backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border)" }}
+                    onMouseEnter={e => (e.currentTarget.style.borderColor = "var(--text-muted)")}
+                    onMouseLeave={e => (e.currentTarget.style.borderColor = "var(--border)")}
+                  >
+                    <span style={{ width: "14px", height: "14px", borderRadius: "4px", backgroundColor: getAccent(i), flexShrink: 0 }} />
+                    <span className="text-[13px]" style={{ color: "var(--text-primary)" }}>{sub.name}</span>
+                    <span className="text-[11px]" style={{ color: "var(--text-muted)" }}>{subDocCount}</span>
+                  </button>
+                )
+              })}
+              <button
+                onClick={() => { setNewSubfolderName(""); setNewSubfolderModalOpen(true) }}
+                className="flex items-center gap-1.5 rounded-full transition-colors"
+                style={{ height: "34px", padding: "0 14px", border: "1px dashed var(--border)", backgroundColor: "transparent", color: "var(--text-muted)" }}
+                onMouseEnter={e => (e.currentTarget.style.color = "var(--text-primary)")}
+                onMouseLeave={e => (e.currentTarget.style.color = "var(--text-muted)")}
+              >
+                <Plus size={13} />
+                New subfolder
+              </button>
+            </div>
+          </div>
+
+          <div className="mb-7" style={{ borderTop: "1px solid var(--border)" }} />
 
           {/* Doc list */}
           {loading ? (
@@ -391,6 +494,27 @@ export default function FolderPage() {
               >
                 Rename
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* New subfolder modal */}
+      {newSubfolderModalOpen && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+          <div className="rounded-2xl p-6 w-80 shadow-2xl" style={{ backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border)" }}>
+            <h2 className="font-semibold text-base mb-4" style={{ color: "var(--text-primary)" }}>New subfolder</h2>
+            <input
+              autoFocus
+              value={newSubfolderName}
+              onChange={e => setNewSubfolderName(e.target.value)}
+              onKeyDown={e => { if (e.key === "Enter") handleCreateSubfolder(); if (e.key === "Escape") setNewSubfolderModalOpen(false) }}
+              className="w-full rounded-lg px-3 py-2 text-sm outline-none mb-4"
+              style={{ backgroundColor: "var(--bg-tertiary)", border: "1px solid var(--border)", color: "var(--text-primary)" }}
+            />
+            <div className="flex gap-2 justify-end">
+              <button onClick={() => setNewSubfolderModalOpen(false)} className="px-4 py-2 text-sm" style={{ color: "var(--text-muted)" }}>Cancel</button>
+              <button onClick={handleCreateSubfolder} className="px-4 py-2 text-sm rounded-lg" style={{ backgroundColor: "var(--bg-tertiary)", color: "var(--text-primary)" }}>Create</button>
             </div>
           </div>
         </div>

@@ -15,7 +15,18 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
       SELECT * FROM folders WHERE id::text = ${id}
     `
     if (!result[0]) return NextResponse.json(null, { status: 404 })
-    return NextResponse.json(result[0])
+
+    const pathRows = await sql`
+      WITH RECURSIVE ancestors AS (
+        SELECT id, name, parent_id, 0 AS depth FROM folders WHERE id::text = ${id}
+        UNION ALL
+        SELECT f.id, f.name, f.parent_id, a.depth + 1
+        FROM folders f INNER JOIN ancestors a ON f.id = a.parent_id
+      )
+      SELECT id, name FROM ancestors ORDER BY depth DESC
+    `
+
+    return NextResponse.json({ ...result[0], path: pathRows })
   } catch (error) {
     console.error('Folder fetch error:', error)
     return NextResponse.json(null, { status: 500 })
@@ -74,14 +85,27 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
     if (!payload?.userId) return NextResponse.json(null, { status: 401 })
     const { id } = await params
 
-    // Move all docs in this folder to trash instead of deleting them
+    // Collect the target folder plus all of its descendants (recursively)
+    const descendantRows = await sql`
+      WITH RECURSIVE descendants AS (
+        SELECT id FROM folders WHERE id::text = ${id}
+        UNION ALL
+        SELECT f.id
+        FROM folders f INNER JOIN descendants d ON f.parent_id = d.id
+      )
+      SELECT id FROM descendants
+    `
+    const folderIds: string[] = descendantRows.map(row => String(row.id))
+
+    // Move all docs across the whole subtree to trash instead of deleting them
+    // (folder_id is cast to text here to match the id::text comparisons used elsewhere in this file)
     await sql`
       UPDATE docs
       SET deleted_at = NOW(), folder_id = NULL
-      WHERE folder_id::text = ${id}
+      WHERE folder_id::text = ANY(${folderIds})
     `
 
-    // Now delete the folder
+    // Deleting the top folder cascades to its descendants via parent_id ON DELETE CASCADE
     await sql`DELETE FROM folders WHERE id::text = ${id}`
 
     return NextResponse.json({ success: true })
