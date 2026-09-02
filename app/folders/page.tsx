@@ -1,7 +1,7 @@
 "use client"
 import { useEffect, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
-import { Plus, Search, Pin, MoreHorizontal, Trash2 } from "lucide-react"
+import { Plus, Search, Pin, MoreHorizontal, Trash2, Pencil } from "lucide-react"
 import Sidebar from "@/components/sidebar"
 import { formatDate, getUserDatePrefs } from "@/lib/format-date"
 
@@ -71,11 +71,22 @@ export default function FoldersPage() {
   const [menuOpenId, setMenuOpenId] = useState<string | null>(null)
   const menuRef = useRef<HTMLDivElement>(null)
 
+  const [renamingId, setRenamingId] = useState<string | null>(null)
+  const [renameValue, setRenameValue] = useState("")
+  const renameInputRef = useRef<HTMLInputElement>(null)
+
   useEffect(() => {
     const h = (e: MouseEvent) => { if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenuOpenId(null) }
     if (menuOpenId) document.addEventListener("mousedown", h)
     return () => document.removeEventListener("mousedown", h)
   }, [menuOpenId])
+
+  useEffect(() => {
+    if (renamingId && renameInputRef.current) {
+      renameInputRef.current.focus()
+      renameInputRef.current.select()
+    }
+  }, [renamingId])
 
   useEffect(() => {
     fetch("/api/folders")
@@ -101,6 +112,27 @@ export default function FoldersPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ pinned: newValue }),
     })
+  }
+
+  const startRenaming = (folder: FolderData, e: React.MouseEvent) => {
+    e.stopPropagation()
+    setMenuOpenId(null)
+    setRenameValue(folder.name)
+    setRenamingId(folder.id)
+  }
+
+  const commitRename = async (folder: FolderData) => {
+    const trimmed = renameValue.trim()
+    setRenamingId(null)
+    if (!trimmed || trimmed === folder.name) return
+    setFolders(prev => prev.map(f => f.id === folder.id ? { ...f, name: trimmed } : f))
+    try {
+      await fetch(`/api/folders/${folder.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: trimmed }),
+      })
+    } catch {}
   }
 
   const handleDeleteFolder = async (folder: FolderData, e: React.MouseEvent) => {
@@ -187,6 +219,18 @@ export default function FoldersPage() {
                 }}
               >
                 <button
+                  onClick={e => startRenaming(folder, e)}
+                  style={{
+                    display: "flex", alignItems: "center", gap: 8, width: "100%", padding: "8px 12px",
+                    fontSize: 13, color: "var(--text-muted)", background: "transparent", border: "none",
+                    cursor: "pointer", textAlign: "left",
+                  }}
+                  onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.06)")}
+                  onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
+                >
+                  <Pencil size={12} /> Rename
+                </button>
+                <button
                   onClick={e => handleDeleteFolder(folder, e)}
                   style={{
                     display: "flex", alignItems: "center", gap: 8, width: "100%", padding: "8px 12px",
@@ -218,7 +262,23 @@ export default function FoldersPage() {
 
         <FolderIcon color={getAccent(index)} />
 
-        <p className="font-semibold text-[14px] mb-1" style={{ color: "var(--text-primary)" }}>{folder.name}</p>
+        {renamingId === folder.id ? (
+          <input
+            ref={renameInputRef}
+            value={renameValue}
+            onChange={e => setRenameValue(e.target.value)}
+            onClick={e => e.stopPropagation()}
+            onBlur={() => commitRename(folder)}
+            onKeyDown={e => {
+              if (e.key === "Enter") commitRename(folder)
+              if (e.key === "Escape") setRenamingId(null)
+            }}
+            className="font-semibold text-[14px] mb-1 w-full rounded outline-none"
+            style={{ backgroundColor: "var(--bg-tertiary)", border: "1px solid var(--border)", color: "var(--text-primary)", padding: "1px 4px" }}
+          />
+        ) : (
+          <p className="font-semibold text-[14px] mb-1" style={{ color: "var(--text-primary)" }}>{folder.name}</p>
+        )}
         <p className="text-[12px]" style={{ color: "var(--text-muted)" }}>{docCount} {docCount === 1 ? "doc" : "docs"}</p>
         <p className="text-[11px] mt-2" style={{ color: "var(--text-muted)" }}>
           {relative ? `Edited ${relative}` : "No docs yet"}
