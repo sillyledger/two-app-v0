@@ -99,7 +99,7 @@ export async function POST(request: Request) {
 
       await resend.emails.send({
         from: 'TWO <noreply@two.so>',
-        to: 'two@strevius.com',
+        to: 'alert@two.so',
         subject: `New TWO signup: ${email}${plan === 'pro' ? ' (Pro trial)' : ''}`,
         html: `
           <div style="font-family: -apple-system, BlinkMacSystemFont, 'Inter', sans-serif; max-width: 480px; margin: 0 auto; padding: 40px 24px;">
