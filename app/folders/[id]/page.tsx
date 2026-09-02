@@ -215,6 +215,14 @@ export default function FolderPage() {
     setNewSubfolderName("")
   }
 
+  const handleDeleteSubfolder = async (sub: FolderData, e: React.MouseEvent) => {
+    e.stopPropagation()
+    const confirmed = window.confirm(`Delete "${sub.name}"?\n\nAll docs inside will be moved to Trash and can be recovered within 30 days.`)
+    if (!confirmed) return
+    setSubfolders(prev => prev.filter(f => f.id !== sub.id))
+    try { await fetch(`/api/folders/${sub.id}`, { method: "DELETE" }) } catch {}
+  }
+
   return (
     <div className="flex h-screen overflow-hidden" style={{ backgroundColor: "var(--bg)" }}>
       <Sidebar collapsed={collapsed} onToggle={() => setCollapsed((v) => !v)} />
@@ -298,18 +306,28 @@ export default function FolderPage() {
               {subfolders.map((sub, i) => {
                 const subDocCount = Number(sub.doc_count) || 0
                 return (
-                  <button
+                  <div
                     key={sub.id}
+                    role="button"
+                    tabIndex={0}
                     onClick={() => router.push(`/folders/${sub.id}?name=${encodeURIComponent(sub.name)}`)}
-                    className="flex items-center gap-2 rounded-full transition-colors"
-                    style={{ height: "34px", padding: "0 14px 0 10px", backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border)" }}
+                    className="group flex items-center gap-2 rounded-full transition-colors cursor-pointer"
+                    style={{ height: "34px", padding: "0 10px 0 10px", backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border)" }}
                     onMouseEnter={e => (e.currentTarget.style.borderColor = "var(--text-muted)")}
                     onMouseLeave={e => (e.currentTarget.style.borderColor = "var(--border)")}
                   >
                     <span style={{ width: "14px", height: "14px", borderRadius: "4px", backgroundColor: getAccent(i), flexShrink: 0 }} />
                     <span className="text-[13px]" style={{ color: "var(--text-primary)" }}>{sub.name}</span>
                     <span className="text-[11px]" style={{ color: "var(--text-muted)" }}>{subDocCount}</span>
-                  </button>
+                    <button
+                      onClick={e => handleDeleteSubfolder(sub, e)}
+                      title="Delete subfolder"
+                      className="opacity-0 group-hover:opacity-100 transition-opacity"
+                      style={{ color: "var(--text-muted)", display: "flex", marginLeft: 2 }}
+                    >
+                      <Trash2 size={12} />
+                    </button>
+                  </div>
                 )
               })}
               <button
