@@ -1,9 +1,11 @@
 import { SignJWT, jwtVerify } from 'jose'
 import { cookies } from 'next/headers'
 
-const secret = new TextEncoder().encode(
-  process.env.AUTH_SECRET || 'your-secret-key-change-this'
-)
+if (!process.env.AUTH_SECRET) {
+  throw new Error('AUTH_SECRET environment variable is not set')
+}
+
+const secret = new TextEncoder().encode(process.env.AUTH_SECRET)
 
 export async function createToken(userId: string, email: string) {
   return await new SignJWT({ userId, email })
@@ -14,7 +16,7 @@ export async function createToken(userId: string, email: string) {
 
 export async function verifyToken(token: string) {
   try {
-    const { payload } = await jwtVerify(token, secret)
+    const { payload } = await jwtVerify(token, secret, { algorithms: ['HS256'] })
     return payload as { userId: string; email: string }
   } catch {
     return null

@@ -143,7 +143,7 @@ export async function POST(request: Request) {
 
       const token = await createToken(user.id, user.email)
       const cookieStore = await cookies()
-      cookieStore.set('auth-token', token, { httpOnly: true, maxAge: 604800 })
+      cookieStore.set('auth-token', token, { httpOnly: true, secure: true, sameSite: 'lax', maxAge: 604800 })
       return NextResponse.json({ success: true })
     }
 
