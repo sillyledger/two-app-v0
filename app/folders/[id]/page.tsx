@@ -544,9 +544,10 @@ export default function FolderPage() {
       {/* Move modal */}
       {movingDoc && (
         <MoveToFolderModal
-          folders={folders.filter(f => f.id !== String(id))}
+          folders={folders}
           onMove={handleMove}
           onClose={() => setMovingDoc(null)}
+          currentFolderId={String(id)}
         />
       )}
 

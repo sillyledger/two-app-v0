@@ -18,6 +18,7 @@ interface MoveToFolderModalProps {
   folders: MoveFolder[]
   onMove: (folderId: string) => void
   onClose: () => void
+  currentFolderId?: string
 }
 
 function highlightMatch(name: string, query: string) {
@@ -35,7 +36,7 @@ function highlightMatch(name: string, query: string) {
   )
 }
 
-export default function MoveToFolderModal({ folders, onMove, onClose }: MoveToFolderModalProps) {
+export default function MoveToFolderModal({ folders, onMove, onClose, currentFolderId }: MoveToFolderModalProps) {
   const [query, setQuery] = useState("")
 
   const nameById = useMemo(() => {
@@ -64,7 +65,7 @@ export default function MoveToFolderModal({ folders, onMove, onClose }: MoveToFo
 
   const trimmed = query.trim()
   const matches = trimmed
-    ? ordered.filter(f => f.name.toLowerCase().includes(trimmed.toLowerCase()))
+    ? ordered.filter(f => f.name.toLowerCase().includes(trimmed.toLowerCase()) && f.id !== currentFolderId)
     : null
 
   const onRowEnter = (e: React.MouseEvent<HTMLButtonElement>) => { e.currentTarget.style.backgroundColor = "var(--bg-tertiary)" }
@@ -97,15 +98,17 @@ export default function MoveToFolderModal({ folders, onMove, onClose }: MoveToFo
           <div className="flex flex-col gap-[1px] mb-2 max-h-64 overflow-y-auto">
             {(matches ?? ordered).map(f => {
               const isChild = !matches && f.depth > 0
+              const isCurrent = f.id === currentFolderId
               const parentName = f.parent_id ? nameById.get(f.parent_id) : null
               return (
                 <button
                   key={f.id}
-                  onClick={() => onMove(f.id)}
+                  onClick={isCurrent ? undefined : () => onMove(f.id)}
+                  disabled={isCurrent}
                   className="relative text-left flex items-center gap-2.5 px-2 py-1.5 rounded-lg text-sm transition-colors"
-                  style={{ color: "var(--text-secondary)", ...(isChild ? { paddingLeft: 34 } : {}) }}
-                  onMouseEnter={onRowEnter}
-                  onMouseLeave={onRowLeave}
+                  style={{ color: isCurrent ? "var(--text-muted)" : "var(--text-secondary)", cursor: isCurrent ? "default" : "pointer", ...(isChild ? { paddingLeft: 34 } : {}) }}
+                  onMouseEnter={isCurrent ? undefined : onRowEnter}
+                  onMouseLeave={isCurrent ? undefined : onRowLeave}
                 >
                   {isChild && (
                     <span
@@ -117,7 +120,11 @@ export default function MoveToFolderModal({ folders, onMove, onClose }: MoveToFo
                   <span className="flex flex-col min-w-0">
                     <span className="flex items-center gap-1.5 truncate">
                       <span className="truncate">{matches ? highlightMatch(f.name, trimmed) : f.name}</span>
-                      {f.pinned && <Pin size={10} style={{ color: "var(--text-muted)", opacity: 0.6, flexShrink: 0 }} />}
+                      {isCurrent ? (
+                        <span className="text-[10.5px] shrink-0" style={{ color: "var(--text-muted)" }}>Current folder</span>
+                      ) : (
+                        f.pinned && <Pin size={10} style={{ color: "var(--text-muted)", opacity: 0.6, flexShrink: 0 }} />
+                      )}
                     </span>
                     {matches && parentName && (
                       <span className="text-[10.5px] truncate" style={{ color: "var(--text-muted)" }}>{parentName}</span>
