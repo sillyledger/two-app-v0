@@ -3,6 +3,7 @@ import { sql } from '@/lib/db'
 import { createToken } from '@/lib/auth'
 import { cookies } from 'next/headers'
 import { getOrCreateWorkspace } from '@/lib/workspaces'
+import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
 import bcrypt from 'bcryptjs'
 import { Resend } from 'resend'
 import crypto from 'crypto'
@@ -54,6 +55,11 @@ export async function POST(request: Request) {
     const { email, password, action, plan } = await request.json()
 
     if (action === 'signup') {
+      const signupLimit = checkRateLimit(`signup:${getClientIp(request)}`, 5, 60 * 60 * 1000)
+      if (!signupLimit.success) {
+        return NextResponse.json({ error: 'Too many signup attempts. Please try again later.' }, { status: 429 })
+      }
+
       const existing = await sql`
         SELECT * FROM users WHERE email = ${email}
       `
@@ -114,6 +120,11 @@ export async function POST(request: Request) {
     }
 
     if (action === 'login') {
+      const loginLimit = checkRateLimit(`login:${getClientIp(request)}:${email}`, 5, 15 * 60 * 1000)
+      if (!loginLimit.success) {
+        return NextResponse.json({ error: 'Too many login attempts. Please try again later.' }, { status: 429 })
+      }
+
       const result = await sql`
         SELECT * FROM users WHERE email = ${email}
       `

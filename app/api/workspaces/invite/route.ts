@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { sql } from '@/lib/db'
 import { getSession } from '@/lib/auth'
 import { isWorkspaceOwner, getMemberCount } from '@/lib/workspaces'
+import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
 import { Resend } from 'resend'
 import crypto from 'crypto'
 
@@ -12,6 +13,11 @@ export async function POST(request: Request) {
     const session = await getSession()
     if (!session) {
       return NextResponse.json({ error: 'Not logged in' }, { status: 401 })
+    }
+
+    const limit = checkRateLimit(`invite:${getClientIp(request)}`, 10, 60 * 60 * 1000)
+    if (!limit.success) {
+      return NextResponse.json({ error: 'Too many invites sent. Please try again later.' }, { status: 429 })
     }
 
     const { workspaceId, email, role } = await request.json()

@@ -1,9 +1,15 @@
 import { NextResponse } from 'next/server'
 import { sql } from '@/lib/db'
+import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
 import bcrypt from 'bcryptjs'
 
 export async function POST(request: Request) {
   try {
+    const limit = checkRateLimit(`reset-password:${getClientIp(request)}`, 5, 60 * 60 * 1000)
+    if (!limit.success) {
+      return NextResponse.json({ error: 'Too many requests. Please try again later.' }, { status: 429 })
+    }
+
     const { token, password } = await request.json()
 
     // Find the token in the database

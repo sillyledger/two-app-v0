@@ -1,10 +1,16 @@
 import { NextResponse } from 'next/server'
 import { sql } from '@/lib/db'
+import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
 import crypto from 'crypto'
 
 export async function POST(request: Request) {
   try {
     const { email } = await request.json()
+
+    const limit = checkRateLimit(`forgot-password:${getClientIp(request)}:${email}`, 3, 60 * 60 * 1000)
+    if (!limit.success) {
+      return NextResponse.json({ error: 'Too many requests. Please try again later.' }, { status: 429 })
+    }
 
     // Check if user exists
     const result = await sql`
