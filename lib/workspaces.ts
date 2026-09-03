@@ -123,3 +123,18 @@ export async function isWorkspaceOwner(userId: string, workspaceId: string) {
   `;
   return rows.length > 0;
 }
+
+// Returns true if userId owns the doc directly, or the doc's workspace is
+// shared with them via an accepted workspace_members row.
+export async function userHasDocAccess(userId: string, docUuid: string) {
+  const rows = await sql`
+    SELECT docs.id FROM docs
+    LEFT JOIN workspace_members wm ON wm.workspace_id::text = docs.workspace_id::text
+      AND wm.user_id = ${userId}
+      AND wm.status = 'accepted'
+    WHERE docs.uuid = ${docUuid}
+    AND docs.deleted_at IS NULL
+    AND (docs.user_id = ${userId} OR wm.id IS NOT NULL)
+  `;
+  return rows.length > 0;
+}

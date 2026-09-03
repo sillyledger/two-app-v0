@@ -1,12 +1,17 @@
 import { NextResponse } from 'next/server'
 import { sql } from '@/lib/db'
 import { getSession } from '@/lib/auth'
+import { userHasDocAccess } from '@/lib/workspaces'
 
 export async function GET(req: Request, context: { params: Promise<{ id: string }> }) {
   const session = await getSession()
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { id } = await context.params
+
+  if (!(await userHasDocAccess(session.userId, id))) {
+    return NextResponse.json({ error: 'Doc not found' }, { status: 404 })
+  }
 
   const labels = await sql`
     SELECT l.id, l.name, l.color
@@ -26,6 +31,10 @@ export async function POST(req: Request, context: { params: Promise<{ id: string
   const { id } = await context.params
   const { labelId } = await req.json()
 
+  if (!(await userHasDocAccess(session.userId, id))) {
+    return NextResponse.json({ error: 'Doc not found' }, { status: 404 })
+  }
+
   await sql`
     INSERT INTO doc_labels (doc_id, label_id)
     SELECT d.id, ${labelId}
@@ -42,6 +51,10 @@ export async function DELETE(req: Request, context: { params: Promise<{ id: stri
 
   const { id } = await context.params
   const { labelId } = await req.json()
+
+  if (!(await userHasDocAccess(session.userId, id))) {
+    return NextResponse.json({ error: 'Doc not found' }, { status: 404 })
+  }
 
   await sql`
     DELETE FROM doc_labels

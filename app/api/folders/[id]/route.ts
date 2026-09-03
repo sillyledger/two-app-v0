@@ -12,7 +12,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     if (!payload?.userId) return NextResponse.json(null, { status: 401 })
     const { id } = await params
     const result = await sql`
-      SELECT * FROM folders WHERE id::text = ${id}
+      SELECT * FROM folders WHERE id::text = ${id} AND user_id = ${payload.userId}
     `
     if (!result[0]) return NextResponse.json(null, { status: 404 })
 
@@ -44,8 +44,11 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     const { name } = await request.json()
     if (!name?.trim()) return NextResponse.json({ error: 'Name required' }, { status: 400 })
     const result = await sql`
-      UPDATE folders SET name = ${name.trim()} WHERE id::text = ${id} RETURNING *
+      UPDATE folders SET name = ${name.trim()} WHERE id::text = ${id} AND user_id = ${payload.userId} RETURNING *
     `
+    if (result.length === 0) {
+      return NextResponse.json({ error: 'Folder not found' }, { status: 404 })
+    }
     return NextResponse.json(result[0])
   } catch (error) {
     console.error('Folder rename error:', error)
@@ -88,7 +91,7 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
     // Collect the target folder plus all of its descendants (recursively)
     const descendantRows = await sql`
       WITH RECURSIVE descendants AS (
-        SELECT id FROM folders WHERE id::text = ${id}
+        SELECT id FROM folders WHERE id::text = ${id} AND user_id = ${payload.userId}
         UNION ALL
         SELECT f.id
         FROM folders f INNER JOIN descendants d ON f.parent_id = d.id
@@ -96,6 +99,10 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
       SELECT id FROM descendants
     `
     const folderIds: string[] = descendantRows.map(row => String(row.id))
+
+    if (folderIds.length === 0) {
+      return NextResponse.json(null, { status: 404 })
+    }
 
     // Move all docs across the whole subtree to trash instead of deleting them
     // (folder_id is cast to text here to match the id::text comparisons used elsewhere in this file)
@@ -106,7 +113,7 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
     `
 
     // Deleting the top folder cascades to its descendants via parent_id ON DELETE CASCADE
-    await sql`DELETE FROM folders WHERE id::text = ${id}`
+    await sql`DELETE FROM folders WHERE id::text = ${id} AND user_id = ${payload.userId}`
 
     return NextResponse.json({ success: true })
   } catch (error) {

@@ -1,11 +1,19 @@
 import { sql } from '@/lib/db'
 import { getSession } from '@/lib/auth'
+import { userHasDocAccess } from '@/lib/workspaces'
 import { NextResponse } from 'next/server'
 
 export async function GET(request: Request) {
+  const session = await getSession()
+  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
   const { searchParams } = new URL(request.url)
   const uuid = searchParams.get('docId')
   if (!uuid) return NextResponse.json({ error: 'Missing docId' }, { status: 400 })
+
+  if (!(await userHasDocAccess(session.userId, uuid))) {
+    return NextResponse.json({ error: 'Doc not found' }, { status: 404 })
+  }
 
   const comments = await sql`
     SELECT c.id, c.user_id, c.user_name, c.body, c.created_at
@@ -23,6 +31,10 @@ export async function POST(request: Request) {
 
   const { docId, body, userName } = await request.json()
   if (!docId || !body?.trim()) return NextResponse.json({ error: 'Missing fields' }, { status: 400 })
+
+  if (!(await userHasDocAccess(session.userId, docId))) {
+    return NextResponse.json({ error: 'Doc not found' }, { status: 404 })
+  }
 
   const docRows = await sql`SELECT id FROM docs WHERE uuid = ${docId}`
   if (!docRows.length) return NextResponse.json({ error: 'Doc not found' }, { status: 404 })
