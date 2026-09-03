@@ -5,6 +5,7 @@ import { useParams, useRouter, usePathname, useSearchParams } from "next/navigat
 import { Plus, MoreHorizontal, Pencil, FolderInput, Trash2, Star, LayoutGrid, List, Users, Folder, ChevronRight } from "lucide-react"
 import Sidebar from "@/components/sidebar"
 import { formatDate as formatDateI18n, getUserDatePrefs } from "@/lib/format-date"
+import MoveToFolderModal from "@/components/move-to-folder-modal"
 
 interface Doc {
   id: string
@@ -22,6 +23,8 @@ interface FolderType {
   parent_id?: string | null
   workspace_id?: string | null
   path?: { id: string; name: string }[]
+  pinned?: boolean
+  [key: string]: unknown
 }
 
 interface FolderData {
@@ -177,7 +180,7 @@ export default function FolderPage() {
   const openMoveModal = async (doc: Doc) => {
     setMovingDoc(doc)
     setOpenMenuId(null)
-    const res = await fetch("/api/folders")
+    const res = await fetch("/api/folders?all=true")
     const data = await res.json()
     setFolders(Array.isArray(data) ? data : [])
   }
@@ -540,43 +543,11 @@ export default function FolderPage() {
 
       {/* Move modal */}
       {movingDoc && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-          <div
-            className="rounded-2xl p-6 w-80 shadow-2xl"
-            style={{ backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border)" }}
-          >
-            <h2 className="font-semibold text-base mb-4" style={{ color: "var(--text-primary)" }}>Move to folder</h2>
-            {folders.length === 0 ? (
-              <p className="text-sm mb-4" style={{ color: "var(--text-muted)" }}>No folders yet.</p>
-            ) : (
-              <div className="flex flex-col gap-1 mb-4 max-h-48 overflow-y-auto">
-                {folders.filter(f => f.id !== String(id)).map((f) => (
-                  <button
-                    key={f.id}
-                    onClick={() => handleMove(f.id)}
-                    className="text-left px-3 py-2 rounded-lg text-sm transition-colors"
-                    style={{ color: "var(--text-secondary)" }}
-                    onMouseEnter={e => (e.currentTarget.style.backgroundColor = "var(--bg-tertiary)")}
-                    onMouseLeave={e => (e.currentTarget.style.backgroundColor = "transparent")}
-                  >
-                    📁 {f.name}
-                  </button>
-                ))}
-              </div>
-            )}
-            <div className="flex justify-end">
-              <button
-                onClick={() => setMovingDoc(null)}
-                className="px-4 py-2 text-sm transition-colors"
-                style={{ color: "var(--text-muted)" }}
-                onMouseEnter={e => (e.currentTarget.style.color = "var(--text-primary)")}
-                onMouseLeave={e => (e.currentTarget.style.color = "var(--text-muted)")}
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
+        <MoveToFolderModal
+          folders={folders.filter(f => f.id !== String(id))}
+          onMove={handleMove}
+          onClose={() => setMovingDoc(null)}
+        />
       )}
 
       {/* Delete modal */}
