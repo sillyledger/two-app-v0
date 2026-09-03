@@ -7,6 +7,7 @@ import Sidebar from "@/components/sidebar"
 import TemplatePickerModal from "@/components/template-picker-modal"
 import { useTabStore } from "@/hooks/use-tab-store"
 import { formatDate as formatDateI18n, getUserDatePrefs } from "@/lib/format-date"
+import { sortFoldersForMoveModal } from "@/lib/folder-tree"
 
 interface Doc {
   id: string
@@ -24,6 +25,8 @@ interface Doc {
 interface Folder {
   id: string
   name: string
+  parent_id?: string | null
+  [key: string]: unknown
 }
 
 interface PinnedFolder {
@@ -204,7 +207,7 @@ export default function HomePage() {
   const openMoveModal = async (doc: Doc) => {
     setMovingDoc(doc)
     setOpenMenuId(null)
-    const res = await fetch("/api/folders")
+    const res = await fetch("/api/folders?all=true")
     const data = await res.json()
     setFolders(Array.isArray(data) ? data : [])
   }
@@ -718,8 +721,8 @@ export default function HomePage() {
               <p className="text-sm mb-4" style={{ color: "var(--text-muted)" }}>No folders yet. Create one in the sidebar first.</p>
             ) : (
               <div className="flex flex-col gap-1 mb-4 max-h-48 overflow-y-auto">
-                {folders.map(folder => (
-                  <button key={folder.id} onClick={() => handleMove(folder.id)} className="text-left px-3 py-2 rounded-lg text-sm" style={{ color: "var(--text-secondary)" }}
+                {sortFoldersForMoveModal(folders).map(folder => (
+                  <button key={folder.id} onClick={() => handleMove(folder.id)} className="text-left px-3 py-2 rounded-lg text-sm" style={{ color: "var(--text-secondary)", paddingLeft: `${12 + folder.depth * 16}px` }}
                     onMouseEnter={e => (e.currentTarget.style.backgroundColor = "var(--bg-tertiary)")}
                     onMouseLeave={e => (e.currentTarget.style.backgroundColor = "transparent")}
                   >📁 {folder.name}</button>

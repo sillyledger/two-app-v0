@@ -13,9 +13,39 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
   const workspaceId = searchParams.get('workspace_id')
   const parentId = searchParams.get('parent_id')
+  const all = searchParams.get('all') === 'true'
 
   try {
-    const folders = workspaceId && parentId
+    const folders = all && workspaceId
+      ? await sql`
+          SELECT
+            folders.id, folders.workspace_id, folders.created_at, folders.pinned,
+            folders.name, folders.user_id, folders.parent_id,
+            COUNT(docs.id) FILTER (WHERE docs.deleted_at IS NULL) AS doc_count,
+            MAX(docs.updated_at) FILTER (WHERE docs.deleted_at IS NULL) AS last_edited
+          FROM folders
+          LEFT JOIN docs ON docs.folder_id::text = folders.id::text
+          WHERE folders.user_id = ${payload.userId}
+            AND folders.workspace_id = ${workspaceId}
+          GROUP BY folders.id, folders.workspace_id, folders.created_at, folders.pinned,
+            folders.name, folders.user_id, folders.parent_id
+          ORDER BY folders.created_at ASC
+        `
+      : all
+      ? await sql`
+          SELECT
+            folders.id, folders.workspace_id, folders.created_at, folders.pinned,
+            folders.name, folders.user_id, folders.parent_id,
+            COUNT(docs.id) FILTER (WHERE docs.deleted_at IS NULL) AS doc_count,
+            MAX(docs.updated_at) FILTER (WHERE docs.deleted_at IS NULL) AS last_edited
+          FROM folders
+          LEFT JOIN docs ON docs.folder_id::text = folders.id::text
+          WHERE folders.user_id = ${payload.userId}
+          GROUP BY folders.id, folders.workspace_id, folders.created_at, folders.pinned,
+            folders.name, folders.user_id, folders.parent_id
+          ORDER BY folders.created_at ASC
+        `
+      : workspaceId && parentId
       ? await sql`
           SELECT
             folders.id, folders.workspace_id, folders.created_at, folders.pinned,

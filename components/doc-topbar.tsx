@@ -4,11 +4,14 @@ import Link from "next/link"
 import { MoreHorizontal, Copy, Download, Trash2, Globe, Lock, FolderInput, Star, FileText, PanelRight, Share2, Columns2, ArrowLeftRight, History } from "lucide-react"
 import { useState, useRef, useEffect } from "react"
 import VersionHistoryModal from "./version-history-modal"
+import { sortFoldersForMoveModal } from "@/lib/folder-tree"
 
 interface Folder {
   id: string
   name: string
+  parent_id?: string | null
   path?: { id: string; name: string }[]
+  [key: string]: unknown
 }
 
 interface PresenceMember {
@@ -423,7 +426,7 @@ export default function DocTopbar({
 
   const openMoveModal = async () => {
     setMenuOpen(false)
-    const res = await fetch("/api/folders")
+    const res = await fetch("/api/folders?all=true")
     const data = await res.json()
     setFolders(Array.isArray(data) ? data : [])
     setShowMoveModal(true)
@@ -659,8 +662,8 @@ export default function DocTopbar({
               <p className="text-sm mb-4" style={{ color: "var(--text-muted)" }}>No folders yet. Create a folder in the sidebar first.</p>
             ) : (
               <div className="flex flex-col gap-1 mb-4 max-h-48 overflow-y-auto">
-                {folders.map(f => (
-                  <button key={f.id} onClick={() => handleMove(f.id)} className="text-left px-3 py-2 rounded-lg text-sm transition-colors" style={{ color: "var(--text-secondary)" }}
+                {sortFoldersForMoveModal(folders).map(f => (
+                  <button key={f.id} onClick={() => handleMove(f.id)} className="text-left px-3 py-2 rounded-lg text-sm transition-colors" style={{ color: "var(--text-secondary)", paddingLeft: `${12 + f.depth * 16}px` }}
                     onMouseEnter={e => (e.currentTarget.style.backgroundColor = "var(--bg-tertiary)")} onMouseLeave={e => (e.currentTarget.style.backgroundColor = "transparent")}
                   >📁 {f.name}</button>
                 ))}
