@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation"
 import { Plus, MoreHorizontal, Pencil, FolderInput, Trash2, LayoutTemplate, Star, Lock, Search, LayoutGrid, List, Users, ChevronLeft, ChevronRight } from "lucide-react"
 import TemplatePickerModal from "@/components/template-picker-modal"
 import { useTabStore } from "@/hooks/use-tab-store"
-import { sortFoldersForMoveModal } from "@/lib/folder-tree"
+import MoveToFolderModal from "@/components/move-to-folder-modal"
 
 interface Doc {
   id: string
@@ -23,6 +23,7 @@ interface Folder {
   id: string
   name: string
   parent_id?: string | null
+  pinned?: boolean
   [key: string]: unknown
 }
 
@@ -453,23 +454,7 @@ export default function DocsPage() {
       )}
 
       {movingDoc && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-          <div className="rounded-2xl p-6 w-80 shadow-2xl" style={{ backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border)" }}>
-            <h2 className="font-semibold text-base mb-4" style={{ color: "var(--text-primary)" }}>Move to folder</h2>
-            {folders.length === 0 ? (
-              <p className="text-sm mb-4" style={{ color: "var(--text-muted)" }}>No folders yet. Create one in the sidebar first.</p>
-            ) : (
-              <div className="flex flex-col gap-1 mb-4 max-h-48 overflow-y-auto">
-                {sortFoldersForMoveModal(folders).map(folder => (
-                  <button key={folder.id} onClick={() => handleMove(folder.id)} className="text-left px-3 py-2 rounded-lg text-sm" style={{ color: "var(--text-secondary)", paddingLeft: `${12 + folder.depth * 16}px` }} onMouseEnter={e => (e.currentTarget.style.backgroundColor = "var(--bg-tertiary)")} onMouseLeave={e => (e.currentTarget.style.backgroundColor = "transparent")}>📁 {folder.name}</button>
-                ))}
-              </div>
-            )}
-            <div className="flex justify-end">
-              <button onClick={() => setMovingDoc(null)} className="px-4 py-2 text-sm" style={{ color: "var(--text-muted)" }}>Cancel</button>
-            </div>
-          </div>
-        </div>
+        <MoveToFolderModal folders={folders} onMove={handleMove} onClose={() => setMovingDoc(null)} />
       )}
 
       {deletingDoc && (

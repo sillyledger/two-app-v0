@@ -4,12 +4,13 @@ import Link from "next/link"
 import { MoreHorizontal, Copy, Download, Trash2, Globe, Lock, FolderInput, Star, FileText, PanelRight, Share2, Columns2, ArrowLeftRight, History } from "lucide-react"
 import { useState, useRef, useEffect } from "react"
 import VersionHistoryModal from "./version-history-modal"
-import { sortFoldersForMoveModal } from "@/lib/folder-tree"
+import MoveToFolderModal from "./move-to-folder-modal"
 
 interface Folder {
   id: string
   name: string
   parent_id?: string | null
+  pinned?: boolean
   path?: { id: string; name: string }[]
   [key: string]: unknown
 }
@@ -655,25 +656,7 @@ export default function DocTopbar({
 
       {/* Move to folder modal */}
       {showMoveModal && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-          <div className="rounded-2xl p-6 w-80 shadow-2xl" style={{ backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border)" }}>
-            <h2 className="font-semibold text-base mb-4" style={{ color: "var(--text-primary)" }}>Move to folder</h2>
-            {folders.length === 0 ? (
-              <p className="text-sm mb-4" style={{ color: "var(--text-muted)" }}>No folders yet. Create a folder in the sidebar first.</p>
-            ) : (
-              <div className="flex flex-col gap-1 mb-4 max-h-48 overflow-y-auto">
-                {sortFoldersForMoveModal(folders).map(f => (
-                  <button key={f.id} onClick={() => handleMove(f.id)} className="text-left px-3 py-2 rounded-lg text-sm transition-colors" style={{ color: "var(--text-secondary)", paddingLeft: `${12 + f.depth * 16}px` }}
-                    onMouseEnter={e => (e.currentTarget.style.backgroundColor = "var(--bg-tertiary)")} onMouseLeave={e => (e.currentTarget.style.backgroundColor = "transparent")}
-                  >📁 {f.name}</button>
-                ))}
-              </div>
-            )}
-            <div className="flex justify-end">
-              <button onClick={() => setShowMoveModal(false)} className="px-4 py-2 text-sm" style={{ color: "var(--text-muted)" }}>Cancel</button>
-            </div>
-          </div>
-        </div>
+        <MoveToFolderModal folders={folders} onMove={handleMove} onClose={() => setShowMoveModal(false)} />
       )}
 
       {/* Delete modal */}
