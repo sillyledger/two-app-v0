@@ -1,5 +1,5 @@
 "use client"
-import { useEffect, useState, useRef } from "react"
+import { useEffect, useState, useRef, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import { Plus, MoreHorizontal, Pencil, FolderInput, Trash2, LayoutTemplate, Star, Lock, Search, LayoutGrid, List, Users, ChevronLeft, ChevronRight } from "lucide-react"
 import TemplatePickerModal from "@/components/template-picker-modal"
@@ -175,12 +175,14 @@ export default function DocsPage() {
   }
 
   const trimmedQuery = searchQuery.trim().toLowerCase()
-  const filteredDocs = trimmedQuery
-    ? allDocs.filter(d =>
-        (d.title || "").toLowerCase().includes(trimmedQuery) ||
-        stripHtml(d.content).toLowerCase().includes(trimmedQuery)
-      )
-    : allDocs
+  const filteredDocs = useMemo(() => (
+    trimmedQuery
+      ? allDocs.filter(d =>
+          (d.title || "").toLowerCase().includes(trimmedQuery) ||
+          stripHtml(d.content).toLowerCase().includes(trimmedQuery)
+        )
+      : allDocs
+  ), [trimmedQuery, allDocs])
 
   const totalPages = Math.max(1, Math.ceil(filteredDocs.length / PAGE_SIZE))
   const visibleDocs = filteredDocs.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)

@@ -12,7 +12,7 @@ export async function GET() {
 
   try {
     const docs = await sql`
-      SELECT * FROM docs
+      SELECT id, title, deleted_at FROM docs
       WHERE user_id = ${payload.userId} AND deleted_at IS NOT NULL
       ORDER BY deleted_at DESC
     `

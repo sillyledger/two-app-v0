@@ -1,9 +1,11 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback } from 'react'
+import dynamic from 'next/dynamic'
 import Sidebar from '@/components/sidebar'
 import { Search, X, FileText, StickyNote } from 'lucide-react'
-import SplitPane from '@/components/split-pane'
+
+const SplitPane = dynamic(() => import('@/components/split-pane'), { ssr: false })
 
 interface DocItem {
   type: 'doc'

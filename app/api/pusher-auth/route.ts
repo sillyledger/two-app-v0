@@ -30,27 +30,27 @@ export async function POST(request: Request) {
   }
   const docId = match[1]
 
-  const ownResult = await sql`
-    SELECT docs.id FROM docs
-    WHERE docs.uuid = ${docId} AND docs.user_id = ${session.userId} AND docs.deleted_at IS NULL
-  `
-
-  const sharedResult = await sql`
-    SELECT docs.id FROM docs
-    INNER JOIN workspace_members wm ON wm.workspace_id::text = docs.workspace_id::text
-    WHERE docs.uuid = ${docId}
-      AND docs.deleted_at IS NULL
-      AND wm.user_id = ${session.userId}
-      AND wm.status = 'accepted'
-  `
-
-  const ownerResult = await sql`
-    SELECT docs.id FROM docs
-    INNER JOIN workspaces w ON w.id::text = docs.workspace_id::text
-    WHERE docs.uuid = ${docId}
-      AND docs.deleted_at IS NULL
-      AND w.user_id = ${session.userId}
-  `
+  const [ownResult, sharedResult, ownerResult] = await Promise.all([
+    sql`
+      SELECT docs.id FROM docs
+      WHERE docs.uuid = ${docId} AND docs.user_id = ${session.userId} AND docs.deleted_at IS NULL
+    `,
+    sql`
+      SELECT docs.id FROM docs
+      INNER JOIN workspace_members wm ON wm.workspace_id::text = docs.workspace_id::text
+      WHERE docs.uuid = ${docId}
+        AND docs.deleted_at IS NULL
+        AND wm.user_id = ${session.userId}
+        AND wm.status = 'accepted'
+    `,
+    sql`
+      SELECT docs.id FROM docs
+      INNER JOIN workspaces w ON w.id::text = docs.workspace_id::text
+      WHERE docs.uuid = ${docId}
+        AND docs.deleted_at IS NULL
+        AND w.user_id = ${session.userId}
+    `,
+  ])
 
   if (ownResult.length === 0 && sharedResult.length === 0 && ownerResult.length === 0) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 403 })
