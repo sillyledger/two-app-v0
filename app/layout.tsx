@@ -17,7 +17,11 @@ export const metadata: Metadata = {
   description: 'Beautiful docs for individuals and small teams who live on Apple devices. Fast, focused, and nothing you don\'t need.',
   applicationName: 'TWO',
   icons: {
-    icon: '/icon.svg',
+    icon: [
+      { url: '/icon.svg', type: 'image/svg+xml' },
+      { url: '/icon-light-32x32.png', sizes: '32x32', type: 'image/png', media: '(prefers-color-scheme: light)' },
+      { url: '/icon-dark-32x32.png', sizes: '32x32', type: 'image/png', media: '(prefers-color-scheme: dark)' },
+    ],
     apple: '/apple-icon.png',
   },
 }
