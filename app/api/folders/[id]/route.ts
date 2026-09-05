@@ -26,7 +26,24 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
       SELECT id, name FROM ancestors ORDER BY depth DESC
     `
 
-    return NextResponse.json({ ...result[0], path: pathRows })
+    // Total doc count across this folder and all of its descendants (any depth),
+    // using the same descendant-walk pattern as the recursive DELETE below.
+    const descendantRows = await sql`
+      WITH RECURSIVE descendants AS (
+        SELECT id FROM folders WHERE id::text = ${id} AND user_id = ${payload.userId}
+        UNION ALL
+        SELECT f.id
+        FROM folders f INNER JOIN descendants d ON f.parent_id = d.id
+      )
+      SELECT id FROM descendants
+    `
+    const folderIds: string[] = descendantRows.map(row => String(row.id))
+    const docCountRows = await sql`
+      SELECT COUNT(*) AS doc_count FROM docs
+      WHERE folder_id::text = ANY(${folderIds}) AND deleted_at IS NULL
+    `
+
+    return NextResponse.json({ ...result[0], path: pathRows, doc_count: Number(docCountRows[0]?.doc_count) || 0 })
   } catch (error) {
     console.error('Folder fetch error:', error)
     return NextResponse.json(null, { status: 500 })

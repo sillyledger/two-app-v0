@@ -24,6 +24,7 @@ interface FolderType {
   workspace_id?: string | null
   path?: { id: string; name: string }[]
   pinned?: boolean
+  doc_count?: number | string
   [key: string]: unknown
 }
 
@@ -264,7 +265,9 @@ export default function FolderPage() {
               <h1 className="text-xl font-semibold" style={{ color: "var(--text-primary)" }}>
                 {folder?.name ?? folderNameFromUrl}
               </h1>
-              <span className="text-[12px]" style={{ color: "var(--text-muted)" }}>{docs.length} docs</span>
+              <span className="text-[12px]" style={{ color: "var(--text-muted)" }}>
+                {folder?.doc_count !== undefined ? Number(folder.doc_count) || 0 : docs.length} docs
+              </span>
             </div>
             <button
               onClick={handleCreateDoc}

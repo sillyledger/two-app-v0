@@ -16,94 +16,171 @@ export async function GET(request: Request) {
   const all = searchParams.get('all') === 'true'
 
   try {
+    // Recursive CTE: for every folder owned by the user, walk parent_id downward
+    // to collect the whole subtree (self included), then aggregate doc counts
+    // across that subtree so doc_count reflects docs at any depth, not just
+    // docs directly in the folder. Same descendant-walk pattern as the
+    // recursive DELETE below.
     const folders = all && workspaceId
       ? await sql`
+          WITH RECURSIVE folder_tree AS (
+            SELECT id AS root_id, id AS descendant_id FROM folders WHERE user_id = ${payload.userId}
+            UNION ALL
+            SELECT ft.root_id, f.id
+            FROM folders f INNER JOIN folder_tree ft ON f.parent_id = ft.descendant_id
+          ),
+          doc_counts AS (
+            SELECT ft.root_id,
+              COUNT(d.id) AS doc_count,
+              MAX(d.updated_at) AS last_edited
+            FROM folder_tree ft
+            LEFT JOIN docs d ON d.folder_id::text = ft.descendant_id::text AND d.deleted_at IS NULL
+            GROUP BY ft.root_id
+          )
           SELECT
             folders.id, folders.workspace_id, folders.created_at, folders.pinned,
             folders.name, folders.user_id, folders.parent_id,
-            COUNT(docs.id) FILTER (WHERE docs.deleted_at IS NULL) AS doc_count,
-            MAX(docs.updated_at) FILTER (WHERE docs.deleted_at IS NULL) AS last_edited
+            COALESCE(doc_counts.doc_count, 0) AS doc_count,
+            doc_counts.last_edited
           FROM folders
-          LEFT JOIN docs ON docs.folder_id::text = folders.id::text
+          LEFT JOIN doc_counts ON doc_counts.root_id = folders.id
           WHERE folders.user_id = ${payload.userId}
             AND folders.workspace_id = ${workspaceId}
-          GROUP BY folders.id, folders.workspace_id, folders.created_at, folders.pinned,
-            folders.name, folders.user_id, folders.parent_id
           ORDER BY folders.created_at ASC
         `
       : all
       ? await sql`
+          WITH RECURSIVE folder_tree AS (
+            SELECT id AS root_id, id AS descendant_id FROM folders WHERE user_id = ${payload.userId}
+            UNION ALL
+            SELECT ft.root_id, f.id
+            FROM folders f INNER JOIN folder_tree ft ON f.parent_id = ft.descendant_id
+          ),
+          doc_counts AS (
+            SELECT ft.root_id,
+              COUNT(d.id) AS doc_count,
+              MAX(d.updated_at) AS last_edited
+            FROM folder_tree ft
+            LEFT JOIN docs d ON d.folder_id::text = ft.descendant_id::text AND d.deleted_at IS NULL
+            GROUP BY ft.root_id
+          )
           SELECT
             folders.id, folders.workspace_id, folders.created_at, folders.pinned,
             folders.name, folders.user_id, folders.parent_id,
-            COUNT(docs.id) FILTER (WHERE docs.deleted_at IS NULL) AS doc_count,
-            MAX(docs.updated_at) FILTER (WHERE docs.deleted_at IS NULL) AS last_edited
+            COALESCE(doc_counts.doc_count, 0) AS doc_count,
+            doc_counts.last_edited
           FROM folders
-          LEFT JOIN docs ON docs.folder_id::text = folders.id::text
+          LEFT JOIN doc_counts ON doc_counts.root_id = folders.id
           WHERE folders.user_id = ${payload.userId}
-          GROUP BY folders.id, folders.workspace_id, folders.created_at, folders.pinned,
-            folders.name, folders.user_id, folders.parent_id
           ORDER BY folders.created_at ASC
         `
       : workspaceId && parentId
       ? await sql`
+          WITH RECURSIVE folder_tree AS (
+            SELECT id AS root_id, id AS descendant_id FROM folders WHERE user_id = ${payload.userId}
+            UNION ALL
+            SELECT ft.root_id, f.id
+            FROM folders f INNER JOIN folder_tree ft ON f.parent_id = ft.descendant_id
+          ),
+          doc_counts AS (
+            SELECT ft.root_id,
+              COUNT(d.id) AS doc_count,
+              MAX(d.updated_at) AS last_edited
+            FROM folder_tree ft
+            LEFT JOIN docs d ON d.folder_id::text = ft.descendant_id::text AND d.deleted_at IS NULL
+            GROUP BY ft.root_id
+          )
           SELECT
             folders.id, folders.workspace_id, folders.created_at, folders.pinned,
             folders.name, folders.user_id, folders.parent_id,
-            COUNT(docs.id) FILTER (WHERE docs.deleted_at IS NULL) AS doc_count,
-            MAX(docs.updated_at) FILTER (WHERE docs.deleted_at IS NULL) AS last_edited
+            COALESCE(doc_counts.doc_count, 0) AS doc_count,
+            doc_counts.last_edited
           FROM folders
-          LEFT JOIN docs ON docs.folder_id::text = folders.id::text
+          LEFT JOIN doc_counts ON doc_counts.root_id = folders.id
           WHERE folders.user_id = ${payload.userId}
             AND folders.workspace_id = ${workspaceId}
             AND folders.parent_id::text = ${parentId}
-          GROUP BY folders.id, folders.workspace_id, folders.created_at, folders.pinned,
-            folders.name, folders.user_id, folders.parent_id
           ORDER BY folders.created_at ASC
         `
       : workspaceId
       ? await sql`
+          WITH RECURSIVE folder_tree AS (
+            SELECT id AS root_id, id AS descendant_id FROM folders WHERE user_id = ${payload.userId}
+            UNION ALL
+            SELECT ft.root_id, f.id
+            FROM folders f INNER JOIN folder_tree ft ON f.parent_id = ft.descendant_id
+          ),
+          doc_counts AS (
+            SELECT ft.root_id,
+              COUNT(d.id) AS doc_count,
+              MAX(d.updated_at) AS last_edited
+            FROM folder_tree ft
+            LEFT JOIN docs d ON d.folder_id::text = ft.descendant_id::text AND d.deleted_at IS NULL
+            GROUP BY ft.root_id
+          )
           SELECT
             folders.id, folders.workspace_id, folders.created_at, folders.pinned,
             folders.name, folders.user_id, folders.parent_id,
-            COUNT(docs.id) FILTER (WHERE docs.deleted_at IS NULL) AS doc_count,
-            MAX(docs.updated_at) FILTER (WHERE docs.deleted_at IS NULL) AS last_edited
+            COALESCE(doc_counts.doc_count, 0) AS doc_count,
+            doc_counts.last_edited
           FROM folders
-          LEFT JOIN docs ON docs.folder_id::text = folders.id::text
+          LEFT JOIN doc_counts ON doc_counts.root_id = folders.id
           WHERE folders.user_id = ${payload.userId}
             AND folders.workspace_id = ${workspaceId}
             AND folders.parent_id IS NULL
-          GROUP BY folders.id, folders.workspace_id, folders.created_at, folders.pinned,
-            folders.name, folders.user_id, folders.parent_id
           ORDER BY folders.created_at ASC
         `
       : parentId
       ? await sql`
+          WITH RECURSIVE folder_tree AS (
+            SELECT id AS root_id, id AS descendant_id FROM folders WHERE user_id = ${payload.userId}
+            UNION ALL
+            SELECT ft.root_id, f.id
+            FROM folders f INNER JOIN folder_tree ft ON f.parent_id = ft.descendant_id
+          ),
+          doc_counts AS (
+            SELECT ft.root_id,
+              COUNT(d.id) AS doc_count,
+              MAX(d.updated_at) AS last_edited
+            FROM folder_tree ft
+            LEFT JOIN docs d ON d.folder_id::text = ft.descendant_id::text AND d.deleted_at IS NULL
+            GROUP BY ft.root_id
+          )
           SELECT
             folders.id, folders.workspace_id, folders.created_at, folders.pinned,
             folders.name, folders.user_id, folders.parent_id,
-            COUNT(docs.id) FILTER (WHERE docs.deleted_at IS NULL) AS doc_count,
-            MAX(docs.updated_at) FILTER (WHERE docs.deleted_at IS NULL) AS last_edited
+            COALESCE(doc_counts.doc_count, 0) AS doc_count,
+            doc_counts.last_edited
           FROM folders
-          LEFT JOIN docs ON docs.folder_id::text = folders.id::text
+          LEFT JOIN doc_counts ON doc_counts.root_id = folders.id
           WHERE folders.user_id = ${payload.userId}
             AND folders.parent_id::text = ${parentId}
-          GROUP BY folders.id, folders.workspace_id, folders.created_at, folders.pinned,
-            folders.name, folders.user_id, folders.parent_id
           ORDER BY folders.created_at ASC
         `
       : await sql`
+          WITH RECURSIVE folder_tree AS (
+            SELECT id AS root_id, id AS descendant_id FROM folders WHERE user_id = ${payload.userId}
+            UNION ALL
+            SELECT ft.root_id, f.id
+            FROM folders f INNER JOIN folder_tree ft ON f.parent_id = ft.descendant_id
+          ),
+          doc_counts AS (
+            SELECT ft.root_id,
+              COUNT(d.id) AS doc_count,
+              MAX(d.updated_at) AS last_edited
+            FROM folder_tree ft
+            LEFT JOIN docs d ON d.folder_id::text = ft.descendant_id::text AND d.deleted_at IS NULL
+            GROUP BY ft.root_id
+          )
           SELECT
             folders.id, folders.workspace_id, folders.created_at, folders.pinned,
             folders.name, folders.user_id, folders.parent_id,
-            COUNT(docs.id) FILTER (WHERE docs.deleted_at IS NULL) AS doc_count,
-            MAX(docs.updated_at) FILTER (WHERE docs.deleted_at IS NULL) AS last_edited
+            COALESCE(doc_counts.doc_count, 0) AS doc_count,
+            doc_counts.last_edited
           FROM folders
-          LEFT JOIN docs ON docs.folder_id::text = folders.id::text
+          LEFT JOIN doc_counts ON doc_counts.root_id = folders.id
           WHERE folders.user_id = ${payload.userId}
             AND folders.parent_id IS NULL
-          GROUP BY folders.id, folders.workspace_id, folders.created_at, folders.pinned,
-            folders.name, folders.user_id, folders.parent_id
           ORDER BY folders.created_at ASC
         `
 
