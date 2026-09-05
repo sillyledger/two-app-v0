@@ -1,24 +1,10 @@
-<svg width="180" height="180" viewBox="0 0 180 180" fill="none" xmlns="http://www.w3.org/2000/svg">
+<svg width="180" height="180" viewBox="0 0 180 180" xmlns="http://www.w3.org/2000/svg">
   <style>
-    .background { fill: #161618; }
-    .foreground { fill: #fafaf9; }
-    @media (prefers-color-scheme: light) {
-      .background { fill: black; }
-      .foreground { fill: white; }
-    }
+    rect { fill: #1a1a18; }
     @media (prefers-color-scheme: dark) {
-      .background { fill: white; }
-      .foreground { fill: black; }
+      rect { fill: #f9f8f6; }
     }
   </style>
-  <g clip-path="url(#clip0_7960_43945)">
-    <rect class="background" width="180" height="180" rx="37" />
-    <rect class="foreground" x="40" y="32" width="71" height="93" rx="17" opacity="0.55" />
-    <rect class="foreground" x="70" y="55" width="71" height="93" rx="17" opacity="0.85" />
-  </g>
-  <defs>
-    <clipPath id="clip0_7960_43945">
-      <rect width="180" height="180" fill="white" />
-    </clipPath>
-  </defs>
+  <rect x="20" y="14" width="87" height="114" rx="21" opacity="0.55" />
+  <rect x="57" y="42" width="87" height="114" rx="21" opacity="0.85" />
 </svg>
