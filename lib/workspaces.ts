@@ -88,7 +88,7 @@ export async function getSharedWorkspacesForUser(userId: string) {
 
 export async function getWorkspaceMembers(workspaceId: string) {
   const rows = await sql`
-    SELECT m.*, u.email as user_email FROM workspace_members m
+    SELECT m.*, u.email as user_email, u.name as user_name FROM workspace_members m
     LEFT JOIN users u ON u.id::text = m.user_id::text
     WHERE m.workspace_id = ${workspaceId}
     ORDER BY m.invited_at ASC

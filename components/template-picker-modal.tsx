@@ -8,9 +8,10 @@ import { TEMPLATES } from "@/lib/templates"
 interface Props {
   open: boolean
   onClose: () => void
+  workspaceId?: string | null
 }
 
-export default function TemplatePickerModal({ open, onClose }: Props) {
+export default function TemplatePickerModal({ open, onClose, workspaceId }: Props) {
   const router = useRouter()
   const [creating, setCreating] = useState<string | null>(null)
 
@@ -28,6 +29,7 @@ export default function TemplatePickerModal({ open, onClose }: Props) {
           content: template.content,
           color: "yellow",
           type: "doc",
+          workspace_id: workspaceId ?? null,
         }),
       })
       const doc = await res.json()

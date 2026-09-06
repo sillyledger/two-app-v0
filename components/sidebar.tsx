@@ -743,11 +743,13 @@ export default function Sidebar({ onNewNote, onToggle }: SidebarProps = {}) {
                     {sharedOpen && extraWorkspaces.map(ws => (
                       <div key={ws.id} style={{ marginBottom: 2 }}>
                         <div className="sb-group" style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 4px", borderRadius: 9, cursor: "pointer", fontSize: 13.5, color: "#5a5a64", transition: "all 0.12s" }}
-                          onClick={() => toggleExtraWorkspace(ws.id)}
+                          onClick={() => router.push(`/workspaces/${ws.id}`)}
                           onMouseEnter={e => { e.currentTarget.style.background = HOVER_BG; e.currentTarget.style.color = HOVER_COLOR }}
                           onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#5a5a64" }}
                         >
-                          {expandedWorkspaces[ws.id] ? <ChevronDown size={12} style={{ color: MUTED, flexShrink: 0 }} /> : <ChevronRight size={12} style={{ color: MUTED, flexShrink: 0 }} />}
+                          <button onClick={e => { e.stopPropagation(); toggleExtraWorkspace(ws.id) }} style={{ background: "none", border: "none", padding: 0, display: "flex", cursor: "pointer" }}>
+                            {expandedWorkspaces[ws.id] ? <ChevronDown size={12} style={{ color: MUTED, flexShrink: 0 }} /> : <ChevronRight size={12} style={{ color: MUTED, flexShrink: 0 }} />}
+                          </button>
                           {renamingWsId === ws.id
                             ? <input ref={wsRenameInputRef} value={wsRenameValue} onChange={e => setWsRenameValue(e.target.value)} onBlur={() => commitExtraWsRename(ws.id)} onKeyDown={e => { if (e.key === "Enter") commitExtraWsRename(ws.id); if (e.key === "Escape") setRenamingWsId(null) }} onClick={e => e.stopPropagation()} style={{ flex: 1, minWidth: 0, borderRadius: 6, padding: "2px 8px", fontSize: 13, outline: "none", background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.12)", color: "#e0dfd9", fontFamily: FONT }} />
                             : <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{ws.name}</span>

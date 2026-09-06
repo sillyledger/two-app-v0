@@ -1,7 +1,38 @@
 import { NextResponse } from "next/server"
 import { verifyToken } from "@/lib/auth"
 import { cookies } from "next/headers"
-import { renameWorkspaceById, deleteWorkspaceById } from "@/lib/workspaces"
+import { renameWorkspaceById, deleteWorkspaceById, getWorkspaceMembers } from "@/lib/workspaces"
+import { sql } from "@/lib/db"
+
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  try {
+    const { id } = await params
+    const cookieStore = await cookies()
+    const token = cookieStore.get("auth-token")?.value
+    if (!token) return NextResponse.json(null, { status: 401 })
+    const payload = await verifyToken(token)
+    if (!payload?.userId) return NextResponse.json(null, { status: 401 })
+
+    const workspaceRows = await sql`SELECT * FROM workspaces WHERE id::text = ${id}`
+    const workspace = workspaceRows[0]
+    if (!workspace) return NextResponse.json(null, { status: 404 })
+
+    const isOwner = workspace.user_id === payload.userId
+    const memberCheck = await sql`
+      SELECT id FROM workspace_members
+      WHERE workspace_id::text = ${id} AND user_id = ${payload.userId} AND status = 'accepted'
+    `
+    if (!isOwner && memberCheck.length === 0) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 403 })
+    }
+
+    const members = await getWorkspaceMembers(id)
+    return NextResponse.json({ ...workspace, members })
+  } catch (error) {
+    console.error("Workspace fetch error:", error)
+    return NextResponse.json(null, { status: 500 })
+  }
+}
 
 export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
