@@ -17,16 +17,13 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     const workspace = workspaceRows[0]
     if (!workspace) return NextResponse.json(null, { status: 404 })
 
+    const members = await getWorkspaceMembers(id)
     const isOwner = workspace.user_id === payload.userId
-    const memberCheck = await sql`
-      SELECT id FROM workspace_members
-      WHERE workspace_id::text = ${id} AND user_id = ${payload.userId} AND status = 'accepted'
-    `
-    if (!isOwner && memberCheck.length === 0) {
+    const isMember = members.some((m: any) => m.user_id === payload.userId && m.status === "accepted")
+    if (!isOwner && !isMember) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 })
     }
 
-    const members = await getWorkspaceMembers(id)
     return NextResponse.json({ ...workspace, members })
   } catch (error) {
     console.error("Workspace fetch error:", error)

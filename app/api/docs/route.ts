@@ -33,17 +33,16 @@ export async function GET(request: Request) {
 
     if (workspaceId) {
       // Check if user owns this workspace or is an accepted member
-      const ownerCheck = await sql`
-        SELECT id FROM workspaces WHERE id::text = ${workspaceId} AND user_id = ${payload.userId}
-      `
-      const memberCheck = await sql`
-        SELECT id FROM workspace_members
+      const accessCheck = await sql`
+        SELECT 1 FROM workspaces WHERE id::text = ${workspaceId} AND user_id = ${payload.userId}
+        UNION
+        SELECT 1 FROM workspace_members
         WHERE workspace_id::text = ${workspaceId}
           AND user_id = ${payload.userId}
           AND status = 'accepted'
       `
 
-      if (ownerCheck.length === 0 && memberCheck.length === 0) {
+      if (accessCheck.length === 0) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
       }
 

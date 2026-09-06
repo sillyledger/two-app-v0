@@ -259,9 +259,11 @@ export default function Sidebar({ onNewNote, onToggle }: SidebarProps = {}) {
 
   const workspacesRef = useRef<Workspace[]>([])
   const workspaceIdRef = useRef<string | null>(null)
+  const expandedWorkspacesRef = useRef<Record<string, boolean>>({})
 
   useEffect(() => { workspacesRef.current = workspaces }, [workspaces])
   useEffect(() => { workspaceIdRef.current = workspaceId }, [workspaceId])
+  useEffect(() => { expandedWorkspacesRef.current = expandedWorkspaces }, [expandedWorkspaces])
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -315,7 +317,7 @@ export default function Sidebar({ onNewNote, onToggle }: SidebarProps = {}) {
       const current = workspacesRef.current
       const primaryId = workspaceIdRef.current
       current.forEach(ws => {
-        if (ws.id !== primaryId) {
+        if (ws.id !== primaryId && expandedWorkspacesRef.current[ws.id]) {
           fetchDocsForWorkspace(ws.id, false)
           fetchFoldersForWorkspace(ws.id, false)
         }
@@ -382,10 +384,6 @@ export default function Sidebar({ onNewNote, onToggle }: SidebarProps = {}) {
       const shared = Array.isArray(data?.shared) ? data.shared : []
       const list = [...owned, ...shared]
       setWorkspaces(list); cacheSet("sb_workspaces", list)
-      list.forEach(ws => {
-        fetchDocsForWorkspace(ws.id, false)
-        fetchFoldersForWorkspace(ws.id, false)
-      })
     }).catch(() => {})
   }, [])
 

@@ -316,6 +316,25 @@ export default function WorkspaceHomePage() {
                 </span>
               )}
             </div>
+            <div className="flex items-center" style={{ flexShrink: 0 }} title={`${members.length} ${members.length === 1 ? "member" : "members"}`}>
+              <div className="flex items-center">
+                {members.slice(0, 5).map((m, i) => {
+                  const label = m.user_name || m.user_email || m.email || "?"
+                  return (
+                    <div key={m.id} title={label} style={{ width: 24, height: 24, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 600, color: "#1a1a1a", backgroundColor: getAccent(i), border: "2px solid var(--bg-secondary)", marginLeft: i === 0 ? 0 : -8 }}>
+                      {label.charAt(0).toUpperCase()}
+                    </div>
+                  )
+                })}
+              </div>
+              <button
+                onClick={() => router.push("/settings")}
+                title="Invite"
+                style={{ width: 26, height: 26, borderRadius: "50%", backgroundColor: "var(--bg-tertiary)", border: "1px solid var(--border)", color: "var(--text-muted)", display: "flex", alignItems: "center", justifyContent: "center", marginLeft: 6, cursor: "pointer" }}
+              >
+                <Plus size={13} />
+              </button>
+            </div>
             <div style={{ display: "flex", alignItems: "center", gap: "8px", flexShrink: 0 }}>
               <button
                 onClick={() => setTemplateModalOpen(true)}
@@ -354,29 +373,6 @@ export default function WorkspaceHomePage() {
                 New Doc
               </button>
             </div>
-          </div>
-
-          <div className="flex items-center justify-between mb-5 px-3.5 py-2.5 rounded-lg" style={{ backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border)" }}>
-            <div className="flex items-center">
-              <div className="flex items-center">
-                {members.slice(0, 5).map((m, i) => {
-                  const label = m.user_name || m.user_email || m.email || "?"
-                  return (
-                    <div key={m.id} title={label} style={{ width: 26, height: 26, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10.5, fontWeight: 600, color: "#1a1a1a", backgroundColor: getAccent(i), border: "2px solid var(--bg-secondary)", marginLeft: i === 0 ? 0 : -8 }}>
-                      {label.charAt(0).toUpperCase()}
-                    </div>
-                  )
-                })}
-              </div>
-              <span className="text-[12px] ml-2.5" style={{ color: "var(--text-muted)" }}>{members.length} {members.length === 1 ? "member" : "members"}</span>
-            </div>
-            <button
-              onClick={() => router.push("/settings")}
-              className="text-[12.5px] rounded-md px-2.5 py-1"
-              style={{ color: "var(--text-secondary)", backgroundColor: "var(--bg-tertiary)", border: "1px solid var(--border)" }}
-            >
-              + Invite
-            </button>
           </div>
 
           {/* Folders preview */}

@@ -24,7 +24,7 @@ export async function GET(request: Request) {
     const folders = all && workspaceId
       ? await sql`
           WITH RECURSIVE folder_tree AS (
-            SELECT id AS root_id, id AS descendant_id FROM folders WHERE user_id = ${payload.userId}
+            SELECT id AS root_id, id AS descendant_id FROM folders WHERE user_id = ${payload.userId} AND workspace_id = ${workspaceId}
             UNION ALL
             SELECT ft.root_id, f.id
             FROM folders f INNER JOIN folder_tree ft ON f.parent_id = ft.descendant_id
@@ -77,7 +77,7 @@ export async function GET(request: Request) {
       : workspaceId && parentId
       ? await sql`
           WITH RECURSIVE folder_tree AS (
-            SELECT id AS root_id, id AS descendant_id FROM folders WHERE user_id = ${payload.userId}
+            SELECT id AS root_id, id AS descendant_id FROM folders WHERE user_id = ${payload.userId} AND workspace_id = ${workspaceId}
             UNION ALL
             SELECT ft.root_id, f.id
             FROM folders f INNER JOIN folder_tree ft ON f.parent_id = ft.descendant_id
@@ -105,7 +105,7 @@ export async function GET(request: Request) {
       : workspaceId
       ? await sql`
           WITH RECURSIVE folder_tree AS (
-            SELECT id AS root_id, id AS descendant_id FROM folders WHERE user_id = ${payload.userId}
+            SELECT id AS root_id, id AS descendant_id FROM folders WHERE user_id = ${payload.userId} AND workspace_id = ${workspaceId}
             UNION ALL
             SELECT ft.root_id, f.id
             FROM folders f INNER JOIN folder_tree ft ON f.parent_id = ft.descendant_id
