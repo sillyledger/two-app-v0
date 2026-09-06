@@ -111,9 +111,19 @@ export async function PUT(
     }
 
     if (folder_id !== undefined) {
+      let targetWorkspaceId: string | null = null
+      if (folder_id !== null) {
+        const targetFolder = await sql`
+          SELECT workspace_id FROM folders WHERE id::text = ${folder_id} AND user_id = ${payload.userId}
+        `
+        if (targetFolder.length === 0) {
+          return NextResponse.json({ error: 'Folder not found' }, { status: 404 })
+        }
+        targetWorkspaceId = targetFolder[0].workspace_id
+      }
       const result = await sql`
         UPDATE docs
-        SET folder_id = ${folder_id}, last_edited_by = ${payload.userId}, updated_at = CURRENT_TIMESTAMP
+        SET folder_id = ${folder_id}, workspace_id = ${targetWorkspaceId}, last_edited_by = ${payload.userId}, updated_at = CURRENT_TIMESTAMP
         WHERE uuid = ${id}
         RETURNING *
       `
