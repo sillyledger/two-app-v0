@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { verifyToken } from '@/lib/auth'
 import { cookies } from 'next/headers'
-import { getAllWorkspaces, createWorkspace, getSharedWorkspacesForUser } from '@/lib/workspaces'
+import { getAllWorkspaces, createWorkspace, createSharedWorkspace, getSharedWorkspacesForUser } from '@/lib/workspaces'
 import { sql } from '@/lib/db'
 
 export async function GET() {
@@ -30,7 +30,7 @@ export async function POST(request: Request) {
     const payload = await verifyToken(token)
     if (!payload?.userId) return NextResponse.json(null, { status: 401 })
 
-    const { name } = await request.json()
+    const { name, is_shared } = await request.json()
     if (!name?.trim()) return NextResponse.json({ error: 'Name required' }, { status: 400 })
 
     const userRows = await sql`SELECT plan FROM users WHERE id = ${payload.userId}`
@@ -45,7 +45,9 @@ export async function POST(request: Request) {
       }
     }
 
-    const workspace = await createWorkspace(payload.userId, name.trim())
+    const workspace = is_shared
+      ? await createSharedWorkspace(payload.userId, name.trim())
+      : await createWorkspace(payload.userId, name.trim())
     return NextResponse.json(workspace, { status: 201 })
   } catch (error) {
     console.error('Workspace create error:', error)

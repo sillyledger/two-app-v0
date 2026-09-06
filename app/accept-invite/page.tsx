@@ -42,7 +42,7 @@ function AcceptInviteContent() {
         return
       }
 
-      router.push('/')
+      router.push(`/workspaces/${data.workspaceId}`)
     } catch {
       setErrorMessage('Something went wrong. Please try again.')
       setStatus('error')
