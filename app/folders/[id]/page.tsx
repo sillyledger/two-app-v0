@@ -100,11 +100,19 @@ export default function FolderPage() {
   const [subfolders, setSubfolders] = useState<FolderData[]>([])
   const [newSubfolderModalOpen, setNewSubfolderModalOpen] = useState(false)
   const [newSubfolderName, setNewSubfolderName] = useState("")
+  const [myWorkspaceId, setMyWorkspaceId] = useState<string | null>(null)
 
   useEffect(() => {
     fetch("/api/auth/me").then((res) => {
       if (!res.ok) router.push("/login")
     })
+  }, [])
+
+  useEffect(() => {
+    fetch("/api/workspace")
+      .then(r => r.json())
+      .then(data => setMyWorkspaceId(data?.id ?? null))
+      .catch(() => {})
   }, [])
 
   useEffect(() => {
@@ -237,7 +245,10 @@ export default function FolderPage() {
           {/* Breadcrumb */}
           {folder?.path && folder.path.length > 0 && (
             <div className="flex items-center flex-wrap gap-1 mb-3 text-[12px]" style={{ color: "var(--text-muted)" }}>
-              <button onClick={() => router.push("/folders")} className="transition-colors" style={{ color: "var(--text-muted)" }} onMouseEnter={e => (e.currentTarget.style.color = "var(--text-primary)")} onMouseLeave={e => (e.currentTarget.style.color = "var(--text-muted)")}>
+              <button onClick={() => {
+                const isSharedContext = folder?.workspace_id && folder.workspace_id !== myWorkspaceId
+                router.push(isSharedContext ? `/workspaces/${folder!.workspace_id}` : "/folders")
+              }} className="transition-colors" style={{ color: "var(--text-muted)" }} onMouseEnter={e => (e.currentTarget.style.color = "var(--text-primary)")} onMouseLeave={e => (e.currentTarget.style.color = "var(--text-muted)")}>
                 Docs
               </button>
               {folder.path.map((crumb, i) => {

@@ -139,7 +139,7 @@ export default function WorkspaceHomePage() {
     if (!workspaceId) return
     fetch(`/api/folders?workspace_id=${workspaceId}`)
       .then(res => res.json())
-      .then(data => setPinnedFolders(Array.isArray(data) ? data.filter((f: any) => f.pinned) : []))
+      .then(data => setPinnedFolders(Array.isArray(data) ? data : []))
       .catch(() => setPinnedFolders([]))
   }, [workspaceId])
 
