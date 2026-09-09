@@ -65,7 +65,10 @@ export async function GET(request: Request) {
       : all
       ? await sql`
           WITH RECURSIVE folder_tree AS (
-            SELECT id AS root_id, id AS descendant_id FROM folders WHERE user_id = ${payload.userId}
+            SELECT id AS root_id, id AS descendant_id FROM folders
+            WHERE user_id = ${payload.userId}
+              OR workspace_id::text IN (SELECT id::text FROM workspaces WHERE user_id = ${payload.userId})
+              OR workspace_id::text IN (SELECT workspace_id::text FROM workspace_members WHERE user_id = ${payload.userId} AND status = 'accepted')
             UNION ALL
             SELECT ft.root_id, f.id
             FROM folders f INNER JOIN folder_tree ft ON f.parent_id = ft.descendant_id
@@ -85,7 +88,11 @@ export async function GET(request: Request) {
             doc_counts.last_edited
           FROM folders
           LEFT JOIN doc_counts ON doc_counts.root_id = folders.id
-          WHERE folders.user_id = ${payload.userId}
+          WHERE (
+            folders.user_id = ${payload.userId}
+            OR folders.workspace_id::text IN (SELECT id::text FROM workspaces WHERE user_id = ${payload.userId})
+            OR folders.workspace_id::text IN (SELECT workspace_id::text FROM workspace_members WHERE user_id = ${payload.userId} AND status = 'accepted')
+          )
           ORDER BY folders.created_at ASC
         `
       : workspaceId && parentId

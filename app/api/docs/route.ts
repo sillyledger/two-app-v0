@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { verifyToken } from '@/lib/auth'
 import { sql } from '@/lib/db'
+import { isWorkspaceOwner, getUserRoleInWorkspace } from '@/lib/workspaces'
 
 export async function GET(request: Request) {
   const cookieStore = await cookies()
@@ -138,6 +139,17 @@ export async function POST(request: Request) {
     }
 
     const { title, content, color, type = 'doc', folder_id = null, workspace_id = null } = await request.json()
+
+    if (workspace_id) {
+      const owner = await isWorkspaceOwner(payload.userId, workspace_id)
+      if (!owner) {
+        const role = await getUserRoleInWorkspace(payload.userId, workspace_id)
+        if (!role || !['admin', 'editor'].includes(role)) {
+          return NextResponse.json({ error: 'Not authorized to create docs in this workspace' }, { status: 403 })
+        }
+      }
+    }
+
     const result = await sql`
       INSERT INTO docs (title, content, color, type, user_id, folder_id, workspace_id, uuid)
       VALUES (

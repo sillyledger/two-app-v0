@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { verifyToken } from '@/lib/auth'
 import { sql } from '@/lib/db'
+import { getFolderPermission } from '@/lib/workspaces'
 import Pusher from 'pusher'
 
 const pusher = new Pusher({
@@ -113,13 +114,17 @@ export async function PUT(
     if (folder_id !== undefined) {
       let targetWorkspaceId: string | null = null
       if (folder_id !== null) {
-        const targetFolder = await sql`
-          SELECT workspace_id FROM folders WHERE id::text = ${folder_id} AND user_id = ${payload.userId}
-        `
-        if (targetFolder.length === 0) {
+        const permission = await getFolderPermission(payload.userId, folder_id)
+        if (!permission.exists) {
           return NextResponse.json({ error: 'Folder not found' }, { status: 404 })
         }
-        targetWorkspaceId = targetFolder[0].workspace_id
+        if (!permission.canEdit) {
+          return NextResponse.json({ error: 'Not authorized to move into this folder' }, { status: 403 })
+        }
+        const targetFolder = await sql`
+          SELECT workspace_id FROM folders WHERE id::text = ${folder_id}
+        `
+        targetWorkspaceId = targetFolder[0]?.workspace_id ?? null
       }
       const result = await sql`
         UPDATE docs
@@ -223,10 +228,31 @@ export async function PATCH(
   try {
     const { id } = await params
     const { is_public } = await request.json()
+
+    const accessCheck = await sql`
+      SELECT docs.id, docs.uuid FROM docs
+      LEFT JOIN workspace_members wm ON wm.workspace_id::text = docs.workspace_id::text
+        AND wm.user_id = ${payload.userId}
+        AND wm.status = 'accepted'
+        AND wm.role IN ('admin', 'editor')
+      LEFT JOIN workspaces w ON w.id::text = docs.workspace_id::text
+        AND w.user_id = ${payload.userId}
+      WHERE docs.uuid = ${id}
+        AND docs.deleted_at IS NULL
+        AND (
+          docs.user_id = ${payload.userId}
+          OR wm.id IS NOT NULL
+          OR w.id IS NOT NULL
+        )
+    `
+    if (accessCheck.length === 0) {
+      return NextResponse.json({ error: 'Doc not found' }, { status: 404 })
+    }
+
     const result = await sql`
       UPDATE docs
       SET is_public = ${is_public}, updated_at = CURRENT_TIMESTAMP
-      WHERE uuid = ${id} AND user_id = ${payload.userId}
+      WHERE uuid = ${id}
       RETURNING *
     `
     if (result.length === 0) {
@@ -258,6 +284,10 @@ export async function DELETE(
           user_id::text = ${String(payload.userId)}
           OR workspace_id::text IN (
             SELECT id::text FROM workspaces WHERE user_id::text = ${String(payload.userId)}
+          )
+          OR workspace_id::text IN (
+            SELECT workspace_id::text FROM workspace_members
+            WHERE user_id::text = ${String(payload.userId)} AND status = 'accepted' AND role = 'admin'
           )
         )
       RETURNING *
