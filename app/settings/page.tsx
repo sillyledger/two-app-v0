@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Sun, Moon, Monitor, Camera, User, Palette, FileText, Lock, X, CreditCard, Settings2, HardDrive, Users } from 'lucide-react'
 import Sidebar from '@/components/sidebar'
@@ -40,7 +40,7 @@ const PRICE_PRO_MONTHLY = 'pri_01ksjx3b0n6pg6fw44hbq9r03p'
 const PRICE_PRO_ANNUAL  = 'pri_01ksxjysx4n6ewv4dq2mxn5kjr'
 const PRICE_FOUNDING    = 'pri_01ksjx6e6xtrmq324ama45zyr0'
 
-export default function SettingsPage() {
+function SettingsPageInner() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [section, setSection] = useState<Section>('account')
@@ -994,5 +994,13 @@ export default function SettingsPage() {
         </div>
       </main>
     </div>
+  )
+}
+
+export default function SettingsPage() {
+  return (
+    <Suspense fallback={null}>
+      <SettingsPageInner />
+    </Suspense>
   )
 }
