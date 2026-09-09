@@ -150,18 +150,29 @@ export default function DocsPage() {
 
   const handleMove = async (folderId: string) => {
     if (!movingDoc) return
-    await fetch(`/api/docs/${movingDoc.uuid}`, {
+    const res = await fetch(`/api/docs/${movingDoc.uuid}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ folder_id: folderId }),
     })
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}))
+      alert(err.error || "Failed to move doc.")
+      return
+    }
     setAllDocs(prev => prev.filter(d => d.uuid !== movingDoc.uuid))
     setMovingDoc(null)
   }
 
   const handleDelete = async () => {
     if (!deletingDoc) return
-    await fetch(`/api/docs/${deletingDoc.uuid}`, { method: "DELETE" })
+    const res = await fetch(`/api/docs/${deletingDoc.uuid}`, { method: "DELETE" })
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}))
+      alert(err.error || "Failed to delete doc.")
+      setDeletingDoc(null)
+      return
+    }
     setAllDocs(prev => prev.filter(d => d.uuid !== deletingDoc.uuid))
     setDeletingDoc(null)
   }

@@ -202,18 +202,29 @@ export default function FolderPage() {
 
   const handleMove = async (folderId: string) => {
     if (!movingDoc) return
-    await fetch(`/api/docs/${movingDoc.uuid}`, {
+    const res = await fetch(`/api/docs/${movingDoc.uuid}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ folder_id: folderId }),
     })
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}))
+      alert(err.error || "Failed to move doc.")
+      return
+    }
     setDocs((prev) => prev.filter((d) => d.uuid !== movingDoc.uuid))
     setMovingDoc(null)
   }
 
   const handleDelete = async () => {
     if (!deletingDoc) return
-    await fetch(`/api/docs/${deletingDoc.uuid}`, { method: "DELETE" })
+    const res = await fetch(`/api/docs/${deletingDoc.uuid}`, { method: "DELETE" })
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}))
+      alert(err.error || "Failed to delete doc.")
+      setDeletingDoc(null)
+      return
+    }
     setDocs((prev) => prev.filter((d) => d.uuid !== deletingDoc.uuid))
     setDeletingDoc(null)
   }
@@ -237,8 +248,17 @@ export default function FolderPage() {
     e.stopPropagation()
     const confirmed = window.confirm(`Delete "${sub.name}"?\n\nAll docs inside will be moved to Trash and can be recovered within 30 days.`)
     if (!confirmed) return
-    setSubfolders(prev => prev.filter(f => f.id !== sub.id))
-    try { await fetch(`/api/folders/${sub.id}`, { method: "DELETE" }) } catch {}
+    try {
+      const res = await fetch(`/api/folders/${sub.id}`, { method: "DELETE" })
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        alert(err.error || "Failed to delete folder.")
+        return
+      }
+      setSubfolders(prev => prev.filter(f => f.id !== sub.id))
+    } catch {
+      alert("Failed to delete folder.")
+    }
   }
 
   return (

@@ -547,6 +547,11 @@ export default function Sidebar({ onNewNote, onToggle }: SidebarProps = {}) {
       setCreating(true)
       try {
         const res = await fetch("/api/docs", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ title: modalName, content: "", color: "yellow", type: "doc", workspace_id: modalTargetWorkspaceId }) })
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}))
+          alert(errData?.error || "Failed to create doc.")
+          return
+        }
         const doc = await res.json()
         if (modalTargetWorkspaceId && modalTargetWorkspaceId !== workspaceId) fetchDocsForWorkspace(modalTargetWorkspaceId, false)
         else if (workspaceId) fetchDocsForWorkspace(workspaceId, true)
@@ -558,6 +563,11 @@ export default function Sidebar({ onNewNote, onToggle }: SidebarProps = {}) {
       const targetId = modalTargetWorkspaceId ?? workspaceId; if (!targetId) return
       try {
         const res = await fetch("/api/folders", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: modalName, workspace_id: targetId }) })
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}))
+          alert(errData?.error || "Failed to create folder.")
+          return
+        }
         const folder = await res.json()
         if (targetId !== workspaceId) fetchFoldersForWorkspace(targetId, false)
         else { const updated = [...folders, folder]; setFolders(updated); cacheSet("sb_folders", updated) }

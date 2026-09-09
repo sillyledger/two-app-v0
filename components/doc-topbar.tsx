@@ -434,12 +434,17 @@ export default function DocTopbar({
   }
 
   const handleMove = async (folderId: string) => {
-    await fetch(`/api/docs/${docId}`, {
+    const res = await fetch(`/api/docs/${docId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ folder_id: folderId }),
     })
     setShowMoveModal(false)
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}))
+      alert(err.error || 'Failed to move doc.')
+      return
+    }
     setMoveToast(true)
     setTimeout(() => setMoveToast(false), 2000)
   }
