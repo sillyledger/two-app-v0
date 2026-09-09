@@ -1,11 +1,11 @@
 'use client'
 import { useEffect, useState, useRef } from 'react'
-import { useRouter } from 'next/navigation'
-import { Sun, Moon, Monitor, Camera, User, Palette, FileText, Lock, X, CreditCard, Settings2, HardDrive } from 'lucide-react'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { Sun, Moon, Monitor, Camera, User, Palette, FileText, Lock, X, CreditCard, Settings2, HardDrive, Users } from 'lucide-react'
 import Sidebar from '@/components/sidebar'
 import { formatDate } from '@/lib/format-date'
 
-type Section = 'account' | 'appearance' | 'preferences' | 'editor' | 'security' | 'billing' | 'storage'
+type Section = 'account' | 'appearance' | 'preferences' | 'editor' | 'security' | 'billing' | 'storage' | 'members'
 type Theme = 'dark' | 'light' | 'system'
 
 const NAV: { id: Section; label: string; icon: React.ReactNode }[] = [
@@ -42,6 +42,7 @@ const PRICE_FOUNDING    = 'pri_01ksjx6e6xtrmq324ama45zyr0'
 
 export default function SettingsPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [section, setSection] = useState<Section>('account')
   const [collapsed, setCollapsed] = useState(false)
   const [billingYearly, setBillingYearly] = useState(false)
@@ -68,6 +69,14 @@ export default function SettingsPage() {
   const [plan, setPlan] = useState<string>('free')
   const [trialEndsAt, setTrialEndsAt] = useState<string | null>(null)
   const [storageUsed, setStorageUsed] = useState<number>(0)
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null)
+  const [membersWorkspaceId, setMembersWorkspaceId] = useState<string | null>(null)
+  const [membersWorkspaceName, setMembersWorkspaceName] = useState('')
+  const [members, setMembers] = useState<any[]>([])
+  const [membersLoading, setMembersLoading] = useState(false)
+  const [isOwnerOfMembersWorkspace, setIsOwnerOfMembersWorkspace] = useState(false)
+  const [myRoleInMembersWorkspace, setMyRoleInMembersWorkspace] = useState<string | null>(null)
+  const [memberActionError, setMemberActionError] = useState('')
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -104,6 +113,7 @@ export default function SettingsPage() {
           setPlan(data.user.plan || 'free')
           setTrialEndsAt(data.user.trial_ends_at || null)
           setStorageUsed(data.user.storage_used || 0)
+          setCurrentUserId(data.user.id)
         } else {
           router.push('/login')
         }
@@ -111,6 +121,26 @@ export default function SettingsPage() {
       })
       .catch(() => router.push('/login'))
   }, [])
+
+  useEffect(() => {
+    const workspaceParam = searchParams.get('workspace')
+    const sectionParam = searchParams.get('section')
+    if (sectionParam === 'members') setSection('members' as Section)
+    if (!workspaceParam) return
+    setMembersWorkspaceId(workspaceParam)
+    setMembersLoading(true)
+    fetch(`/api/workspaces/${workspaceParam}`)
+      .then(r => r.json())
+      .then(data => {
+        setMembersWorkspaceName(data?.name || '')
+        setMembers(Array.isArray(data?.members) ? data.members : [])
+        setIsOwnerOfMembersWorkspace(data?.user_id === currentUserId)
+        const mine = Array.isArray(data?.members) ? data.members.find((m: any) => m.user_id === currentUserId) : null
+        setMyRoleInMembersWorkspace(mine?.role ?? null)
+      })
+      .catch(() => {})
+      .finally(() => setMembersLoading(false))
+  }, [searchParams, currentUserId])
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -291,6 +321,40 @@ export default function SettingsPage() {
     } catch {
       setPortalError('Could not open billing portal')
       setPortalLoading(false)
+    }
+  }
+
+  function canManageMember(member: any) {
+    if (isOwnerOfMembersWorkspace) return true
+    if (myRoleInMembersWorkspace === 'admin' && member.role !== 'admin') return true
+    return false
+  }
+
+  async function handleRoleChange(memberId: string, role: string) {
+    setMemberActionError('')
+    try {
+      const res = await fetch(`/api/workspaces/${membersWorkspaceId}/members/${memberId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ role }),
+      })
+      const data = await res.json()
+      if (!res.ok) { setMemberActionError(data.error || 'Failed to update role.'); return }
+      setMembers(prev => prev.map(m => m.id === memberId ? { ...m, role: data.role } : m))
+    } catch {
+      setMemberActionError('Something went wrong. Please try again.')
+    }
+  }
+
+  async function handleRemoveMember(memberId: string) {
+    setMemberActionError('')
+    try {
+      const res = await fetch(`/api/workspaces/${membersWorkspaceId}/members/${memberId}`, { method: 'DELETE' })
+      const data = await res.json()
+      if (!res.ok) { setMemberActionError(data.error || 'Failed to remove member.'); return }
+      setMembers(prev => prev.filter(m => m.id !== memberId))
+    } catch {
+      setMemberActionError('Something went wrong. Please try again.')
     }
   }
 
@@ -850,6 +914,79 @@ export default function SettingsPage() {
                     )}
                   </div>
                 </div>
+              </div>
+            )}
+
+            {section === 'members' && (
+              <div>
+                <h2 className="text-[15px] font-semibold mb-1" style={{ color: "var(--text-primary)" }}>
+                  {membersWorkspaceName ? `Members · ${membersWorkspaceName}` : 'Members'}
+                </h2>
+                <p className="text-[12px] mb-6" style={{ color: "var(--text-muted)" }}>
+                  Manage who has access to this shared workspace and what they can do.
+                </p>
+
+                {!membersWorkspaceId ? (
+                  <p className="text-[12px]" style={{ color: "var(--text-muted)" }}>
+                    Open this from a shared workspace's Invite button to manage its members.
+                  </p>
+                ) : membersLoading ? (
+                  <p className="text-[12px]" style={{ color: "var(--text-muted)" }}>Loading...</p>
+                ) : (
+                  <div className="flex flex-col gap-2">
+                    {memberActionError && (
+                      <p className="text-[12px] mb-1" style={{ color: "#e07a5f" }}>{memberActionError}</p>
+                    )}
+                    {members.filter(m => m.status === 'accepted').map(member => (
+                      <div key={member.id} className="flex items-center justify-between rounded-xl p-3.5" style={{ backgroundColor: "var(--bg-tertiary)", border: "1px solid var(--border)" }}>
+                        <div className="min-w-0">
+                          <p className="text-[13px] font-medium truncate" style={{ color: "var(--text-primary)" }}>
+                            {member.user_name || member.user_email || member.email}
+                          </p>
+                          <p className="text-[11px] mt-0.5" style={{ color: "var(--text-muted)" }}>{member.email}</p>
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0 ml-3">
+                          {canManageMember(member) ? (
+                            <select
+                              value={member.role}
+                              onChange={e => handleRoleChange(member.id, e.target.value)}
+                              className="text-[12px] rounded-lg px-2 py-1.5"
+                              style={{ backgroundColor: "var(--bg-secondary)", color: "var(--text-secondary)", border: "1px solid var(--border)" }}
+                            >
+                              {isOwnerOfMembersWorkspace && <option value="admin">Admin</option>}
+                              <option value="editor">Editor</option>
+                              <option value="commenter">Commenter</option>
+                              <option value="viewer">Viewer</option>
+                            </select>
+                          ) : (
+                            <span className="text-[12px] capitalize" style={{ color: "var(--text-muted)" }}>{member.role}</span>
+                          )}
+                          {canManageMember(member) && (
+                            <button
+                              onClick={() => handleRemoveMember(member.id)}
+                              className="text-[12px] rounded-lg px-2.5 py-1.5"
+                              style={{ color: "#e07a5f", background: "transparent", border: "1px solid var(--border)" }}
+                            >
+                              Remove
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+
+                    {members.some(m => m.status === 'pending') && (
+                      <>
+                        <p className="text-[11px] mt-4 mb-1" style={{ color: "var(--text-muted)" }}>Pending invites</p>
+                        {members.filter(m => m.status === 'pending').map(member => (
+                          <div key={member.id} className="flex items-center justify-between rounded-xl p-3.5" style={{ backgroundColor: "var(--bg-tertiary)", border: "1px solid var(--border)" }}>
+                            <p className="text-[13px]" style={{ color: "var(--text-secondary)" }}>{member.email}</p>
+                            <span className="text-[11px]" style={{ color: "var(--text-muted)" }}>Pending · {member.role}</span>
+                          </div>
+                        ))}
+                      </>
+                    )}
+                  </div>
+                )}
               </div>
             )}
 

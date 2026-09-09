@@ -138,3 +138,29 @@ export async function userHasDocAccess(userId: string, docUuid: string) {
   `;
   return rows.length > 0;
 }
+
+export async function getFolderPermission(userId: string, folderId: string) {
+  const rows = await sql`SELECT user_id, workspace_id FROM folders WHERE id::text = ${folderId}`;
+  const folder = rows[0];
+  if (!folder) return { exists: false as const, canView: false, canEdit: false, canDelete: false };
+
+  if (folder.user_id === userId) {
+    return { exists: true as const, canView: true, canEdit: true, canDelete: true };
+  }
+
+  if (!folder.workspace_id) {
+    return { exists: true as const, canView: false, canEdit: false, canDelete: false };
+  }
+
+  const owner = await isWorkspaceOwner(userId, folder.workspace_id);
+  if (owner) {
+    return { exists: true as const, canView: true, canEdit: true, canDelete: true };
+  }
+
+  const role = await getUserRoleInWorkspace(userId, folder.workspace_id);
+  if (role === 'admin') return { exists: true as const, canView: true, canEdit: true, canDelete: true };
+  if (role === 'editor') return { exists: true as const, canView: true, canEdit: true, canDelete: false };
+  if (role === 'commenter' || role === 'viewer') return { exists: true as const, canView: true, canEdit: false, canDelete: false };
+
+  return { exists: true as const, canView: false, canEdit: false, canDelete: false };
+}

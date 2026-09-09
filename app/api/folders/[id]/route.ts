@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { verifyToken } from '@/lib/auth'
 import { cookies } from 'next/headers'
 import { sql } from '@/lib/db'
+import { getFolderPermission } from '@/lib/workspaces'
 
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -11,8 +12,11 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     const payload = await verifyToken(token)
     if (!payload?.userId) return NextResponse.json(null, { status: 401 })
     const { id } = await params
+    const permission = await getFolderPermission(payload.userId, id)
+    if (!permission.exists || !permission.canView) return NextResponse.json(null, { status: 404 })
+
     const result = await sql`
-      SELECT * FROM folders WHERE id::text = ${id} AND user_id = ${payload.userId}
+      SELECT * FROM folders WHERE id::text = ${id}
     `
     if (!result[0]) return NextResponse.json(null, { status: 404 })
 
@@ -30,7 +34,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     // using the same descendant-walk pattern as the recursive DELETE below.
     const descendantRows = await sql`
       WITH RECURSIVE descendants AS (
-        SELECT id FROM folders WHERE id::text = ${id} AND user_id = ${payload.userId}
+        SELECT id FROM folders WHERE id::text = ${id}
         UNION ALL
         SELECT f.id
         FROM folders f INNER JOIN descendants d ON f.parent_id = d.id
@@ -60,8 +64,12 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     const { id } = await params
     const { name } = await request.json()
     if (!name?.trim()) return NextResponse.json({ error: 'Name required' }, { status: 400 })
+    const permission = await getFolderPermission(payload.userId, id)
+    if (!permission.exists) return NextResponse.json({ error: 'Folder not found' }, { status: 404 })
+    if (!permission.canEdit) return NextResponse.json({ error: 'Not authorized' }, { status: 403 })
+
     const result = await sql`
-      UPDATE folders SET name = ${name.trim()} WHERE id::text = ${id} AND user_id = ${payload.userId} RETURNING *
+      UPDATE folders SET name = ${name.trim()} WHERE id::text = ${id} RETURNING *
     `
     if (result.length === 0) {
       return NextResponse.json({ error: 'Folder not found' }, { status: 404 })
@@ -82,8 +90,12 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   try {
     const { id } = await params
     const { pinned } = await request.json()
+    const permission = await getFolderPermission(payload.userId, id)
+    if (!permission.exists) return NextResponse.json({ error: 'Folder not found' }, { status: 404 })
+    if (!permission.canEdit) return NextResponse.json({ error: 'Not authorized' }, { status: 403 })
+
     const result = await sql`
-      UPDATE folders SET pinned = ${pinned} WHERE id::text = ${id} AND user_id = ${payload.userId}
+      UPDATE folders SET pinned = ${pinned} WHERE id::text = ${id}
       RETURNING *
     `
     if (result.length === 0) {
@@ -105,10 +117,14 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
     if (!payload?.userId) return NextResponse.json(null, { status: 401 })
     const { id } = await params
 
+    const permission = await getFolderPermission(payload.userId, id)
+    if (!permission.exists) return NextResponse.json(null, { status: 404 })
+    if (!permission.canDelete) return NextResponse.json({ error: 'Not authorized' }, { status: 403 })
+
     // Collect the target folder plus all of its descendants (recursively)
     const descendantRows = await sql`
       WITH RECURSIVE descendants AS (
-        SELECT id FROM folders WHERE id::text = ${id} AND user_id = ${payload.userId}
+        SELECT id FROM folders WHERE id::text = ${id}
         UNION ALL
         SELECT f.id
         FROM folders f INNER JOIN descendants d ON f.parent_id = d.id
@@ -130,7 +146,7 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
     `
 
     // Deleting the top folder cascades to its descendants via parent_id ON DELETE CASCADE
-    await sql`DELETE FROM folders WHERE id::text = ${id} AND user_id = ${payload.userId}`
+    await sql`DELETE FROM folders WHERE id::text = ${id}`
 
     return NextResponse.json({ success: true })
   } catch (error) {

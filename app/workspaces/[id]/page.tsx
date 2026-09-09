@@ -328,7 +328,7 @@ export default function WorkspaceHomePage() {
                 })}
               </div>
               <button
-                onClick={() => router.push("/settings")}
+                onClick={() => router.push(`/settings?section=members&workspace=${workspaceId}`)}
                 title="Invite"
                 style={{ width: 26, height: 26, borderRadius: "50%", backgroundColor: "var(--bg-tertiary)", border: "1px solid var(--border)", color: "var(--text-muted)", display: "flex", alignItems: "center", justifyContent: "center", marginLeft: 6, cursor: "pointer" }}
               >

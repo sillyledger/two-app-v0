@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { verifyToken } from '@/lib/auth'
 import { sql } from '@/lib/db'
+import { isWorkspaceOwner, getUserRoleInWorkspace } from '@/lib/workspaces'
 
 export async function GET(request: Request) {
   const cookieStore = await cookies()
@@ -200,6 +201,17 @@ export async function POST(request: Request) {
 
   try {
     const { name, workspace_id, parent_id } = await request.json()
+
+    if (workspace_id) {
+      const owner = await isWorkspaceOwner(payload.userId, workspace_id)
+      if (!owner) {
+        const role = await getUserRoleInWorkspace(payload.userId, workspace_id)
+        if (!role || !['admin', 'editor'].includes(role)) {
+          return NextResponse.json({ error: 'Not authorized to create folders in this workspace' }, { status: 403 })
+        }
+      }
+    }
+
     const result = await sql`
       INSERT INTO folders (name, workspace_id, user_id, parent_id)
       VALUES (${name}, ${workspace_id}, ${payload.userId}, ${parent_id ?? null})
