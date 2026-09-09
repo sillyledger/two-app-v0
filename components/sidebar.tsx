@@ -428,9 +428,18 @@ export default function Sidebar({ onNewNote, onToggle }: SidebarProps = {}) {
   const cancelWorkspaceRename = () => { setRenamingWorkspace(false); setWorkspaceRenameValue("") }
   const commitExtraWsRename = async (wsId: string) => {
     const trimmed = wsRenameValue.trim(); setRenamingWsId(null); if (!trimmed) return
-    const updated = workspaces.map(w => w.id === wsId ? { ...w, name: trimmed } : w)
-    setWorkspaces(updated); cacheSet("sb_workspaces", updated)
-    try { await fetch(`/api/workspaces/${wsId}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: trimmed }) }) } catch {}
+    try {
+      const res = await fetch(`/api/workspaces/${wsId}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: trimmed }) })
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        alert(err.error || "Failed to rename workspace.")
+        return
+      }
+      const updated = workspaces.map(w => w.id === wsId ? { ...w, name: trimmed } : w)
+      setWorkspaces(updated); cacheSet("sb_workspaces", updated)
+    } catch {
+      alert("Failed to rename workspace.")
+    }
   }
   const deleteExtraWorkspace = async (wsId: string) => {
     setWsMenuId(null)
