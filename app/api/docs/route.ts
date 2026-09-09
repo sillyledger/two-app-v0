@@ -16,6 +16,36 @@ export async function GET(request: Request) {
 
   try {
     if (folderId) {
+      const folderRows = await sql`SELECT workspace_id FROM folders WHERE id::text = ${folderId}`
+      const folderWorkspaceId = folderRows[0]?.workspace_id ?? null
+
+      if (folderWorkspaceId) {
+        const accessCheck = await sql`
+          SELECT 1 FROM workspaces WHERE id::text = ${folderWorkspaceId} AND user_id = ${payload.userId}
+          UNION
+          SELECT 1 FROM workspace_members
+          WHERE workspace_id::text = ${folderWorkspaceId}
+            AND user_id = ${payload.userId}
+            AND status = 'accepted'
+        `
+        if (accessCheck.length === 0) {
+          return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
+        }
+
+        const docs = await sql`
+          SELECT docs.*, users.name AS author_name, users.email AS author_email,
+                 folders.name AS folder_name, workspaces.is_shared AS is_workspace_shared
+          FROM docs
+          LEFT JOIN users ON docs.user_id = users.id
+          LEFT JOIN folders ON docs.folder_id::text = folders.id::text
+          LEFT JOIN workspaces ON docs.workspace_id::text = workspaces.id::text
+          WHERE docs.folder_id = ${folderId}
+            AND docs.deleted_at IS NULL
+          ORDER BY docs.created_at DESC
+        `
+        return NextResponse.json(docs)
+      }
+
       const docs = await sql`
         SELECT docs.*, users.name AS author_name, users.email AS author_email,
                folders.name AS folder_name, workspaces.is_shared AS is_workspace_shared

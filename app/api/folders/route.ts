@@ -16,6 +16,20 @@ export async function GET(request: Request) {
   const parentId = searchParams.get('parent_id')
   const all = searchParams.get('all') === 'true'
 
+  if (workspaceId) {
+    const accessCheck = await sql`
+      SELECT 1 FROM workspaces WHERE id::text = ${workspaceId} AND user_id = ${payload.userId}
+      UNION
+      SELECT 1 FROM workspace_members
+      WHERE workspace_id::text = ${workspaceId}
+        AND user_id = ${payload.userId}
+        AND status = 'accepted'
+    `
+    if (accessCheck.length === 0) {
+      return NextResponse.json({ error: 'Not authorized' }, { status: 403 })
+    }
+  }
+
   try {
     // Recursive CTE: for every folder owned by the user, walk parent_id downward
     // to collect the whole subtree (self included), then aggregate doc counts
@@ -25,7 +39,7 @@ export async function GET(request: Request) {
     const folders = all && workspaceId
       ? await sql`
           WITH RECURSIVE folder_tree AS (
-            SELECT id AS root_id, id AS descendant_id FROM folders WHERE user_id = ${payload.userId} AND workspace_id = ${workspaceId}
+            SELECT id AS root_id, id AS descendant_id FROM folders WHERE workspace_id = ${workspaceId}
             UNION ALL
             SELECT ft.root_id, f.id
             FROM folders f INNER JOIN folder_tree ft ON f.parent_id = ft.descendant_id
@@ -45,8 +59,7 @@ export async function GET(request: Request) {
             doc_counts.last_edited
           FROM folders
           LEFT JOIN doc_counts ON doc_counts.root_id = folders.id
-          WHERE folders.user_id = ${payload.userId}
-            AND folders.workspace_id = ${workspaceId}
+          WHERE folders.workspace_id = ${workspaceId}
           ORDER BY folders.created_at ASC
         `
       : all
@@ -78,7 +91,7 @@ export async function GET(request: Request) {
       : workspaceId && parentId
       ? await sql`
           WITH RECURSIVE folder_tree AS (
-            SELECT id AS root_id, id AS descendant_id FROM folders WHERE user_id = ${payload.userId} AND workspace_id = ${workspaceId}
+            SELECT id AS root_id, id AS descendant_id FROM folders WHERE workspace_id = ${workspaceId}
             UNION ALL
             SELECT ft.root_id, f.id
             FROM folders f INNER JOIN folder_tree ft ON f.parent_id = ft.descendant_id
@@ -98,15 +111,14 @@ export async function GET(request: Request) {
             doc_counts.last_edited
           FROM folders
           LEFT JOIN doc_counts ON doc_counts.root_id = folders.id
-          WHERE folders.user_id = ${payload.userId}
-            AND folders.workspace_id = ${workspaceId}
+          WHERE folders.workspace_id = ${workspaceId}
             AND folders.parent_id::text = ${parentId}
           ORDER BY folders.created_at ASC
         `
       : workspaceId
       ? await sql`
           WITH RECURSIVE folder_tree AS (
-            SELECT id AS root_id, id AS descendant_id FROM folders WHERE user_id = ${payload.userId} AND workspace_id = ${workspaceId}
+            SELECT id AS root_id, id AS descendant_id FROM folders WHERE workspace_id = ${workspaceId}
             UNION ALL
             SELECT ft.root_id, f.id
             FROM folders f INNER JOIN folder_tree ft ON f.parent_id = ft.descendant_id
@@ -126,8 +138,7 @@ export async function GET(request: Request) {
             doc_counts.last_edited
           FROM folders
           LEFT JOIN doc_counts ON doc_counts.root_id = folders.id
-          WHERE folders.user_id = ${payload.userId}
-            AND folders.workspace_id = ${workspaceId}
+          WHERE folders.workspace_id = ${workspaceId}
             AND folders.parent_id IS NULL
           ORDER BY folders.created_at ASC
         `

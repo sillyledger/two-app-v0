@@ -131,7 +131,18 @@ export default function FolderPage() {
 
     fetch(`/api/folders/${id}`)
       .then((r) => r.json())
-      .then((data: FolderType) => { if (data?.name) setFolder(data) })
+      .then((data: FolderType) => {
+        if (data?.name) {
+          setFolder(data)
+          const subfolderUrl = data.workspace_id
+            ? `/api/folders?workspace_id=${data.workspace_id}&parent_id=${id}`
+            : `/api/folders?parent_id=${id}`
+          fetch(subfolderUrl)
+            .then((r) => r.json())
+            .then((subData: FolderData[]) => setSubfolders(Array.isArray(subData) ? subData : []))
+            .catch(() => {})
+        }
+      })
       .catch(() => {})
 
     fetch(`/api/docs?folder_id=${id}`)
@@ -141,11 +152,6 @@ export default function FolderPage() {
         setLoading(false)
       })
       .catch(() => setLoading(false))
-
-    fetch(`/api/folders?parent_id=${id}`)
-      .then((r) => r.json())
-      .then((data: FolderData[]) => setSubfolders(Array.isArray(data) ? data : []))
-      .catch(() => {})
   }, [id, pathname])
 
   const handleCreateDoc = async () => {
