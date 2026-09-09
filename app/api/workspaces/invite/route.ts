@@ -46,7 +46,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Pro plan required to invite members' }, { status: 403 })
     }
 
-    // Free tier: max 2 accepted members
+    // Pro/Founding cap: max 2 accepted members (raised for team/enterprise plans later)
     const memberCount = await getMemberCount(workspaceId)
     if (memberCount >= 2) {
       return NextResponse.json({ error: 'Member limit reached. Upgrade for more seats.' }, { status: 403 })
