@@ -256,6 +256,7 @@ export default function Sidebar({ onNewNote, onToggle }: SidebarProps = {}) {
   const [inviteRows, setInviteRows] = useState([{ email: "", role: "editor" }])
   const [inviteSending, setInviteSending] = useState(false)
   const [inviteError, setInviteError] = useState("")
+  const [showInviteUpgradeModal, setShowInviteUpgradeModal] = useState(false)
 
   const workspacesRef = useRef<Workspace[]>([])
   const workspaceIdRef = useRef<string | null>(null)
@@ -516,6 +517,12 @@ export default function Sidebar({ onNewNote, onToggle }: SidebarProps = {}) {
         })
         if (!res.ok) {
           const data = await res.json()
+          if (res.status === 403 && data.error === "Pro plan required to invite members") {
+            setShowInviteModal(false)
+            setShowInviteUpgradeModal(true)
+            setInviteSending(false)
+            return
+          }
           setInviteError(data.error || "Failed to send invite.")
           setInviteSending(false)
           return
@@ -855,6 +862,36 @@ export default function Sidebar({ onNewNote, onToggle }: SidebarProps = {}) {
             <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 16 }}>
               <button onClick={() => setShowModal(false)} style={{ padding: "7px 14px", borderRadius: 8, fontSize: 13, fontWeight: 500, color: "#5a5a62", background: "transparent", border: "none", cursor: "pointer", fontFamily: FONT }} onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.05)")} onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>Cancel</button>
               <button onClick={handleModalConfirm} style={{ padding: "7px 14px", borderRadius: 8, fontSize: 13, fontWeight: 600, color: "#fff", background: "#6b5ce7", border: "none", cursor: "pointer", fontFamily: FONT }} onMouseEnter={e => (e.currentTarget.style.background = "#7c6ef0")} onMouseLeave={e => (e.currentTarget.style.background = "#6b5ce7")}>Create</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showInviteUpgradeModal && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+          <div className="rounded-2xl p-8 w-96 shadow-2xl" style={{ backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border)" }}>
+            <div style={{ width: 40, height: 40, borderRadius: "10px", background: "#534AB7", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "16px" }}>
+              <Users size={20} color="#fff" />
+            </div>
+            <h2 className="font-semibold text-lg mb-2" style={{ color: "var(--text-primary)" }}>Inviting people is a Pro feature</h2>
+            <p className="text-sm mb-6 leading-relaxed" style={{ color: "var(--text-muted)" }}>
+              Free accounts can't invite collaborators yet. Upgrade to Pro to invite people into your shared workspaces.
+            </p>
+            <div className="flex flex-col gap-2">
+              <button
+                onClick={() => { setShowInviteUpgradeModal(false); router.push("/settings") }}
+                className="w-full py-2.5 rounded-xl text-sm font-medium text-center"
+                style={{ backgroundColor: "#534AB7", color: "#fff", border: "none", cursor: "pointer" }}
+              >
+                Upgrade to Pro
+              </button>
+              <button
+                onClick={() => setShowInviteUpgradeModal(false)}
+                className="w-full py-2.5 rounded-xl text-sm"
+                style={{ color: "var(--text-muted)" }}
+              >
+                Maybe later
+              </button>
             </div>
           </div>
         </div>
