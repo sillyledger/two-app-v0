@@ -197,21 +197,32 @@ export default function WorkspaceHomePage() {
   const handleToggleFavorite = async (doc: Doc, e: React.MouseEvent) => {
     e.stopPropagation()
     const newValue = !doc.is_starred
-    setAllDocs(prev => prev.map(d => d.uuid === doc.uuid ? { ...d, is_starred: newValue } : d))
-    await fetch(`/api/docs/${doc.uuid}`, {
+    const res = await fetch(`/api/docs/${doc.uuid}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ is_starred: newValue }),
     })
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}))
+      alert(err.error || "Failed to update favorite.")
+      return
+    }
+    setAllDocs(prev => prev.map(d => d.uuid === doc.uuid ? { ...d, is_starred: newValue } : d))
   }
 
   const handleRename = async () => {
     if (!renamingDoc || !renameValue.trim()) return
-    await fetch(`/api/docs/${renamingDoc.uuid}`, {
+    const res = await fetch(`/api/docs/${renamingDoc.uuid}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ title: renameValue.trim() }),
     })
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}))
+      alert(err.error || "Failed to rename doc.")
+      setRenamingDoc(null)
+      return
+    }
     setAllDocs(prev => prev.map(d => d.uuid === renamingDoc.uuid ? { ...d, title: renameValue.trim() } : d))
     setRenamingDoc(null)
   }

@@ -530,12 +530,17 @@ export default function DocPage() {
 
   const handleToggleFavorite = async () => {
     const newValue = !isFavorite
-    setIsFavorite(newValue)
-    await fetch(`/api/docs/${docId}`, {
+    const res = await fetch(`/api/docs/${docId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ is_starred: newValue }),
     })
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}))
+      alert(err.error || 'Failed to update favorite.')
+      return
+    }
+    setIsFavorite(newValue)
   }
 
   const handleDelete = async () => {
