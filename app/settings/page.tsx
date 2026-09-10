@@ -980,7 +980,18 @@ function SettingsPageInner() {
                         {members.filter(m => m.status === 'pending').map(member => (
                           <div key={member.id} className="flex items-center justify-between rounded-xl p-3.5" style={{ backgroundColor: "var(--bg-tertiary)", border: "1px solid var(--border)" }}>
                             <p className="text-[13px]" style={{ color: "var(--text-secondary)" }}>{member.email}</p>
-                            <span className="text-[11px]" style={{ color: "var(--text-muted)" }}>Pending · {member.role}</span>
+                            <div className="flex items-center gap-2 shrink-0 ml-3">
+                              <span className="text-[11px]" style={{ color: "var(--text-muted)" }}>Pending · {member.role}</span>
+                              {canManageMember(member) && (
+                                <button
+                                  onClick={() => handleRemoveMember(member.id)}
+                                  className="text-[12px] rounded-lg px-2.5 py-1.5"
+                                  style={{ color: "#e07a5f", background: "transparent", border: "1px solid var(--border)" }}
+                                >
+                                  Cancel invite
+                                </button>
+                              )}
+                            </div>
                           </div>
                         ))}
                       </>
