@@ -241,22 +241,3 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Failed to create folder' }, { status: 500 })
   }
 }
-
-export async function DELETE(request: Request) {
-  const cookieStore = await cookies()
-  const token = cookieStore.get('auth-token')
-  if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  const payload = await verifyToken(token.value)
-  if (!payload) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-
-  try {
-    const { id } = await request.json()
-    await sql`
-      DELETE FROM folders WHERE id = ${id} AND user_id = ${payload.userId}
-    `
-    return NextResponse.json({ success: true })
-  } catch (error) {
-    console.error('Failed to delete folder:', error)
-    return NextResponse.json({ error: 'Failed to delete folder' }, { status: 500 })
-  }
-}
