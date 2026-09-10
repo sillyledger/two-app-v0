@@ -34,7 +34,7 @@ export async function POST(request: Request) {
     // Only the workspace owner can invite
     const owner = await isWorkspaceOwner(session.userId, workspaceId)
     if (!owner) {
-      return NextResponse.json({ error: 'Not authorized' }, { status: 403 })
+      return NextResponse.json({ error: 'Only the workspace owner can invite people' }, { status: 403 })
     }
 
     // Check the inviting user is on Pro plan
