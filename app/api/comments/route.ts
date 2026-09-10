@@ -1,6 +1,6 @@
 import { sql } from '@/lib/db'
 import { getSession } from '@/lib/auth'
-import { userHasDocAccess } from '@/lib/workspaces'
+import { userHasDocAccess, isWorkspaceOwner, getUserRoleInWorkspace } from '@/lib/workspaces'
 import { NextResponse } from 'next/server'
 
 export async function GET(request: Request) {
@@ -36,13 +36,23 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Doc not found' }, { status: 404 })
   }
 
-  const docRows = await sql`SELECT id FROM docs WHERE uuid = ${docId}`
+  const docRows = await sql`SELECT id, workspace_id, user_id FROM docs WHERE uuid = ${docId}`
   if (!docRows.length) return NextResponse.json({ error: 'Doc not found' }, { status: 404 })
-  const numericDocId = docRows[0].id
+  const doc = docRows[0]
+
+  if (doc.user_id !== session.userId && doc.workspace_id) {
+    const owner = await isWorkspaceOwner(session.userId, doc.workspace_id)
+    if (!owner) {
+      const role = await getUserRoleInWorkspace(session.userId, doc.workspace_id)
+      if (role === 'viewer') {
+        return NextResponse.json({ error: 'Viewers cannot comment' }, { status: 403 })
+      }
+    }
+  }
 
   const result = await sql`
     INSERT INTO comments (doc_id, user_id, user_name, body)
-    VALUES (${numericDocId}, ${session.userId}, ${userName || 'Anonymous'}, ${body.trim()})
+    VALUES (${doc.id}, ${session.userId}, ${userName || 'Anonymous'}, ${body.trim()})
     RETURNING *
   `
   return NextResponse.json(result[0])
