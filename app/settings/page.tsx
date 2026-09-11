@@ -114,6 +114,28 @@ function SettingsPageInner() {
           setTrialEndsAt(data.user.trial_ends_at || null)
           setStorageUsed(data.user.storage_used || 0)
           setCurrentUserId(data.user.id)
+          if (data.user.theme === 'light' || data.user.theme === 'dark' || data.user.theme === 'system') {
+            setTheme(data.user.theme)
+            localStorage.setItem('theme', data.user.theme)
+            applyTheme(data.user.theme)
+          }
+          if (data.user.font_size) {
+            setFontSize(data.user.font_size)
+            localStorage.setItem('font-size-px', String(data.user.font_size))
+            document.documentElement.style.setProperty('--editor-font-size', `${data.user.font_size}px`)
+          }
+          if (data.user.doc_wide_mode !== null && data.user.doc_wide_mode !== undefined) {
+            setDefaultWidth(data.user.doc_wide_mode ? 'wide' : 'narrow')
+            localStorage.setItem('doc-wide-mode', String(data.user.doc_wide_mode))
+          }
+          if (data.user.timezone) {
+            setTimezone(data.user.timezone)
+            localStorage.setItem('timezone', data.user.timezone)
+          }
+          if (data.user.date_format) {
+            setDateFormat(data.user.date_format)
+            localStorage.setItem('date-format', data.user.date_format)
+          }
         } else {
           router.push('/login')
         }
