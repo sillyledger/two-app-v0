@@ -80,6 +80,14 @@ function SettingsPageInner() {
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
+    if (section !== 'security') {
+      setCurrentPassword('')
+      setNewPassword('')
+      setConfirmPassword('')
+    }
+  }, [section])
+
+  useEffect(() => {
     const savedCollapsed = localStorage.getItem('sidebar-collapsed')
     if (savedCollapsed === 'true') setCollapsed(true)
 
