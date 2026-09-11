@@ -13,7 +13,7 @@ export async function GET() {
 
   const result = await sql`
     SELECT id, email, name, avatar_url, plan, trial_ends_at, storage_used,
-           theme, font_size, doc_wide_mode, timezone, date_format
+           theme, font_size, doc_wide_mode, timezone, date_format, markdown_shortcuts_enabled
     FROM users WHERE id = ${payload.userId}
   `
   if (result.length === 0) return NextResponse.json({ error: 'User not found' }, { status: 404 })
