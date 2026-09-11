@@ -64,6 +64,7 @@ function SettingsPageInner() {
   const [theme, setTheme] = useState<Theme>('dark')
   const [fontSize, setFontSize] = useState(16)
   const [defaultWidth, setDefaultWidth] = useState<'narrow' | 'wide'>('narrow')
+  const [markdownShortcuts, setMarkdownShortcuts] = useState(true)
   const [timezone, setTimezone] = useState('UTC+8')
   const [dateFormat, setDateFormat] = useState('MMM D, YYYY')
   const [plan, setPlan] = useState<string>('free')
@@ -102,6 +103,9 @@ function SettingsPageInner() {
 
     const savedWidth = localStorage.getItem('doc-wide-mode')
     if (savedWidth === 'true') setDefaultWidth('wide')
+
+    const savedMd = localStorage.getItem('markdown-shortcuts-enabled')
+    if (savedMd === 'false') setMarkdownShortcuts(false)
 
     const savedTz = localStorage.getItem('timezone')
     if (savedTz) setTimezone(savedTz)
@@ -143,6 +147,10 @@ function SettingsPageInner() {
           if (data.user.date_format) {
             setDateFormat(data.user.date_format)
             localStorage.setItem('date-format', data.user.date_format)
+          }
+          if (data.user.markdown_shortcuts_enabled !== null && data.user.markdown_shortcuts_enabled !== undefined) {
+            setMarkdownShortcuts(data.user.markdown_shortcuts_enabled)
+            localStorage.setItem('markdown-shortcuts-enabled', String(data.user.markdown_shortcuts_enabled))
           }
         } else {
           router.push('/login')
@@ -222,6 +230,16 @@ function SettingsPageInner() {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ docWideMode: w === 'wide' }),
+    }).catch(() => {})
+  }
+
+  const handleMarkdownShortcuts = (enabled: boolean) => {
+    setMarkdownShortcuts(enabled)
+    localStorage.setItem('markdown-shortcuts-enabled', String(enabled))
+    fetch('/api/settings', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ markdownShortcutsEnabled: enabled }),
     }).catch(() => {})
   }
 
@@ -641,7 +659,7 @@ function SettingsPageInner() {
                 <h2 className="text-[15px] font-semibold mb-1" style={{ color: "var(--text-primary)" }}>Editor</h2>
                 <p className="text-[12px] mb-6" style={{ color: "var(--text-muted)" }}>Configure your default writing experience.</p>
 
-                <div className="flex items-center justify-between py-4">
+                <div className={rowClass} style={{ borderColor: "var(--border)" }}>
                   <div>
                     <p className={labelClass} style={{ color: "var(--text-secondary)" }}>Default page width</p>
                   </div>
@@ -658,6 +676,50 @@ function SettingsPageInner() {
                       >
                         {w === 'narrow' ? 'Narrow' : 'Wide'}
                       </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="py-4">
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <p className={labelClass} style={{ color: "var(--text-secondary)" }}>Markdown shortcuts</p>
+                      <p className={descClass} style={{ color: "var(--text-muted)" }}>Type # for a heading, ** for bold, or - for a list as you go.</p>
+                    </div>
+                    <button
+                      onClick={() => handleMarkdownShortcuts(!markdownShortcuts)}
+                      className="relative shrink-0 rounded-full transition-colors"
+                      style={{
+                        width: 36, height: 21, marginTop: 1,
+                        backgroundColor: markdownShortcuts ? "#534AB7" : "var(--bg-tertiary)",
+                        border: `1px solid ${markdownShortcuts ? "#534AB7" : "var(--border)"}`,
+                      }}
+                    >
+                      <span
+                        className="absolute rounded-full transition-transform"
+                        style={{
+                          width: 15, height: 15, top: 2, left: 2,
+                          backgroundColor: markdownShortcuts ? "#fff" : "var(--text-muted)",
+                          transform: markdownShortcuts ? "translateX(15px)" : "translateX(0)",
+                        }}
+                      />
+                    </button>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5 mt-2.5">
+                    {[
+                      { sym: '#', label: 'heading' },
+                      { sym: '**', label: 'bold' },
+                      { sym: '-', label: 'list' },
+                      { sym: '>', label: 'quote' },
+                      { sym: '```', label: 'code' },
+                    ].map((ex) => (
+                      <span
+                        key={ex.label}
+                        className="text-[11px] px-1.5 py-0.5 rounded"
+                        style={{ backgroundColor: "var(--bg-tertiary)", border: "1px solid var(--border)", color: "var(--text-secondary)", fontFamily: "ui-monospace, monospace" }}
+                      >
+                        {ex.sym} <span style={{ color: "var(--text-muted)", fontFamily: "inherit" }}>{ex.label}</span>
+                      </span>
                     ))}
                   </div>
                 </div>
