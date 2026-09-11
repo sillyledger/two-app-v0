@@ -14,6 +14,13 @@ import TableCell from "@tiptap/extension-table-cell"
 import Image from "@tiptap/extension-image"
 import TaskList from "@tiptap/extension-task-list"
 import TaskItem from "@tiptap/extension-task-item"
+import BoldExtension from "@tiptap/extension-bold"
+import ItalicExtension from "@tiptap/extension-italic"
+import Heading from "@tiptap/extension-heading"
+import BulletList from "@tiptap/extension-bullet-list"
+import OrderedList from "@tiptap/extension-ordered-list"
+import Blockquote from "@tiptap/extension-blockquote"
+import HorizontalRule from "@tiptap/extension-horizontal-rule"
 import { SlashCommands } from "./slash-commands"
 import { common, createLowlight } from "lowlight"
 import {
@@ -174,21 +181,33 @@ interface Doc {
 }
 
 // Node/mark extensions that make up the document schema.
-function buildContentExtensions(options: { undoRedo?: false } = {}) {
+function buildContentExtensions(options: { undoRedo?: false; markdownShortcuts?: boolean } = {}) {
+  const shortcuts = options.markdownShortcuts !== false
+
   return [
     StarterKit.configure({
-      heading: { levels: [1, 2, 3] },
-      bulletList: {},
-      orderedList: {},
-      blockquote: {},
+      heading: shortcuts ? { levels: [1, 2, 3] } : false,
+      bulletList: shortcuts ? {} : false,
+      orderedList: shortcuts ? {} : false,
+      blockquote: shortcuts ? {} : false,
       codeBlock: false,
-      horizontalRule: {},
+      horizontalRule: shortcuts ? {} : false,
+      bold: shortcuts ? {} : false,
+      italic: shortcuts ? {} : false,
       undoRedo: options.undoRedo,
     }),
-    CodeBlockLowlight.configure({
-      lowlight,
-      defaultLanguage: "plaintext",
-    }),
+    ...(shortcuts ? [] : [
+      Heading.configure({ levels: [1, 2, 3] }).extend({ addInputRules: () => [] }),
+      BulletList.extend({ addInputRules: () => [] }),
+      OrderedList.extend({ addInputRules: () => [] }),
+      Blockquote.extend({ addInputRules: () => [] }),
+      HorizontalRule.extend({ addInputRules: () => [] }),
+      BoldExtension.extend({ addInputRules: () => [], addPasteRules: () => [] }),
+      ItalicExtension.extend({ addInputRules: () => [], addPasteRules: () => [] }),
+    ]),
+    shortcuts
+      ? CodeBlockLowlight.configure({ lowlight, defaultLanguage: "plaintext" })
+      : CodeBlockLowlight.configure({ lowlight, defaultLanguage: "plaintext" }).extend({ addInputRules: () => [] }),
     Link.configure({
       openOnClick: false,
       inclusive: false,
@@ -599,7 +618,9 @@ export default function Editor({ content, onChange, onReady, onImageUpload, onIn
   const editor = useEditor({
     immediatelyRender: false,
     extensions: [
-      ...buildContentExtensions(),
+      ...buildContentExtensions({
+        markdownShortcuts: typeof window !== "undefined" ? localStorage.getItem("markdown-shortcuts-enabled") !== "false" : true,
+      }),
       Placeholder.configure({
         placeholder: "Start writing, or press / for commands…",
       }),
