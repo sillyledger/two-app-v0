@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from "react"
 import { useParams, useRouter, usePathname, useSearchParams } from "next/navigation"
-import { Plus, MoreHorizontal, Pencil, FolderInput, Trash2, Star, LayoutGrid, List, Users, Folder, ChevronRight } from "lucide-react"
+import { Plus, MoreVertical, Pencil, FolderInput, Trash2, Star, LayoutGrid, List, Users, Folder, ChevronRight } from "lucide-react"
 import Sidebar from "@/components/sidebar"
 import { formatDate as formatDateI18n, getUserDatePrefs } from "@/lib/format-date"
 import MoveToFolderModal from "@/components/move-to-folder-modal"
@@ -447,7 +447,7 @@ export default function FolderPage() {
                     onMouseEnter={e => { e.currentTarget.style.backgroundColor = "var(--bg-tertiary)"; e.currentTarget.style.color = "var(--text-primary)" }}
                     onMouseLeave={e => { e.currentTarget.style.backgroundColor = "transparent"; e.currentTarget.style.color = "var(--text-muted)" }}
                   >
-                    <MoreHorizontal size={15} />
+                    <MoreVertical size={15} />
                   </button>
                 )
 

@@ -1,7 +1,7 @@
 "use client"
 import { useEffect, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
-import { Plus, Search, Pin, MoreHorizontal, Trash2, Pencil } from "lucide-react"
+import { Plus, Search, Pin, MoreVertical, Trash2, Pencil } from "lucide-react"
 import Sidebar from "@/components/sidebar"
 import { formatDate, getUserDatePrefs } from "@/lib/format-date"
 
@@ -102,7 +102,7 @@ function FolderCard({
             onMouseEnter={e => (e.currentTarget.style.opacity = "1")}
             onMouseLeave={e => (e.currentTarget.style.opacity = isMenuOpen ? "1" : "0.4")}
           >
-            <MoreHorizontal size={14} />
+            <MoreVertical size={14} />
           </button>
           {isMenuOpen && (
             <div

@@ -6,7 +6,7 @@ import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import {
   Search, ChevronDown, ChevronRight, Settings,
-  Layers, Plus, FolderOpen, MoreHorizontal,
+  Layers, Plus, FolderOpen, MoreVertical,
   Pencil, Trash2, LogOut, PanelLeftClose, PanelLeftOpen, Pin, PinOff,
   Home, CalendarDays, StickyNote, Activity, Library, FileText, Users,
 } from "lucide-react"
@@ -117,7 +117,7 @@ function FolderRow({
         <div style={{ position: "relative" }} ref={folderMenuId === folder.id ? folderMenuRef : undefined}>
           <button className="sb-group-btn" onClick={e => { e.stopPropagation(); setFolderMenuId(folderMenuId === folder.id ? null : folder.id) }}
             style={{ opacity: 0, color: "#555", background: "none", border: "none", cursor: "pointer", padding: 2, borderRadius: 4, display: "flex", transition: "opacity 0.1s" }}>
-            <MoreHorizontal size={13} />
+            <MoreVertical size={13} />
           </button>
           {folderMenuId === folder.id && (
             <div style={dropdownStyle}>
@@ -176,7 +176,7 @@ function WsFolderRow({
         <div style={{ position: "relative" }} ref={wsFolderMenuId === folder.id ? wsFolderMenuRef : undefined}>
           <button className="sb-group-btn" onClick={e => { e.stopPropagation(); setWsFolderMenuId(wsFolderMenuId === folder.id ? null : folder.id) }}
             style={{ opacity: 0, color: "#555", background: "none", border: "none", cursor: "pointer", padding: 2, borderRadius: 4, display: "flex", transition: "opacity 0.1s" }}>
-            <MoreHorizontal size={13} />
+            <MoreVertical size={13} />
           </button>
           {wsFolderMenuId === folder.id && (
             <div style={dropdownStyle}>
@@ -799,7 +799,7 @@ export default function Sidebar({ onNewNote, onToggle }: SidebarProps = {}) {
                               )}
                             </div>
                             <div style={{ position: "relative" }} ref={wsMenuId === ws.id ? wsMenuRef : undefined}>
-                              <button className="sb-group-btn" onClick={e => { e.stopPropagation(); setWsMenuId(wsMenuId === ws.id ? null : ws.id) }} style={{ opacity: 0, background: "none", border: "none", cursor: "pointer", color: MUTED, padding: 2, display: "flex", borderRadius: 4, transition: "opacity 0.1s" }} onMouseEnter={e => (e.currentTarget.style.color = "#888")} onMouseLeave={e => (e.currentTarget.style.color = MUTED)}><MoreHorizontal size={12} /></button>
+                              <button className="sb-group-btn" onClick={e => { e.stopPropagation(); setWsMenuId(wsMenuId === ws.id ? null : ws.id) }} style={{ opacity: 0, background: "none", border: "none", cursor: "pointer", color: MUTED, padding: 2, display: "flex", borderRadius: 4, transition: "opacity 0.1s" }} onMouseEnter={e => (e.currentTarget.style.color = "#888")} onMouseLeave={e => (e.currentTarget.style.color = MUTED)}><MoreVertical size={12} /></button>
                               {wsMenuId === ws.id && (
                                 <div style={dropdownStyle}>
                                   <button style={dropdownBtn()} onClick={e => { e.stopPropagation(); setWsMenuId(null); setWsRenameValue(ws.name); setRenamingWsId(ws.id) }} onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.06)")} onMouseLeave={e => (e.currentTarget.style.background = "transparent")}><Pencil size={12} style={{ color: "#555" }} /> Rename</button>
@@ -858,7 +858,7 @@ export default function Sidebar({ onNewNote, onToggle }: SidebarProps = {}) {
                 <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                   <AvatarBubble />
                   <span style={{ flex: 1, fontSize: 14, fontWeight: 500, color: "#e0dfd9", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{userName || "Account"}</span>
-                  <MoreHorizontal size={14} style={{ color: MUTED, flexShrink: 0 }} />
+                  <MoreVertical size={14} style={{ color: MUTED, flexShrink: 0 }} />
                 </div>
                 {accountMenuOpen && (
                   <div style={{ ...dropdownStyle, top: "auto", bottom: 30, width: 170 }}>

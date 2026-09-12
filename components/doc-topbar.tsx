@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { MoreHorizontal, Copy, Download, Trash2, Globe, Lock, FolderInput, Star, FileText, PanelRight, Share2, Columns2, ArrowLeftRight, History } from "lucide-react"
+import { MoreVertical, Copy, Download, Trash2, Globe, Lock, FolderInput, Star, FileText, PanelRight, Share2, Columns2, ArrowLeftRight, History } from "lucide-react"
 import { useState, useRef, useEffect } from "react"
 import VersionHistoryModal from "./version-history-modal"
 import MoveToFolderModal from "./move-to-folder-modal"
@@ -564,7 +564,7 @@ export default function DocTopbar({
               style={{ color: "var(--text-muted)" }}
               onMouseEnter={e => { e.currentTarget.style.backgroundColor = "var(--bg-tertiary)"; e.currentTarget.style.color = "var(--text-primary)" }}
               onMouseLeave={e => { e.currentTarget.style.backgroundColor = "transparent"; e.currentTarget.style.color = "var(--text-muted)" }}
-            ><MoreHorizontal size={15} /></button>
+            ><MoreVertical size={15} /></button>
 
             {menuOpen && (
               <div className="absolute right-0 top-9 z-50 rounded-lg shadow-xl w-[210px] py-1 overflow-hidden" style={{ backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border)" }}>
