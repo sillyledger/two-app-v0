@@ -209,7 +209,11 @@ export async function PUT(
       return NextResponse.json({ error: 'Doc not found' }, { status: 404 })
     }
 
-    await pusher.trigger(`doc-${id}`, 'updated', {})
+    try {
+      await pusher.trigger(`doc-${id}`, 'updated', {})
+    } catch (pusherError) {
+      console.error('Pusher notification failed (save itself succeeded):', pusherError)
+    }
 
     return NextResponse.json(result[0])
   } catch (error) {
