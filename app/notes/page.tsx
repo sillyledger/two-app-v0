@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { LayoutGrid, List } from 'lucide-react'
+import { LayoutGrid, List, Search } from 'lucide-react'
 
 interface NoteCategory {
   id: number
@@ -64,6 +64,7 @@ export default function NotesPage() {
   const [categories, setCategories] = useState<NoteCategory[]>([])
   const [loading, setLoading] = useState(true)
   const [activeCategory, setActiveCategory] = useState<number | 'all'>('all')
+  const [searchQuery, setSearchQuery] = useState('')
   const [creating, setCreating] = useState(false)
   const [view, setView] = useState<'grid' | 'list'>('grid')
 
@@ -107,9 +108,14 @@ export default function NotesPage() {
     }).catch(() => setLoading(false))
   }
 
-  const filtered = activeCategory === 'all'
-    ? notes
-    : notes.filter(n => n.category_id === activeCategory)
+  const trimmedQuery = searchQuery.trim().toLowerCase()
+  const filtered = notes
+    .filter(n => activeCategory === 'all' || n.category_id === activeCategory)
+    .filter(n => {
+      if (!trimmedQuery) return true
+      const strippedContent = (n.content || '').replace(/<[^>]+>/g, ' ').toLowerCase()
+      return (n.title || '').toLowerCase().includes(trimmedQuery) || strippedContent.includes(trimmedQuery)
+    })
 
   async function handleNewNote() {
     if (creating) return
@@ -189,6 +195,17 @@ export default function NotesPage() {
                 + New note
               </button>
             </div>
+          </div>
+
+          <div style={{ position: 'relative', maxWidth: 420, marginBottom: 16 }}>
+            <Search size={15} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', pointerEvents: 'none' }} />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              placeholder="Search notes..."
+              style={{ width: '100%', boxSizing: 'border-box', borderRadius: 8, padding: '10px 16px 10px 36px', fontSize: 13.5, outline: 'none', backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border)', color: 'var(--text-primary)', fontFamily: FONT }}
+            />
           </div>
 
           <div style={{ display: 'flex', justifyContent: 'space-between', gap: 7, flexWrap: 'wrap', marginBottom: 24 }}>

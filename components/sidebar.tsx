@@ -19,6 +19,7 @@ interface SidebarProps { onNewNote?: () => void; collapsed?: boolean; onToggle?:
 type PaletteItem =
   | { kind: "folder"; id: string; name: string }
   | { kind: "doc"; id: string; uuid: string; title: string }
+  | { kind: "note"; id: string; uuid: string; title: string }
 
 function cacheGet<T>(key: string): T | null {
   try { const raw = sessionStorage.getItem(key); return raw ? (JSON.parse(raw) as T) : null } catch { return null }
@@ -205,12 +206,22 @@ export default function Sidebar({ onNewNote, onToggle }: SidebarProps = {}) {
   const [workspaces, setWorkspaces] = useState<Workspace[]>(() => cacheGet<Workspace[]>("sb_workspaces") ?? [])
   const [activeWorkspaceId, setActiveWorkspaceId] = useState<string | null>(() => cacheGet<string>("sb_workspaceId"))
   const [docs, setDocs] = useState<Doc[]>([])
+  const [notes, setNotes] = useState<{ id: string; uuid: string; title: string }[]>([])
 
   useEffect(() => {
     fetch("/api/docs")
       .then(r => r.json())
       .then(data => {
         if (Array.isArray(data)) setDocs(data)
+      })
+      .catch(() => {})
+  }, [])
+
+  useEffect(() => {
+    fetch("/api/notes")
+      .then(r => r.json())
+      .then(data => {
+        if (Array.isArray(data)) setNotes(data)
       })
       .catch(() => {})
   }, [])
@@ -625,11 +636,13 @@ export default function Sidebar({ onNewNote, onToggle }: SidebarProps = {}) {
   const paletteItems: PaletteItem[] = [
     ...folders.filter(f => fuzzyMatch(paletteQuery, f.name)).map((f): PaletteItem => ({ kind: "folder", id: f.id, name: f.name })),
     ...docs.filter(d => fuzzyMatch(paletteQuery, d.title || "Untitled")).map((d): PaletteItem => ({ kind: "doc", id: d.id, uuid: d.uuid, title: d.title })),
+    ...notes.filter(n => fuzzyMatch(paletteQuery, n.title || "Untitled")).map((n): PaletteItem => ({ kind: "note", id: n.id, uuid: n.uuid, title: n.title })),
   ]
 
   const selectPaletteItem = (item: PaletteItem) => {
     setShowPalette(false)
     if (item.kind === "folder") router.push(`/folders/${item.id}?name=${encodeURIComponent(item.name)}`)
+    else if (item.kind === "note") router.push(`/notes/${item.uuid}`)
     else { openTab(item.uuid, item.title || "Untitled"); router.push(`/docs/${item.uuid}`) }
   }
 
@@ -992,18 +1005,20 @@ export default function Sidebar({ onNewNote, onToggle }: SidebarProps = {}) {
             <div style={{ maxHeight: 320, overflowY: "auto", padding: "6px 0" }}>
               {paletteItems.length === 0 && (
                 <p style={{ padding: 16, fontSize: 13, color: MUTED, textAlign: "center" }}>
-                  {paletteQuery ? `No docs or folders matching "${paletteQuery}"` : "No docs or folders found"}
+                  {paletteQuery ? `Nothing matching "${paletteQuery}"` : "No docs, notes, or folders found"}
                 </p>
               )}
               {paletteItems.map((item, i) => (
                 <button
-                  key={item.kind + "-" + (item.kind === "doc" ? item.uuid : item.id)}
+                  key={item.kind + "-" + (item.kind === "folder" ? item.id : item.uuid)}
                   onClick={() => selectPaletteItem(item)}
                   onMouseEnter={() => setPaletteIndex(i)}
                   style={{ display: "flex", alignItems: "center", gap: 10, width: "100%", padding: "9px 16px", background: i === paletteIndex ? "rgba(255,255,255,0.06)" : "transparent", border: "none", cursor: "pointer", textAlign: "left", fontFamily: FONT, transition: "background 0.1s" }}
                 >
                   {item.kind === "folder"
                     ? <FolderOpen size={14} style={{ color: MUTED, flexShrink: 0 }} />
+                    : item.kind === "note"
+                    ? <StickyNote size={14} style={{ color: MUTED, flexShrink: 0 }} />
                     : <span style={{ fontSize: 13, opacity: 0.6, flexShrink: 0 }}>▣</span>
                   }
                   <span style={{ flex: 1, fontSize: 13, color: "#e0dfd9", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
