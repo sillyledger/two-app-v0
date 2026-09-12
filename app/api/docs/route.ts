@@ -92,6 +92,74 @@ export async function GET(request: Request) {
       return NextResponse.json(docs)
     }
 
+    // Paginated + searchable mode — opt-in only, used by app/docs/page.tsx.
+    // Every other caller of this endpoint (sidebar, folders, workspaces, etc.)
+    // never sends `paginated=true` and gets the exact unchanged response below.
+    if (searchParams.get('paginated') === 'true') {
+      const limit = Math.min(Math.max(parseInt(searchParams.get('limit') || '36', 10) || 36, 1), 100)
+      const q = (searchParams.get('q') || '').trim()
+      const cursor = searchParams.get('cursor')
+
+      let cursorCreatedAt: string | null = null
+      let cursorId: string | null = null
+      if (cursor) {
+        const idx = cursor.lastIndexOf('_')
+        if (idx > 0) {
+          cursorCreatedAt = cursor.slice(0, idx)
+          cursorId = cursor.slice(idx + 1)
+        }
+      }
+
+      if (q) {
+        const docs = await sql`
+          SELECT docs.id, docs.uuid, docs.title, docs.preview, docs.created_at,
+                 docs.folder_id, docs.is_starred,
+                 folders.name AS folder_name, workspaces.is_shared AS is_workspace_shared
+          FROM docs
+          LEFT JOIN folders ON docs.folder_id::text = folders.id::text
+          LEFT JOIN workspaces ON docs.workspace_id::text = workspaces.id::text
+          WHERE docs.user_id = ${payload.userId}
+            AND docs.deleted_at IS NULL
+            AND docs.search_vector @@ plainto_tsquery('english', ${q})
+          ORDER BY ts_rank(docs.search_vector, plainto_tsquery('english', ${q})) DESC,
+                   docs.created_at DESC, docs.id DESC
+          LIMIT ${limit}
+        `
+        return NextResponse.json({ docs, nextCursor: null })
+      }
+
+      const docs = cursorCreatedAt && cursorId
+        ? await sql`
+            SELECT docs.id, docs.uuid, docs.title, docs.preview, docs.created_at,
+                   docs.folder_id, docs.is_starred,
+                   folders.name AS folder_name, workspaces.is_shared AS is_workspace_shared
+            FROM docs
+            LEFT JOIN folders ON docs.folder_id::text = folders.id::text
+            LEFT JOIN workspaces ON docs.workspace_id::text = workspaces.id::text
+            WHERE docs.user_id = ${payload.userId}
+              AND docs.deleted_at IS NULL
+              AND (docs.created_at, docs.id) < (${cursorCreatedAt}, ${cursorId})
+            ORDER BY docs.created_at DESC, docs.id DESC
+            LIMIT ${limit}
+          `
+        : await sql`
+            SELECT docs.id, docs.uuid, docs.title, docs.preview, docs.created_at,
+                   docs.folder_id, docs.is_starred,
+                   folders.name AS folder_name, workspaces.is_shared AS is_workspace_shared
+            FROM docs
+            LEFT JOIN folders ON docs.folder_id::text = folders.id::text
+            LEFT JOIN workspaces ON docs.workspace_id::text = workspaces.id::text
+            WHERE docs.user_id = ${payload.userId}
+              AND docs.deleted_at IS NULL
+            ORDER BY docs.created_at DESC, docs.id DESC
+            LIMIT ${limit}
+          `
+
+      const last = docs[docs.length - 1]
+      const nextCursor = docs.length === limit && last ? `${last.created_at}_${last.id}` : null
+      return NextResponse.json({ docs, nextCursor })
+    }
+
     // Default: return only user's own docs
     const docs = await sql`
       SELECT docs.*, users.name AS author_name, users.email AS author_email,
