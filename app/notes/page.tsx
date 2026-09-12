@@ -114,7 +114,7 @@ export default function NotesPage() {
     .filter(n => {
       if (!trimmedQuery) return true
       const strippedContent = (n.content || '').replace(/<[^>]+>/g, ' ').toLowerCase()
-      return (n.title || '').toLowerCase().includes(trimmedQuery) || strippedContent.includes(trimmedQuery)
+      return (n.title || 'Untitled').toLowerCase().includes(trimmedQuery) || strippedContent.includes(trimmedQuery)
     })
 
   async function handleNewNote() {
