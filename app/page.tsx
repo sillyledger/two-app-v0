@@ -245,10 +245,7 @@ export default function HomePage() {
 
   const visibleDocs = useMemo(() => (
     trimmedQuery
-      ? allDocs.filter(d =>
-          (d.title || "").toLowerCase().includes(trimmedQuery) ||
-          stripHtml(d.content).toLowerCase().includes(trimmedQuery)
-        )
+      ? allDocs.filter(d => (d.title || "").toLowerCase().includes(trimmedQuery))
       : activeTab === "favorites"
         ? allDocs.filter(d => d.is_starred)
         : allDocs.slice(0, 9)
