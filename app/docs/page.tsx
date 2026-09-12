@@ -10,7 +10,7 @@ interface Doc {
   id: string
   uuid: string
   title: string
-  content: string
+  preview: string
   type: string
   created_at: string
   is_starred: boolean
@@ -32,11 +32,6 @@ function formatDate(dateStr: string) {
   const date = new Date(dateStr)
   if (isNaN(date.getTime())) return ""
   return date.toLocaleDateString("en-US", { month: "short", day: "numeric" })
-}
-
-function stripHtml(html: string) {
-  if (!html) return ""
-  return html.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim()
 }
 
 const ACCENT_COLORS = [
@@ -61,7 +56,6 @@ export default function DocsPage() {
   const [templateModalOpen, setTemplateModalOpen] = useState(false)
   const [limitModalOpen, setLimitModalOpen] = useState(false)
   const [view, setView] = useState<ViewMode>("grid")
-  const [page, setPage] = useState(1)
 
   useEffect(() => {
     const savedView = localStorage.getItem("docs-view")
@@ -74,6 +68,8 @@ export default function DocsPage() {
 
   const [allDocs, setAllDocs] = useState<Doc[]>([])
   const [loading, setLoading] = useState(true)
+  const [loadingMore, setLoadingMore] = useState(false)
+  const [nextCursor, setNextCursor] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState("")
   const [openMenuId, setOpenMenuId] = useState<string | null>(null)
   const menuRef = useRef<HTMLDivElement>(null)
@@ -86,10 +82,11 @@ export default function DocsPage() {
   const [userPlan, setUserPlan] = useState<string>("free")
 
   useEffect(() => {
-    fetch("/api/docs")
+    fetch(`/api/docs?paginated=true&limit=${PAGE_SIZE}`)
       .then((r) => r.json())
       .then((data) => {
-        setAllDocs(Array.isArray(data) ? data : [])
+        setAllDocs(Array.isArray(data.docs) ? data.docs : [])
+        setNextCursor(data.nextCursor ?? null)
         setLoading(false)
       })
       .catch(() => setLoading(false))
@@ -112,7 +109,40 @@ export default function DocsPage() {
     return () => document.removeEventListener("mousedown", handleClick)
   }, [openMenuId])
 
-  useEffect(() => { setPage(1) }, [searchQuery])
+  const skipNextSearchEffect = useRef(true)
+  useEffect(() => {
+    if (skipNextSearchEffect.current) {
+      skipNextSearchEffect.current = false
+      return
+    }
+    const trimmed = searchQuery.trim()
+    const timer = setTimeout(() => {
+      const url = trimmed
+        ? `/api/docs?paginated=true&limit=${PAGE_SIZE}&q=${encodeURIComponent(trimmed)}`
+        : `/api/docs?paginated=true&limit=${PAGE_SIZE}`
+      fetch(url)
+        .then(r => r.json())
+        .then(data => {
+          setAllDocs(Array.isArray(data.docs) ? data.docs : [])
+          setNextCursor(data.nextCursor ?? null)
+        })
+        .catch(() => {})
+    }, 300)
+    return () => clearTimeout(timer)
+  }, [searchQuery])
+
+  const loadMore = () => {
+    if (!nextCursor || loadingMore) return
+    setLoadingMore(true)
+    fetch(`/api/docs?paginated=true&limit=${PAGE_SIZE}&cursor=${encodeURIComponent(nextCursor)}`)
+      .then(r => r.json())
+      .then(data => {
+        setAllDocs(prev => [...prev, ...(Array.isArray(data.docs) ? data.docs : [])])
+        setNextCursor(data.nextCursor ?? null)
+        setLoadingMore(false)
+      })
+      .catch(() => setLoadingMore(false))
+  }
 
   const handleNewDoc = async () => {
     const res = await fetch("/api/docs", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ title: "", content: "", color: "" }) })
@@ -196,18 +226,7 @@ export default function DocsPage() {
     setFolders(Array.isArray(data) ? data : [])
   }
 
-  const trimmedQuery = searchQuery.trim().toLowerCase()
-  const filteredDocs = useMemo(() => (
-    trimmedQuery
-      ? allDocs.filter(d =>
-          (d.title || "").toLowerCase().includes(trimmedQuery) ||
-          stripHtml(d.content).toLowerCase().includes(trimmedQuery)
-        )
-      : allDocs
-  ), [trimmedQuery, allDocs])
-
-  const totalPages = Math.max(1, Math.ceil(filteredDocs.length / PAGE_SIZE))
-  const visibleDocs = filteredDocs.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
+  const trimmedQuery = searchQuery.trim()
 
   const btnBase: React.CSSProperties = {
     height: "36px",
@@ -286,7 +305,7 @@ export default function DocsPage() {
                 <div key={i} className="h-52 rounded-xl animate-pulse" style={{ backgroundColor: "var(--bg-tertiary)" }} />
               ))}
             </div>
-          ) : visibleDocs.length === 0 ? (
+          ) : allDocs.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-64" style={{ color: "var(--text-muted)" }}>
               <p className="text-base font-medium mb-1">{trimmedQuery ? "No matching docs" : "No docs yet"}</p>
               <p className="text-sm">{trimmedQuery ? "Try a different search" : "Click + New Doc to get started"}</p>
@@ -303,8 +322,8 @@ export default function DocsPage() {
               )}
 
               <div className={view === "grid" ? "grid grid-cols-4 gap-4" : "flex flex-col gap-2"}>
-              {visibleDocs.map((doc, i) => {
-                const index = (page - 1) * PAGE_SIZE + i
+              {allDocs.map((doc, i) => {
+                const index = i
                 const isLocked = userPlan === "free" && index >= FREE_LIMIT
                 const isMenuOpen = openMenuId === doc.uuid
 
@@ -406,7 +425,7 @@ export default function DocsPage() {
                     <div style={{ height: "5px", backgroundColor: "#4a4948", width: "100%", flexShrink: 0 }} />
                     <button onClick={handleOpenDoc} className="text-left px-5 pt-4 pb-3 flex flex-col flex-1 w-full" style={{ cursor: isLocked ? "default" : "pointer" }}>
                       <p className="font-semibold text-[15px] leading-snug mb-3 pr-6" style={{ color: "var(--text-primary)" }}>{doc.title || "Untitled"}</p>
-                      <p className="text-[13px] leading-relaxed line-clamp-3 flex-1" style={{ color: "var(--text-secondary)" }}>{stripHtml(doc.content)}</p>
+                      <p className="text-[13px] leading-relaxed line-clamp-3 flex-1" style={{ color: "var(--text-secondary)" }}>{doc.preview}</p>
                     </button>
                     <div className="flex items-center justify-between px-5 py-3" style={{ borderTop: "1px solid var(--border)" }}>
                       <p className="text-[12px]" style={{ color: "var(--text-muted)" }}>{formatDate(doc.created_at)}</p>
@@ -423,22 +442,14 @@ export default function DocsPage() {
               })}
               </div>
 
-              {totalPages > 1 && (
-                <div className="flex items-center justify-center gap-4 mt-9">
+              {nextCursor && !trimmedQuery && (
+                <div className="flex items-center justify-center mt-9">
                   <button
-                    disabled={page === 1}
-                    onClick={() => setPage(p => Math.max(1, p - 1))}
-                    style={{ display: "flex", alignItems: "center", gap: 4, padding: "7px 12px", borderRadius: 8, border: "1px solid var(--border)", color: page === 1 ? "var(--text-muted)" : "var(--text-primary)", opacity: page === 1 ? 0.4 : 1, cursor: page === 1 ? "default" : "pointer", fontSize: 13, backgroundColor: "transparent" }}
+                    onClick={loadMore}
+                    disabled={loadingMore}
+                    style={{ padding: "9px 18px", borderRadius: 8, border: "1px solid var(--border)", color: "var(--text-primary)", opacity: loadingMore ? 0.5 : 1, cursor: loadingMore ? "default" : "pointer", fontSize: 13, fontWeight: 500, backgroundColor: "transparent" }}
                   >
-                    <ChevronLeft size={14} /> Previous
-                  </button>
-                  <span style={{ fontSize: 13, color: "var(--text-muted)" }}>Page {page} of {totalPages}</span>
-                  <button
-                    disabled={page === totalPages}
-                    onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-                    style={{ display: "flex", alignItems: "center", gap: 4, padding: "7px 12px", borderRadius: 8, border: "1px solid var(--border)", color: page === totalPages ? "var(--text-muted)" : "var(--text-primary)", opacity: page === totalPages ? 0.4 : 1, cursor: page === totalPages ? "default" : "pointer", fontSize: 13, backgroundColor: "transparent" }}
-                  >
-                    Next <ChevronRight size={14} />
+                    {loadingMore ? "Loading…" : "Load more"}
                   </button>
                 </div>
               )}
