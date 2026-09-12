@@ -219,10 +219,12 @@ export async function POST(request: Request) {
     }
 
     const result = await sql`
-      INSERT INTO docs (title, content, color, type, user_id, folder_id, workspace_id, uuid)
+      INSERT INTO docs (title, content, content_text, preview, color, type, user_id, folder_id, workspace_id, uuid)
       VALUES (
         ${title},
         ${content},
+        strip_html(${content}),
+        left(strip_html(${content}), 240),
         ${color},
         ${type},
         ${payload.userId},
