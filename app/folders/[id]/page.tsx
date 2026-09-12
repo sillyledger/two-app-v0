@@ -359,6 +359,7 @@ export default function FolderPage() {
             <div className="flex flex-wrap gap-2">
               {subfolders.map((sub, i) => {
                 const subDocCount = Number(sub.doc_count) || 0
+                const isSubMenuOpen = openMenuId === sub.id
                 return (
                   <div
                     key={sub.id}
@@ -366,21 +367,48 @@ export default function FolderPage() {
                     tabIndex={0}
                     onClick={() => router.push(`/folders/${sub.id}?name=${encodeURIComponent(sub.name)}`)}
                     className="group flex items-center gap-2 rounded-full transition-colors cursor-pointer"
-                    style={{ height: "34px", padding: "0 10px 0 10px", backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border)" }}
+                    style={{ height: "34px", padding: "0 6px 0 10px", backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border)" }}
                     onMouseEnter={e => (e.currentTarget.style.borderColor = "var(--text-muted)")}
                     onMouseLeave={e => (e.currentTarget.style.borderColor = "var(--border)")}
                   >
                     <span style={{ width: "14px", height: "14px", borderRadius: "4px", backgroundColor: getAccent(i), flexShrink: 0 }} />
                     <span className="text-[13px]" style={{ color: "var(--text-primary)" }}>{sub.name}</span>
                     <span className="text-[11px]" style={{ color: "var(--text-muted)" }}>{subDocCount}</span>
-                    <button
-                      onClick={e => handleDeleteSubfolder(sub, e)}
-                      title="Delete subfolder"
-                      className="opacity-0 group-hover:opacity-100 transition-opacity"
-                      style={{ color: "var(--text-muted)", display: "flex", marginLeft: 2 }}
-                    >
-                      <Trash2 size={12} />
-                    </button>
+                    <div className="relative" ref={isSubMenuOpen ? menuRef : null}>
+                      <button
+                        onClick={e => { e.stopPropagation(); setOpenMenuId(isSubMenuOpen ? null : sub.id) }}
+                        title="More options"
+                        className="transition-opacity"
+                        style={{ color: "var(--text-muted)", display: "flex", alignItems: "center", justifyContent: "center", width: "22px", height: "22px", borderRadius: "999px", opacity: isSubMenuOpen ? 1 : 0.4 }}
+                        onMouseEnter={e => (e.currentTarget.style.opacity = "1")}
+                        onMouseLeave={e => (e.currentTarget.style.opacity = isSubMenuOpen ? "1" : "0.4")}
+                      >
+                        <MoreVertical size={14} />
+                      </button>
+                      {isSubMenuOpen && (
+                        <div
+                          style={{
+                            position: "absolute", right: 0, top: 26, zIndex: 50,
+                            borderRadius: 10, boxShadow: "0 8px 32px rgba(0,0,0,0.5)",
+                            width: 130, padding: "4px 0", overflow: "hidden",
+                            background: "#242428", border: "1px solid rgba(255,255,255,0.09)",
+                          }}
+                        >
+                          <button
+                            onClick={e => { setOpenMenuId(null); handleDeleteSubfolder(sub, e) }}
+                            style={{
+                              display: "flex", alignItems: "center", gap: 8, width: "100%", padding: "8px 12px",
+                              fontSize: 13, color: "#f87171", background: "transparent", border: "none",
+                              cursor: "pointer", textAlign: "left",
+                            }}
+                            onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.06)")}
+                            onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
+                          >
+                            <Trash2 size={12} /> Delete
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 )
               })}
