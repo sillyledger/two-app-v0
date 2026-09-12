@@ -349,11 +349,16 @@ export default function Sidebar({ onNewNote, onToggle }: SidebarProps = {}) {
   }, [])
 
   const fetchDocsForWorkspace = (wsId: string, isPrimary: boolean) => {
+    if (isPrimary) {
+      fetch("/api/docs").then(r => r.json()).then(data => {
+        if (Array.isArray(data)) setDocs(data)
+      }).catch(() => {})
+      return
+    }
     fetch(`/api/docs?workspace_id=${wsId}`).then(r => r.json()).then(data => {
       const unfiled = Array.isArray(data) ? data.filter((d: any) => !d.folder_id) : []
       const sliced = unfiled.slice(0, 8)
-      if (isPrimary) { setDocs(sliced); cacheSet("sb_docs", sliced) }
-      else setWsData(prev => ({ ...prev, [wsId]: { docs: sliced, folders: prev[wsId]?.folders ?? [] } }))
+      setWsData(prev => ({ ...prev, [wsId]: { docs: sliced, folders: prev[wsId]?.folders ?? [] } }))
     }).catch(() => {})
   }
 
