@@ -191,6 +191,7 @@ function buildContentExtensions(options: { undoRedo?: false; markdownShortcuts?:
       orderedList: shortcuts ? {} : false,
       blockquote: shortcuts ? {} : false,
       codeBlock: false,
+      link: false,
       horizontalRule: shortcuts ? {} : false,
       bold: shortcuts ? {} : false,
       italic: shortcuts ? {} : false,
