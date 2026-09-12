@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { LayoutGrid, List, Search } from 'lucide-react'
+import { LayoutGrid, List, Search, MoreVertical, Trash2, Tag } from 'lucide-react'
 
 interface NoteCategory {
   id: number
@@ -76,6 +76,10 @@ export default function NotesPage() {
   const [openCategoryMenuId, setOpenCategoryMenuId] = useState<number | null>(null)
   const categoryMenuRef = useRef<HTMLDivElement>(null)
 
+  const [openNoteMenuId, setOpenNoteMenuId] = useState<string | null>(null)
+  const [movingNoteId, setMovingNoteId] = useState<string | null>(null)
+  const noteMenuRef = useRef<HTMLDivElement>(null)
+
   useEffect(() => {
     fetch('/api/auth/me').then(r => {
       if (!r.ok) router.push('/login')
@@ -95,6 +99,14 @@ export default function NotesPage() {
     if (openCategoryMenuId !== null) document.addEventListener('mousedown', h)
     return () => document.removeEventListener('mousedown', h)
   }, [openCategoryMenuId])
+
+  useEffect(() => {
+    const h = (e: MouseEvent) => {
+      if (noteMenuRef.current && !noteMenuRef.current.contains(e.target as Node)) { setOpenNoteMenuId(null); setMovingNoteId(null) }
+    }
+    if (openNoteMenuId !== null) document.addEventListener('mousedown', h)
+    return () => document.removeEventListener('mousedown', h)
+  }, [openNoteMenuId])
 
   function loadData() {
     setLoading(true)
@@ -166,6 +178,29 @@ export default function NotesPage() {
     setNotes(prev => prev.map(n => n.category_id === id ? { ...n, category_id: null, category_name: null, category_color: null } : n))
     if (activeCategory === id) setActiveCategory('all')
     try { await fetch(`/api/note-categories/${id}`, { method: 'DELETE' }) } catch {}
+  }
+
+  async function handleDeleteNote(note: Note, e: React.MouseEvent) {
+    e.stopPropagation()
+    setOpenNoteMenuId(null)
+    if (!confirm('Delete this note? This can\'t be undone.')) return
+    setNotes(prev => prev.filter(n => n.uuid !== note.uuid))
+    try { await fetch(`/api/notes/${note.uuid}`, { method: 'DELETE' }) } catch {}
+  }
+
+  async function handleMoveNote(note: Note, categoryId: number | null, e: React.MouseEvent) {
+    e.stopPropagation()
+    setOpenNoteMenuId(null)
+    setMovingNoteId(null)
+    const category = categories.find(c => c.id === categoryId)
+    setNotes(prev => prev.map(n => n.uuid === note.uuid ? { ...n, category_id: categoryId, category_name: category?.name ?? null, category_color: category?.color ?? null } : n))
+    try {
+      await fetch(`/api/notes/${note.uuid}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ category_id: categoryId }),
+      })
+    } catch {}
   }
 
   if (!authChecked) return null
@@ -312,7 +347,7 @@ export default function NotesPage() {
                 <div
                   key={note.uuid}
                   onClick={() => router.push(`/notes/${note.uuid}`)}
-                  className="flex items-center"
+                  className="flex items-center group"
                   style={{ borderBottom: '1px solid var(--border)', padding: '12px 8px', gap: 12, cursor: 'pointer' }}
                   onMouseEnter={e => { e.currentTarget.style.backgroundColor = 'var(--bg-secondary)' }}
                   onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'transparent' }}
@@ -337,6 +372,43 @@ export default function NotesPage() {
                   <div style={{ fontSize: 11.5, color: 'var(--text-muted)', flexShrink: 0, textAlign: 'right', minWidth: 60 }}>
                     {timeAgo(note.updated_at)}
                   </div>
+                  <div style={{ position: 'relative' }} ref={openNoteMenuId === note.uuid ? noteMenuRef : undefined}>
+                    <button
+                      onClick={e => { e.stopPropagation(); setMovingNoteId(null); setOpenNoteMenuId(openNoteMenuId === note.uuid ? null : note.uuid) }}
+                      className="opacity-0 group-hover:opacity-100 transition-opacity"
+                      style={{ width: 26, height: 26, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 6, color: 'var(--text-muted)', background: 'transparent', border: 'none', cursor: 'pointer', flexShrink: 0 }}
+                      onMouseEnter={e => { e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.08)' }}
+                      onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'transparent' }}
+                    >
+                      <MoreVertical size={15} />
+                    </button>
+                    {openNoteMenuId === note.uuid && (
+                      <div onClick={e => e.stopPropagation()} style={{ position: 'absolute', right: 0, top: 30, zIndex: 50, width: 160, borderRadius: 10, boxShadow: '0 8px 32px rgba(0,0,0,0.5)', padding: '4px 0', overflow: 'hidden', background: '#242428', border: '1px solid rgba(255,255,255,0.09)' }}>
+                        {movingNoteId === note.uuid ? (
+                          <>
+                            <button onClick={e => handleMoveNote(note, null, e)} style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '8px 12px', fontSize: 12.5, color: 'var(--text-secondary)', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left', fontFamily: FONT }} onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.06)')} onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+                              No category
+                            </button>
+                            {categories.map(cat => (
+                              <button key={cat.id} onClick={e => handleMoveNote(note, cat.id, e)} style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '8px 12px', fontSize: 12.5, color: 'var(--text-secondary)', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left', fontFamily: FONT }} onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.06)')} onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+                                <span style={{ width: 7, height: 7, borderRadius: '50%', background: cat.color, flexShrink: 0 }} />
+                                {cat.name}
+                              </button>
+                            ))}
+                          </>
+                        ) : (
+                          <>
+                            <button onClick={e => { e.stopPropagation(); setMovingNoteId(note.uuid) }} style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '8px 12px', fontSize: 12.5, color: 'var(--text-secondary)', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left', fontFamily: FONT }} onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.06)')} onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+                              <Tag size={13} style={{ color: 'var(--text-muted)' }} /> Move
+                            </button>
+                            <button onClick={e => handleDeleteNote(note, e)} style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '8px 12px', fontSize: 12.5, color: '#E24B4A', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left', fontFamily: FONT }} onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.06)')} onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+                              <Trash2 size={13} /> Delete
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>
@@ -349,13 +421,51 @@ export default function NotesPage() {
                   <div
                     key={note.uuid}
                     onClick={() => router.push(`/notes/${note.uuid}`)}
+                    className="group"
                     style={{
                       gridColumn: 'span ' + span.col, gridRow: 'span ' + span.row,
                       background: '#1c1c1e', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 14,
                       padding: 16, display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
-                      cursor: 'pointer', minWidth: 0,
+                      cursor: 'pointer', minWidth: 0, position: 'relative',
                     }}
                   >
+                    <div style={{ position: 'absolute', top: 10, right: 10 }} ref={openNoteMenuId === note.uuid ? noteMenuRef : undefined}>
+                      <button
+                        onClick={e => { e.stopPropagation(); setMovingNoteId(null); setOpenNoteMenuId(openNoteMenuId === note.uuid ? null : note.uuid) }}
+                        className="opacity-0 group-hover:opacity-100 transition-opacity"
+                        style={{ width: 26, height: 26, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 6, color: 'var(--text-muted)', background: 'transparent', border: 'none', cursor: 'pointer', flexShrink: 0 }}
+                        onMouseEnter={e => { e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.08)' }}
+                        onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'transparent' }}
+                      >
+                        <MoreVertical size={15} />
+                      </button>
+                      {openNoteMenuId === note.uuid && (
+                        <div onClick={e => e.stopPropagation()} style={{ position: 'absolute', right: 0, top: 30, zIndex: 50, width: 160, borderRadius: 10, boxShadow: '0 8px 32px rgba(0,0,0,0.5)', padding: '4px 0', overflow: 'hidden', background: '#242428', border: '1px solid rgba(255,255,255,0.09)' }}>
+                          {movingNoteId === note.uuid ? (
+                            <>
+                              <button onClick={e => handleMoveNote(note, null, e)} style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '8px 12px', fontSize: 12.5, color: 'var(--text-secondary)', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left', fontFamily: FONT }} onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.06)')} onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+                                No category
+                              </button>
+                              {categories.map(cat => (
+                                <button key={cat.id} onClick={e => handleMoveNote(note, cat.id, e)} style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '8px 12px', fontSize: 12.5, color: 'var(--text-secondary)', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left', fontFamily: FONT }} onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.06)')} onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+                                  <span style={{ width: 7, height: 7, borderRadius: '50%', background: cat.color, flexShrink: 0 }} />
+                                  {cat.name}
+                                </button>
+                              ))}
+                            </>
+                          ) : (
+                            <>
+                              <button onClick={e => { e.stopPropagation(); setMovingNoteId(note.uuid) }} style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '8px 12px', fontSize: 12.5, color: 'var(--text-secondary)', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left', fontFamily: FONT }} onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.06)')} onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+                                <Tag size={13} style={{ color: 'var(--text-muted)' }} /> Move
+                              </button>
+                              <button onClick={e => handleDeleteNote(note, e)} style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '8px 12px', fontSize: 12.5, color: '#E24B4A', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left', fontFamily: FONT }} onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.06)')} onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+                                <Trash2 size={13} /> Delete
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      )}
+                    </div>
                     <div>
                       {note.category_name && (
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
