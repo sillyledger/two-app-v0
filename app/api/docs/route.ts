@@ -111,6 +111,7 @@ export async function GET(request: Request) {
       }
 
       if (q) {
+        const tsQuery = q.replace(/[^a-zA-Z0-9\s]/g, ' ').trim().split(/\s+/).filter(Boolean).map(w => `${w}:*`).join(' & ') || null
         const docs = await sql`
           SELECT docs.id, docs.uuid, docs.title, docs.preview, docs.created_at,
                  docs.folder_id, docs.is_starred,
@@ -120,8 +121,8 @@ export async function GET(request: Request) {
           LEFT JOIN workspaces ON docs.workspace_id::text = workspaces.id::text
           WHERE docs.user_id = ${payload.userId}
             AND docs.deleted_at IS NULL
-            AND docs.search_vector @@ plainto_tsquery('english', ${q})
-          ORDER BY ts_rank(docs.search_vector, plainto_tsquery('english', ${q})) DESC,
+            AND docs.search_vector @@ to_tsquery('simple', ${tsQuery})
+          ORDER BY ts_rank(docs.search_vector, to_tsquery('simple', ${tsQuery})) DESC,
                    docs.created_at DESC, docs.id DESC
           LIMIT ${limit}
         `
