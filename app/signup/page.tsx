@@ -26,7 +26,7 @@ function SignupContent() {
 
     if (res.ok) {
       if (plan === 'founding') {
-        // Redirect to Paddle checkout for one-time $49 payment
+        // Redirect to Paddle checkout for one-time $99 payment
         router.push(`/checkout?plan=founding&email=${encodeURIComponent(email)}`)
       } else {
         router.push(`/verify-email?email=${encodeURIComponent(email)}`)
@@ -61,7 +61,7 @@ function SignupContent() {
 
           {plan === 'founding' && (
             <div style={{ marginBottom: '20px', padding: '10px 12px', borderRadius: '8px', backgroundColor: 'rgba(186,117,23,0.15)', border: '1px solid rgba(186,117,23,0.3)', fontSize: '13px', color: '#f59e0b' }}>
-              ✦ Founding Member — lifetime access for $49, one-time
+              ✦ Founding Member — lifetime access for $99, one-time
             </div>
           )}
 

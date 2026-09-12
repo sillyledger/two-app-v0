@@ -918,7 +918,7 @@ function SettingsPageInner() {
                   </div>
                   <div className="text-right shrink-0 ml-4">
                     <div>
-                      <span className="text-[22px] font-bold" style={{ color: "var(--text-primary)" }}>$49</span>
+                      <span className="text-[22px] font-bold" style={{ color: "var(--text-primary)" }}>$99</span>
                       <span className="text-[12px] ml-1" style={{ color: "var(--text-muted)" }}>one-time</span>
                     </div>
                     {plan !== 'founding' && (
