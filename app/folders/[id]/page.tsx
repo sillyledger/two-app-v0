@@ -286,7 +286,7 @@ export default function FolderPage() {
                 const isSharedContext = folder?.workspace_id && folder.workspace_id !== myWorkspaceId
                 router.push(isSharedContext ? `/workspaces/${folder!.workspace_id}` : "/folders")
               }} className="transition-colors" style={{ color: "var(--text-muted)" }} onMouseEnter={e => (e.currentTarget.style.color = "var(--text-primary)")} onMouseLeave={e => (e.currentTarget.style.color = "var(--text-muted)")}>
-                Docs
+                Folders
               </button>
               {folder.path.map((crumb, i) => {
                 const isLast = i === folder.path!.length - 1
