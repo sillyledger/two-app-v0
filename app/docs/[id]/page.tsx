@@ -76,11 +76,15 @@ function getCharCount(content: string): number {
   return content.replace(/<[^>]*>/g, '').length
 }
 
+let hasMountedOnClient = false
+
 function formatDate(dateStr: string) {
   if (!dateStr) return ''
   const date = new Date(dateStr)
   if (isNaN(date.getTime())) return ''
-  const { timezone, dateFormat } = getUserDatePrefs()
+  const { timezone, dateFormat } = hasMountedOnClient
+    ? getUserDatePrefs()
+    : { timezone: 'UTC+0', dateFormat: 'MMM D, YYYY' }
   return formatDateI18n(date, dateFormat, timezone)
 }
 
@@ -88,7 +92,9 @@ function formatDateTime(dateStr: string) {
   if (!dateStr) return ''
   const date = new Date(dateStr)
   if (isNaN(date.getTime())) return ''
-  const { timezone, dateFormat } = getUserDatePrefs()
+  const { timezone, dateFormat } = hasMountedOnClient
+    ? getUserDatePrefs()
+    : { timezone: 'UTC+0', dateFormat: 'MMM D, YYYY' }
   return formatDateI18n(date, dateFormat, timezone) +
     ' · ' + date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
 }
@@ -175,6 +181,8 @@ export default function DocPage() {
   // Who else is currently viewing this doc — presence only, via a plain
   // Pusher presence channel. Never carries document content.
   const [presenceMembers, setPresenceMembers] = useState<{ id: string; name: string }[]>([])
+
+  useEffect(() => { hasMountedOnClient = true }, [])
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
