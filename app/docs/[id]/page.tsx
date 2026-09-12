@@ -397,6 +397,8 @@ export default function DocPage() {
     setLastSaved(new Date().toISOString())
   }, [docId, isLoggedIn])
 
+  const pendingSaveRef = useRef<{ title: string; content: string; doc: Doc | null } | null>(null)
+
   useEffect(() => {
     if (!doc || !isLoggedIn) return
 
@@ -407,9 +409,30 @@ export default function DocPage() {
       isTypingRef.current = false
     }, 2000)
 
-    const timer = setTimeout(() => { handleSave(title, content, doc) }, 1000)
+    pendingSaveRef.current = { title, content, doc }
+    const timer = setTimeout(() => {
+      handleSave(title, content, doc)
+      pendingSaveRef.current = null
+    }, 1000)
     return () => clearTimeout(timer)
   }, [title, content])
+
+  useEffect(() => {
+    const flush = () => {
+      const pending = pendingSaveRef.current
+      if (!pending) return
+      fetch(`/api/docs/${docId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: pending.title, content: pending.content, color: pending.doc?.color ?? 'yellow' }),
+        keepalive: true,
+      }).catch(() => {})
+      pendingSaveRef.current = null
+    }
+    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') flush() })
+    window.addEventListener('beforeunload', flush)
+    return () => window.removeEventListener('beforeunload', flush)
+  }, [docId])
 
   const handlePriorityChange = async (value: Priority) => {
     setPriority(value)
