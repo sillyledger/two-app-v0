@@ -205,6 +205,16 @@ export default function Sidebar({ onNewNote, onToggle }: SidebarProps = {}) {
   const [workspaces, setWorkspaces] = useState<Workspace[]>(() => cacheGet<Workspace[]>("sb_workspaces") ?? [])
   const [activeWorkspaceId, setActiveWorkspaceId] = useState<string | null>(() => cacheGet<string>("sb_workspaceId"))
   const [docs, setDocs] = useState<Doc[]>([])
+
+  useEffect(() => {
+    fetch("/api/docs")
+      .then(r => r.json())
+      .then(data => {
+        if (Array.isArray(data)) setDocs(data)
+      })
+      .catch(() => {})
+  }, [])
+
   const [folders, setFolders] = useState<FolderType[]>(() => cacheGet<FolderType[]>("sb_folders") ?? [])
   const [expandedWorkspaces, setExpandedWorkspaces] = useState<Record<string, boolean>>({})
   const [wsData, setWsData] = useState<Record<string, { docs: Doc[]; folders: FolderType[] }>>({})
