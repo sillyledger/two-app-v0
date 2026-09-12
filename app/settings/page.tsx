@@ -903,6 +903,23 @@ function SettingsPageInner() {
                   </div>
                 </div>
 
+                {/* Team */}
+                <div className="rounded-xl p-5 mb-3" style={{ backgroundColor: "var(--bg-tertiary)", border: "1px solid var(--border)" }}>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-[14px] font-semibold" style={{ color: "var(--text-primary)" }}>Team</span>
+                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{ backgroundColor: "var(--bg-secondary)", color: "var(--text-muted)", border: "1px solid var(--border)" }}>Coming soon</span>
+                      </div>
+                      <p className="text-[12px]" style={{ color: "var(--text-muted)" }}>Everything in Pro · Shared team workspaces · Role-based permissions</p>
+                    </div>
+                    <div className="text-right shrink-0 ml-4">
+                      <span className="text-[22px] font-bold" style={{ color: "var(--text-primary)" }}>$10</span>
+                      <span className="text-[12px] ml-1" style={{ color: "var(--text-muted)" }}>/mo</span>
+                    </div>
+                  </div>
+                </div>
+
                 {/* Founding Member */}
                 <div className="rounded-xl p-5 flex items-center justify-between" style={{ backgroundColor: "var(--bg-secondary)", border: `1px solid ${plan === 'founding' ? '#BA7517' : '#BA751740'}` }}>
                   <div>
