@@ -633,11 +633,14 @@ export default function Sidebar({ onNewNote, onToggle }: SidebarProps = {}) {
   const pinnedFolders = folders.filter(f => f.pinned)
   const unpinnedFolders = folders.filter(f => !f.pinned)
 
-  const paletteItems: PaletteItem[] = [
-    ...folders.filter(f => fuzzyMatch(paletteQuery, f.name)).map((f): PaletteItem => ({ kind: "folder", id: f.id, name: f.name })),
-    ...docs.filter(d => fuzzyMatch(paletteQuery, d.title || "Untitled")).map((d): PaletteItem => ({ kind: "doc", id: d.id, uuid: d.uuid, title: d.title })),
-    ...notes.filter(n => fuzzyMatch(paletteQuery, n.title || "Untitled")).map((n): PaletteItem => ({ kind: "note", id: n.id, uuid: n.uuid, title: n.title })),
-  ]
+  const onNotesPage = pathname === "/notes" || pathname.startsWith("/notes/")
+
+  const paletteItems: PaletteItem[] = onNotesPage
+    ? notes.filter(n => fuzzyMatch(paletteQuery, n.title || "Untitled")).map((n): PaletteItem => ({ kind: "note", id: n.id, uuid: n.uuid, title: n.title }))
+    : [
+        ...folders.filter(f => fuzzyMatch(paletteQuery, f.name)).map((f): PaletteItem => ({ kind: "folder", id: f.id, name: f.name })),
+        ...docs.filter(d => fuzzyMatch(paletteQuery, d.title || "Untitled")).map((d): PaletteItem => ({ kind: "doc", id: d.id, uuid: d.uuid, title: d.title })),
+      ]
 
   const selectPaletteItem = (item: PaletteItem) => {
     setShowPalette(false)
@@ -991,7 +994,7 @@ export default function Sidebar({ onNewNote, onToggle }: SidebarProps = {}) {
               <input
                 ref={paletteInputRef}
                 type="text"
-                placeholder="Jump to a doc or folder..."
+                placeholder={onNotesPage ? "Jump to a note..." : "Jump to a doc or folder..."}
                 value={paletteQuery}
                 onChange={e => { setPaletteQuery(e.target.value); setPaletteIndex(0) }}
                 onKeyDown={e => {
@@ -1005,7 +1008,7 @@ export default function Sidebar({ onNewNote, onToggle }: SidebarProps = {}) {
             <div style={{ maxHeight: 320, overflowY: "auto", padding: "6px 0" }}>
               {paletteItems.length === 0 && (
                 <p style={{ padding: 16, fontSize: 13, color: MUTED, textAlign: "center" }}>
-                  {paletteQuery ? `Nothing matching "${paletteQuery}"` : "No docs, notes, or folders found"}
+                  {paletteQuery ? `Nothing matching "${paletteQuery}"` : onNotesPage ? "No notes found" : "No docs or folders found"}
                 </p>
               )}
               {paletteItems.map((item, i) => (
