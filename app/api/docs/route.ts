@@ -224,8 +224,8 @@ export async function POST(request: Request) {
       VALUES (
         ${title},
         ${content},
-        strip_html(${content}),
-        left(strip_html(${content}), 240),
+        strip_html(${content ?? ''}),
+        left(strip_html(${content ?? ''}), 240),
         ${color},
         ${type},
         ${payload.userId},
