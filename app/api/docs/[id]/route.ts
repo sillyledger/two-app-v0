@@ -189,8 +189,6 @@ export async function PUT(
       SET
         title = COALESCE(${title ?? null}, title),
         content = COALESCE(${content ?? null}, content),
-        content_text = CASE WHEN ${content ?? null} IS NOT NULL THEN strip_html(${content ?? ''}) ELSE content_text END,
-        preview = CASE WHEN ${content ?? null} IS NOT NULL THEN left(strip_html(${content ?? ''}), 240) ELSE preview END,
         color = COALESCE(${color ?? null}, color),
         is_starred = COALESCE(${is_starred ?? null}, is_starred),
         type = COALESCE(${type ?? null}, type),
