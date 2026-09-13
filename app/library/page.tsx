@@ -48,6 +48,8 @@ function getAccent(index: number) {
   return ACCENT_COLORS[index % ACCENT_COLORS.length]
 }
 
+let hasMountedOnClient = false
+
 function timeAgo(dateStr: string) {
   const date = new Date(dateStr)
   const now = new Date()
@@ -56,7 +58,9 @@ function timeAgo(dateStr: string) {
   if (diff < 3600) return `${Math.floor(diff / 60)}m ago`
   if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`
   if (diff < 604800) return `${Math.floor(diff / 86400)}d ago`
-  const { timezone, dateFormat } = getUserDatePrefs()
+  const { timezone, dateFormat } = hasMountedOnClient
+    ? getUserDatePrefs()
+    : { timezone: 'UTC+0', dateFormat: 'MMM D, YYYY' }
   return formatDate(date, dateFormat, timezone)
 }
 
@@ -92,6 +96,8 @@ export default function LibraryPage() {
     const savedGroup = localStorage.getItem('library-group-by')
     if (savedGroup === 'folders' || savedGroup === 'labels') setGroupBy(savedGroup)
   }, [])
+
+  useEffect(() => { hasMountedOnClient = true }, [])
 
   useEffect(() => {
     localStorage.setItem('library-group-by', groupBy)

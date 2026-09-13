@@ -44,11 +44,15 @@ function getAccent(index: number) {
   return ACCENT_COLORS[index % ACCENT_COLORS.length]
 }
 
+let hasMountedOnClient = false
+
 function formatDate(dateStr: string) {
   if (!dateStr) return ""
   const date = new Date(dateStr)
   if (isNaN(date.getTime())) return ""
-  const { timezone, dateFormat } = getUserDatePrefs()
+  const { timezone, dateFormat } = hasMountedOnClient
+    ? getUserDatePrefs()
+    : { timezone: "UTC+0", dateFormat: "MMM D, YYYY" }
   return formatDateI18n(date, dateFormat, timezone)
 }
 
@@ -76,6 +80,8 @@ export default function FolderPage() {
     const saved = localStorage.getItem("sidebar-collapsed")
     if (saved === "true") setCollapsed(true)
   }, [])
+
+  useEffect(() => { hasMountedOnClient = true }, [])
 
   useEffect(() => {
     const savedView = localStorage.getItem("folder-docs-view")

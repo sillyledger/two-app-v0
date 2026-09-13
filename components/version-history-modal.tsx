@@ -56,11 +56,15 @@ function stripHtml(html: string | null): string {
   return html.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()
 }
 
+let hasMountedOnClient = false
+
 export default function VersionHistoryModal({ docId, docTitle, onClose, onRestore }: VersionHistoryModalProps) {
   const [versions, setVersions] = useState<Version[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedId, setSelectedId] = useState<number | null>(null)
   const [restoring, setRestoring] = useState(false)
+
+  useEffect(() => { hasMountedOnClient = true }, [])
 
   useEffect(() => {
     fetch(`/api/docs/${docId}/versions`)
@@ -75,7 +79,9 @@ export default function VersionHistoryModal({ docId, docTitle, onClose, onRestor
   }, [docId])
 
   const selected = versions.find(v => v.id === selectedId) ?? null
-  const { timezone } = getUserDatePrefs()
+  const { timezone } = hasMountedOnClient
+    ? getUserDatePrefs()
+    : { timezone: "UTC+0" }
   const grouped = groupByDay(versions, timezone)
   const days = Object.keys(grouped)
 

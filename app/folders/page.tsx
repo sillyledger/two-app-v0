@@ -22,6 +22,8 @@ function getAccent(index: number) {
   return ACCENT_COLORS[index % ACCENT_COLORS.length]
 }
 
+let hasMountedOnClient = false
+
 function formatRelative(dateStr: string | null) {
   if (!dateStr) return null
   const date = new Date(dateStr)
@@ -31,7 +33,9 @@ function formatRelative(dateStr: string | null) {
   const diffHr = Math.floor(diffMin / 60)
   const diffDay = Math.floor(diffHr / 24)
   if (diffDay >= 30) {
-    const { timezone, dateFormat } = getUserDatePrefs()
+    const { timezone, dateFormat } = hasMountedOnClient
+      ? getUserDatePrefs()
+      : { timezone: "UTC+0", dateFormat: "MMM D, YYYY" }
     return formatDate(date, dateFormat, timezone)
   }
   if (diffDay >= 1) return `${diffDay}d ago`
@@ -192,6 +196,8 @@ export default function FoldersPage() {
     if (saved === "true") setCollapsed(true)
     setSidebarReady(true)
   }, [])
+
+  useEffect(() => { hasMountedOnClient = true }, [])
 
   const [folders, setFolders] = useState<FolderData[]>([])
   const [loading, setLoading] = useState(true)

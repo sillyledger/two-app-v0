@@ -22,6 +22,8 @@ function folderDotColor(folderId: string | null) {
   return ACCENT_COLORS[hash % ACCENT_COLORS.length]
 }
 
+let hasMountedOnClient = false
+
 function timeAgo(dateStr: string): string {
   const date = new Date(dateStr)
   const now = new Date()
@@ -34,7 +36,9 @@ function timeAgo(dateStr: string): string {
   const days = Math.floor(hours / 24)
   if (days === 1) return 'yesterday'
   if (days < 30) return `${days} days ago`
-  const { timezone, dateFormat } = getUserDatePrefs()
+  const { timezone, dateFormat } = hasMountedOnClient
+    ? getUserDatePrefs()
+    : { timezone: 'UTC+0', dateFormat: 'MMM D, YYYY' }
   return formatDate(date, dateFormat, timezone)
 }
 
@@ -72,6 +76,8 @@ export default function ActivityPage() {
     if (saved === 'true') setCollapsed(true)
   }, [])
 
+  useEffect(() => { hasMountedOnClient = true }, [])
+
   useEffect(() => {
     fetch('/api/activity')
       .then((r) => {
@@ -98,7 +104,9 @@ export default function ActivityPage() {
     spaceTab === 'shared' ? tabFiltered.filter(e => e.is_shared) :
     tabFiltered
 
-  const { timezone } = getUserDatePrefs()
+  const { timezone } = hasMountedOnClient
+    ? getUserDatePrefs()
+    : { timezone: 'UTC+0' }
   const grouped = groupByDay(spaceFiltered, timezone)
   const days = Object.keys(grouped)
 

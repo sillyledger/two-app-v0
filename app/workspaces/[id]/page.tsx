@@ -49,11 +49,15 @@ interface Member {
   status: string
 }
 
+let hasMountedOnClient = false
+
 function formatDate(dateStr: string) {
   if (!dateStr) return ""
   const date = new Date(dateStr)
   if (isNaN(date.getTime())) return ""
-  const { timezone, dateFormat } = getUserDatePrefs()
+  const { timezone, dateFormat } = hasMountedOnClient
+    ? getUserDatePrefs()
+    : { timezone: "UTC+0", dateFormat: "MMM D, YYYY" }
   return formatDateI18n(date, dateFormat, timezone)
 }
 
@@ -111,6 +115,8 @@ export default function WorkspaceHomePage() {
     if (savedView === "grid" || savedView === "list") setView(savedView)
     setSidebarReady(true)
   }, [])
+
+  useEffect(() => { hasMountedOnClient = true }, [])
 
   useEffect(() => {
     localStorage.setItem("docs-view", view)
