@@ -93,13 +93,15 @@ function _closeAll() {
 
 // ── Hook ─────────────────────────────────────────────────────────────────────
 export function useTabStore() {
-  initOnce()
-
   const [, rerender] = useState(0)
 
   useEffect(() => {
     const fn = () => rerender(n => n + 1)
     _listeners.add(fn)
+    if (!_initialized) {
+      initOnce()
+      notify()
+    }
     return () => { _listeners.delete(fn) }
   }, [])
 
