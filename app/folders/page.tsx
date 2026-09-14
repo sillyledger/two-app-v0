@@ -413,40 +413,29 @@ export default function FoldersPage() {
       <main className="flex-1 overflow-y-auto transition-all duration-200">
         <div className="max-w-[1180px] mx-auto px-10 py-10">
 
-          {/* Header */}
-          <div className="flex items-center justify-between mb-6">
-            <h1 className="text-[32px] font-bold tracking-tight" style={{ color: "var(--text-primary)" }}>Folders</h1>
-            <button
-              onClick={openCreateModal}
-              style={{
-                ...btnBase,
-                backgroundColor: "var(--text-primary)",
-                color: "var(--bg)",
-                border: "1px solid transparent",
-              }}
-              onMouseEnter={e => (e.currentTarget.style.opacity = "0.85")}
-              onMouseLeave={e => (e.currentTarget.style.opacity = "1")}
-            >
-              <Plus size={14} />
-              New folder
-            </button>
-          </div>
-
-          {/* Search */}
-          <div className="relative mb-7">
-            <Search
-              size={15}
-              className="absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none"
-              style={{ color: "var(--text-muted)" }}
-            />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              placeholder="Search folders..."
-              className="w-full rounded-lg pl-9 pr-4 py-2.5 text-sm outline-none placeholder-[var(--text-muted)]"
-              style={{ backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border)", color: "var(--text-primary)" }}
-            />
+          <div className="flex items-center justify-between mb-6 gap-4">
+            <div className="relative flex-1" style={{ maxWidth: 420 }}>
+              <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: "var(--text-muted)" }} />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                placeholder="Search folders..."
+                className="w-full rounded-lg pl-9 pr-4 py-2.5 text-sm outline-none placeholder-[var(--text-muted)]"
+                style={{ backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border)", color: "var(--text-primary)" }}
+              />
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: "8px", flexShrink: 0 }}>
+              <button
+                onClick={openCreateModal}
+                style={{ ...btnBase, backgroundColor: "var(--text-primary)", color: "var(--bg)", border: "1px solid transparent" }}
+                onMouseEnter={e => (e.currentTarget.style.opacity = "0.85")}
+                onMouseLeave={e => (e.currentTarget.style.opacity = "1")}
+              >
+                <Plus size={14} />
+                New folder
+              </button>
+            </div>
           </div>
 
           {loading ? (
