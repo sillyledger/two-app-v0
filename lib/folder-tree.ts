@@ -37,3 +37,26 @@ export function sortFoldersForMoveModal<T extends FolderTreeItem>(
 
   return result
 }
+
+export function getDescendantIds<T extends FolderTreeItem>(folders: T[], id: string): Set<string> {
+  const byParent = new Map<string | null, T[]>()
+  for (const folder of folders) {
+    const key = folder.parent_id ?? null
+    if (!byParent.has(key)) byParent.set(key, [])
+    byParent.get(key)!.push(folder)
+  }
+
+  const result = new Set<string>()
+
+  const visit = (parentId: string) => {
+    const children = byParent.get(parentId) || []
+    for (const folder of children) {
+      result.add(folder.id)
+      visit(folder.id)
+    }
+  }
+
+  visit(id)
+
+  return result
+}

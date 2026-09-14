@@ -1,9 +1,11 @@
 "use client"
 import { useEffect, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
-import { Plus, Search, Pin, MoreVertical, Trash2, Pencil } from "lucide-react"
+import { Plus, Search, Pin, MoreVertical, Trash2, Pencil, FolderInput } from "lucide-react"
 import Sidebar from "@/components/sidebar"
 import { formatDate, getUserDatePrefs } from "@/lib/format-date"
+import { getDescendantIds } from "@/lib/folder-tree"
+import MoveToFolderModal from "@/components/move-to-folder-modal"
 
 interface FolderData {
   id: string
@@ -11,6 +13,9 @@ interface FolderData {
   doc_count: number | string
   last_edited: string | null
   pinned: boolean
+  workspace_id?: string | null
+  parent_id?: string | null
+  [key: string]: unknown
 }
 
 const ACCENT_COLORS = [
@@ -68,6 +73,7 @@ function FolderCard({
   onCommitRename,
   onCancelRename,
   onStartRename,
+  onMove,
   onDelete,
 }: {
   folder: FolderData
@@ -84,6 +90,7 @@ function FolderCard({
   onCommitRename: (folder: FolderData) => void
   onCancelRename: () => void
   onStartRename: (folder: FolderData, e: React.MouseEvent) => void
+  onMove: (folder: FolderData, e: React.MouseEvent) => void
   onDelete: (folder: FolderData, e: React.MouseEvent) => void
 }) {
   const docCount = Number(folder.doc_count) || 0
@@ -128,6 +135,18 @@ function FolderCard({
                 onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
               >
                 <Pencil size={12} /> Rename
+              </button>
+              <button
+                onClick={e => onMove(folder, e)}
+                style={{
+                  display: "flex", alignItems: "center", gap: 8, width: "100%", padding: "8px 12px",
+                  fontSize: 13, color: "var(--text-muted)", background: "transparent", border: "none",
+                  cursor: "pointer", textAlign: "left",
+                }}
+                onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.06)")}
+                onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
+              >
+                <FolderInput size={12} /> Move
               </button>
               <button
                 onClick={e => onDelete(folder, e)}
@@ -214,6 +233,9 @@ export default function FoldersPage() {
   const [renameValue, setRenameValue] = useState("")
   const renameInputRef = useRef<HTMLInputElement>(null)
 
+  const [movingFolder, setMovingFolder] = useState<FolderData | null>(null)
+  const [moveCandidates, setMoveCandidates] = useState<FolderData[]>([])
+
   useEffect(() => {
     const h = (e: MouseEvent) => { if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenuOpenId(null) }
     if (menuOpenId) document.addEventListener("mousedown", h)
@@ -272,6 +294,39 @@ export default function FoldersPage() {
         body: JSON.stringify({ name: trimmed }),
       })
     } catch {}
+  }
+
+  const handleOpenMoveFolder = async (folder: FolderData, e: React.MouseEvent) => {
+    e.stopPropagation()
+    setMenuOpenId(null)
+    setMovingFolder(folder)
+    try {
+      const res = await fetch("/api/folders?all=true")
+      const data = await res.json()
+      const allFolders: FolderData[] = Array.isArray(data) ? data : []
+      const descendantIds = getDescendantIds(allFolders, folder.id)
+      setMoveCandidates(
+        allFolders.filter(f => f.workspace_id === folder.workspace_id && f.id !== folder.id && !descendantIds.has(f.id))
+      )
+    } catch {
+      setMoveCandidates([])
+    }
+  }
+
+  const handleMoveFolder = async (newParentId: string) => {
+    if (!movingFolder) return
+    const res = await fetch(`/api/folders/${movingFolder.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ parent_id: newParentId }),
+    })
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}))
+      alert(err.error || "Failed to move folder.")
+      return
+    }
+    setFolders(prev => prev.filter(f => f.id !== movingFolder.id))
+    setMovingFolder(null)
   }
 
   const handleDeleteFolder = async (folder: FolderData, e: React.MouseEvent) => {
@@ -346,6 +401,7 @@ export default function FoldersPage() {
       onCommitRename={commitRename}
       onCancelRename={() => setRenamingId(null)}
       onStartRename={startRenaming}
+      onMove={handleOpenMoveFolder}
       onDelete={handleDeleteFolder}
     />
   )
@@ -452,6 +508,16 @@ export default function FoldersPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Move folder modal */}
+      {movingFolder && (
+        <MoveToFolderModal
+          folders={moveCandidates}
+          onMove={handleMoveFolder}
+          onClose={() => setMovingFolder(null)}
+          currentFolderId={movingFolder?.parent_id ?? undefined}
+        />
       )}
     </div>
   )

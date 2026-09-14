@@ -89,13 +89,46 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   if (!payload) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   try {
     const { id } = await params
-    const { pinned } = await request.json()
+    const { pinned, parent_id } = await request.json()
     const permission = await getFolderPermission(payload.userId, id)
     if (!permission.exists) return NextResponse.json({ error: 'Folder not found' }, { status: 404 })
     if (!permission.canEdit) return NextResponse.json({ error: 'Not authorized' }, { status: 403 })
 
+    if (parent_id !== undefined && parent_id !== null) {
+      if (parent_id === id) {
+        return NextResponse.json({ error: 'A folder cannot be moved into itself' }, { status: 400 })
+      }
+
+      const targetPermission = await getFolderPermission(payload.userId, parent_id)
+      if (!targetPermission.exists) return NextResponse.json({ error: 'Folder not found' }, { status: 404 })
+      if (!targetPermission.canEdit) return NextResponse.json({ error: 'Not authorized to move into this folder' }, { status: 403 })
+
+      const folderWorkspace = await sql`SELECT workspace_id FROM folders WHERE id::text = ${id}`
+      const targetWorkspace = await sql`SELECT workspace_id FROM folders WHERE id::text = ${parent_id}`
+      if (String(folderWorkspace[0]?.workspace_id) !== String(targetWorkspace[0]?.workspace_id)) {
+        return NextResponse.json({ error: 'Cannot move a folder into a different workspace' }, { status: 400 })
+      }
+
+      const descendantRows = await sql`
+        WITH RECURSIVE descendants AS (
+          SELECT id FROM folders WHERE id::text = ${id}
+          UNION ALL
+          SELECT f.id
+          FROM folders f INNER JOIN descendants d ON f.parent_id = d.id
+        )
+        SELECT id FROM descendants
+      `
+      const descendantIds: string[] = descendantRows.map(row => String(row.id))
+      if (descendantIds.includes(String(parent_id))) {
+        return NextResponse.json({ error: 'Cannot move a folder into one of its own subfolders' }, { status: 400 })
+      }
+    }
+
     const result = await sql`
-      UPDATE folders SET pinned = ${pinned} WHERE id::text = ${id}
+      UPDATE folders SET
+        pinned = COALESCE(${pinned ?? null}, pinned),
+        parent_id = CASE WHEN ${parent_id !== undefined} THEN ${parent_id ?? null} ELSE parent_id END
+      WHERE id::text = ${id}
       RETURNING *
     `
     if (result.length === 0) {

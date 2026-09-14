@@ -5,6 +5,7 @@ import { useParams, useRouter, usePathname, useSearchParams } from "next/navigat
 import { Plus, MoreVertical, Pencil, FolderInput, Trash2, Star, LayoutGrid, List, Users, Folder, ChevronRight } from "lucide-react"
 import Sidebar from "@/components/sidebar"
 import { formatDate as formatDateI18n, getUserDatePrefs } from "@/lib/format-date"
+import { getDescendantIds } from "@/lib/folder-tree"
 import MoveToFolderModal from "@/components/move-to-folder-modal"
 
 interface Doc {
@@ -33,6 +34,10 @@ interface FolderData {
   name: string
   doc_count: number | string
   last_edited: string | null
+  workspace_id?: string | null
+  parent_id?: string | null
+  pinned?: boolean
+  [key: string]: unknown
 }
 
 const ACCENT_COLORS = [
@@ -107,6 +112,9 @@ export default function FolderPage() {
   const [newSubfolderModalOpen, setNewSubfolderModalOpen] = useState(false)
   const [newSubfolderName, setNewSubfolderName] = useState("")
   const [myWorkspaceId, setMyWorkspaceId] = useState<string | null>(null)
+
+  const [movingSubfolder, setMovingSubfolder] = useState<FolderData | null>(null)
+  const [moveCandidates, setMoveCandidates] = useState<FolderData[]>([])
 
   useEffect(() => {
     fetch("/api/auth/me").then((res) => {
@@ -278,6 +286,59 @@ export default function FolderPage() {
     }
   }
 
+  const handleOpenMoveSubfolder = async (sub: FolderData, e: React.MouseEvent) => {
+    e.stopPropagation()
+    setOpenMenuId(null)
+    setMovingSubfolder(sub)
+    try {
+      const res = await fetch("/api/folders?all=true")
+      const data = await res.json()
+      const allFolders: FolderData[] = Array.isArray(data) ? data : []
+      const descendantIds = getDescendantIds(allFolders, sub.id)
+      setMoveCandidates(
+        allFolders.filter(f => f.workspace_id === folder?.workspace_id && f.id !== sub.id && !descendantIds.has(f.id))
+      )
+    } catch {
+      setMoveCandidates([])
+    }
+  }
+
+  const handleMoveToTopLevel = async (sub: FolderData, e: React.MouseEvent) => {
+    e.stopPropagation()
+    setOpenMenuId(null)
+    try {
+      const res = await fetch(`/api/folders/${sub.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ parent_id: null }),
+      })
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        alert(err.error || "Failed to move folder.")
+        return
+      }
+      setSubfolders(prev => prev.filter(f => f.id !== sub.id))
+    } catch {
+      alert("Failed to move folder.")
+    }
+  }
+
+  const handleMoveSubfolder = async (newParentId: string) => {
+    if (!movingSubfolder) return
+    const res = await fetch(`/api/folders/${movingSubfolder.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ parent_id: newParentId }),
+    })
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}))
+      alert(err.error || "Failed to move folder.")
+      return
+    }
+    setSubfolders(prev => prev.filter(f => f.id !== movingSubfolder.id))
+    setMovingSubfolder(null)
+  }
+
   return (
     <div className="flex h-screen overflow-hidden" style={{ backgroundColor: "var(--bg)" }}>
       <Sidebar collapsed={collapsed} onToggle={() => setCollapsed((v) => !v)} />
@@ -400,6 +461,30 @@ export default function FolderPage() {
                             background: "#242428", border: "1px solid rgba(255,255,255,0.09)",
                           }}
                         >
+                          <button
+                            onClick={e => handleOpenMoveSubfolder(sub, e)}
+                            style={{
+                              display: "flex", alignItems: "center", gap: 8, width: "100%", padding: "8px 12px",
+                              fontSize: 13, color: "var(--text-muted)", background: "transparent", border: "none",
+                              cursor: "pointer", textAlign: "left",
+                            }}
+                            onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.06)")}
+                            onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
+                          >
+                            <FolderInput size={12} /> Move to folder
+                          </button>
+                          <button
+                            onClick={e => handleMoveToTopLevel(sub, e)}
+                            style={{
+                              display: "flex", alignItems: "center", gap: 8, width: "100%", padding: "8px 12px",
+                              fontSize: 13, color: "var(--text-muted)", background: "transparent", border: "none",
+                              cursor: "pointer", textAlign: "left",
+                            }}
+                            onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.06)")}
+                            onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
+                          >
+                            <FolderInput size={12} /> Move to top level
+                          </button>
                           <button
                             onClick={e => { setOpenMenuId(null); handleDeleteSubfolder(sub, e) }}
                             style={{
@@ -633,6 +718,16 @@ export default function FolderPage() {
           onMove={handleMove}
           onClose={() => setMovingDoc(null)}
           currentFolderId={String(id)}
+        />
+      )}
+
+      {/* Move subfolder modal */}
+      {movingSubfolder && (
+        <MoveToFolderModal
+          folders={moveCandidates}
+          onMove={handleMoveSubfolder}
+          onClose={() => setMovingSubfolder(null)}
+          currentFolderId={id as string}
         />
       )}
 
