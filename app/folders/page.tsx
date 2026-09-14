@@ -363,8 +363,6 @@ export default function FoldersPage() {
     ? folders.filter(f => f.name.toLowerCase().includes(trimmedQuery))
     : folders
 
-  const pinnedFolders = filteredFolders.filter(f => f.pinned)
-
   const btnBase: React.CSSProperties = {
     height: "36px",
     display: "flex",
@@ -446,18 +444,6 @@ export default function FoldersPage() {
             </div>
           ) : (
             <>
-              {pinnedFolders.length > 0 && (
-                <>
-                  <p className="text-sm mb-3 flex items-center gap-1.5" style={{ color: "var(--text-muted)" }}>
-                    <Pin size={13} fill="#EF9F27" style={{ color: "#EF9F27" }} />
-                    Pinned to homepage
-                  </p>
-                  <div className="grid grid-cols-4 gap-4 mb-9">
-                    {pinnedFolders.map(renderFolderCard)}
-                  </div>
-                </>
-              )}
-
               <p className="text-sm mb-3" style={{ color: "var(--text-muted)" }}>All folders · {filteredFolders.length}</p>
               {filteredFolders.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-64" style={{ color: "var(--text-muted)" }}>
