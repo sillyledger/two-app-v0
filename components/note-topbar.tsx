@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { MoreVertical, Copy, Download, Trash2, FolderInput, FileText, Columns2 } from "lucide-react"
+import { MoreVertical, Download, Trash2, FolderInput, FileText, Columns2 } from "lucide-react"
 import { useState, useRef, useEffect } from "react"
 
 export interface NoteCategory {
@@ -349,7 +349,6 @@ export default function NoteTopbar({
   const [menuOpen, setMenuOpen] = useState(false)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [showMoveModal, setShowMoveModal] = useState(false)
-  const [linkCopied, setLinkCopied] = useState(false)
   const [moveToast, setMoveToast] = useState(false)
 
   const menuRef = useRef<HTMLDivElement>(null)
@@ -371,15 +370,6 @@ export default function NoteTopbar({
   const handleExportPDF = () => {
     setMenuOpen(false)
     exportAsPDF(noteTitle, content)
-  }
-
-  const handleCopyLink = () => {
-    setMenuOpen(false)
-    const url = `${window.location.origin}/notes/${noteId}`
-    navigator.clipboard.writeText(url).then(() => {
-      setLinkCopied(true)
-      setTimeout(() => setLinkCopied(false), 2000)
-    })
   }
 
   const openMoveModal = () => {
@@ -483,12 +473,6 @@ export default function NoteTopbar({
                 <button onClick={handleExportPDF} className="flex items-center gap-2.5 w-full px-3 py-2 text-[12px] transition-colors" style={{ color: "var(--text-secondary)" }}
                   onMouseEnter={e => (e.currentTarget.style.backgroundColor = "var(--bg-tertiary)")} onMouseLeave={e => (e.currentTarget.style.backgroundColor = "transparent")}
                 ><FileText size={12} style={{ color: "var(--text-muted)" }} /> Export as PDF</button>
-
-                <div className="my-1 mx-2" style={{ borderTop: "1px solid var(--border)" }} />
-
-                <button onClick={handleCopyLink} className="flex items-center gap-2.5 w-full px-3 py-2 text-[12px] transition-colors" style={{ color: "var(--text-secondary)" }}
-                  onMouseEnter={e => (e.currentTarget.style.backgroundColor = "var(--bg-tertiary)")} onMouseLeave={e => (e.currentTarget.style.backgroundColor = "transparent")}
-                ><Copy size={12} style={{ color: "var(--text-muted)" }} /> {linkCopied ? "Copied!" : "Copy link"}</button>
 
                 <div className="my-1 mx-2" style={{ borderTop: "1px solid var(--border)" }} />
 
