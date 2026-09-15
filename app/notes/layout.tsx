@@ -149,6 +149,8 @@ export default function NotesLayout({ children }: { children: React.ReactNode })
     (d.title || 'Untitled').toLowerCase().includes(splitQuery.toLowerCase())
   )
 
+  const sidebarWidth = collapsed ? '56px' : '256px'
+
   return (
     <div className="flex min-h-screen">
       <Sidebar
@@ -160,7 +162,10 @@ export default function NotesLayout({ children }: { children: React.ReactNode })
         }}
       />
 
-      <div className="flex-1 flex flex-col min-w-0 transition-all duration-300 ease-in-out">
+      <div
+        className="flex-1 flex flex-col min-w-0 transition-all duration-300 ease-in-out"
+        style={{ ['--sidebar-width' as string]: sidebarWidth }}
+      >
         {pathname !== '/notes' && <TabBar />}
         {splitActive && splitTarget ? (
           <div ref={containerRef} className="flex flex-1 min-h-0">
