@@ -217,7 +217,7 @@ export default function NotePage() {
         onMove={handleMoveNote}
       />
       <main className="flex-1 overflow-y-auto" style={{ fontFamily: FONT, backgroundColor: 'var(--bg)', paddingTop: '80px' }}>
-        <div style={{ maxWidth: 800, margin: '0 auto', padding: '0 40px 120px' }}>
+        <div style={{ maxWidth: 800, margin: '0 auto', padding: '64px 40px 120px' }}>
 
           <input
             ref={titleRef}
