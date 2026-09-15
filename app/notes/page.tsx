@@ -367,12 +367,18 @@ export default function NotesPage() {
       <main className="flex-1 overflow-y-auto" style={{ fontFamily: FONT, backgroundColor: 'var(--bg)' }}>
         <div style={{ maxWidth: 1080, margin: '0 auto', padding: '48px 40px' }}>
 
-          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 24 }}>
-            <div>
-              <h1 style={{ fontSize: 32, fontWeight: 700, letterSpacing: '-0.02em', color: 'var(--text-primary)', margin: 0 }}>Notes</h1>
-              <p style={{ fontSize: 13, marginTop: 4, color: 'var(--text-muted)' }}>{notes.length} note{notes.length === 1 ? '' : 's'}</p>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, marginBottom: 24 }}>
+            <div style={{ position: 'relative', flex: 1, maxWidth: 420 }}>
+              <Search size={15} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', pointerEvents: 'none' }} />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                placeholder="Search notes..."
+                style={{ width: '100%', boxSizing: 'border-box', borderRadius: 8, padding: '10px 16px 10px 36px', fontSize: 13.5, outline: 'none', backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border)', color: 'var(--text-primary)', fontFamily: FONT }}
+              />
             </div>
-            <div style={{ display: 'flex', gap: 8 }}>
+            <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
               <button
                 onClick={() => openCategoryModal()}
                 style={{ background: 'transparent', color: 'var(--text-primary)', border: '1px solid var(--border)', borderRadius: 8, padding: '9px 14px', fontSize: 13, fontWeight: 500, cursor: 'pointer', fontFamily: FONT }}
@@ -387,17 +393,6 @@ export default function NotesPage() {
                 + New note
               </button>
             </div>
-          </div>
-
-          <div style={{ position: 'relative', maxWidth: 420, marginBottom: 16 }}>
-            <Search size={15} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', pointerEvents: 'none' }} />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              placeholder="Search notes..."
-              style={{ width: '100%', boxSizing: 'border-box', borderRadius: 8, padding: '10px 16px 10px 36px', fontSize: 13.5, outline: 'none', backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border)', color: 'var(--text-primary)', fontFamily: FONT }}
-            />
           </div>
 
           <div style={{ display: 'flex', justifyContent: 'space-between', gap: 7, flexWrap: 'wrap', marginBottom: 24 }}>
