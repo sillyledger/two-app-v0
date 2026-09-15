@@ -63,6 +63,18 @@ function collectDescendantIds(id: number, cats: NoteCategory[]): number[] {
   return children.flatMap(child => [child.id, ...collectDescendantIds(child.id, cats)])
 }
 
+function sortCategoriesForMove(cats: NoteCategory[]): (NoteCategory & { depth: number })[] {
+  const result: (NoteCategory & { depth: number })[] = []
+  function walk(parentId: number | null, depth: number) {
+    cats.filter(c => c.parent_id === parentId).forEach(c => {
+      result.push({ ...c, depth })
+      walk(c.id, depth + 1)
+    })
+  }
+  walk(null, 0)
+  return result
+}
+
 export default function NotesPage() {
   const router = useRouter()
   const [authChecked, setAuthChecked] = useState(false)
@@ -520,8 +532,11 @@ export default function NotesPage() {
                             <button onClick={e => handleMoveNote(note, null, e)} style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '8px 12px', fontSize: 12.5, color: 'var(--text-secondary)', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left', fontFamily: FONT }} onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.06)')} onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
                               No category
                             </button>
-                            {categories.map(cat => (
-                              <button key={cat.id} onClick={e => handleMoveNote(note, cat.id, e)} style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '8px 12px', fontSize: 12.5, color: 'var(--text-secondary)', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left', fontFamily: FONT }} onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.06)')} onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+                            {sortCategoriesForMove(categories).map(cat => (
+                              <button key={cat.id} onClick={e => handleMoveNote(note, cat.id, e)} style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: cat.depth > 0 ? '8px 12px 8px 28px' : '8px 12px', fontSize: 12.5, color: 'var(--text-secondary)', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left', fontFamily: FONT }} onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.06)')} onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+                                {cat.depth > 0 && (
+                                  <span style={{ position: 'absolute', left: 16, top: 0, bottom: '50%', width: 10, borderLeft: '1px solid var(--border)', borderBottom: '1px solid var(--border)', borderRadius: '0 0 0 4px' }} />
+                                )}
                                 <span style={{ width: 7, height: 7, borderRadius: '50%', background: cat.color, flexShrink: 0 }} />
                                 {cat.name}
                               </button>
@@ -577,8 +592,11 @@ export default function NotesPage() {
                               <button onClick={e => handleMoveNote(note, null, e)} style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '8px 12px', fontSize: 12.5, color: 'var(--text-secondary)', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left', fontFamily: FONT }} onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.06)')} onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
                                 No category
                               </button>
-                              {categories.map(cat => (
-                                <button key={cat.id} onClick={e => handleMoveNote(note, cat.id, e)} style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '8px 12px', fontSize: 12.5, color: 'var(--text-secondary)', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left', fontFamily: FONT }} onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.06)')} onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+                              {sortCategoriesForMove(categories).map(cat => (
+                                <button key={cat.id} onClick={e => handleMoveNote(note, cat.id, e)} style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: cat.depth > 0 ? '8px 12px 8px 28px' : '8px 12px', fontSize: 12.5, color: 'var(--text-secondary)', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left', fontFamily: FONT }} onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.06)')} onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+                                  {cat.depth > 0 && (
+                                    <span style={{ position: 'absolute', left: 16, top: 0, bottom: '50%', width: 10, borderLeft: '1px solid var(--border)', borderBottom: '1px solid var(--border)', borderRadius: '0 0 0 4px' }} />
+                                  )}
                                   <span style={{ width: 7, height: 7, borderRadius: '50%', background: cat.color, flexShrink: 0 }} />
                                   {cat.name}
                                 </button>
