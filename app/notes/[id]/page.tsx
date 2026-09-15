@@ -228,7 +228,7 @@ export default function NotePage() {
             style={{
               display: 'block', width: '100%', marginBottom: 24,
               background: 'transparent', border: 'none', outline: 'none',
-              fontSize: 32, fontWeight: 700, letterSpacing: '-0.02em',
+              fontSize: '2.375rem', fontWeight: 700, lineHeight: 1.2, letterSpacing: '-0.025em',
               color: 'var(--text-primary)', fontFamily: FONT,
             }}
           />
