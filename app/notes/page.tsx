@@ -1,13 +1,14 @@
 'use client'
 
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef, Fragment } from 'react'
 import { useRouter } from 'next/navigation'
-import { LayoutGrid, List, Search, MoreVertical, Trash2, Tag } from 'lucide-react'
+import { LayoutGrid, List, Search, MoreVertical, Trash2, Tag, ChevronRight, ChevronDown } from 'lucide-react'
 
 interface NoteCategory {
   id: number
   name: string
   color: string
+  parent_id: number | null
 }
 
 interface Note {
@@ -57,6 +58,11 @@ function excerpt(content: string | null) {
   return text.length > 140 ? text.slice(0, 140) + '...' : text
 }
 
+function collectDescendantIds(id: number, cats: NoteCategory[]): number[] {
+  const children = cats.filter(c => c.parent_id === id)
+  return children.flatMap(child => [child.id, ...collectDescendantIds(child.id, cats)])
+}
+
 export default function NotesPage() {
   const router = useRouter()
   const [authChecked, setAuthChecked] = useState(false)
@@ -71,10 +77,13 @@ export default function NotesPage() {
   const [showCategoryModal, setShowCategoryModal] = useState(false)
   const [newCategoryName, setNewCategoryName] = useState('')
   const [newCategoryColor, setNewCategoryColor] = useState(SWATCHES[0])
+  const [newCategoryParentId, setNewCategoryParentId] = useState<number | null>(null)
   const categoryNameRef = useRef<HTMLInputElement>(null)
 
   const [openCategoryMenuId, setOpenCategoryMenuId] = useState<number | null>(null)
+  const [categoryMenuMode, setCategoryMenuMode] = useState<'actions' | 'picker'>('actions')
   const categoryMenuRef = useRef<HTMLDivElement>(null)
+  const [expandedCategoryId, setExpandedCategoryId] = useState<number | null>(null)
 
   const [openNoteMenuId, setOpenNoteMenuId] = useState<string | null>(null)
   const [movingNoteId, setMovingNoteId] = useState<string | null>(null)
@@ -94,7 +103,10 @@ export default function NotesPage() {
 
   useEffect(() => {
     const h = (e: MouseEvent) => {
-      if (categoryMenuRef.current && !categoryMenuRef.current.contains(e.target as Node)) setOpenCategoryMenuId(null)
+      if (categoryMenuRef.current && !categoryMenuRef.current.contains(e.target as Node)) {
+        setOpenCategoryMenuId(null)
+        setCategoryMenuMode('actions')
+      }
     }
     if (openCategoryMenuId !== null) document.addEventListener('mousedown', h)
     return () => document.removeEventListener('mousedown', h)
@@ -121,8 +133,9 @@ export default function NotesPage() {
   }
 
   const trimmedQuery = searchQuery.trim().toLowerCase()
+  const activeCategoryIds = activeCategory === 'all' ? null : [activeCategory, ...collectDescendantIds(activeCategory, categories)]
   const filtered = notes
-    .filter(n => activeCategory === 'all' || n.category_id === activeCategory)
+    .filter(n => activeCategory === 'all' || (activeCategoryIds !== null && n.category_id !== null && activeCategoryIds.includes(n.category_id)))
     .filter(n => {
       if (!trimmedQuery) return true
       const strippedContent = (n.content || '').replace(/<[^>]+>/g, ' ').toLowerCase()
@@ -149,9 +162,10 @@ export default function NotesPage() {
     }
   }
 
-  function openCategoryModal() {
+  function openCategoryModal(parentId: number | null = null) {
     setNewCategoryName('')
     setNewCategoryColor(SWATCHES[0])
+    setNewCategoryParentId(parentId)
     setShowCategoryModal(true)
     setTimeout(() => categoryNameRef.current?.focus(), 50)
   }
@@ -164,7 +178,7 @@ export default function NotesPage() {
       const res = await fetch('/api/note-categories', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, color: newCategoryColor }),
+        body: JSON.stringify({ name, color: newCategoryColor, parent_id: newCategoryParentId }),
       })
       const category = await res.json()
       setCategories(prev => [...prev, category])
@@ -173,11 +187,32 @@ export default function NotesPage() {
 
   async function handleDeleteCategory(id: number) {
     setOpenCategoryMenuId(null)
-    if (!confirm('Delete this category? Notes inside it will not be deleted — they\'ll just lose their category.')) return
-    setCategories(prev => prev.filter(c => c.id !== id))
-    setNotes(prev => prev.map(n => n.category_id === id ? { ...n, category_id: null, category_name: null, category_color: null } : n))
-    if (activeCategory === id) setActiveCategory('all')
+    setCategoryMenuMode('actions')
+    const descendantIds = collectDescendantIds(id, categories)
+    const hasChildren = descendantIds.length > 0
+    const confirmMessage = hasChildren
+      ? 'Delete this category and its subcategories? Notes inside them will not be deleted — they\'ll just lose their category.'
+      : 'Delete this category? Notes inside it will not be deleted — they\'ll just lose their category.'
+    if (!confirm(confirmMessage)) return
+    const idsToRemove = [id, ...descendantIds]
+    setCategories(prev => prev.filter(c => !idsToRemove.includes(c.id)))
+    setNotes(prev => prev.map(n => n.category_id !== null && idsToRemove.includes(n.category_id) ? { ...n, category_id: null, category_name: null, category_color: null } : n))
+    if (activeCategory !== 'all' && idsToRemove.includes(activeCategory)) setActiveCategory('all')
+    if (expandedCategoryId !== null && idsToRemove.includes(expandedCategoryId)) setExpandedCategoryId(null)
     try { await fetch(`/api/note-categories/${id}`, { method: 'DELETE' }) } catch {}
+  }
+
+  async function handleMoveCategory(cat: NoteCategory, parentId: number | null) {
+    setOpenCategoryMenuId(null)
+    setCategoryMenuMode('actions')
+    setCategories(prev => prev.map(c => c.id === cat.id ? { ...c, parent_id: parentId } : c))
+    try {
+      await fetch(`/api/note-categories/${cat.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ parent_id: parentId }),
+      })
+    } catch {}
   }
 
   async function handleDeleteNote(note: Note, e: React.MouseEvent) {
@@ -203,6 +238,116 @@ export default function NotesPage() {
     } catch {}
   }
 
+  function CategoryChip({ cat, small }: { cat: NoteCategory; small?: boolean }) {
+    const hasChildren = categories.some(c => c.parent_id === cat.id)
+    const isMenuOpen = openCategoryMenuId === cat.id
+    const descendantIds = collectDescendantIds(cat.id, categories)
+    const eligible = categories.filter(c => c.id !== cat.id && !descendantIds.includes(c.id))
+    const eligibleTopLevel = eligible.filter(c => c.parent_id === null)
+
+    const menuItemStyle: React.CSSProperties = { width: '100%', textAlign: 'left', background: 'transparent', border: 'none', borderRadius: 6, padding: '7px 9px', fontSize: 12.5, color: 'var(--text-primary)', cursor: 'pointer', fontFamily: FONT }
+
+    return (
+      <div style={{ position: 'relative' }} ref={isMenuOpen ? categoryMenuRef : undefined}>
+        <button
+          onClick={() => { setActiveCategory(cat.id); if (hasChildren) setExpandedCategoryId(cat.id) }}
+          onContextMenu={e => { e.preventDefault(); setOpenCategoryMenuId(cat.id); setCategoryMenuMode('actions') }}
+          style={{
+            display: 'flex', alignItems: 'center', gap: small ? 5 : 6,
+            background: activeCategory === cat.id ? 'var(--bg-tertiary)' : 'var(--bg-secondary)',
+            color: 'var(--text-primary)', border: '1px solid var(--border)',
+            fontSize: small ? 11 : 12, padding: small ? '5px 11px' : '6px 13px', borderRadius: 999, cursor: 'pointer', fontFamily: FONT,
+          }}
+        >
+          <span style={{ width: small ? 6 : 7, height: small ? 6 : 7, borderRadius: '50%', background: cat.color, flexShrink: 0 }} />
+          {cat.name}
+          {hasChildren && !small && (
+            <span
+              onClick={e => { e.stopPropagation(); setExpandedCategoryId(expandedCategoryId === cat.id ? null : cat.id) }}
+              style={{ display: 'flex', alignItems: 'center', color: 'var(--text-muted)', marginLeft: 1 }}
+            >
+              {expandedCategoryId === cat.id ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+            </span>
+          )}
+          <span
+            onClick={e => { e.stopPropagation(); setOpenCategoryMenuId(isMenuOpen ? null : cat.id); setCategoryMenuMode('actions') }}
+            style={{ fontSize: 11, color: 'var(--text-muted)', marginLeft: 2, lineHeight: 1 }}
+          >
+            ⋯
+          </span>
+        </button>
+        {isMenuOpen && (
+          <div style={{ position: 'absolute', top: 'calc(100% + 4px)', left: 0, zIndex: 20, background: 'var(--bg-secondary)', border: '1px solid var(--border)', borderRadius: 9, padding: 4, minWidth: categoryMenuMode === 'picker' ? 180 : 150, maxHeight: 260, overflowY: 'auto', boxShadow: '0 8px 24px rgba(0,0,0,0.3)' }}>
+            {categoryMenuMode === 'actions' ? (
+              <>
+                <button
+                  onClick={() => setCategoryMenuMode('picker')}
+                  style={menuItemStyle}
+                  onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-tertiary)')}
+                  onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                >
+                  Move to category
+                </button>
+                {cat.parent_id !== null && (
+                  <button
+                    onClick={() => handleMoveCategory(cat, null)}
+                    style={menuItemStyle}
+                    onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-tertiary)')}
+                    onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                  >
+                    Move to top level
+                  </button>
+                )}
+                <button
+                  onClick={() => handleDeleteCategory(cat.id)}
+                  style={{ ...menuItemStyle, color: '#E24B4A' }}
+                  onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-tertiary)')}
+                  onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                >
+                  Delete category
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  onClick={() => handleMoveCategory(cat, null)}
+                  style={menuItemStyle}
+                  onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-tertiary)')}
+                  onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                >
+                  Top level
+                </button>
+                {eligibleTopLevel.map(top => (
+                  <Fragment key={top.id}>
+                    <button
+                      onClick={() => handleMoveCategory(cat, top.id)}
+                      style={menuItemStyle}
+                      onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-tertiary)')}
+                      onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                    >
+                      {top.name}
+                    </button>
+                    {eligible.filter(c => c.parent_id === top.id).map(child => (
+                      <button
+                        key={child.id}
+                        onClick={() => handleMoveCategory(cat, child.id)}
+                        style={{ ...menuItemStyle, paddingLeft: 22 }}
+                        onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-tertiary)')}
+                        onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                      >
+                        {child.name}
+                      </button>
+                    ))}
+                  </Fragment>
+                ))}
+              </>
+            )}
+          </div>
+        )}
+      </div>
+    )
+  }
+
   if (!authChecked) return null
 
   return (
@@ -217,7 +362,7 @@ export default function NotesPage() {
             </div>
             <div style={{ display: 'flex', gap: 8 }}>
               <button
-                onClick={openCategoryModal}
+                onClick={() => openCategoryModal()}
                 style={{ background: 'transparent', color: 'var(--text-primary)', border: '1px solid var(--border)', borderRadius: 8, padding: '9px 14px', fontSize: 13, fontWeight: 500, cursor: 'pointer', fontFamily: FONT }}
               >
                 + New category
@@ -244,56 +389,42 @@ export default function NotesPage() {
           </div>
 
           <div style={{ display: 'flex', justifyContent: 'space-between', gap: 7, flexWrap: 'wrap', marginBottom: 24 }}>
-            <div style={{ display: 'flex', gap: 7, flexWrap: 'wrap' }}>
-              <button
-                onClick={() => setActiveCategory('all')}
-                style={{
-                  background: activeCategory === 'all' ? 'var(--bg-tertiary)' : 'var(--bg-secondary)',
-                  color: 'var(--text-primary)', border: '1px solid var(--border)',
-                  fontSize: 12, padding: '6px 13px', borderRadius: 999, cursor: 'pointer', fontFamily: FONT,
-                }}
-              >
-                All
-              </button>
-              {categories.map(cat => (
-                <div key={cat.id} style={{ position: 'relative' }} ref={openCategoryMenuId === cat.id ? categoryMenuRef : undefined}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
+              <div style={{ display: 'flex', gap: 7, flexWrap: 'wrap' }}>
+                <button
+                  onClick={() => setActiveCategory('all')}
+                  style={{
+                    background: activeCategory === 'all' ? 'var(--bg-tertiary)' : 'var(--bg-secondary)',
+                    color: 'var(--text-primary)', border: '1px solid var(--border)',
+                    fontSize: 12, padding: '6px 13px', borderRadius: 999, cursor: 'pointer', fontFamily: FONT,
+                  }}
+                >
+                  All
+                </button>
+                {categories.filter(c => c.parent_id === null).map(cat => (
+                  <CategoryChip key={cat.id} cat={cat} />
+                ))}
+                <button
+                  onClick={() => openCategoryModal()}
+                  style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'transparent', border: '1px dashed var(--border)', color: 'var(--text-muted)', fontSize: 12, padding: '6px 13px', borderRadius: 999, cursor: 'pointer', fontFamily: FONT }}
+                >
+                  + Add category
+                </button>
+              </div>
+
+              {expandedCategoryId !== null && (
+                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', paddingLeft: 24, borderLeft: '2px solid var(--border)', marginLeft: 10 }}>
+                  {categories.filter(c => c.parent_id === expandedCategoryId).map(subcat => (
+                    <CategoryChip key={subcat.id} cat={subcat} small />
+                  ))}
                   <button
-                    onClick={() => setActiveCategory(cat.id)}
-                    onContextMenu={e => { e.preventDefault(); setOpenCategoryMenuId(cat.id) }}
-                    style={{
-                      display: 'flex', alignItems: 'center', gap: 6,
-                      background: activeCategory === cat.id ? 'var(--bg-tertiary)' : 'var(--bg-secondary)',
-                      color: 'var(--text-primary)', border: '1px solid var(--border)',
-                      fontSize: 12, padding: '6px 13px', borderRadius: 999, cursor: 'pointer', fontFamily: FONT,
-                    }}
+                    onClick={() => openCategoryModal(expandedCategoryId)}
+                    style={{ display: 'flex', alignItems: 'center', gap: 5, background: 'transparent', border: '1px dashed var(--border)', color: 'var(--text-muted)', fontSize: 11, padding: '5px 11px', borderRadius: 999, cursor: 'pointer', fontFamily: FONT }}
                   >
-                    <span style={{ width: 7, height: 7, borderRadius: '50%', background: cat.color, flexShrink: 0 }} />
-                    {cat.name}
-                    <span
-                      onClick={e => { e.stopPropagation(); setOpenCategoryMenuId(openCategoryMenuId === cat.id ? null : cat.id) }}
-                      style={{ fontSize: 11, color: 'var(--text-muted)', marginLeft: 2, lineHeight: 1 }}
-                    >
-                      ⋯
-                    </span>
+                    + New subcategory
                   </button>
-                  {openCategoryMenuId === cat.id && (
-                    <div style={{ position: 'absolute', top: 'calc(100% + 4px)', left: 0, zIndex: 20, background: 'var(--bg-secondary)', border: '1px solid var(--border)', borderRadius: 9, padding: 4, minWidth: 140, boxShadow: '0 8px 24px rgba(0,0,0,0.3)' }}>
-                      <button
-                        onClick={() => handleDeleteCategory(cat.id)}
-                        style={{ width: '100%', textAlign: 'left', background: 'transparent', border: 'none', borderRadius: 6, padding: '7px 9px', fontSize: 12.5, color: '#E24B4A', cursor: 'pointer', fontFamily: FONT }}
-                      >
-                        Delete category
-                      </button>
-                    </div>
-                  )}
                 </div>
-              ))}
-              <button
-                onClick={openCategoryModal}
-                style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'transparent', border: '1px dashed var(--border)', color: 'var(--text-muted)', fontSize: 12, padding: '6px 13px', borderRadius: 999, cursor: 'pointer', fontFamily: FONT }}
-              >
-                + Add category
-              </button>
+              )}
             </div>
 
             <div style={{ display: 'flex', gap: 4 }}>
@@ -513,7 +644,7 @@ export default function NotesPage() {
         <div style={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.55)' }} onClick={() => setShowCategoryModal(false)} />
           <div style={{ position: 'relative', borderRadius: 14, width: 320, padding: '22px 22px 18px', zIndex: 10, background: 'var(--bg-secondary)', border: '1px solid var(--border)', fontFamily: FONT }}>
-            <h2 style={{ fontSize: 14, fontWeight: 600, marginBottom: 16, color: 'var(--text-primary)' }}>New category</h2>
+            <h2 style={{ fontSize: 14, fontWeight: 600, marginBottom: 16, color: 'var(--text-primary)' }}>{newCategoryParentId !== null ? 'New subcategory' : 'New category'}</h2>
             <label style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--text-muted)', display: 'block', marginBottom: 6 }}>Name</label>
             <input
               ref={categoryNameRef}

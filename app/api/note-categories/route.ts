@@ -31,13 +31,13 @@ export async function POST(request: Request) {
   if (!payload) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   try {
-    const { name, color } = await request.json()
+    const { name, color, parent_id } = await request.json()
     if (!name || !name.trim()) {
       return NextResponse.json({ error: 'Name is required' }, { status: 400 })
     }
     const result = await sql`
-      INSERT INTO note_categories (user_id, name, color)
-      VALUES (${payload.userId}, ${name.trim()}, ${color || '#888890'})
+      INSERT INTO note_categories (user_id, name, color, parent_id)
+      VALUES (${payload.userId}, ${name.trim()}, ${color || '#888890'}, ${parent_id ?? null})
       RETURNING *
     `
     return NextResponse.json(result[0], { status: 201 })

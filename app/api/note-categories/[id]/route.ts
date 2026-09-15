@@ -12,13 +12,41 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
 
   try {
     const { id } = await params
-    const { name, color } = await request.json()
+    const { name, color, parent_id } = await request.json()
+
+    if (parent_id !== undefined && parent_id !== null) {
+      if (String(parent_id) === id) {
+        return NextResponse.json({ error: 'A category cannot be moved into itself' }, { status: 400 })
+      }
+
+      const targetCategory = await sql`
+        SELECT id FROM note_categories WHERE id::text = ${String(parent_id)} AND user_id = ${payload.userId}
+      `
+      if (targetCategory.length === 0) {
+        return NextResponse.json({ error: 'Category not found' }, { status: 404 })
+      }
+
+      const descendantRows = await sql`
+        WITH RECURSIVE descendants AS (
+          SELECT id FROM note_categories WHERE id::text = ${id}
+          UNION ALL
+          SELECT nc.id
+          FROM note_categories nc INNER JOIN descendants d ON nc.parent_id = d.id
+        )
+        SELECT id FROM descendants
+      `
+      const descendantIds: string[] = descendantRows.map(row => String(row.id))
+      if (descendantIds.includes(String(parent_id))) {
+        return NextResponse.json({ error: 'Cannot move a category into one of its own subcategories' }, { status: 400 })
+      }
+    }
 
     const result = await sql`
       UPDATE note_categories
       SET
         name = COALESCE(${name ?? null}, name),
-        color = COALESCE(${color ?? null}, color)
+        color = COALESCE(${color ?? null}, color),
+        parent_id = CASE WHEN ${parent_id !== undefined} THEN ${parent_id ?? null} ELSE parent_id END
       WHERE id::text = ${id} AND user_id = ${payload.userId}
       RETURNING *
     `
