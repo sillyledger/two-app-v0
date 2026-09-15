@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation'
 import Editor from '@/components/editor'
 import { ArrowLeft } from 'lucide-react'
 import PusherJS from 'pusher-js'
+import { useTabStore } from '@/hooks/use-tab-store'
 
 interface Note {
   id: number
@@ -36,6 +37,7 @@ export default function NotePage() {
   const params = useParams()
   const noteId = Array.isArray(params.id) ? params.id[0] : (params.id as string)
   const router = useRouter()
+  const { openTab, updateTabTitle } = useTabStore()
 
   const [note, setNote] = useState<Note | null>(null)
   const [title, setTitle] = useState('')
@@ -71,6 +73,7 @@ export default function NotePage() {
           return
         }
         setNote(data)
+        openTab(noteId, data.title || 'Untitled', 'note')
         setTitle(data.title || '')
         setContent(data.content || '')
         lastSavedTitleRef.current = data.title || ''
@@ -102,6 +105,7 @@ export default function NotePage() {
             setContent(data.content || '')
           }
           setTitle(data.title || '')
+          updateTabTitle(noteId, data.title || 'Untitled')
           lastSavedTitleRef.current = data.title || ''
           lastSavedContentRef.current = data.content || ''
           setLastSaved(data.updated_at ?? null)
@@ -213,7 +217,7 @@ export default function NotePage() {
         <input
           ref={titleRef}
           value={title}
-          onChange={(e) => setTitle(e.target.value)}
+          onChange={(e) => { setTitle(e.target.value); updateTabTitle(noteId, e.target.value || 'Untitled') }}
           onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); editorFocusRef.current?.() } }}
           placeholder="Untitled"
           style={{

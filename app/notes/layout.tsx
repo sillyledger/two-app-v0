@@ -2,7 +2,9 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react'
 import dynamic from 'next/dynamic'
+import { usePathname } from 'next/navigation'
 import Sidebar from '@/components/sidebar'
+import TabBar from '@/components/tab-bar'
 import { Search, X, FileText, StickyNote } from 'lucide-react'
 
 const SplitPane = dynamic(() => import('@/components/split-pane'), { ssr: false })
@@ -25,6 +27,7 @@ type SplitItem = DocItem | NoteItem
 type SplitTarget = { type: 'doc' | 'note'; id: string }
 
 export default function NotesLayout({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname()
   const [collapsed, setCollapsed] = useState(false)
   const [splitActive, setSplitActive] = useState(false)
   const [splitTarget, setSplitTarget] = useState<SplitTarget | null>(null)
@@ -158,6 +161,7 @@ export default function NotesLayout({ children }: { children: React.ReactNode })
       />
 
       <div className="flex-1 flex flex-col min-w-0 transition-all duration-300 ease-in-out">
+        {pathname !== '/notes' && <TabBar />}
         {splitActive && splitTarget ? (
           <div ref={containerRef} className="flex flex-1 min-h-0">
 

@@ -67,7 +67,7 @@ export default function TabBar() {
   )
 
   const handleOpenDoc = useCallback((doc: DocItem) => {
-    openTab(doc.uuid, doc.title || "Untitled")
+    openTab(doc.uuid, doc.title || "Untitled", 'doc')
     router.push(`/docs/${doc.uuid}`)
     setPickerOpen(false); setQuery("")
   }, [openTab, router])
@@ -81,7 +81,7 @@ export default function TabBar() {
         body: JSON.stringify({ title: "Untitled", content: "", color: "yellow", type: "doc" }),
       })
       const doc = await res.json()
-      openTab(doc.uuid, "Untitled")
+      openTab(doc.uuid, "Untitled", 'doc')
       router.push(`/docs/${doc.uuid}`)
       setPickerOpen(false); setQuery("")
     } finally {
@@ -91,7 +91,8 @@ export default function TabBar() {
 
   const handleSwitch = (id: string) => {
     switchTab(id)
-    router.push(`/docs/${id}`)
+    const tab = tabs.find(t => t.id === id)
+    router.push(tab?.type === 'note' ? `/notes/${id}` : `/docs/${id}`)
   }
 
   const handleClose = (e: React.MouseEvent, id: string) => {
@@ -101,13 +102,12 @@ export default function TabBar() {
     if (wasActive) {
       setTimeout(() => {
         const raw = localStorage.getItem("two-open-tabs")
-        const remaining: { id: string }[] = raw ? JSON.parse(raw) : []
+        const remaining: { id: string; type?: 'doc' | 'note' }[] = raw ? JSON.parse(raw) : []
         const newActiveRaw = localStorage.getItem("two-active-tab")
         const newActive: string | null = newActiveRaw ? JSON.parse(newActiveRaw) : null
-        if (newActive && remaining.find(t => t.id === newActive)) {
-          router.push(`/docs/${newActive}`)
-        } else if (remaining.length > 0) {
-          router.push(`/docs/${remaining[remaining.length - 1].id}`)
+        const target = newActive ? remaining.find(t => t.id === newActive) : remaining[remaining.length - 1]
+        if (target) {
+          router.push(target.type === 'note' ? `/notes/${target.id}` : `/docs/${target.id}`)
         } else {
           router.push("/")
         }

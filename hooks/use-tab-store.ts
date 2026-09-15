@@ -5,6 +5,7 @@ import { useState, useEffect, useCallback } from "react"
 export interface Tab {
   id: string
   title: string
+  type: 'doc' | 'note'
 }
 
 const STORAGE_KEY = "two-open-tabs"
@@ -44,12 +45,12 @@ function initOnce() {
 }
 
 // ── Shared mutators ───────────────────────────────────────────────────────────
-function _openTab(id: string, title: string) {
+function _openTab(id: string, title: string, type: 'doc' | 'note' = 'doc') {
   const exists = _tabs.find(t => t.id === id)
   if (exists) {
-    _tabs = _tabs.map(t => t.id === id ? { ...t, title } : t)
+    _tabs = _tabs.map(t => t.id === id ? { ...t, title, type } : t)
   } else {
-    const next = [..._tabs, { id, title }]
+    const next = [..._tabs, { id, title, type }]
     _tabs = next.length > MAX_TABS ? next.slice(next.length - MAX_TABS) : next
   }
   _activeId = id
@@ -105,7 +106,7 @@ export function useTabStore() {
     return () => { _listeners.delete(fn) }
   }, [])
 
-  const openTab       = useCallback((id: string, title: string) => _openTab(id, title), [])
+  const openTab       = useCallback((id: string, title: string, type: 'doc' | 'note' = 'doc') => _openTab(id, title, type), [])
   const updateTabTitle = useCallback((id: string, title: string) => _updateTabTitle(id, title), [])
   const closeTab      = useCallback((id: string) => _closeTab(id), [])
   const switchTab     = useCallback((id: string) => _switchTab(id), [])
