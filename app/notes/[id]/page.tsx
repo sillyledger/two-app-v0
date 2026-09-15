@@ -3,9 +3,9 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Editor from '@/components/editor'
-import { ArrowLeft } from 'lucide-react'
 import PusherJS from 'pusher-js'
 import { useTabStore } from '@/hooks/use-tab-store'
+import NoteTopbar, { type NoteCategory } from '@/components/note-topbar'
 
 interface Note {
   id: number
@@ -21,18 +21,6 @@ interface Note {
 
 const FONT = "'DM Sans', system-ui, sans-serif"
 
-function timeAgo(dateStr: string) {
-  const diff = Date.now() - new Date(dateStr).getTime()
-  const hours = Math.floor(diff / 3600000)
-  if (hours < 1) return 'Just now'
-  if (hours < 24) return hours + 'h ago'
-  const days = Math.floor(hours / 24)
-  if (days === 1) return 'Yesterday'
-  if (days < 7) return days + 'd ago'
-  if (days < 30) return Math.floor(days / 7) + 'w ago'
-  return Math.floor(days / 30) + 'mo ago'
-}
-
 export default function NotePage() {
   const params = useParams()
   const noteId = Array.isArray(params.id) ? params.id[0] : (params.id as string)
@@ -43,7 +31,9 @@ export default function NotePage() {
   const [title, setTitle] = useState('')
   const [content, setContent] = useState('')
   const [notFound, setNotFound] = useState(false)
-  const [lastSaved, setLastSaved] = useState<string | null>(null)
+  const [saveStatus, setSaveStatus] = useState<'saved' | 'saving'>('saved')
+  const [categories, setCategories] = useState<NoteCategory[]>([])
+  const [splitViewActive, setSplitViewActive] = useState(false)
 
   const titleRef = useRef<HTMLInputElement>(null)
   const editorFocusRef = useRef<(() => void) | null>(null)
@@ -78,10 +68,16 @@ export default function NotePage() {
         setContent(data.content || '')
         lastSavedTitleRef.current = data.title || ''
         lastSavedContentRef.current = data.content || ''
-        setLastSaved(data.updated_at ?? null)
       })
       .catch(() => {})
   }, [noteId])
+
+  useEffect(() => {
+    fetch('/api/note-categories')
+      .then(r => r.json())
+      .then(data => setCategories(Array.isArray(data) ? data : []))
+      .catch(() => {})
+  }, [])
 
   // ─── Pusher: live sync from other sessions ───────────────────────────────
   useEffect(() => {
@@ -108,7 +104,6 @@ export default function NotePage() {
           updateTabTitle(noteId, data.title || 'Untitled')
           lastSavedTitleRef.current = data.title || ''
           lastSavedContentRef.current = data.content || ''
-          setLastSaved(data.updated_at ?? null)
         })
         .catch(() => {})
     })
@@ -127,6 +122,7 @@ export default function NotePage() {
     if (latestContent !== lastSavedContentRef.current) body.content = latestContent
     if (Object.keys(body).length === 0) return
 
+    setSaveStatus('saving')
     const res = await fetch(`/api/notes/${noteId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
@@ -134,11 +130,12 @@ export default function NotePage() {
     })
     if (!res.ok) {
       console.error(`[handleSave] Save FAILED for note ${noteId}: HTTP ${res.status}`)
+      setSaveStatus('saved')
       return
     }
     lastSavedTitleRef.current = latestTitle
     lastSavedContentRef.current = latestContent
-    setLastSaved(new Date().toISOString())
+    setSaveStatus('saved')
   }, [noteId])
 
   useEffect(() => {
@@ -165,6 +162,30 @@ export default function NotePage() {
     return null
   }, [])
 
+  const handleDeleteNote = useCallback(async () => {
+    try {
+      await fetch(`/api/notes/${noteId}`, { method: 'DELETE' })
+    } catch {}
+    router.push('/notes')
+  }, [noteId, router])
+
+  const handleMoveNote = useCallback(async (categoryId: number | null) => {
+    const cat = categories.find(c => c.id === categoryId) ?? null
+    setNote(prev => prev ? { ...prev, category_id: categoryId, category_name: cat?.name ?? null, category_color: cat?.color ?? null } : prev)
+    try {
+      await fetch(`/api/notes/${noteId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ category_id: categoryId }),
+      })
+    } catch {}
+  }, [noteId, categories])
+
+  const handleToggleSplitView = () => {
+    setSplitViewActive(v => !v)
+    window.dispatchEvent(new Event('toggle-split-view'))
+  }
+
   if (notFound) return null
 
   if (!note) return (
@@ -182,61 +203,46 @@ export default function NotePage() {
   )
 
   return (
-    <main className="flex-1 overflow-y-auto" style={{ fontFamily: FONT, backgroundColor: 'var(--bg)' }}>
-      <div style={{ maxWidth: 800, margin: '0 auto', padding: '32px 40px 120px' }}>
+    <>
+      <NoteTopbar
+        noteTitle={title}
+        category={note.category_id && note.category_name ? { id: note.category_id, name: note.category_name, color: note.category_color || '#888890' } : null}
+        saveStatus={saveStatus}
+        noteId={noteId}
+        onDelete={handleDeleteNote}
+        content={content}
+        splitViewActive={splitViewActive}
+        onToggleSplitView={handleToggleSplitView}
+        allCategories={categories}
+        onMove={handleMoveNote}
+      />
+      <main className="flex-1 overflow-y-auto" style={{ fontFamily: FONT, backgroundColor: 'var(--bg)', paddingTop: '80px' }}>
+        <div style={{ maxWidth: 800, margin: '0 auto', padding: '0 40px 120px' }}>
 
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 28 }}>
-          <button
-            onClick={() => router.push('/notes')}
+          <input
+            ref={titleRef}
+            value={title}
+            onChange={(e) => { setTitle(e.target.value); updateTabTitle(noteId, e.target.value || 'Untitled') }}
+            onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); editorFocusRef.current?.() } }}
+            placeholder="Untitled"
             style={{
-              display: 'flex', alignItems: 'center', gap: 6,
-              background: 'transparent', border: 'none', cursor: 'pointer',
-              color: 'var(--text-muted)', fontSize: 13, fontFamily: FONT, padding: '4px 0',
+              display: 'block', width: '100%', marginBottom: 24,
+              background: 'transparent', border: 'none', outline: 'none',
+              fontSize: 32, fontWeight: 700, letterSpacing: '-0.02em',
+              color: 'var(--text-primary)', fontFamily: FONT,
             }}
-          >
-            <ArrowLeft size={14} />
-            Notes
-          </button>
+          />
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            {note.category_name && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <span style={{ width: 7, height: 7, borderRadius: '50%', background: note.category_color || '#888890', flexShrink: 0 }} />
-                <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{note.category_name}</span>
-              </div>
-            )}
-            {lastSaved && (
-              <>
-                {note.category_name && <span style={{ color: 'var(--border)' }}>·</span>}
-                <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>Edited {timeAgo(lastSaved)}</span>
-              </>
-            )}
-          </div>
+          <Editor
+            content={content}
+            editable={true}
+            onChange={(newContent) => setContent(newContent)}
+            onReady={(focusFn) => { editorFocusRef.current = focusFn }}
+            onImageUpload={handleImageUpload}
+            onRemoteUpdate={(fn) => { remoteUpdateRef.current = fn }}
+          />
         </div>
-
-        <input
-          ref={titleRef}
-          value={title}
-          onChange={(e) => { setTitle(e.target.value); updateTabTitle(noteId, e.target.value || 'Untitled') }}
-          onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); editorFocusRef.current?.() } }}
-          placeholder="Untitled"
-          style={{
-            display: 'block', width: '100%', marginBottom: 24,
-            background: 'transparent', border: 'none', outline: 'none',
-            fontSize: 32, fontWeight: 700, letterSpacing: '-0.02em',
-            color: 'var(--text-primary)', fontFamily: FONT,
-          }}
-        />
-
-        <Editor
-          content={content}
-          editable={true}
-          onChange={(newContent) => setContent(newContent)}
-          onReady={(focusFn) => { editorFocusRef.current = focusFn }}
-          onImageUpload={handleImageUpload}
-          onRemoteUpdate={(fn) => { remoteUpdateRef.current = fn }}
-        />
-      </div>
-    </main>
+      </main>
+    </>
   )
 }
