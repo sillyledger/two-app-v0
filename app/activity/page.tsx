@@ -83,10 +83,11 @@ export default function ActivityPage() {
     fetch('/api/activity')
       .then((r) => {
         if (r.status === 401) { router.push('/login'); return null }
+        if (!r.ok) return null
         return r.json()
       })
       .then((data) => {
-        if (data) setEntries(data)
+        if (Array.isArray(data)) setEntries(data)
         setLoading(false)
       })
       .catch(() => setLoading(false))
