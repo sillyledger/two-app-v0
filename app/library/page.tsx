@@ -178,6 +178,14 @@ export default function LibraryPage() {
     f.docs.some(d => d.title.toLowerCase().includes(search.toLowerCase()))
   )
 
+  const filteredUnfiledDocs = unfiledDocs.filter(d =>
+    (d.title || '').toLowerCase().includes(search.toLowerCase())
+  )
+
+  const filteredUnlabeled = unlabeled.filter(d =>
+    (d.title || '').toLowerCase().includes(search.toLowerCase())
+  )
+
   const groupCount = groupBy === 'folders' ? folders.length : collections.length
   const totalDocs = folderDocs.length || allDocs.length
 
@@ -378,14 +386,14 @@ export default function LibraryPage() {
                 </>
               )}
 
-              {(activePill === 'all' || activePill === 'other') && !search && (
+              {(activePill === 'all' || activePill === 'other') && (
                 <>
                   {groupBy === 'folders' ? (
-                    unfiledDocs.length > 0 && (
+                    filteredUnfiledDocs.length > 0 ? (
                       <>
-                        <div className="text-[11px] font-medium uppercase tracking-wider mb-4" style={{ color: 'var(--text-muted)' }}>Unfiled · {unfiledDocs.length}</div>
+                        <div className="text-[11px] font-medium uppercase tracking-wider mb-4" style={{ color: 'var(--text-muted)' }}>Unfiled · {filteredUnfiledDocs.length}</div>
                         <div className="flex flex-wrap gap-2">
-                          {unfiledDocs.map(doc => (
+                          {filteredUnfiledDocs.map(doc => (
                             <button key={doc.uuid} onClick={() => router.push(`/docs/${doc.uuid}`)} className="flex items-center gap-1.5 px-3 py-2 rounded-lg transition-colors" style={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border)', color: 'var(--text-secondary)' }}
                               onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)')}
                               onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'var(--bg-secondary)')}
@@ -396,13 +404,15 @@ export default function LibraryPage() {
                           ))}
                         </div>
                       </>
-                    )
+                    ) : search && activePill === 'other' ? (
+                      <p className="text-sm" style={{ color: 'var(--text-muted)' }}>No matching docs.</p>
+                    ) : null
                   ) : (
-                    unlabeled.length > 0 && (
+                    filteredUnlabeled.length > 0 ? (
                       <>
-                        <div className="text-[11px] font-medium uppercase tracking-wider mb-4" style={{ color: 'var(--text-muted)' }}>Unlabeled · {unlabeled.length}</div>
+                        <div className="text-[11px] font-medium uppercase tracking-wider mb-4" style={{ color: 'var(--text-muted)' }}>Unlabeled · {filteredUnlabeled.length}</div>
                         <div className="flex flex-wrap gap-2">
-                          {unlabeled.map(doc => (
+                          {filteredUnlabeled.map(doc => (
                             <button key={doc.uuid} onClick={() => router.push(`/docs/${doc.uuid}`)} className="flex items-center gap-1.5 px-3 py-2 rounded-lg transition-colors" style={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border)', color: 'var(--text-secondary)' }}
                               onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)')}
                               onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'var(--bg-secondary)')}
@@ -413,7 +423,9 @@ export default function LibraryPage() {
                           ))}
                         </div>
                       </>
-                    )
+                    ) : search && activePill === 'other' ? (
+                      <p className="text-sm" style={{ color: 'var(--text-muted)' }}>No matching docs.</p>
+                    ) : null
                   )}
                 </>
               )}
@@ -430,14 +442,19 @@ export default function LibraryPage() {
                         docs: (data?.docs ?? []).filter(d => d.folder_id === folder.id),
                       }))
                       const wsUnfiled = (data?.docs ?? []).filter(d => !d.folder_id)
+                      const filteredWsFolders = wsFolders.filter(f =>
+                        f.folder.name.toLowerCase().includes(search.toLowerCase()) ||
+                        f.docs.some(d => (d.title || '').toLowerCase().includes(search.toLowerCase()))
+                      )
+                      const filteredWsUnfiled = wsUnfiled.filter(d => (d.title || '').toLowerCase().includes(search.toLowerCase()))
                       return (
                         <div key={ws.id} className="mb-10">
                           <div className="text-[11px] font-medium uppercase tracking-wider mb-4" style={{ color: 'var(--text-muted)' }}>{ws.name}</div>
-                          {wsFolders.length === 0 ? (
+                          {filteredWsFolders.length === 0 ? (
                             <p className="text-sm mb-4" style={{ color: 'var(--text-muted)' }}>No folders yet.</p>
                           ) : (
                             <div className="grid gap-4 mb-4" style={{ gridTemplateColumns: 'repeat(5, minmax(0, 1fr))' }}>
-                              {wsFolders.map(({ folder, color, docs }) => (
+                              {filteredWsFolders.map(({ folder, color, docs }) => (
                                 <div
                                   key={folder.id}
                                   onClick={() => router.push(`/folders/${folder.id}?name=${encodeURIComponent(folder.name)}`)}
@@ -462,9 +479,9 @@ export default function LibraryPage() {
                               ))}
                             </div>
                           )}
-                          {wsUnfiled.length > 0 && (
+                          {filteredWsUnfiled.length > 0 && (
                             <div className="flex flex-wrap gap-2">
-                              {wsUnfiled.map(doc => (
+                              {filteredWsUnfiled.map(doc => (
                                 <button key={doc.uuid} onClick={() => router.push(`/docs/${doc.uuid}`)} className="flex items-center gap-1.5 px-3 py-2 rounded-lg transition-colors" style={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border)', color: 'var(--text-secondary)' }}
                                   onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)')}
                                   onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'var(--bg-secondary)')}
