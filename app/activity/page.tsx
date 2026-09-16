@@ -53,6 +53,7 @@ function groupByDay(docs: any[], timezone: string) {
 }
 
 function isCreated(doc: any): boolean {
+  if (doc.action) return doc.action === 'created'
   return Math.abs(new Date(doc.updated_at).getTime() - new Date(doc.created_at).getTime()) < 5000
 }
 
@@ -233,7 +234,7 @@ export default function ActivityPage() {
                 const entry = row.entry
                 const created = isCreated(entry)
                 const isDeleted = entry.is_deleted === true
-                const href = entry.type === 'doc' ? `/docs/${entry.uuid}` : `/notes/${entry.uuid}`
+                const href = entry.type === 'doc' ? `/docs/${entry.link_id}` : entry.type === 'note' ? `/notes/${entry.link_id}` : `/folders/${entry.link_id}`
                 const isYou = entry.is_you === true
                 const actorName = isYou ? 'You' : (entry.editor_name ? entry.editor_name.split(' ')[0] : 'Someone')
                 const dotColor = entry.type === 'doc' ? folderDotColor(entry.context_id) : entry.context_color
@@ -256,7 +257,7 @@ export default function ActivityPage() {
                     </div>
                     <div style={{ flex: 1, minWidth: 0, paddingBottom: 20 }}>
                       <p className="text-[13px]" style={{ color: 'var(--text-primary)' }}>
-                        {actorName} {created ? 'created' : 'edited'}{' '}
+                        {actorName} {entry.action || (created ? 'created' : 'edited')}{' '}
                         {isDeleted ? (
                           <span className="font-semibold" style={{ color: 'var(--text-secondary)' }}>
                             {entry.title || 'Untitled'}
@@ -268,7 +269,7 @@ export default function ActivityPage() {
                         )}
                       </p>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11.5, color: 'var(--text-muted)', marginTop: 3 }}>
-                        {isDeleted && (
+                        {isDeleted && entry.action !== 'deleted' && (
                           <>
                             <span style={{ fontSize: 11, color: '#e05252', backgroundColor: '#e052521a', borderRadius: 20, padding: '2px 8px' }}>
                               Deleted

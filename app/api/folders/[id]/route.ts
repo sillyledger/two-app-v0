@@ -74,6 +74,10 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     if (result.length === 0) {
       return NextResponse.json({ error: 'Folder not found' }, { status: 404 })
     }
+    await sql`
+      INSERT INTO activity_log (user_id, action, entity_type, entity_id, entity_title, workspace_id)
+      VALUES (${payload.userId}, 'renamed', 'folder', ${id}, ${result[0].name}, ${result[0].workspace_id})
+    `
     return NextResponse.json(result[0])
   } catch (error) {
     console.error('Folder rename error:', error)
@@ -134,6 +138,12 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     if (result.length === 0) {
       return NextResponse.json({ error: 'Folder not found' }, { status: 404 })
     }
+    if (parent_id !== undefined) {
+      await sql`
+        INSERT INTO activity_log (user_id, action, entity_type, entity_id, entity_title, workspace_id)
+        VALUES (${payload.userId}, 'moved', 'folder', ${id}, ${result[0].name}, ${result[0].workspace_id})
+      `
+    }
     return NextResponse.json(result[0])
   } catch (error) {
     console.error('Folder pin error:', error)
@@ -153,6 +163,8 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
     const permission = await getFolderPermission(payload.userId, id)
     if (!permission.exists) return NextResponse.json(null, { status: 404 })
     if (!permission.canDelete) return NextResponse.json({ error: 'Not authorized' }, { status: 403 })
+
+    const folderInfo = await sql`SELECT name, workspace_id FROM folders WHERE id::text = ${id}`
 
     // Collect the target folder plus all of its descendants (recursively)
     const descendantRows = await sql`
@@ -180,6 +192,13 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
 
     // Deleting the top folder cascades to its descendants via parent_id ON DELETE CASCADE
     await sql`DELETE FROM folders WHERE id::text = ${id}`
+
+    if (folderInfo[0]) {
+      await sql`
+        INSERT INTO activity_log (user_id, action, entity_type, entity_id, entity_title, workspace_id)
+        VALUES (${payload.userId}, 'deleted', 'folder', ${id}, ${folderInfo[0].name}, ${folderInfo[0].workspace_id})
+      `
+    }
 
     return NextResponse.json({ success: true })
   } catch (error) {

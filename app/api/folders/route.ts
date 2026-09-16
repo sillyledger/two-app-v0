@@ -235,6 +235,10 @@ export async function POST(request: Request) {
       VALUES (${name}, ${workspace_id}, ${payload.userId}, ${parent_id ?? null})
       RETURNING *
     `
+    await sql`
+      INSERT INTO activity_log (user_id, action, entity_type, entity_id, entity_title, workspace_id)
+      VALUES (${payload.userId}, 'created', 'folder', ${String(result[0].id)}, ${result[0].name}, ${workspace_id ?? null})
+    `
     return NextResponse.json(result[0], { status: 201 })
   } catch (error) {
     console.error('Failed to create folder:', error)
