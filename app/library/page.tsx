@@ -187,30 +187,43 @@ export default function LibraryPage() {
     { key: 'shared', label: 'Shared' },
   ]
 
+  const btnBase: React.CSSProperties = {
+    height: '36px',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '7px',
+    padding: '0 16px',
+    borderRadius: '8px',
+    fontSize: '13.5px',
+    fontWeight: 500,
+    cursor: 'pointer',
+    whiteSpace: 'nowrap',
+    transition: 'opacity 0.15s, background-color 0.15s, border-color 0.15s, color 0.15s',
+  }
+
   return (
     <div className="flex h-screen overflow-hidden" style={{ backgroundColor: 'var(--bg)' }}>
       <Sidebar collapsed={collapsed} onToggle={() => setCollapsed(v => !v)} />
 
       <main className="flex-1 overflow-y-auto">
-        <div className="max-w-5xl mx-auto px-10 py-14">
+        <div className="max-w-[1180px] mx-auto px-10 py-10">
 
-          <div className="flex items-end justify-between mb-1.5">
-            <h1 className="text-[34px] font-semibold tracking-tight" style={{ color: 'var(--text-primary)' }}>Library</h1>
-            <div className="flex items-center gap-2">
-              <div className="flex items-center gap-2 px-3 py-2 rounded-lg" style={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border)' }}>
-                <Search size={13} style={{ color: 'var(--text-muted)' }} />
-                <input
-                  value={search}
-                  onChange={e => setSearch(e.target.value)}
-                  placeholder="Search library..."
-                  className="bg-transparent text-[13px] focus:outline-none w-36"
-                  style={{ color: 'var(--text-secondary)' }}
-                />
-              </div>
+          <div className="flex items-center justify-between mb-6 gap-4">
+            <div className="relative flex-1" style={{ maxWidth: 420 }}>
+              <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: 'var(--text-muted)' }} />
+              <input
+                type="text"
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                placeholder="Search library..."
+                className="w-full rounded-lg pl-9 pr-4 py-2.5 text-sm outline-none placeholder-[var(--text-muted)]"
+                style={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border)', color: 'var(--text-primary)' }}
+              />
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
               <button
                 onClick={() => setTemplateModalOpen(true)}
-                className="flex items-center gap-2 px-3.5 py-2 rounded-lg text-[13.5px] font-medium"
-                style={{ backgroundColor: 'var(--text-primary)', color: 'var(--bg)' }}
+                style={{ ...btnBase, backgroundColor: 'var(--text-primary)', color: 'var(--bg)', border: '1px solid transparent' }}
                 onMouseEnter={e => (e.currentTarget.style.opacity = '0.85')}
                 onMouseLeave={e => (e.currentTarget.style.opacity = '1')}
               >
@@ -218,7 +231,7 @@ export default function LibraryPage() {
               </button>
             </div>
           </div>
-          <p className="text-[13.5px] mb-7" style={{ color: 'var(--text-muted)' }}>
+          <p className="text-sm mb-3" style={{ color: 'var(--text-muted)' }}>
             {totalDocs} documents across {groupCount} {groupBy}
           </p>
 
