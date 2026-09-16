@@ -4,7 +4,7 @@ import { useEffect, useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Sidebar from '@/components/sidebar'
 import Link from 'next/link'
-import { CheckCircle2, Circle, Trash2, CalendarDays, FileText, Plus, MoreVertical, Pencil } from 'lucide-react'
+import { CheckCircle2, Circle, Trash2, CalendarDays, FileText, Plus, MoreVertical, Pencil, LayoutGrid, List } from 'lucide-react'
 
 interface Task {
   id: number
@@ -23,6 +23,7 @@ interface Doc {
 }
 
 type FilterTab = 'all' | 'today' | 'upcoming' | 'overdue' | 'completed'
+type PlannerView = 'board' | 'list'
 
 const PRIORITY_COLORS: Record<string, string> = {
   high: '#e05252',
@@ -71,6 +72,7 @@ export default function PlannerPage() {
   const [loading, setLoading] = useState(true)
   const [authChecked, setAuthChecked] = useState(false)
   const [activeTab, setActiveTab] = useState<FilterTab>('all')
+  const [plannerView, setPlannerView] = useState<PlannerView>('board')
 
   // Modal state
   const [showModal, setShowModal] = useState(false)
@@ -93,7 +95,13 @@ export default function PlannerPage() {
   useEffect(() => {
     const saved = localStorage.getItem('sidebar-collapsed')
     if (saved === 'true') setCollapsed(true)
+    const savedView = localStorage.getItem('planner-view')
+    if (savedView === 'board' || savedView === 'list') setPlannerView(savedView)
   }, [])
+
+  useEffect(() => {
+    localStorage.setItem('planner-view', plannerView)
+  }, [plannerView])
 
   useEffect(() => {
     fetch('/api/auth/me').then(r => {
@@ -318,6 +326,36 @@ onMouseLeave={e => (e.currentTarget.style.background = '#ffffff')}
                 {tab.count > 0 && <span className="text-[11px]" style={{ opacity: 0.6 }}>{tab.count}</span>}
               </button>
             ))}
+            {activeTab === 'all' && (
+              <div className="flex gap-1" style={{ marginLeft: 'auto' }}>
+                <button
+                  onClick={() => setPlannerView('board')}
+                  title="Board view"
+                  style={{
+                    width: 30, height: 30, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    borderRadius: 7, cursor: 'pointer', transition: 'all 0.15s',
+                    border: '1px solid ' + (plannerView === 'board' ? 'var(--text-primary)' : 'var(--border)'),
+                    backgroundColor: plannerView === 'board' ? 'var(--bg-tertiary)' : 'transparent',
+                    color: plannerView === 'board' ? 'var(--text-primary)' : 'var(--text-muted)',
+                  }}
+                >
+                  <LayoutGrid size={14} />
+                </button>
+                <button
+                  onClick={() => setPlannerView('list')}
+                  title="List view"
+                  style={{
+                    width: 30, height: 30, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    borderRadius: 7, cursor: 'pointer', transition: 'all 0.15s',
+                    border: '1px solid ' + (plannerView === 'list' ? 'var(--text-primary)' : 'var(--border)'),
+                    backgroundColor: plannerView === 'list' ? 'var(--bg-tertiary)' : 'transparent',
+                    color: plannerView === 'list' ? 'var(--text-primary)' : 'var(--text-muted)',
+                  }}
+                >
+                  <List size={14} />
+                </button>
+              </div>
+            )}
           </div>
 
           {loading && <p className="text-[13px]" style={{ color: 'var(--text-muted)' }}>Loading...</p>}
@@ -330,7 +368,7 @@ onMouseLeave={e => (e.currentTarget.style.background = '#ffffff')}
           )}
 
           {!loading && tasks.length > 0 && (
-            activeTab === 'all' ? (
+            activeTab === 'all' && plannerView === 'board' ? (
               <div className="grid mb-8" style={{ gridTemplateColumns: 'repeat(3, 1fr)', gap: 20 }}>
                 <TaskColumn label="Overdue" dotColor="#e05252" tasks={overdueTasks} onToggle={toggle} onDelete={remove} onEdit={openEditModal} openMenuId={openMenuId} setOpenMenuId={setOpenMenuId} menuRef={menuRef} showDate />
                 <TaskColumn label="Today" dotColor="var(--text-primary)" tasks={todayTasks} onToggle={toggle} onDelete={remove} onEdit={openEditModal} openMenuId={openMenuId} setOpenMenuId={setOpenMenuId} menuRef={menuRef} />
