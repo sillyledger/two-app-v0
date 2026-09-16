@@ -254,7 +254,7 @@ export default function HomePage() {
       ? allDocs.filter(d => (d.title || "").toLowerCase().includes(trimmedQuery))
       : activeTab === "favorites"
         ? allDocs.filter(d => d.is_starred)
-        : allDocs.slice(0, 9)
+        : allDocs.slice(0, 12)
   ), [trimmedQuery, activeTab, allDocs])
 
   const FREE_LIMIT = 30
