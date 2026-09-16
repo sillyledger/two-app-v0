@@ -23,13 +23,14 @@ export async function GET() {
       NULL::text AS context_color,
       COALESCE(workspaces.is_shared, false) AS is_shared,
       workspaces.name AS workspace_name,
-      editor.name AS editor_name,
-      (docs.last_edited_by = ${userId}) AS is_you,
+      COALESCE(editor.name, creator.name) AS editor_name,
+      (COALESCE(docs.last_edited_by, docs.user_id) = ${userId}) AS is_you,
       (docs.deleted_at IS NOT NULL) AS is_deleted
     FROM docs
     LEFT JOIN folders ON docs.folder_id::text = folders.id::text
     LEFT JOIN workspaces ON docs.workspace_id::text = workspaces.id::text
     LEFT JOIN users editor ON editor.id = docs.last_edited_by
+    LEFT JOIN users creator ON creator.id = docs.user_id
     LEFT JOIN workspace_members wm ON wm.workspace_id::text = docs.workspace_id::text
       AND wm.user_id = ${userId} AND wm.status = 'accepted'
     WHERE docs.updated_at >= ${cutoff}
