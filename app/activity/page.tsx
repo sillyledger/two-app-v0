@@ -232,13 +232,14 @@ export default function ActivityPage() {
 
                 const entry = row.entry
                 const created = isCreated(entry)
+                const isDeleted = entry.is_deleted === true
                 const href = entry.type === 'doc' ? `/docs/${entry.uuid}` : `/notes/${entry.uuid}`
                 const isYou = entry.is_you === true
                 const actorName = isYou ? 'You' : (entry.editor_name ? entry.editor_name.split(' ')[0] : 'Someone')
                 const dotColor = entry.type === 'doc' ? folderDotColor(entry.context_id) : entry.context_color
 
                 return (
-                  <div key={row.key} style={{ display: 'flex', gap: 14 }}>
+                  <div key={row.key} style={{ display: 'flex', gap: 14, opacity: isDeleted ? 0.55 : 1 }}>
                     <div style={{ width: 30, flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                       <div
                         style={{
@@ -256,11 +257,25 @@ export default function ActivityPage() {
                     <div style={{ flex: 1, minWidth: 0, paddingBottom: 20 }}>
                       <p className="text-[13px]" style={{ color: 'var(--text-primary)' }}>
                         {actorName} {created ? 'created' : 'edited'}{' '}
-                        <Link href={href} className="font-semibold hover:underline" style={{ color: 'var(--text-primary)' }}>
-                          {entry.title || 'Untitled'}
-                        </Link>
+                        {isDeleted ? (
+                          <span className="font-semibold" style={{ color: 'var(--text-secondary)' }}>
+                            {entry.title || 'Untitled'}
+                          </span>
+                        ) : (
+                          <Link href={href} className="font-semibold hover:underline" style={{ color: 'var(--text-primary)' }}>
+                            {entry.title || 'Untitled'}
+                          </Link>
+                        )}
                       </p>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11.5, color: 'var(--text-muted)', marginTop: 3 }}>
+                        {isDeleted && (
+                          <>
+                            <span style={{ fontSize: 11, color: '#e05252', backgroundColor: '#e052521a', borderRadius: 20, padding: '2px 8px' }}>
+                              Deleted
+                            </span>
+                            <span>·</span>
+                          </>
+                        )}
                         {entry.is_shared ? (
                           <>
                             <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: '#e0b48c', backgroundColor: '#e0b48c1a', borderRadius: 20, padding: '2px 8px' }}>

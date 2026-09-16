@@ -24,15 +24,15 @@ export async function GET() {
       COALESCE(workspaces.is_shared, false) AS is_shared,
       workspaces.name AS workspace_name,
       editor.name AS editor_name,
-      (docs.last_edited_by = ${userId}) AS is_you
+      (docs.last_edited_by = ${userId}) AS is_you,
+      (docs.deleted_at IS NOT NULL) AS is_deleted
     FROM docs
     LEFT JOIN folders ON docs.folder_id::text = folders.id::text
     LEFT JOIN workspaces ON docs.workspace_id::text = workspaces.id::text
     LEFT JOIN users editor ON editor.id = docs.last_edited_by
     LEFT JOIN workspace_members wm ON wm.workspace_id::text = docs.workspace_id::text
       AND wm.user_id = ${userId} AND wm.status = 'accepted'
-    WHERE docs.deleted_at IS NULL
-      AND docs.updated_at >= ${cutoff}
+    WHERE docs.updated_at >= ${cutoff}
       AND (docs.user_id = ${userId} OR wm.id IS NOT NULL)
 
     UNION ALL
@@ -49,11 +49,11 @@ export async function GET() {
       false AS is_shared,
       NULL::text AS workspace_name,
       NULL::text AS editor_name,
-      true AS is_you
+      true AS is_you,
+      (notes.deleted_at IS NOT NULL) AS is_deleted
     FROM notes
     LEFT JOIN note_categories ON note_categories.id = notes.category_id
-    WHERE notes.deleted_at IS NULL
-      AND notes.updated_at >= ${cutoff}
+    WHERE notes.updated_at >= ${cutoff}
       AND notes.user_id = ${userId}
 
     ORDER BY updated_at DESC
