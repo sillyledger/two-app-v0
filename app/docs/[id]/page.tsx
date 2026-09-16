@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation'
 import Editor from '@/components/editor'
 import DocTopbar from '@/components/doc-topbar'
 import { useTabStore } from '@/hooks/use-tab-store'
-import { CalendarDays, SignalLow, SignalMedium, SignalHigh, Minus, PanelRight, X, FileText, User, Clock, Plus, Check, Send, Trash2, Circle, CheckCircle2, Pencil, PanelLeftOpen } from 'lucide-react'
+import { CalendarDays, SignalLow, SignalMedium, SignalHigh, Minus, PanelRight, X, FileText, User, Clock, Plus, Check, Send, Trash2, Circle, CheckCircle2, Pencil, PanelLeftOpen, MoreVertical } from 'lucide-react'
 import type { Doc } from '@/lib/db'
 import { formatDate as formatDateI18n, getUserDatePrefs } from '@/lib/format-date'
 import PusherJS, { type PresenceChannel } from 'pusher-js'
@@ -183,6 +183,9 @@ export default function DocPage() {
   const [newTaskPriority, setNewTaskPriority] = useState('medium')
   const [taskPriorityOpen, setTaskPriorityOpen] = useState(false)
   const taskPriorityRef = useRef<HTMLDivElement>(null)
+  const [editingTaskId, setEditingTaskId] = useState<number | null>(null)
+  const [openTaskMenuId, setOpenTaskMenuId] = useState<number | null>(null)
+  const taskMenuRef = useRef<HTMLDivElement>(null)
 
   // Track whether the user is actively typing so we don't overwrite mid-keystroke
   const isTypingRef = useRef(false)
@@ -243,6 +246,7 @@ export default function DocPage() {
       if (priorityRef.current && !priorityRef.current.contains(e.target as Node)) setPriorityOpen(false)
       if (headerPriorityRef.current && !headerPriorityRef.current.contains(e.target as Node)) setHeaderPriorityOpen(false)
       if (taskPriorityRef.current && !taskPriorityRef.current.contains(e.target as Node)) setTaskPriorityOpen(false)
+      if (taskMenuRef.current && !taskMenuRef.current.contains(e.target as Node)) setOpenTaskMenuId(null)
     }
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
@@ -526,26 +530,53 @@ export default function DocPage() {
     setComments(prev => prev.filter(c => c.id !== commentId))
   }
 
-  const handleAddTask = async () => {
+  const handleSaveTask = async () => {
     if (!newTaskTitle.trim()) return
-    const res = await fetch('/api/tasks', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        title: newTaskTitle.trim(),
-        due_date: newTaskDueDate || null,
-        doc_id: docId,
-        doc_title: title || 'Untitled',
-        priority: newTaskPriority,
-      }),
-    })
-    const created = await res.json()
-    setTasks(prev => [created, ...prev])
+    if (editingTaskId) {
+      const res = await fetch('/api/tasks', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: editingTaskId,
+          title: newTaskTitle.trim(),
+          due_date: newTaskDueDate || null,
+          doc_id: docId,
+          doc_title: title || 'Untitled',
+          priority: newTaskPriority,
+        }),
+      })
+      const updated = await res.json()
+      setTasks(prev => prev.map(t => (t.id === editingTaskId ? updated : t)))
+      setEditingTaskId(null)
+    } else {
+      const res = await fetch('/api/tasks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: newTaskTitle.trim(),
+          due_date: newTaskDueDate || null,
+          doc_id: docId,
+          doc_title: title || 'Untitled',
+          priority: newTaskPriority,
+        }),
+      })
+      const newTask = await res.json()
+      setTasks(prev => [newTask, ...prev])
+      setAddingTask(false)
+    }
     setNewTaskTitle('')
     setNewTaskDueDate('')
     setNewTaskPriority('medium')
     setTaskPriorityOpen(false)
+  }
+
+  const openEditTask = (task: Task) => {
+    setEditingTaskId(task.id)
+    setNewTaskTitle(task.title)
+    setNewTaskDueDate(task.due_date ? task.due_date.slice(0, 10) : '')
+    setNewTaskPriority(task.priority || 'medium')
     setAddingTask(false)
+    setTaskPriorityOpen(false)
   }
 
   const handleToggleTask = async (task: Task) => {
@@ -823,7 +854,7 @@ export default function DocPage() {
                     Tasks {tasks.length > 0 && `· ${tasks.length}`}
                   </p>
                   <button
-                    onClick={() => { setAddingTask(true); setTimeout(() => newTaskInputRef.current?.focus(), 50) }}
+                    onClick={() => { setEditingTaskId(null); setAddingTask(true); setTimeout(() => newTaskInputRef.current?.focus(), 50) }}
                     className="flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[11px] transition-colors"
                     style={{ color: 'var(--text-muted)' }}
                     onMouseEnter={e => { e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)'; e.currentTarget.style.color = 'var(--text-secondary)' }}
@@ -844,7 +875,7 @@ export default function DocPage() {
                       value={newTaskTitle}
                       onChange={e => setNewTaskTitle(e.target.value)}
                       onKeyDown={e => {
-                        if (e.key === 'Enter') handleAddTask()
+                        if (e.key === 'Enter') handleSaveTask()
                         if (e.key === 'Escape') { setAddingTask(false); setNewTaskTitle(''); setNewTaskDueDate(''); setNewTaskPriority('medium'); setTaskPriorityOpen(false) }
                       }}
                       placeholder="Task title..."
@@ -900,7 +931,7 @@ export default function DocPage() {
                         Cancel
                       </button>
                       <button
-                        onClick={handleAddTask}
+                        onClick={handleSaveTask}
                         disabled={!newTaskTitle.trim()}
                         className="px-2 py-1 rounded-md text-[11px] font-medium transition-colors disabled:opacity-30"
                         style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-secondary)' }}
@@ -919,6 +950,80 @@ export default function DocPage() {
 
                 <div className="flex flex-col gap-0.5 mb-3">
                   {tasks.map(task => (
+                    editingTaskId === task.id ? (
+                    <div key={task.id} className="rounded-lg p-2.5 mb-0.5 flex flex-col gap-2" style={{ backgroundColor: 'var(--bg-tertiary)', border: '1px solid var(--border)' }}>
+                      <input
+                        value={newTaskTitle}
+                        onChange={e => setNewTaskTitle(e.target.value)}
+                        onKeyDown={e => {
+                          if (e.key === 'Enter') handleSaveTask()
+                          if (e.key === 'Escape') { setEditingTaskId(null); setNewTaskTitle(''); setNewTaskDueDate(''); setNewTaskPriority('medium'); setTaskPriorityOpen(false) }
+                        }}
+                        placeholder="Task title..."
+                        className="w-full bg-transparent text-[12px] focus:outline-none"
+                        style={{ color: 'var(--text-primary)' }}
+                      />
+                      <div className="flex gap-2">
+                        <input
+                          type="date"
+                          value={newTaskDueDate}
+                          onChange={e => setNewTaskDueDate(e.target.value)}
+                          className="flex-1 min-w-0 rounded-md px-2 py-1 text-[11px] focus:outline-none"
+                          style={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border)', color: 'var(--text-secondary)', colorScheme: 'dark' }}
+                        />
+                        <div className="relative flex-1 min-w-0" ref={taskPriorityRef}>
+                          <button
+                            type="button"
+                            onClick={() => setTaskPriorityOpen(v => !v)}
+                            className="w-full flex items-center gap-1.5 rounded-md px-2 py-1 text-[11px] transition-colors"
+                            style={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border)', color: 'var(--text-secondary)' }}
+                          >
+                            <span style={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: TASK_PRIORITY_COLORS[newTaskPriority], flexShrink: 0 }} />
+                            <span style={{ textTransform: 'capitalize' }}>{newTaskPriority}</span>
+                          </button>
+                          {taskPriorityOpen && (
+                            <div className="absolute top-full left-0 right-0 mt-1 z-20 rounded-md py-1" style={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border)', boxShadow: '0 8px 24px rgba(0,0,0,0.4)' }}>
+                              {['low', 'medium', 'high'].map(p => (
+                                <button
+                                  key={p}
+                                  type="button"
+                                  onClick={() => { setNewTaskPriority(p); setTaskPriorityOpen(false) }}
+                                  className="w-full flex items-center gap-2 px-2.5 py-1.5 text-[11px] transition-colors"
+                                  style={{ color: 'var(--text-secondary)' }}
+                                  onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--border)')}
+                                  onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
+                                >
+                                  <span style={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: TASK_PRIORITY_COLORS[p], flexShrink: 0 }} />
+                                  <span style={{ textTransform: 'capitalize' }}>{p}</span>
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex gap-2 justify-end">
+                        <button
+                          onClick={() => { setEditingTaskId(null); setNewTaskTitle(''); setNewTaskDueDate(''); setNewTaskPriority('medium'); setTaskPriorityOpen(false) }}
+                          className="px-2 py-1 rounded-md text-[11px] transition-colors"
+                          style={{ color: 'var(--text-muted)' }}
+                          onMouseEnter={e => (e.currentTarget.style.color = 'var(--text-secondary)')}
+                          onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-muted)')}
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          onClick={handleSaveTask}
+                          disabled={!newTaskTitle.trim()}
+                          className="px-2 py-1 rounded-md text-[11px] font-medium transition-colors disabled:opacity-30"
+                          style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-secondary)' }}
+                          onMouseEnter={e => (e.currentTarget.style.color = 'var(--text-primary)')}
+                          onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-secondary)')}
+                        >
+                          Save
+                        </button>
+                      </div>
+                    </div>
+                    ) : (
                     <div
                       key={task.id}
                       className="flex items-start gap-2 py-1.5 px-1 rounded-md"
@@ -963,16 +1068,40 @@ export default function DocPage() {
                           </div>
                         )}
                       </div>
-                      <button
-                        onClick={() => handleDeleteTask(task.id)}
-                        className="shrink-0 mt-[1px]"
-                        style={{ color: hoveredTaskId === task.id ? 'var(--text-muted)' : 'transparent' }}
-                        onMouseEnter={e => (e.currentTarget.style.color = '#e05252')}
-                        onMouseLeave={e => (e.currentTarget.style.color = hoveredTaskId === task.id ? 'var(--text-muted)' : 'transparent')}
-                      >
-                        <Trash2 size={11} />
-                      </button>
+                      <div className="relative shrink-0 mt-[1px]" ref={openTaskMenuId === task.id ? taskMenuRef : null}>
+                        <button
+                          onClick={() => setOpenTaskMenuId(openTaskMenuId === task.id ? null : task.id)}
+                          style={{ color: hoveredTaskId === task.id || openTaskMenuId === task.id ? 'var(--text-muted)' : 'transparent' }}
+                          onMouseEnter={e => (e.currentTarget.style.color = 'var(--text-primary)')}
+                          onMouseLeave={e => (e.currentTarget.style.color = hoveredTaskId === task.id || openTaskMenuId === task.id ? 'var(--text-muted)' : 'transparent')}
+                        >
+                          <MoreVertical size={13} />
+                        </button>
+                        {openTaskMenuId === task.id && (
+                          <div className="absolute right-0 top-5 w-32 rounded-lg shadow-xl z-30 overflow-hidden py-1" style={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border)' }}>
+                            <button
+                              onClick={() => { openEditTask(task); setOpenTaskMenuId(null) }}
+                              className="w-full flex items-center gap-2 px-2.5 py-1.5 text-[11px] transition-colors"
+                              style={{ color: 'var(--text-secondary)' }}
+                              onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--border)')}
+                              onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
+                            >
+                              <Pencil size={11} style={{ color: 'var(--text-muted)' }} /> Edit
+                            </button>
+                            <div className="my-1 border-t" style={{ borderColor: 'var(--border)' }} />
+                            <button
+                              onClick={() => { handleDeleteTask(task.id); setOpenTaskMenuId(null) }}
+                              className="w-full flex items-center gap-2 px-2.5 py-1.5 text-[11px] text-red-400 hover:text-red-300 transition-colors"
+                              onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--border)')}
+                              onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
+                            >
+                              <Trash2 size={11} /> Delete
+                            </button>
+                          </div>
+                        )}
+                      </div>
                     </div>
+                    )
                   ))}
                 </div>
                 <div className="border-t mb-1" style={{ borderColor: 'var(--border)' }} />
