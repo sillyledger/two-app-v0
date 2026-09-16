@@ -63,9 +63,28 @@ export async function PATCH(request: Request) {
   if (!payload) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   try {
-    const { id, completed } = await request.json()
+    const body = await request.json()
+    const { id, completed, title, due_date, doc_id, doc_title, priority } = body
+
+    // Simple completion toggle (checkbox click) — unchanged behavior
+    if (title === undefined && due_date === undefined && doc_id === undefined && priority === undefined) {
+      const result = await sql`
+        UPDATE tasks SET completed = ${completed}
+        WHERE id = ${id} AND user_id = ${payload.userId}
+        RETURNING *
+      `
+      return NextResponse.json(result[0])
+    }
+
+    // Full edit (Edit Task modal)
+    if (!title || !doc_id) return NextResponse.json({ error: 'Missing fields' }, { status: 400 })
     const result = await sql`
-      UPDATE tasks SET completed = ${completed}
+      UPDATE tasks SET
+        title = ${title},
+        due_date = ${due_date ?? null},
+        doc_id = ${doc_id},
+        doc_title = ${doc_title ?? ''},
+        priority = ${priority ?? 'medium'}
       WHERE id = ${id} AND user_id = ${payload.userId}
       RETURNING *
     `

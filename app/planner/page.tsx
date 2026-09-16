@@ -4,7 +4,7 @@ import { useEffect, useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Sidebar from '@/components/sidebar'
 import Link from 'next/link'
-import { CheckCircle2, Circle, Trash2, CalendarDays, FileText, Plus } from 'lucide-react'
+import { CheckCircle2, Circle, Trash2, CalendarDays, FileText, Plus, MoreVertical, Pencil } from 'lucide-react'
 
 interface Task {
   id: number
@@ -85,6 +85,11 @@ export default function PlannerPage() {
   const taskTitleRef = useRef<HTMLInputElement>(null)
   const docInputRef = useRef<HTMLInputElement>(null)
 
+  // Row action menu + edit mode
+  const [openMenuId, setOpenMenuId] = useState<number | null>(null)
+  const menuRef = useRef<HTMLDivElement>(null)
+  const [editingTaskId, setEditingTaskId] = useState<number | null>(null)
+
   useEffect(() => {
     const saved = localStorage.getItem('sidebar-collapsed')
     if (saved === 'true') setCollapsed(true)
@@ -124,7 +129,18 @@ export default function PlannerPage() {
     return () => clearTimeout(timeout)
   }, [docQuery])
 
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setOpenMenuId(null)
+      }
+    }
+    if (openMenuId) document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
+  }, [openMenuId])
+
   const openModal = () => {
+    setEditingTaskId(null)
     setTaskTitle('')
     setTaskDueDate('')
     setTaskPriority('medium')
@@ -136,23 +152,54 @@ export default function PlannerPage() {
     setTimeout(() => taskTitleRef.current?.focus(), 50)
   }
 
-  const handleAddTask = async () => {
+  const openEditModal = (task: Task) => {
+    setEditingTaskId(task.id)
+    setTaskTitle(task.title)
+    setTaskDueDate(task.due_date ? task.due_date.slice(0, 10) : '')
+    setTaskPriority(task.priority || 'medium')
+    setSelectedDoc({ uuid: task.doc_id, title: task.doc_title })
+    setDocQuery('')
+    setDocResults([])
+    setDocDropdownOpen(false)
+    setShowModal(true)
+    setOpenMenuId(null)
+    setTimeout(() => taskTitleRef.current?.focus(), 50)
+  }
+
+  const handleSaveTask = async () => {
     if (!taskTitle.trim() || !selectedDoc) return
     setSubmitting(true)
     try {
-      const res = await fetch('/api/tasks', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          title: taskTitle.trim(),
-          doc_id: selectedDoc.uuid,
-          doc_title: selectedDoc.title || 'Untitled',
-          due_date: taskDueDate || null,
-          priority: taskPriority,
-        }),
-      })
-      const newTask = await res.json()
-      setTasks(prev => [newTask, ...prev])
+      if (editingTaskId) {
+        const res = await fetch('/api/tasks', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            id: editingTaskId,
+            title: taskTitle.trim(),
+            doc_id: selectedDoc.uuid,
+            doc_title: selectedDoc.title || 'Untitled',
+            due_date: taskDueDate || null,
+            priority: taskPriority,
+          }),
+        })
+        const updated = await res.json()
+        setTasks(prev => prev.map(t => (t.id === editingTaskId ? updated : t)))
+      } else {
+        const res = await fetch('/api/tasks', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            title: taskTitle.trim(),
+            doc_id: selectedDoc.uuid,
+            doc_title: selectedDoc.title || 'Untitled',
+            due_date: taskDueDate || null,
+            priority: taskPriority,
+          }),
+        })
+        const newTask = await res.json()
+        setTasks(prev => [newTask, ...prev])
+      }
       setShowModal(false)
     } finally {
       setSubmitting(false)
@@ -285,20 +332,20 @@ onMouseLeave={e => (e.currentTarget.style.background = '#ffffff')}
           {!loading && tasks.length > 0 && (
             activeTab === 'all' ? (
               <div className="grid mb-8" style={{ gridTemplateColumns: 'repeat(3, 1fr)', gap: 20 }}>
-                <TaskColumn label="Overdue" dotColor="#e05252" tasks={overdueTasks} onToggle={toggle} onDelete={remove} showDate />
-                <TaskColumn label="Today" dotColor="var(--text-primary)" tasks={todayTasks} onToggle={toggle} onDelete={remove} />
-                <TaskColumn label="Upcoming" dotColor="var(--text-muted)" tasks={upcomingTasks} onToggle={toggle} onDelete={remove} showDate />
+                <TaskColumn label="Overdue" dotColor="#e05252" tasks={overdueTasks} onToggle={toggle} onDelete={remove} onEdit={openEditModal} openMenuId={openMenuId} setOpenMenuId={setOpenMenuId} menuRef={menuRef} showDate />
+                <TaskColumn label="Today" dotColor="var(--text-primary)" tasks={todayTasks} onToggle={toggle} onDelete={remove} onEdit={openEditModal} openMenuId={openMenuId} setOpenMenuId={setOpenMenuId} menuRef={menuRef} />
+                <TaskColumn label="Upcoming" dotColor="var(--text-muted)" tasks={upcomingTasks} onToggle={toggle} onDelete={remove} onEdit={openEditModal} openMenuId={openMenuId} setOpenMenuId={setOpenMenuId} menuRef={menuRef} showDate />
               </div>
             ) : (
               <>
-                {showOverdue && overdueTasks.length > 0 && <TaskGroup label="Overdue" labelColor="#e05252" tasks={overdueTasks} onToggle={toggle} onDelete={remove} showDate />}
-                {showToday && todayTasks.length > 0 && <TaskGroup label="Today" tasks={todayTasks} onToggle={toggle} onDelete={remove} />}
-                {showUpcoming && upcomingTasks.length > 0 && <TaskGroup label="Upcoming" tasks={upcomingTasks} onToggle={toggle} onDelete={remove} showDate />}
+                {showOverdue && overdueTasks.length > 0 && <TaskGroup label="Overdue" labelColor="#e05252" tasks={overdueTasks} onToggle={toggle} onDelete={remove} onEdit={openEditModal} openMenuId={openMenuId} setOpenMenuId={setOpenMenuId} menuRef={menuRef} showDate />}
+                {showToday && todayTasks.length > 0 && <TaskGroup label="Today" tasks={todayTasks} onToggle={toggle} onDelete={remove} onEdit={openEditModal} openMenuId={openMenuId} setOpenMenuId={setOpenMenuId} menuRef={menuRef} />}
+                {showUpcoming && upcomingTasks.length > 0 && <TaskGroup label="Upcoming" tasks={upcomingTasks} onToggle={toggle} onDelete={remove} onEdit={openEditModal} openMenuId={openMenuId} setOpenMenuId={setOpenMenuId} menuRef={menuRef} showDate />}
               </>
             )
           )}
-          {showNoDate && nodateTasks.length > 0 && <TaskGroup label="No date" tasks={nodateTasks} onToggle={toggle} onDelete={remove} />}
-          {showCompleted && completedTasks.length > 0 && <TaskGroup label="Completed" tasks={completedTasks} onToggle={toggle} onDelete={remove} muted onClearAll={clearCompleted} />}
+          {showNoDate && nodateTasks.length > 0 && <TaskGroup label="No date" tasks={nodateTasks} onToggle={toggle} onDelete={remove} onEdit={openEditModal} openMenuId={openMenuId} setOpenMenuId={setOpenMenuId} menuRef={menuRef} />}
+          {showCompleted && completedTasks.length > 0 && <TaskGroup label="Completed" tasks={completedTasks} onToggle={toggle} onDelete={remove} onEdit={openEditModal} openMenuId={openMenuId} setOpenMenuId={setOpenMenuId} menuRef={menuRef} muted onClearAll={clearCompleted} />}
 
           {!loading && tasks.length > 0 && activeTab === 'today' && todayTasks.length === 0 && <p className="text-[13px]" style={{ color: 'var(--text-muted)' }}>No tasks due today.</p>}
           {!loading && tasks.length > 0 && activeTab === 'upcoming' && upcomingTasks.length === 0 && <p className="text-[13px]" style={{ color: 'var(--text-muted)' }}>No upcoming tasks.</p>}
@@ -314,7 +361,7 @@ onMouseLeave={e => (e.currentTarget.style.background = '#ffffff')}
           <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(3px)' }} onClick={() => setShowModal(false)} />
           <div style={{ position: 'relative', borderRadius: 14, boxShadow: '0 24px 64px rgba(0,0,0,0.6)', width: 400, padding: '24px 24px 20px', zIndex: 10, background: '#1c1c1f', border: '1px solid rgba(255,255,255,0.09)', fontFamily: FONT }}>
 
-            <h2 style={{ fontSize: 14, fontWeight: 600, marginBottom: 20, color: '#eeede7', letterSpacing: '-0.01em' }}>New Task</h2>
+            <h2 style={{ fontSize: 14, fontWeight: 600, marginBottom: 20, color: '#eeede7', letterSpacing: '-0.01em' }}>{editingTaskId ? 'Edit Task' : 'New Task'}</h2>
 
             {/* Task name */}
             <label style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.07em', color: MUTED, display: 'block', marginBottom: 6 }}>Task</label>
@@ -324,7 +371,7 @@ onMouseLeave={e => (e.currentTarget.style.background = '#ffffff')}
               placeholder="What needs to be done?"
               value={taskTitle}
               onChange={e => setTaskTitle(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Enter') handleAddTask(); if (e.key === 'Escape') setShowModal(false) }}
+              onKeyDown={e => { if (e.key === 'Enter') handleSaveTask(); if (e.key === 'Escape') setShowModal(false) }}
               style={{ width: '100%', borderRadius: 9, padding: '9px 12px', fontSize: 13.5, outline: 'none', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: '#e0dfd9', fontFamily: FONT, boxSizing: 'border-box', marginBottom: 16 }}
             />
 
@@ -387,13 +434,13 @@ onMouseLeave={e => (e.currentTarget.style.background = '#ffffff')}
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
               <button onClick={() => setShowModal(false)} style={{ padding: '7px 14px', borderRadius: 8, fontSize: 13, fontWeight: 500, color: '#5a5a62', background: 'transparent', border: 'none', cursor: 'pointer', fontFamily: FONT }} onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.05)')} onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>Cancel</button>
               <button
-                onClick={handleAddTask}
+                onClick={handleSaveTask}
                 disabled={!taskTitle.trim() || !selectedDoc || submitting}
                 style={{ padding: '7px 14px', borderRadius: 8, fontSize: 13, fontWeight: 600, color: '#fff', background: !taskTitle.trim() || !selectedDoc ? '#3a3a44' : '#6b5ce7', border: 'none', cursor: !taskTitle.trim() || !selectedDoc ? 'not-allowed' : 'pointer', fontFamily: FONT }}
                 onMouseEnter={e => { if (taskTitle.trim() && selectedDoc) e.currentTarget.style.background = '#7c6ef0' }}
                 onMouseLeave={e => { if (taskTitle.trim() && selectedDoc) e.currentTarget.style.background = '#6b5ce7' }}
               >
-                {submitting ? 'Adding...' : 'Add Task'}
+                {submitting ? (editingTaskId ? 'Saving...' : 'Adding...') : (editingTaskId ? 'Save' : 'Add Task')}
               </button>
             </div>
 
@@ -405,13 +452,22 @@ onMouseLeave={e => (e.currentTarget.style.background = '#ffffff')}
 }
 
 function TaskCard({
-  task, onToggle, onDelete, showDate = false, muted = false,
+  task, onToggle, onDelete, onEdit, showDate = false, muted = false,
+  isMenuOpen, onToggleMenu, menuRef,
 }: {
-  task: Task; onToggle: (t: Task) => void; onDelete: (id: number) => void; showDate?: boolean; muted?: boolean
+  task: Task
+  onToggle: (t: Task) => void
+  onDelete: (id: number) => void
+  onEdit: (t: Task) => void
+  showDate?: boolean
+  muted?: boolean
+  isMenuOpen: boolean
+  onToggleMenu: (id: number | null) => void
+  menuRef: React.RefObject<HTMLDivElement | null>
 }) {
   return (
     <div
-      className="flex items-start gap-3 rounded-xl transition-colors"
+      className="group flex items-start gap-3 rounded-xl transition-colors"
       style={{ padding: 14, opacity: muted ? 0.5 : 1, backgroundColor: 'var(--bg-secondary)' }}
       onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)')}
       onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'var(--bg-secondary)')}
@@ -440,17 +496,58 @@ function TaskCard({
           )}
         </div>
       </div>
-      <button onClick={() => onDelete(task.id)} className="shrink-0 mt-[2px]" style={{ color: 'transparent' }} onMouseEnter={e => (e.currentTarget.style.color = '#e05252')} onMouseLeave={e => (e.currentTarget.style.color = 'transparent')}>
-        <Trash2 size={13} />
-      </button>
+      <div className="relative shrink-0 mt-[2px]" ref={isMenuOpen ? menuRef : null}>
+        <button
+          onClick={() => onToggleMenu(isMenuOpen ? null : task.id)}
+          className="w-7 h-7 rounded flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+          style={{ color: 'var(--text-muted)' }}
+          onMouseEnter={e => { e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)'; e.currentTarget.style.color = 'var(--text-primary)' }}
+          onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = 'var(--text-muted)' }}
+        >
+          <MoreVertical size={15} />
+        </button>
+        {isMenuOpen && (
+          <div className="absolute right-0 top-8 w-44 rounded-xl shadow-xl z-50 overflow-hidden py-1" style={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border)' }}>
+            <button
+              onClick={() => { onEdit(task); onToggleMenu(null) }}
+              className="w-full flex items-center gap-2.5 px-3 py-2 text-sm transition-colors"
+              style={{ color: 'var(--text-secondary)' }}
+              onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)')}
+              onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
+            >
+              <Pencil size={13} style={{ color: 'var(--text-muted)' }} /> Edit
+            </button>
+            <div className="my-1 border-t" style={{ borderColor: 'var(--border)' }} />
+            <button
+              onClick={() => { onDelete(task.id); onToggleMenu(null) }}
+              className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-red-400 hover:text-red-300 transition-colors"
+              onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)')}
+              onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
+            >
+              <Trash2 size={13} /> Delete
+            </button>
+          </div>
+        )}
+      </div>
     </div>
   )
 }
 
 function TaskGroup({
-  label, labelColor, tasks, onToggle, onDelete, showDate = false, muted = false, onClearAll,
+  label, labelColor, tasks, onToggle, onDelete, onEdit, openMenuId, setOpenMenuId, menuRef, showDate = false, muted = false, onClearAll,
 }: {
-  label: string; labelColor?: string; tasks: Task[]; onToggle: (t: Task) => void; onDelete: (id: number) => void; showDate?: boolean; muted?: boolean; onClearAll?: () => void
+  label: string
+  labelColor?: string
+  tasks: Task[]
+  onToggle: (t: Task) => void
+  onDelete: (id: number) => void
+  onEdit: (t: Task) => void
+  openMenuId: number | null
+  setOpenMenuId: (id: number | null) => void
+  menuRef: React.RefObject<HTMLDivElement | null>
+  showDate?: boolean
+  muted?: boolean
+  onClearAll?: () => void
 }) {
   return (
     <div className="mb-8">
@@ -471,7 +568,18 @@ function TaskGroup({
       </div>
       <div className="flex flex-col" style={{ gap: 10 }}>
         {tasks.map(task => (
-          <TaskCard key={task.id} task={task} onToggle={onToggle} onDelete={onDelete} showDate={showDate} muted={muted} />
+          <TaskCard
+            key={task.id}
+            task={task}
+            onToggle={onToggle}
+            onDelete={onDelete}
+            onEdit={onEdit}
+            showDate={showDate}
+            muted={muted}
+            isMenuOpen={openMenuId === task.id}
+            onToggleMenu={setOpenMenuId}
+            menuRef={menuRef}
+          />
         ))}
       </div>
     </div>
@@ -479,9 +587,18 @@ function TaskGroup({
 }
 
 function TaskColumn({
-  label, dotColor, tasks, onToggle, onDelete, showDate = false,
+  label, dotColor, tasks, onToggle, onDelete, onEdit, openMenuId, setOpenMenuId, menuRef, showDate = false,
 }: {
-  label: string; dotColor: string; tasks: Task[]; onToggle: (t: Task) => void; onDelete: (id: number) => void; showDate?: boolean
+  label: string
+  dotColor: string
+  tasks: Task[]
+  onToggle: (t: Task) => void
+  onDelete: (id: number) => void
+  onEdit: (t: Task) => void
+  openMenuId: number | null
+  setOpenMenuId: (id: number | null) => void
+  menuRef: React.RefObject<HTMLDivElement | null>
+  showDate?: boolean
 }) {
   return (
     <div>
@@ -495,7 +612,17 @@ function TaskColumn({
       ) : (
         <div className="flex flex-col" style={{ gap: 10 }}>
           {tasks.map(task => (
-            <TaskCard key={task.id} task={task} onToggle={onToggle} onDelete={onDelete} showDate={showDate} />
+            <TaskCard
+              key={task.id}
+              task={task}
+              onToggle={onToggle}
+              onDelete={onDelete}
+              onEdit={onEdit}
+              showDate={showDate}
+              isMenuOpen={openMenuId === task.id}
+              onToggleMenu={setOpenMenuId}
+              menuRef={menuRef}
+            />
           ))}
         </div>
       )}
