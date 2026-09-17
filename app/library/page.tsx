@@ -1,11 +1,13 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Sidebar from '@/components/sidebar'
 import TemplatePickerModal from '@/components/template-picker-modal'
+import MoveToFolderModal from '@/components/move-to-folder-modal'
+import { getDescendantIds } from '@/lib/folder-tree'
+import { FolderCard, FolderData, getAccent, markFolderCardMounted } from '@/components/folder-card'
 import { FileText, Search, Plus, Users } from 'lucide-react'
-import { formatDate, getUserDatePrefs } from '@/lib/format-date'
 
 interface Label {
   id: number
@@ -27,12 +29,6 @@ interface Collection {
   docs: Doc[]
 }
 
-interface FolderItem {
-  id: string
-  name: string
-  doc_count: number | string
-}
-
 interface FolderDoc {
   uuid: string
   title: string
@@ -42,27 +38,6 @@ interface FolderDoc {
 
 type LibraryPill = 'all' | 'other' | 'shared'
 type GroupBy = 'folders' | 'labels'
-
-const ACCENT_COLORS = ["#EF9F27", "#85B7EB", "#5DCAA5", "#F0997B", "#AFA9EC", "#97C459", "#ED93B1", "#B4B2A9", "#5DCAA5"]
-function getAccent(index: number) {
-  return ACCENT_COLORS[index % ACCENT_COLORS.length]
-}
-
-let hasMountedOnClient = false
-
-function timeAgo(dateStr: string) {
-  const date = new Date(dateStr)
-  const now = new Date()
-  const diff = Math.floor((now.getTime() - date.getTime()) / 1000)
-  if (diff < 60) return 'just now'
-  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`
-  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`
-  if (diff < 604800) return `${Math.floor(diff / 86400)}d ago`
-  const { timezone, dateFormat } = hasMountedOnClient
-    ? getUserDatePrefs()
-    : { timezone: 'UTC+0', dateFormat: 'MMM D, YYYY' }
-  return formatDate(date, dateFormat, timezone)
-}
 
 function previewText(titles: string[]) {
   if (titles.length === 0) return 'Empty folder'
@@ -79,16 +54,24 @@ export default function LibraryPage() {
   const [unlabeled, setUnlabeled] = useState<Doc[]>([])
   const [allDocs, setAllDocs] = useState<Doc[]>([])
 
-  const [folders, setFolders] = useState<FolderItem[]>([])
+  const [folders, setFolders] = useState<FolderData[]>([])
   const [folderDocs, setFolderDocs] = useState<FolderDoc[]>([])
   const [sharedWorkspaces, setSharedWorkspaces] = useState<{ id: string; name: string }[]>([])
-  const [sharedData, setSharedData] = useState<Record<string, { folders: FolderItem[]; docs: FolderDoc[] }>>({})
+  const [sharedData, setSharedData] = useState<Record<string, { folders: FolderData[]; docs: FolderDoc[] }>>({})
 
   const [search, setSearch] = useState('')
   const [loading, setLoading] = useState(true)
   const [activePill, setActivePill] = useState<LibraryPill>('all')
   const [hoveredPill, setHoveredPill] = useState<string | null>(null)
   const [templateModalOpen, setTemplateModalOpen] = useState(false)
+
+  const [menuOpenId, setMenuOpenId] = useState<string | null>(null)
+  const menuRef = useRef<HTMLDivElement>(null)
+  const [renamingId, setRenamingId] = useState<string | null>(null)
+  const [renameValue, setRenameValue] = useState('')
+  const renameInputRef = useRef<HTMLInputElement>(null)
+  const [movingFolder, setMovingFolder] = useState<FolderData | null>(null)
+  const [moveCandidates, setMoveCandidates] = useState<FolderData[]>([])
 
   useEffect(() => {
     const saved = localStorage.getItem('sidebar-collapsed')
@@ -97,7 +80,20 @@ export default function LibraryPage() {
     if (savedGroup === 'folders' || savedGroup === 'labels') setGroupBy(savedGroup)
   }, [])
 
-  useEffect(() => { hasMountedOnClient = true }, [])
+  useEffect(() => { markFolderCardMounted() }, [])
+
+  useEffect(() => {
+    const h = (e: MouseEvent) => { if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenuOpenId(null) }
+    if (menuOpenId) document.addEventListener('mousedown', h)
+    return () => document.removeEventListener('mousedown', h)
+  }, [menuOpenId])
+
+  useEffect(() => {
+    if (renamingId && renameInputRef.current) {
+      renameInputRef.current.focus()
+      renameInputRef.current.select()
+    }
+  }, [renamingId])
 
   useEffect(() => {
     localStorage.setItem('library-group-by', groupBy)
@@ -156,11 +152,84 @@ export default function LibraryPage() {
     }).catch(() => {})
   }, [])
 
-  const foldersWithDocs = folders.map((folder, index) => ({
-    folder,
-    color: getAccent(index),
-    docs: folderDocs.filter(d => d.folder_id === folder.id),
-  }))
+  const handleTogglePin = async (folder: FolderData, e: React.MouseEvent) => {
+    e.stopPropagation()
+    const newValue = !folder.pinned
+    setFolders(prev => prev.map(f => f.id === folder.id ? { ...f, pinned: newValue } : f))
+    await fetch(`/api/folders/${folder.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pinned: newValue }),
+    })
+  }
+
+  const startRenaming = (folder: FolderData, e: React.MouseEvent) => {
+    e.stopPropagation()
+    setMenuOpenId(null)
+    setRenameValue(folder.name)
+    setRenamingId(folder.id)
+  }
+
+  const commitRename = async (folder: FolderData) => {
+    const trimmed = renameValue.trim()
+    setRenamingId(null)
+    if (!trimmed || trimmed === folder.name) return
+    setFolders(prev => prev.map(f => f.id === folder.id ? { ...f, name: trimmed } : f))
+    try {
+      await fetch(`/api/folders/${folder.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: trimmed }),
+      })
+    } catch {}
+  }
+
+  const handleOpenMoveFolder = async (folder: FolderData, e: React.MouseEvent) => {
+    e.stopPropagation()
+    setMenuOpenId(null)
+    setMovingFolder(folder)
+    try {
+      const res = await fetch('/api/folders?all=true')
+      const data = await res.json()
+      const allFolders: FolderData[] = Array.isArray(data) ? data : []
+      const descendantIds = getDescendantIds(allFolders, folder.id)
+      setMoveCandidates(
+        allFolders.filter(f => f.workspace_id === folder.workspace_id && f.id !== folder.id && !descendantIds.has(f.id))
+      )
+    } catch {
+      setMoveCandidates([])
+    }
+  }
+
+  const handleMoveFolder = async (newParentId: string) => {
+    if (!movingFolder) return
+    const res = await fetch(`/api/folders/${movingFolder.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ parent_id: newParentId }),
+    })
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}))
+      alert(err.error || 'Failed to move folder.')
+      return
+    }
+    setFolders(prev => prev.filter(f => f.id !== movingFolder.id))
+    setMovingFolder(null)
+  }
+
+  const handleDeleteFolder = async (folder: FolderData, e: React.MouseEvent) => {
+    e.stopPropagation()
+    setMenuOpenId(null)
+    const confirmed = window.confirm(`Delete "${folder.name}"?\n\nAll docs inside will be moved to Trash and can be recovered within 30 days.`)
+    if (!confirmed) return
+    setFolders(prev => prev.filter(f => f.id !== folder.id))
+    try { await fetch(`/api/folders/${folder.id}`, { method: 'DELETE' }) } catch {}
+  }
+
+  const handleToggleMenu = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation()
+    setMenuOpenId(prev => prev === id ? null : id)
+  }
 
   const unfiledDocs = folderDocs.filter(d => !d.folder_id)
 
@@ -169,9 +238,9 @@ export default function LibraryPage() {
     c.docs.some(d => d.title.toLowerCase().includes(search.toLowerCase()))
   )
 
-  const filteredFolders = foldersWithDocs.filter(f =>
-    f.folder.name.toLowerCase().includes(search.toLowerCase()) ||
-    f.docs.some(d => d.title.toLowerCase().includes(search.toLowerCase()))
+  const filteredFolders = folders.filter(f =>
+    f.name.toLowerCase().includes(search.toLowerCase()) ||
+    folderDocs.some(d => d.folder_id === f.id && (d.title || '').toLowerCase().includes(search.toLowerCase()))
   )
 
   const filteredUnfiledDocs = unfiledDocs.filter(d =>
@@ -310,29 +379,27 @@ export default function LibraryPage() {
                     filteredFolders.length === 0 ? (
                       <p className="text-sm mb-10" style={{ color: 'var(--text-muted)' }}>No folders yet.</p>
                     ) : (
-                      <div className="grid gap-4 mb-10" style={{ gridTemplateColumns: 'repeat(5, minmax(0, 1fr))' }}>
-                        {filteredFolders.map(({ folder, color, docs }) => (
-                          <div
+                      <div className="grid grid-cols-4 gap-4 mb-10">
+                        {filteredFolders.map(folder => (
+                          <FolderCard
                             key={folder.id}
-                            onClick={() => router.push(`/folders/${folder.id}?name=${encodeURIComponent(folder.name)}`)}
-                            className="relative cursor-pointer"
-                            style={{ height: '150px' }}
-                          >
-                            {docs.length > 0 && (
-                              <>
-                                <div style={{ position: 'absolute', top: 14, left: 10, right: -10, bottom: 0, borderRadius: 12, backgroundColor: 'var(--bg-secondary)', opacity: 0.35 }} />
-                                <div style={{ position: 'absolute', top: 7, left: 5, right: -5, bottom: 0, borderRadius: 12, backgroundColor: 'var(--bg-secondary)', opacity: 0.6 }} />
-                              </>
-                            )}
-                            <div style={{ position: 'absolute', inset: 0, borderRadius: 12, backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border)', padding: '18px 20px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                              <div className="flex items-center gap-2">
-                                <span style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: color, flexShrink: 0 }} />
-                                <span className="text-[15px] font-medium" style={{ color: 'var(--text-primary)' }}>{folder.name}</span>
-                              </div>
-                              <p className="text-[12px] truncate" style={{ color: 'var(--text-muted)' }}>{previewText(docs.map(d => d.title || 'Untitled'))}</p>
-                              <span className="text-[12.5px]" style={{ color: 'var(--text-secondary)' }}>{docs.length} {docs.length === 1 ? 'doc' : 'docs'}</span>
-                            </div>
-                          </div>
+                            folder={folder}
+                            accentColor={getAccent(folders.findIndex(f => f.id === folder.id))}
+                            isMenuOpen={menuOpenId === folder.id}
+                            menuRef={menuRef}
+                            onToggleMenu={handleToggleMenu}
+                            onTogglePin={handleTogglePin}
+                            onOpen={f => router.push(`/folders/${f.id}?name=${encodeURIComponent(f.name)}`)}
+                            isRenaming={renamingId === folder.id}
+                            renameValue={renameValue}
+                            onRenameChange={setRenameValue}
+                            renameInputRef={renameInputRef}
+                            onCommitRename={commitRename}
+                            onCancelRename={() => setRenamingId(null)}
+                            onStartRename={startRenaming}
+                            onMove={handleOpenMoveFolder}
+                            onDelete={handleDeleteFolder}
+                          />
                         ))}
                       </div>
                     )
@@ -483,6 +550,15 @@ export default function LibraryPage() {
       </main>
 
       <TemplatePickerModal open={templateModalOpen} onClose={() => setTemplateModalOpen(false)} />
+
+      {movingFolder && (
+        <MoveToFolderModal
+          folders={moveCandidates}
+          onMove={handleMoveFolder}
+          onClose={() => setMovingFolder(null)}
+          currentFolderId={movingFolder?.parent_id ?? undefined}
+        />
+      )}
     </div>
   )
 }
