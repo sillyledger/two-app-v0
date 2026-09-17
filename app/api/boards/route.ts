@@ -25,10 +25,11 @@ export async function POST(request: Request) {
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   try {
-    const { name, type, workspace_id } = await request.json()
-    if (!name?.trim() || (type !== 'wall' && type !== 'canvas')) {
-      return NextResponse.json({ error: 'Invalid name or type' }, { status: 400 })
+    const { name, workspace_id } = await request.json()
+    if (!name?.trim()) {
+      return NextResponse.json({ error: 'Invalid name' }, { status: 400 })
     }
+    const type = 'canvas'
     const result = await sql`
       INSERT INTO boards (name, type, workspace_id, user_id)
       VALUES (${name.trim()}, ${type}, ${workspace_id}, ${session.userId})
