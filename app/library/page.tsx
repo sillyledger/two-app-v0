@@ -8,7 +8,7 @@ import MoveToFolderModal from '@/components/move-to-folder-modal'
 import { getDescendantIds } from '@/lib/folder-tree'
 import { FolderCard, FolderData, getAccent, markFolderCardMounted } from '@/components/folder-card'
 import { NoteCategoryCard, NoteCategoryData } from '@/components/note-category-card'
-import { FileText, Search, Plus, Users, ArrowRight } from 'lucide-react'
+import { FileText, Search, Plus, Users } from 'lucide-react'
 
 interface Label {
   id: number
@@ -444,15 +444,8 @@ export default function LibraryPage() {
             <>
               {activePill === 'all' && (
                 <>
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="text-[11px] font-medium uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>
-                      {groupBy === 'folders' ? 'Folders' : 'Labels'}
-                    </div>
-                    {groupBy === 'folders' && (
-                      <button onClick={() => router.push('/folders')} className="flex items-center gap-1 text-[12px]" style={{ color: 'var(--text-muted)', background: 'transparent', border: 'none', cursor: 'pointer' }}>
-                        See all folders <ArrowRight size={11} />
-                      </button>
-                    )}
+                  <div className="text-[11px] font-medium uppercase tracking-wider mb-4" style={{ color: 'var(--text-muted)' }}>
+                    {groupBy === 'folders' ? 'Folders' : 'Labels'}
                   </div>
 
                   {groupBy === 'folders' ? (
@@ -559,12 +552,7 @@ export default function LibraryPage() {
 
               {activePill === 'all' && (
                 <>
-                  <div className="flex items-center justify-between mb-4 mt-10">
-                    <div className="text-[11px] font-medium uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Notes</div>
-                    <button onClick={() => router.push('/notes')} className="flex items-center gap-1 text-[12px]" style={{ color: 'var(--text-muted)', background: 'transparent', border: 'none', cursor: 'pointer' }}>
-                      See all notes <ArrowRight size={11} />
-                    </button>
-                  </div>
+                  <div className="text-[11px] font-medium uppercase tracking-wider mb-4 mt-10" style={{ color: 'var(--text-muted)' }}>Notes</div>
                   {filteredCategories.length === 0 && filteredUncategorizedNotes.length === 0 ? (
                     <p className="text-sm mb-10" style={{ color: 'var(--text-muted)' }}>No notes yet.</p>
                   ) : (
