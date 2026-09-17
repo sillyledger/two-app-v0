@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useRef, Fragment } from 'react'
+import { useEffect, useState, useRef, Fragment, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { LayoutGrid, List, Search, MoreVertical, Trash2, Tag, ChevronRight, ChevronDown } from 'lucide-react'
 
@@ -75,7 +75,7 @@ function sortCategoriesForMove(cats: NoteCategory[]): (NoteCategory & { depth: n
   return result
 }
 
-export default function NotesPage() {
+function NotesPageContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [authChecked, setAuthChecked] = useState(false)
@@ -699,5 +699,13 @@ export default function NotesPage() {
         </div>
       )}
     </>
+  )
+}
+
+export default function NotesPage() {
+  return (
+    <Suspense fallback={null}>
+      <NotesPageContent />
+    </Suspense>
   )
 }
