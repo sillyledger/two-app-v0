@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, useRef, Fragment } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { LayoutGrid, List, Search, MoreVertical, Trash2, Tag, ChevronRight, ChevronDown } from 'lucide-react'
 
 interface NoteCategory {
@@ -77,6 +77,7 @@ function sortCategoriesForMove(cats: NoteCategory[]): (NoteCategory & { depth: n
 
 export default function NotesPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [authChecked, setAuthChecked] = useState(false)
   const [notes, setNotes] = useState<Note[]>([])
   const [categories, setCategories] = useState<NoteCategory[]>([])
@@ -112,6 +113,14 @@ export default function NotesPage() {
     if (!authChecked) return
     loadData()
   }, [authChecked])
+
+  useEffect(() => {
+    const categoryParam = searchParams.get('category')
+    if (categoryParam) {
+      const id = Number(categoryParam)
+      if (!Number.isNaN(id)) setActiveCategory(id)
+    }
+  }, [searchParams])
 
   useEffect(() => {
     const h = (e: MouseEvent) => {

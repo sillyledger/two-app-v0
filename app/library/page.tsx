@@ -7,7 +7,8 @@ import TemplatePickerModal from '@/components/template-picker-modal'
 import MoveToFolderModal from '@/components/move-to-folder-modal'
 import { getDescendantIds } from '@/lib/folder-tree'
 import { FolderCard, FolderData, getAccent, markFolderCardMounted } from '@/components/folder-card'
-import { FileText, Search, Plus, Users } from 'lucide-react'
+import { NoteCategoryCard, NoteCategoryData } from '@/components/note-category-card'
+import { FileText, Search, Plus, Users, ArrowRight } from 'lucide-react'
 
 interface Label {
   id: number
@@ -36,6 +37,14 @@ interface FolderDoc {
   folder_name?: string | null
 }
 
+interface NoteItem {
+  id: number
+  uuid: string
+  title: string
+  category_id: number | null
+  updated_at: string
+}
+
 type LibraryPill = 'all' | 'other' | 'shared'
 type GroupBy = 'folders' | 'labels'
 
@@ -43,6 +52,11 @@ function previewText(titles: string[]) {
   if (titles.length === 0) return 'Empty folder'
   const shown = titles.slice(0, 2).join(', ')
   return titles.length > 2 ? `${shown} +${titles.length - 2}` : shown
+}
+
+function collectDescendantCategoryIds(id: number, cats: NoteCategoryData[]): number[] {
+  const children = cats.filter(c => c.parent_id === id)
+  return children.flatMap(child => [child.id, ...collectDescendantCategoryIds(child.id, cats)])
 }
 
 export default function LibraryPage() {
@@ -73,6 +87,11 @@ export default function LibraryPage() {
   const [movingFolder, setMovingFolder] = useState<FolderData | null>(null)
   const [moveCandidates, setMoveCandidates] = useState<FolderData[]>([])
 
+  const [noteCategories, setNoteCategories] = useState<NoteCategoryData[]>([])
+  const [notes, setNotes] = useState<NoteItem[]>([])
+  const [noteMenuOpenId, setNoteMenuOpenId] = useState<number | null>(null)
+  const noteMenuRef = useRef<HTMLDivElement>(null)
+
   useEffect(() => {
     const saved = localStorage.getItem('sidebar-collapsed')
     if (saved === 'true') setCollapsed(true)
@@ -87,6 +106,12 @@ export default function LibraryPage() {
     if (menuOpenId) document.addEventListener('mousedown', h)
     return () => document.removeEventListener('mousedown', h)
   }, [menuOpenId])
+
+  useEffect(() => {
+    const h = (e: MouseEvent) => { if (noteMenuRef.current && !noteMenuRef.current.contains(e.target as Node)) setNoteMenuOpenId(null) }
+    if (noteMenuOpenId !== null) document.addEventListener('mousedown', h)
+    return () => document.removeEventListener('mousedown', h)
+  }, [noteMenuOpenId])
 
   useEffect(() => {
     if (renamingId && renameInputRef.current) {
@@ -124,6 +149,16 @@ export default function LibraryPage() {
       .then(r => r.json())
       .then(data => setFolderDocs(Array.isArray(data) ? data : []))
       .catch(() => setFolderDocs([]))
+
+    fetch('/api/notes')
+      .then(r => r.json())
+      .then(data => setNotes(Array.isArray(data) ? data : []))
+      .catch(() => setNotes([]))
+
+    fetch('/api/note-categories')
+      .then(r => r.json())
+      .then(data => setNoteCategories(Array.isArray(data) ? data : []))
+      .catch(() => setNoteCategories([]))
 
     fetch('/api/workspace').then(r => r.json()).then(primary => {
       fetch('/api/workspaces')
@@ -231,6 +266,25 @@ export default function LibraryPage() {
     setMenuOpenId(prev => prev === id ? null : id)
   }
 
+  const handleToggleNoteMenu = (id: number, e: React.MouseEvent) => {
+    e.stopPropagation()
+    setNoteMenuOpenId(prev => prev === id ? null : id)
+  }
+
+  const handleDeleteCategory = async (category: NoteCategoryData, e: React.MouseEvent) => {
+    e.stopPropagation()
+    setNoteMenuOpenId(null)
+    const hasChildren = noteCategories.some(c => c.parent_id === category.id)
+    const confirmMessage = hasChildren
+      ? 'Delete this category and its subcategories? Notes inside them will not be deleted — they\'ll just lose their category.'
+      : 'Delete this category? Notes inside it will not be deleted — they\'ll just lose their category.'
+    if (!window.confirm(confirmMessage)) return
+    const idsToRemove = [category.id, ...collectDescendantCategoryIds(category.id, noteCategories)]
+    setNoteCategories(prev => prev.filter(c => !idsToRemove.includes(c.id)))
+    setNotes(prev => prev.map(n => n.category_id !== null && idsToRemove.includes(n.category_id) ? { ...n, category_id: null } : n))
+    try { await fetch(`/api/note-categories/${category.id}`, { method: 'DELETE' }) } catch {}
+  }
+
   const unfiledDocs = folderDocs.filter(d => !d.folder_id)
 
   const filteredLabelCollections = collections.filter(c =>
@@ -250,6 +304,25 @@ export default function LibraryPage() {
   const filteredUnlabeled = unlabeled.filter(d =>
     (d.title || '').toLowerCase().includes(search.toLowerCase())
   )
+
+  const topLevelCategories = noteCategories.filter(c => c.parent_id === null)
+
+  const categoriesWithStats = topLevelCategories.map(category => {
+    const idsInScope = [category.id, ...collectDescendantCategoryIds(category.id, noteCategories)]
+    const categoryNotes = notes.filter(n => n.category_id !== null && idsInScope.includes(n.category_id))
+    const lastEdited = categoryNotes.length > 0
+      ? categoryNotes.reduce((latest, n) => new Date(n.updated_at) > new Date(latest) ? n.updated_at : latest, categoryNotes[0].updated_at)
+      : null
+    return { category, noteCount: categoryNotes.length, lastEdited, notes: categoryNotes }
+  })
+
+  const filteredCategories = categoriesWithStats.filter(c =>
+    c.category.name.toLowerCase().includes(search.toLowerCase()) ||
+    c.notes.some(n => (n.title || '').toLowerCase().includes(search.toLowerCase()))
+  )
+
+  const uncategorizedNotes = notes.filter(n => n.category_id === null)
+  const filteredUncategorizedNotes = uncategorizedNotes.filter(n => (n.title || '').toLowerCase().includes(search.toLowerCase()))
 
   const groupCount = groupBy === 'folders' ? folders.length : collections.length
   const totalDocs = folderDocs.length || allDocs.length
@@ -472,6 +545,53 @@ export default function LibraryPage() {
                     ) : search && activePill === 'other' ? (
                       <p className="text-sm" style={{ color: 'var(--text-muted)' }}>No matching docs.</p>
                     ) : null
+                  )}
+                </>
+              )}
+
+              {activePill === 'all' && (
+                <>
+                  <div className="flex items-center justify-between mb-4 mt-10">
+                    <div className="text-[11px] font-medium uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Notes</div>
+                    <button onClick={() => router.push('/notes')} className="flex items-center gap-1 text-[12px]" style={{ color: 'var(--text-muted)', background: 'transparent', border: 'none', cursor: 'pointer' }}>
+                      See all notes <ArrowRight size={11} />
+                    </button>
+                  </div>
+                  {filteredCategories.length === 0 && filteredUncategorizedNotes.length === 0 ? (
+                    <p className="text-sm mb-10" style={{ color: 'var(--text-muted)' }}>No notes yet.</p>
+                  ) : (
+                    <>
+                      {filteredCategories.length > 0 && (
+                        <div className="grid grid-cols-4 gap-4 mb-4">
+                          {filteredCategories.map(({ category, noteCount, lastEdited }) => (
+                            <NoteCategoryCard
+                              key={category.id}
+                              category={category}
+                              noteCount={noteCount}
+                              lastEdited={lastEdited}
+                              isMenuOpen={noteMenuOpenId === category.id}
+                              menuRef={noteMenuRef}
+                              onToggleMenu={handleToggleNoteMenu}
+                              onOpen={c => router.push(`/notes?category=${c.id}`)}
+                              onDelete={handleDeleteCategory}
+                            />
+                          ))}
+                        </div>
+                      )}
+                      {filteredUncategorizedNotes.length > 0 && (
+                        <div className="flex flex-wrap gap-2 mb-10">
+                          {filteredUncategorizedNotes.map(note => (
+                            <button key={note.uuid} onClick={() => router.push(`/notes/${note.uuid}`)} className="flex items-center gap-1.5 px-3 py-2 rounded-lg transition-colors" style={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border)', color: 'var(--text-secondary)' }}
+                              onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)')}
+                              onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'var(--bg-secondary)')}
+                            >
+                              <FileText size={11} style={{ color: 'var(--text-muted)' }} />
+                              <span className="text-[12.5px]">{note.title || 'Untitled'}</span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </>
                   )}
                 </>
               )}
