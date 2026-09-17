@@ -1,9 +1,9 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Sidebar from '@/components/sidebar'
-import { Plus, Atom, Search } from 'lucide-react'
+import { Plus, Atom, Search, MoreVertical, Pencil, Trash2 } from 'lucide-react'
 
 interface Board {
   id: number
@@ -19,6 +19,11 @@ export default function StudioPage() {
   const [boards, setBoards] = useState<Board[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
+  const [menuOpenId, setMenuOpenId] = useState<number | null>(null)
+  const menuRef = useRef<HTMLDivElement>(null)
+  const [renamingId, setRenamingId] = useState<number | null>(null)
+  const [renameValue, setRenameValue] = useState('')
+  const renameInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     const saved = localStorage.getItem('sidebar-collapsed')
@@ -32,6 +37,19 @@ export default function StudioPage() {
       .catch(() => setLoading(false))
   }, [])
 
+  useEffect(() => {
+    const h = (e: MouseEvent) => { if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenuOpenId(null) }
+    if (menuOpenId !== null) document.addEventListener('mousedown', h)
+    return () => document.removeEventListener('mousedown', h)
+  }, [menuOpenId])
+
+  useEffect(() => {
+    if (renamingId !== null && renameInputRef.current) {
+      renameInputRef.current.focus()
+      renameInputRef.current.select()
+    }
+  }, [renamingId])
+
   const createBoard = async () => {
     const workspaceRes = await fetch('/api/workspace')
     const workspace = await workspaceRes.json()
@@ -42,6 +60,34 @@ export default function StudioPage() {
     })
     const board = await res.json()
     router.push(`/studio/canvas/${board.uuid}`)
+  }
+
+  const startRenaming = (board: Board) => {
+    setMenuOpenId(null)
+    setRenameValue(board.name)
+    setRenamingId(board.id)
+  }
+
+  const commitRename = async (board: Board) => {
+    const trimmed = renameValue.trim()
+    setRenamingId(null)
+    if (!trimmed || trimmed === board.name) return
+    setBoards(prev => prev.map(b => b.id === board.id ? { ...b, name: trimmed } : b))
+    try {
+      await fetch(`/api/boards/${board.uuid}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: trimmed }),
+      })
+    } catch {}
+  }
+
+  const handleDeleteBoard = async (board: Board) => {
+    setMenuOpenId(null)
+    const confirmed = window.confirm(`Delete "${board.name}"? Everything on this board will be permanently deleted.`)
+    if (!confirmed) return
+    setBoards(prev => prev.filter(b => b.id !== board.id))
+    try { await fetch(`/api/boards/${board.uuid}`, { method: 'DELETE' }) } catch {}
   }
 
   const trimmedQuery = searchQuery.trim().toLowerCase()
@@ -92,15 +138,81 @@ export default function StudioPage() {
               {filteredBoards.map(board => (
                 <div
                   key={board.id}
-                  onClick={() => router.push(`/studio/${board.type}/${board.uuid}`)}
-                  className="rounded-xl p-4 flex flex-col justify-between cursor-pointer transition-colors"
+                  onClick={() => { if (renamingId !== board.id) router.push(`/studio/canvas/${board.uuid}`) }}
+                  className="relative rounded-xl p-4 flex flex-col justify-between cursor-pointer transition-colors"
                   style={{ backgroundColor: 'var(--bg-secondary)', height: 110 }}
                   onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)')}
                   onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'var(--bg-secondary)')}
                 >
-                  <Atom size={18} style={{ color: '#c98a5e' }} />
+                  <div className="flex items-start justify-between">
+                    <Atom size={18} style={{ color: '#c98a5e' }} />
+                    <div style={{ position: 'relative' }} ref={menuOpenId === board.id ? menuRef : undefined}>
+                      <button
+                        onClick={e => { e.stopPropagation(); setMenuOpenId(prev => prev === board.id ? null : board.id) }}
+                        title="More options"
+                        className="transition-opacity"
+                        style={{ color: 'var(--text-muted)', opacity: menuOpenId === board.id ? 1 : 0.4 }}
+                        onMouseEnter={e => (e.currentTarget.style.opacity = '1')}
+                        onMouseLeave={e => (e.currentTarget.style.opacity = menuOpenId === board.id ? '1' : '0.4')}
+                      >
+                        <MoreVertical size={14} />
+                      </button>
+                      {menuOpenId === board.id && (
+                        <div
+                          onClick={e => e.stopPropagation()}
+                          style={{
+                            position: 'absolute', right: 0, top: 20, zIndex: 50,
+                            borderRadius: 10, boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
+                            width: 130, padding: '4px 0', overflow: 'hidden',
+                            background: '#242428', border: '1px solid rgba(255,255,255,0.09)',
+                          }}
+                        >
+                          <button
+                            onClick={() => startRenaming(board)}
+                            style={{
+                              display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '8px 12px',
+                              fontSize: 13, color: 'var(--text-muted)', background: 'transparent', border: 'none',
+                              cursor: 'pointer', textAlign: 'left',
+                            }}
+                            onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.06)')}
+                            onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                          >
+                            <Pencil size={12} /> Rename
+                          </button>
+                          <button
+                            onClick={() => handleDeleteBoard(board)}
+                            style={{
+                              display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '8px 12px',
+                              fontSize: 13, color: '#f87171', background: 'transparent', border: 'none',
+                              cursor: 'pointer', textAlign: 'left',
+                            }}
+                            onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.06)')}
+                            onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                          >
+                            <Trash2 size={12} /> Delete
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
                   <div>
-                    <p className="text-[14px] font-medium" style={{ color: 'var(--text-primary)' }}>{board.name}</p>
+                    {renamingId === board.id ? (
+                      <input
+                        ref={renameInputRef}
+                        value={renameValue}
+                        onChange={e => setRenameValue(e.target.value)}
+                        onClick={e => e.stopPropagation()}
+                        onBlur={() => commitRename(board)}
+                        onKeyDown={e => {
+                          if (e.key === 'Enter') commitRename(board)
+                          if (e.key === 'Escape') setRenamingId(null)
+                        }}
+                        className="font-medium text-[14px] w-full rounded outline-none"
+                        style={{ backgroundColor: 'var(--bg-tertiary)', border: '1px solid var(--border)', color: 'var(--text-primary)', padding: '1px 4px' }}
+                      />
+                    ) : (
+                      <p className="text-[14px] font-medium" style={{ color: 'var(--text-primary)' }}>{board.name}</p>
+                    )}
                   </div>
                 </div>
               ))}
