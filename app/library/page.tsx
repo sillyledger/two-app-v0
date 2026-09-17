@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Sidebar from '@/components/sidebar'
 import TemplatePickerModal from '@/components/template-picker-modal'
-import { FileText, Search, Plus, ArrowRight, Users } from 'lucide-react'
+import { FileText, Search, Plus, Users } from 'lucide-react'
 import { formatDate, getUserDatePrefs } from '@/lib/format-date'
 
 interface Label {
@@ -156,10 +156,6 @@ export default function LibraryPage() {
     }).catch(() => {})
   }, [])
 
-  const mostRecent = allDocs.length > 0
-    ? [...allDocs].sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())[0]
-    : null
-
   const foldersWithDocs = folders.map((folder, index) => ({
     folder,
     color: getAccent(index),
@@ -304,23 +300,6 @@ export default function LibraryPage() {
             </div>
           ) : (
             <>
-              {activePill === 'all' && (
-                <div
-                  onClick={() => mostRecent && router.push(`/docs/${mostRecent.uuid}`)}
-                  className="flex items-center gap-4 px-5 py-4 rounded-xl mb-10 cursor-pointer transition-colors"
-                  style={{ border: '1px solid var(--border)' }}
-                  onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--text-muted)')}
-                  onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--border)')}
-                >
-                  <span className="text-[11.5px] flex-shrink-0" style={{ color: '#1D9E75' }}>Continue writing</span>
-                  <span className="text-[15px] font-medium flex-1" style={{ color: 'var(--text-primary)' }}>
-                    {mostRecent ? (mostRecent.title || 'Untitled') : 'No documents yet'}
-                  </span>
-                  {mostRecent && <span className="text-[12.5px] flex-shrink-0" style={{ color: 'var(--text-muted)' }}>Updated {timeAgo(mostRecent.updated_at)}</span>}
-                  <ArrowRight size={14} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
-                </div>
-              )}
-
               {activePill === 'all' && (
                 <>
                   <div className="text-[11px] font-medium uppercase tracking-wider mb-4" style={{ color: 'var(--text-muted)' }}>
