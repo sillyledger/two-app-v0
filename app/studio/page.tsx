@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Sidebar from '@/components/sidebar'
-import { Plus, LayoutGrid, Atom } from 'lucide-react'
+import { Plus, LayoutGrid, Atom, Search } from 'lucide-react'
 
 interface Board {
   id: number
@@ -19,6 +19,7 @@ export default function StudioPage() {
   const [boards, setBoards] = useState<Board[]>([])
   const [loading, setLoading] = useState(true)
   const [pickerOpen, setPickerOpen] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
   const pickerRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -54,15 +55,28 @@ export default function StudioPage() {
     router.push(`/studio/${board.type}/${board.uuid}`)
   }
 
+  const trimmedQuery = searchQuery.trim().toLowerCase()
+  const filteredBoards = trimmedQuery ? boards.filter(b => b.name.toLowerCase().includes(trimmedQuery)) : boards
+
   return (
     <div className="flex h-screen overflow-hidden" style={{ backgroundColor: 'var(--bg)' }}>
       <Sidebar collapsed={collapsed} onToggle={() => setCollapsed(v => !v)} />
 
       <main className="flex-1 overflow-y-auto">
-        <div className="max-w-5xl mx-auto px-10 py-14">
-          <div className="flex items-center justify-between mb-8">
-            <h1 className="text-[34px] font-semibold tracking-tight" style={{ color: 'var(--text-primary)' }}>Studio</h1>
-            <div style={{ position: 'relative' }} ref={pickerRef}>
+        <div className="max-w-[1180px] mx-auto px-10 py-10">
+          <div className="flex items-center justify-between mb-6 gap-4">
+            <div className="relative flex-1" style={{ maxWidth: 420 }}>
+              <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: 'var(--text-muted)' }} />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                placeholder="Search boards..."
+                className="w-full rounded-lg pl-9 pr-4 py-2.5 text-sm outline-none placeholder-[var(--text-muted)]"
+                style={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border)', color: 'var(--text-primary)' }}
+              />
+            </div>
+            <div style={{ position: 'relative', flexShrink: 0 }} ref={pickerRef}>
               <button
                 onClick={() => setPickerOpen(v => !v)}
                 className="flex items-center gap-2 px-3.5 py-2 rounded-lg text-[13.5px] font-medium"
@@ -103,18 +117,22 @@ export default function StudioPage() {
             </div>
           </div>
 
+          <p className="text-sm mb-6" style={{ color: 'var(--text-muted)' }}>
+            {trimmedQuery ? `${filteredBoards.length} matching boards` : `${boards.length} boards`}
+          </p>
+
           {loading ? (
             <div className="flex items-center justify-center h-64">
               <span className="text-xs" style={{ color: 'var(--text-muted)' }}>Loading...</span>
             </div>
-          ) : boards.length === 0 ? (
+          ) : filteredBoards.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-64 gap-2">
-              <p className="text-sm" style={{ color: 'var(--text-muted)' }}>No boards yet</p>
-              <p className="text-xs" style={{ color: 'var(--text-muted)' }}>Click New board to create your first one</p>
+              <p className="text-sm" style={{ color: 'var(--text-muted)' }}>{trimmedQuery ? 'No boards match your search' : 'No boards yet'}</p>
+              <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{trimmedQuery ? 'Try a different search term' : 'Click New board to create your first one'}</p>
             </div>
           ) : (
             <div className="grid grid-cols-3 gap-3.5">
-              {boards.map(board => (
+              {filteredBoards.map(board => (
                 <div
                   key={board.id}
                   onClick={() => router.push(`/studio/${board.type}/${board.uuid}`)}
