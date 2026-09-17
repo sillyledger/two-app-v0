@@ -654,7 +654,7 @@ export default function Sidebar({ onNewNote, onToggle }: SidebarProps = {}) {
     else { openTab(item.uuid, item.title || "Untitled"); router.push(`/docs/${item.uuid}`) }
   }
 
-  const NavItem = ({ href, icon, label }: { href: string; icon: React.ReactNode; label: string }) => {
+  const NavItem = ({ href, icon, label, badge }: { href: string; icon: React.ReactNode; label: string; badge?: string }) => {
     const isActive = pathname === href
     const [hov, setHov] = useState(false)
     return (
@@ -665,6 +665,11 @@ export default function Sidebar({ onNewNote, onToggle }: SidebarProps = {}) {
         {isActive && <span style={{ position: "absolute", left: 0, top: "50%", transform: "translateY(-50%)", width: 3, height: 20, background: "#6b5ce7", borderRadius: "0 3px 3px 0" }} />}
         <span style={{ opacity: isActive ? 1 : 0.65, display: "flex", flexShrink: 0 }}>{icon}</span>
         {label}
+        {badge && (
+          <span style={{ marginLeft: "auto", fontSize: 9.5, fontWeight: 600, letterSpacing: "0.03em", color: "#e0a44d", background: "rgba(224,164,77,0.14)", padding: "2px 6px", borderRadius: 5, flexShrink: 0 }}>
+            {badge}
+          </span>
+        )}
       </Link>
     )
   }
@@ -742,7 +747,7 @@ export default function Sidebar({ onNewNote, onToggle }: SidebarProps = {}) {
                 <NavItem href="/planner" icon={<CalendarDays size={16} />} label="Planner" />
                 <NavItem href="/activity" icon={<Activity size={16} />} label="Activity" />
                 <NavItem href="/library" icon={<Library size={16} />} label="Library" />
-                <NavItem href="/studio" icon={<Layers size={16} />} label="Studio" />
+                <NavItem href="/studio" icon={<Layers size={16} />} label="Studio" badge="Beta" />
               </div>
 
               <div className="sb-scroll">
