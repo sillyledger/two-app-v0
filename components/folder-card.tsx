@@ -49,7 +49,15 @@ export function formatRelative(dateStr: string | null) {
   return "just now"
 }
 
-export function FolderIcon({ color }: { color: string }) {
+export function FolderIcon({ color, compact }: { color: string; compact?: boolean }) {
+  if (compact) {
+    return (
+      <div style={{ position: "relative", height: "30px", width: "30px", marginBottom: "8px" }}>
+        <div style={{ position: "absolute", left: 0, top: "2px", width: "28px", height: "20px", borderRadius: "5px", backgroundColor: color, opacity: 0.35 }} />
+        <div style={{ position: "absolute", left: 0, top: "6px", width: "28px", height: "20px", borderRadius: "5px", backgroundColor: color }} />
+      </div>
+    )
+  }
   return (
     <div style={{ position: "relative", height: "54px", width: "54px", marginBottom: "14px" }}>
       <div style={{ position: "absolute", left: 0, top: "4px", width: "50px", height: "36px", borderRadius: "7px", backgroundColor: color, opacity: 0.35 }} />
@@ -75,6 +83,7 @@ export function FolderCard({
   onStartRename,
   onMove,
   onDelete,
+  compact,
 }: {
   folder: FolderData
   accentColor: string
@@ -92,18 +101,20 @@ export function FolderCard({
   onStartRename: (folder: FolderData, e: React.MouseEvent) => void
   onMove: (folder: FolderData, e: React.MouseEvent) => void
   onDelete: (folder: FolderData, e: React.MouseEvent) => void
+  compact?: boolean
 }) {
   const docCount = Number(folder.doc_count) || 0
   const relative = formatRelative(folder.last_edited)
+  const countLabel = `${docCount} ${docCount === 1 ? "doc" : "docs"}`
   return (
     <div
-      className="relative rounded-xl p-[18px] transition-colors cursor-pointer"
-      style={{ backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border)" }}
+      className="relative rounded-xl transition-colors cursor-pointer"
+      style={{ backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border)", padding: compact ? "12px" : "18px", borderRadius: compact ? "10px" : "12px" }}
       onClick={() => { if (!isRenaming) onOpen(folder) }}
       onMouseEnter={e => { e.currentTarget.style.backgroundColor = "var(--bg-tertiary)"; e.currentTarget.style.borderColor = "var(--text-muted)" }}
       onMouseLeave={e => { e.currentTarget.style.backgroundColor = "var(--bg-secondary)"; e.currentTarget.style.borderColor = "var(--border)" }}
     >
-      <div className="absolute top-3.5 right-3.5 flex items-center gap-1.5">
+      <div className="absolute flex items-center gap-1.5" style={{ top: compact ? 8 : 14, right: compact ? 8 : 14 }}>
         <div style={{ position: "relative" }} ref={isMenuOpen ? menuRef : undefined}>
           <button
             onClick={e => onToggleMenu(folder.id, e)}
@@ -113,7 +124,7 @@ export function FolderCard({
             onMouseEnter={e => (e.currentTarget.style.opacity = "1")}
             onMouseLeave={e => (e.currentTarget.style.opacity = isMenuOpen ? "1" : "0.4")}
           >
-            <MoreVertical size={14} />
+            <MoreVertical size={compact ? 12 : 14} />
           </button>
           {isMenuOpen && (
             <div
@@ -163,22 +174,24 @@ export function FolderCard({
             </div>
           )}
         </div>
-        <button
-          onClick={e => onTogglePin(folder, e)}
-          title={folder.pinned ? "Unpin from homepage" : "Pin to homepage"}
-          className="transition-opacity"
-          style={{
-            color: folder.pinned ? "#EF9F27" : "var(--text-muted)",
-            opacity: folder.pinned ? 1 : 0.4,
-          }}
-          onMouseEnter={e => (e.currentTarget.style.opacity = "1")}
-          onMouseLeave={e => (e.currentTarget.style.opacity = folder.pinned ? "1" : "0.4")}
-        >
-          <Pin size={14} fill={folder.pinned ? "#EF9F27" : "none"} />
-        </button>
+        {!compact && (
+          <button
+            onClick={e => onTogglePin(folder, e)}
+            title={folder.pinned ? "Unpin from homepage" : "Pin to homepage"}
+            className="transition-opacity"
+            style={{
+              color: folder.pinned ? "#EF9F27" : "var(--text-muted)",
+              opacity: folder.pinned ? 1 : 0.4,
+            }}
+            onMouseEnter={e => (e.currentTarget.style.opacity = "1")}
+            onMouseLeave={e => (e.currentTarget.style.opacity = folder.pinned ? "1" : "0.4")}
+          >
+            <Pin size={14} fill={folder.pinned ? "#EF9F27" : "none"} />
+          </button>
+        )}
       </div>
 
-      <FolderIcon color={accentColor} />
+      <FolderIcon color={accentColor} compact={compact} />
 
       {isRenaming ? (
         <input
@@ -191,16 +204,32 @@ export function FolderCard({
             if (e.key === "Enter") onCommitRename(folder)
             if (e.key === "Escape") onCancelRename()
           }}
-          className="font-semibold text-[14px] mb-1 w-full rounded outline-none"
-          style={{ backgroundColor: "var(--bg-tertiary)", border: "1px solid var(--border)", color: "var(--text-primary)", padding: "1px 4px" }}
+          className="font-semibold mb-1 w-full rounded outline-none"
+          style={{ fontSize: compact ? "12.5px" : "14px", backgroundColor: "var(--bg-tertiary)", border: "1px solid var(--border)", color: "var(--text-primary)", padding: "1px 4px" }}
         />
       ) : (
-        <p className="font-semibold text-[14px] mb-1" style={{ color: "var(--text-primary)" }}>{folder.name}</p>
+        <p
+          className="font-semibold mb-1"
+          style={compact
+            ? { color: "var(--text-primary)", fontSize: "12.5px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }
+            : { color: "var(--text-primary)", fontSize: "14px" }}
+        >
+          {folder.name}
+        </p>
       )}
-      <p className="text-[12px]" style={{ color: "var(--text-muted)" }}>{docCount} {docCount === 1 ? "doc" : "docs"}</p>
-      <p className="text-[11px] mt-2" style={{ color: "var(--text-muted)" }}>
-        {relative ? `Edited ${relative}` : "No docs yet"}
-      </p>
+
+      {compact ? (
+        <p className="text-[10.5px]" style={{ color: "var(--text-muted)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+          {countLabel}{relative ? ` · ${relative}` : ""}
+        </p>
+      ) : (
+        <>
+          <p className="text-[12px]" style={{ color: "var(--text-muted)" }}>{countLabel}</p>
+          <p className="text-[11px] mt-2" style={{ color: "var(--text-muted)" }}>
+            {relative ? `Edited ${relative}` : "No docs yet"}
+          </p>
+        </>
+      )}
     </div>
   )
 }

@@ -444,15 +444,22 @@ export default function LibraryPage() {
             <>
               {activePill === 'all' && (
                 <>
-                  <div className="text-[11px] font-medium uppercase tracking-wider mb-4" style={{ color: 'var(--text-muted)' }}>
-                    {groupBy === 'folders' ? 'Folders' : 'Labels'}
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="text-[11px] font-medium uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>
+                      {groupBy === 'folders' ? 'Folders' : 'Labels'}
+                    </div>
+                    {groupBy === 'folders' && (
+                      <button onClick={() => router.push('/folders')} className="flex items-center gap-1 text-[12px]" style={{ color: 'var(--text-muted)', background: 'transparent', border: 'none', cursor: 'pointer' }}>
+                        See all folders <ArrowRight size={11} />
+                      </button>
+                    )}
                   </div>
 
                   {groupBy === 'folders' ? (
                     filteredFolders.length === 0 ? (
                       <p className="text-sm mb-10" style={{ color: 'var(--text-muted)' }}>No folders yet.</p>
                     ) : (
-                      <div className="grid grid-cols-4 gap-4 mb-10">
+                      <div className="grid grid-cols-7 gap-2.5 mb-10">
                         {filteredFolders.map(folder => (
                           <FolderCard
                             key={folder.id}
@@ -472,6 +479,7 @@ export default function LibraryPage() {
                             onStartRename={startRenaming}
                             onMove={handleOpenMoveFolder}
                             onDelete={handleDeleteFolder}
+                            compact
                           />
                         ))}
                       </div>
@@ -562,7 +570,7 @@ export default function LibraryPage() {
                   ) : (
                     <>
                       {filteredCategories.length > 0 && (
-                        <div className="grid grid-cols-4 gap-4 mb-4">
+                        <div className="grid grid-cols-7 gap-2.5 mb-4">
                           {filteredCategories.map(({ category, noteCount, lastEdited }) => (
                             <NoteCategoryCard
                               key={category.id}
@@ -574,6 +582,7 @@ export default function LibraryPage() {
                               onToggleMenu={handleToggleNoteMenu}
                               onOpen={c => router.push(`/notes?category=${c.id}`)}
                               onDelete={handleDeleteCategory}
+                              compact
                             />
                           ))}
                         </div>

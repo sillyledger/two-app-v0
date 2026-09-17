@@ -10,7 +10,16 @@ export interface NoteCategoryData {
   parent_id: number | null
 }
 
-export function NoteCategoryIcon({ color }: { color: string }) {
+export function NoteCategoryIcon({ color, compact }: { color: string; compact?: boolean }) {
+  if (compact) {
+    return (
+      <div style={{ position: "relative", height: "30px", width: "30px", marginBottom: "8px" }}>
+        <div style={{ position: "absolute", left: "6px", top: 0, width: "18px", height: "30px", borderRadius: "4px", backgroundColor: color }} />
+        <div style={{ position: "absolute", left: "6px", top: 0, width: 0, height: 0, borderStyle: "solid", borderWidth: "0 7px 7px 0", borderColor: "transparent var(--bg-secondary) transparent transparent", borderTopRightRadius: "4px" }} />
+        <div style={{ position: "absolute", left: "6px", top: 0, width: 0, height: 0, borderStyle: "solid", borderWidth: "0 7px 7px 0", borderColor: "transparent rgba(0,0,0,0.18) transparent transparent", borderTopRightRadius: "4px" }} />
+      </div>
+    )
+  }
   return (
     <div style={{ position: "relative", height: "54px", width: "54px", marginBottom: "14px" }}>
       <div style={{ position: "absolute", left: "9px", top: 0, width: "36px", height: "54px", borderRadius: "6px", backgroundColor: color }} />
@@ -34,6 +43,7 @@ export function NoteCategoryCard({
   onToggleMenu,
   onOpen,
   onDelete,
+  compact,
 }: {
   category: NoteCategoryData
   noteCount: number
@@ -43,17 +53,19 @@ export function NoteCategoryCard({
   onToggleMenu: (id: number, e: React.MouseEvent) => void
   onOpen: (category: NoteCategoryData) => void
   onDelete: (category: NoteCategoryData, e: React.MouseEvent) => void
+  compact?: boolean
 }) {
   const relative = formatRelative(lastEdited)
+  const countLabel = `${noteCount} ${noteCount === 1 ? "note" : "notes"}`
   return (
     <div
-      className="relative rounded-xl p-[18px] transition-colors cursor-pointer"
-      style={{ backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border)" }}
+      className="relative rounded-xl transition-colors cursor-pointer"
+      style={{ backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border)", padding: compact ? "12px" : "18px", borderRadius: compact ? "10px" : "12px" }}
       onClick={() => onOpen(category)}
       onMouseEnter={e => { e.currentTarget.style.backgroundColor = "var(--bg-tertiary)"; e.currentTarget.style.borderColor = "var(--text-muted)" }}
       onMouseLeave={e => { e.currentTarget.style.backgroundColor = "var(--bg-secondary)"; e.currentTarget.style.borderColor = "var(--border)" }}
     >
-      <div className="absolute top-3.5 right-3.5">
+      <div className="absolute" style={{ top: compact ? 8 : 14, right: compact ? 8 : 14 }}>
         <div style={{ position: "relative" }} ref={isMenuOpen ? menuRef : undefined}>
           <button
             onClick={e => onToggleMenu(category.id, e)}
@@ -63,7 +75,7 @@ export function NoteCategoryCard({
             onMouseEnter={e => (e.currentTarget.style.opacity = "1")}
             onMouseLeave={e => (e.currentTarget.style.opacity = isMenuOpen ? "1" : "0.4")}
           >
-            <MoreVertical size={14} />
+            <MoreVertical size={compact ? 12 : 14} />
           </button>
           {isMenuOpen && (
             <div
@@ -91,13 +103,29 @@ export function NoteCategoryCard({
         </div>
       </div>
 
-      <NoteCategoryIcon color={category.color} />
+      <NoteCategoryIcon color={category.color} compact={compact} />
 
-      <p className="font-semibold text-[14px] mb-1" style={{ color: "var(--text-primary)" }}>{category.name}</p>
-      <p className="text-[12px]" style={{ color: "var(--text-muted)" }}>{noteCount} {noteCount === 1 ? "note" : "notes"}</p>
-      <p className="text-[11px] mt-2" style={{ color: "var(--text-muted)" }}>
-        {relative ? `Edited ${relative}` : "No notes yet"}
+      <p
+        className="font-semibold mb-1"
+        style={compact
+          ? { color: "var(--text-primary)", fontSize: "12.5px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }
+          : { color: "var(--text-primary)", fontSize: "14px" }}
+      >
+        {category.name}
       </p>
+
+      {compact ? (
+        <p className="text-[10.5px]" style={{ color: "var(--text-muted)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+          {countLabel}{relative ? ` · ${relative}` : ""}
+        </p>
+      ) : (
+        <>
+          <p className="text-[12px]" style={{ color: "var(--text-muted)" }}>{countLabel}</p>
+          <p className="text-[11px] mt-2" style={{ color: "var(--text-muted)" }}>
+            {relative ? `Edited ${relative}` : "No notes yet"}
+          </p>
+        </>
+      )}
     </div>
   )
 }
