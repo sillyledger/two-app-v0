@@ -293,7 +293,7 @@ export default function IdeasPage() {
     <div style={{ position: 'relative' }} ref={statusMenuId === idea.id ? statusMenuRef : undefined}>
       <button
         onClick={e => { e.stopPropagation(); setStatusMenuId(prev => prev === idea.id ? null : idea.id) }}
-        style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'transparent', border: 'none', cursor: 'pointer', fontSize: 11.5, fontFamily: FONT, color: STATUS_META[idea.status].color, padding: 0 }}
+        style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'transparent', border: 'none', cursor: 'pointer', fontSize: 12, fontFamily: FONT, color: STATUS_META[idea.status].color, padding: 0 }}
       >
         <span style={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: STATUS_META[idea.status].color, flexShrink: 0 }} />
         {STATUS_META[idea.status].label}
@@ -322,14 +322,14 @@ export default function IdeasPage() {
       {idea.type ? (
         <button
           onClick={e => { e.stopPropagation(); setTypeMenuId(prev => prev === idea.id ? null : idea.id) }}
-          style={{ fontSize: 11.5, fontFamily: FONT, padding: 0, background: 'transparent', color: TYPE_META[idea.type]?.color ?? 'var(--text-muted)', border: 'none', cursor: 'pointer' }}
+          style={{ fontSize: 12, fontFamily: FONT, padding: 0, background: 'transparent', color: TYPE_META[idea.type]?.color ?? 'var(--text-muted)', border: 'none', cursor: 'pointer' }}
         >
           {TYPE_META[idea.type]?.label ?? idea.type}
         </button>
       ) : (
         <button
           onClick={e => { e.stopPropagation(); setTypeMenuId(prev => prev === idea.id ? null : idea.id) }}
-          style={{ fontSize: 11.5, fontFamily: FONT, color: 'var(--text-muted)', background: 'transparent', border: 'none', cursor: 'pointer', padding: 0 }}
+          style={{ fontSize: 12, fontFamily: FONT, color: 'var(--text-muted)', background: 'transparent', border: 'none', cursor: 'pointer', padding: 0 }}
         >
           + Type
         </button>
@@ -452,7 +452,7 @@ export default function IdeasPage() {
                       {renderSuggestionDropdown(idea, 'platform', platformOptions, 26)}
                     </div>
                   ) : (
-                    <div onClick={() => startEdit(idea, 'platform')} style={{ fontSize: 11.5, fontFamily: FONT, color: 'var(--text-muted)', cursor: 'text' }} className="truncate">
+                    <div onClick={() => startEdit(idea, 'platform')} style={{ fontSize: 12, fontFamily: FONT, color: 'var(--text-muted)', cursor: 'text' }} className="truncate">
                       {idea.platform || '+ Platform'}
                     </div>
                   )}
@@ -473,17 +473,17 @@ export default function IdeasPage() {
                       {renderSuggestionDropdown(idea, 'category', categoryOptions, 26)}
                     </div>
                   ) : idea.category ? (
-                    <span onClick={() => startEdit(idea, 'category')} className="truncate" style={{ fontSize: 11.5, fontFamily: FONT, padding: '3px 9px', borderRadius: 6, background: 'var(--bg-tertiary)', color: 'var(--text-muted)', cursor: 'text', width: 'fit-content' }}>
+                    <span onClick={() => startEdit(idea, 'category')} className="truncate" style={{ fontSize: 12, fontFamily: FONT, padding: '3px 10px', borderRadius: 6, background: 'var(--bg-tertiary)', color: 'var(--text-muted)', cursor: 'text', width: 'fit-content' }}>
                       {idea.category}
                     </span>
                   ) : (
-                    <div onClick={() => startEdit(idea, 'category')} style={{ fontSize: 11.5, fontFamily: FONT, color: 'var(--text-muted)', cursor: 'text' }}>+ Category</div>
+                    <div onClick={() => startEdit(idea, 'category')} style={{ fontSize: 12, fontFamily: FONT, color: 'var(--text-muted)', cursor: 'text' }}>+ Category</div>
                   )}
 
                   <button
                     onClick={() => handleDocAction(idea)}
                     className="opacity-0 group-hover:opacity-100 transition-opacity"
-                    style={{ fontSize: 11, fontFamily: FONT, color: '#8f89e6', background: 'transparent', border: 'none', padding: '5px 8px', whiteSpace: 'nowrap', cursor: 'pointer' }}
+                    style={{ fontSize: 12, fontFamily: FONT, color: '#8f89e6', background: 'transparent', border: 'none', padding: '5px 8px', whiteSpace: 'nowrap', cursor: 'pointer' }}
                   >
                     {idea.doc_uuid ? 'Open Doc' : 'Turn into Doc'}
                   </button>
