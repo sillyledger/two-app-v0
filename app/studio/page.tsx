@@ -78,6 +78,33 @@ export default function StudioOverviewPage() {
     } catch {}
   }
 
+  const handleDocAction = async (idea: ContentIdea) => {
+    if (idea.doc_uuid) {
+      router.push(`/docs/${idea.doc_uuid}`)
+      return
+    }
+    try {
+      const res = await fetch('/api/docs', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: idea.title, content: '', color: 'yellow', type: 'doc' }),
+      })
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}))
+        alert(err.error === 'free_limit_reached' ? "You've reached the free plan's doc limit." : 'Failed to create doc.')
+        return
+      }
+      const doc = await res.json()
+      setIdeas(prev => prev.map(i => i.id === idea.id ? { ...i, status: 'in_progress', doc_uuid: doc.uuid } : i))
+      fetch(`/api/content-ideas/${idea.uuid}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'in_progress', doc_uuid: doc.uuid }),
+      }).catch(() => {})
+      router.push(`/docs/${doc.uuid}`)
+    } catch {}
+  }
+
   const createBoard = async () => {
     const workspaceRes = await fetch('/api/workspace')
     const workspace = await workspaceRes.json()
@@ -165,8 +192,8 @@ export default function StudioOverviewPage() {
                 <div
                   key={idea.id}
                   onClick={() => router.push('/studio/ideas')}
-                  className="cursor-pointer"
-                  style={{ display: 'grid', gridTemplateColumns: '1fr 130px 140px 120px', alignItems: 'center', gap: 12, borderBottom: '1px solid var(--border)', padding: '12px 8px', borderRadius: 8 }}
+                  className="cursor-pointer group"
+                  style={{ display: 'grid', gridTemplateColumns: '1fr 130px 140px 120px 90px', alignItems: 'center', gap: 12, borderBottom: '1px solid var(--border)', padding: '12px 8px', borderRadius: 8 }}
                   onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--bg-secondary)')}
                   onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
                 >
@@ -187,6 +214,13 @@ export default function StudioOverviewPage() {
                   ) : (
                     <div style={{ fontSize: 12, fontFamily: FONT, color: 'var(--text-muted)' }}>+ Category</div>
                   )}
+                  <button
+                    onClick={e => { e.stopPropagation(); handleDocAction(idea) }}
+                    className="opacity-0 group-hover:opacity-100 transition-opacity"
+                    style={{ fontSize: 11, fontFamily: FONT, color: '#8f89e6', background: 'transparent', border: 'none', padding: '5px 8px', whiteSpace: 'nowrap', cursor: 'pointer', textAlign: 'right' }}
+                  >
+                    {idea.doc_uuid ? 'Open Doc' : 'Turn into Doc'}
+                  </button>
                 </div>
               ))}
             </div>
