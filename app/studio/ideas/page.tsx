@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Sidebar from '@/components/sidebar'
-import { Search, Plus, List, LayoutGrid, MoreVertical, Trash2 } from 'lucide-react'
+import { Search, Plus, List, LayoutGrid, MoreVertical, Trash2, Pencil } from 'lucide-react'
 
 interface ContentIdea {
   id: number
@@ -32,7 +32,7 @@ const TYPE_META: Record<string, { label: string; color: string }> = {
 }
 const TYPE_ORDER = ['post', 'audio', 'video', 'other']
 
-const GRID_COLS = '1fr 100px 120px 110px 100px 110px 26px'
+const GRID_COLS = '1fr 110px 130px 120px 110px 120px 26px'
 
 export default function IdeasPage() {
   const router = useRouter()
@@ -52,6 +52,10 @@ export default function IdeasPage() {
   const [editingField, setEditingField] = useState<{ id: number; field: 'title' | 'platform' | 'category' } | null>(null)
   const [editValue, setEditValue] = useState('')
   const editInputRef = useRef<HTMLInputElement>(null)
+
+  const [renamingSuggestion, setRenamingSuggestion] = useState<{ field: 'platform' | 'category'; value: string } | null>(null)
+  const [renameSuggestionValue, setRenameSuggestionValue] = useState('')
+  const renameSuggestionInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     fetch('/api/content-ideas')
@@ -85,6 +89,13 @@ export default function IdeasPage() {
       editInputRef.current.select()
     }
   }, [editingField])
+
+  useEffect(() => {
+    if (renamingSuggestion && renameSuggestionInputRef.current) {
+      renameSuggestionInputRef.current.focus()
+      renameSuggestionInputRef.current.select()
+    }
+  }, [renamingSuggestion])
 
   const startEdit = (idea: ContentIdea, field: 'title' | 'platform' | 'category') => {
     setMenuOpenId(null)
@@ -188,6 +199,36 @@ export default function IdeasPage() {
     } catch {}
   }
 
+  const handleBulkFieldUpdate = async (field: 'platform' | 'category', from: string, to: string | null) => {
+    setIdeas(prev => prev.map(i => (i[field] === from ? { ...i, [field]: to } : i)))
+    try {
+      await fetch('/api/content-ideas', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ field, from, to }),
+      })
+    } catch {}
+  }
+
+  const handleDeleteSuggestion = (field: 'platform' | 'category', value: string) => {
+    if (!window.confirm(`Remove "${value}" from every idea using it?`)) return
+    handleBulkFieldUpdate(field, value, null)
+  }
+
+  const startRenameSuggestion = (field: 'platform' | 'category', value: string) => {
+    setRenameSuggestionValue(value)
+    setRenamingSuggestion({ field, value })
+  }
+
+  const commitRenameSuggestion = () => {
+    if (!renamingSuggestion) return
+    const { field, value: from } = renamingSuggestion
+    const to = renameSuggestionValue.trim()
+    setRenamingSuggestion(null)
+    if (!to || to === from) return
+    handleBulkFieldUpdate(field, from, to)
+  }
+
   const trimmedQuery = search.trim().toLowerCase()
   const filteredIdeas = trimmedQuery
     ? ideas.filter(i =>
@@ -201,17 +242,60 @@ export default function IdeasPage() {
   const platformOptions = Array.from(new Set(ideas.map(i => i.platform).filter((v): v is string => !!v))).sort()
   const categoryOptions = Array.from(new Set(ideas.map(i => i.category).filter((v): v is string => !!v))).sort()
 
+  const renderSuggestionDropdown = (idea: ContentIdea, field: 'platform' | 'category', options: string[], top: number) => {
+    const suggestions = options.filter(o => o.toLowerCase().includes(editValue.trim().toLowerCase()))
+    if (suggestions.length === 0) return null
+    return (
+      <div onMouseDown={e => e.preventDefault()} style={{ position: 'absolute', left: 0, top, zIndex: 50, minWidth: 170, borderRadius: 10, boxShadow: '0 8px 32px rgba(0,0,0,0.5)', padding: '4px 0', overflow: 'hidden', background: '#242428', border: '1px solid rgba(255,255,255,0.09)' }}>
+        {suggestions.map(opt => (
+          renamingSuggestion?.field === field && renamingSuggestion.value === opt ? (
+            <input
+              key={opt}
+              ref={renameSuggestionInputRef}
+              value={renameSuggestionValue}
+              onChange={e => setRenameSuggestionValue(e.target.value)}
+              onBlur={commitRenameSuggestion}
+              onKeyDown={e => { if (e.key === 'Enter') commitRenameSuggestion(); if (e.key === 'Escape') setRenamingSuggestion(null) }}
+              style={{ display: 'block', width: 'calc(100% - 16px)', margin: '2px 8px', fontSize: 12.5, background: 'var(--bg-tertiary)', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--text-primary)', padding: '5px 6px' }}
+            />
+          ) : (
+            <div key={opt} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '7px 8px 7px 12px' }}
+              onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.06)')}
+              onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+            >
+              <button
+                onClick={() => commitFieldValue(idea, field, opt)}
+                style={{ flex: 1, minWidth: 0, textAlign: 'left', fontSize: 12.5, color: 'var(--text-secondary)', background: 'transparent', border: 'none', cursor: 'pointer', padding: 0 }}
+                className="truncate"
+              >
+                {opt}
+              </button>
+              <div style={{ display: 'flex', gap: 2, flexShrink: 0, opacity: 0.5 }}>
+                <button onClick={() => startRenameSuggestion(field, opt)} style={{ width: 20, height: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', borderRadius: 4 }}>
+                  <Pencil size={11} />
+                </button>
+                <button onClick={() => handleDeleteSuggestion(field, opt)} style={{ width: 20, height: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'transparent', border: 'none', color: '#f87171', cursor: 'pointer', borderRadius: 4 }}>
+                  <Trash2 size={11} />
+                </button>
+              </div>
+            </div>
+          )
+        ))}
+      </div>
+    )
+  }
+
   const renderStatusControl = (idea: ContentIdea) => (
     <div style={{ position: 'relative' }} ref={statusMenuId === idea.id ? statusMenuRef : undefined}>
       <button
         onClick={e => { e.stopPropagation(); setStatusMenuId(prev => prev === idea.id ? null : idea.id) }}
-        style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'transparent', border: 'none', cursor: 'pointer', fontSize: 11, color: STATUS_META[idea.status].color, padding: 0 }}
+        style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'transparent', border: 'none', cursor: 'pointer', fontSize: 12.5, color: STATUS_META[idea.status].color, padding: 0 }}
       >
         <span style={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: STATUS_META[idea.status].color, flexShrink: 0 }} />
         {STATUS_META[idea.status].label}
       </button>
       {statusMenuId === idea.id && (
-        <div onClick={e => e.stopPropagation()} style={{ position: 'absolute', left: 0, top: 20, zIndex: 50, width: 140, borderRadius: 10, boxShadow: '0 8px 32px rgba(0,0,0,0.5)', padding: '4px 0', overflow: 'hidden', background: '#242428', border: '1px solid rgba(255,255,255,0.09)' }}>
+        <div onClick={e => e.stopPropagation()} style={{ position: 'absolute', left: 0, top: 22, zIndex: 50, width: 140, borderRadius: 10, boxShadow: '0 8px 32px rgba(0,0,0,0.5)', padding: '4px 0', overflow: 'hidden', background: '#242428', border: '1px solid rgba(255,255,255,0.09)' }}>
           {STATUS_ORDER.map(s => (
             <button
               key={s}
@@ -234,20 +318,20 @@ export default function IdeasPage() {
       {idea.type ? (
         <button
           onClick={e => { e.stopPropagation(); setTypeMenuId(prev => prev === idea.id ? null : idea.id) }}
-          style={{ fontSize: 10.5, padding: '2px 8px', borderRadius: 5, background: 'var(--bg-tertiary)', color: TYPE_META[idea.type]?.color ?? 'var(--text-muted)', border: 'none', cursor: 'pointer' }}
+          style={{ fontSize: 12, padding: '2px 8px', borderRadius: 5, background: 'var(--bg-tertiary)', color: TYPE_META[idea.type]?.color ?? 'var(--text-muted)', border: 'none', cursor: 'pointer' }}
         >
           {TYPE_META[idea.type]?.label ?? idea.type}
         </button>
       ) : (
         <button
           onClick={e => { e.stopPropagation(); setTypeMenuId(prev => prev === idea.id ? null : idea.id) }}
-          style={{ fontSize: 11, color: 'var(--text-muted)', background: 'transparent', border: 'none', cursor: 'pointer', padding: 0 }}
+          style={{ fontSize: 12.5, color: 'var(--text-muted)', background: 'transparent', border: 'none', cursor: 'pointer', padding: 0 }}
         >
           + Type
         </button>
       )}
       {typeMenuId === idea.id && (
-        <div onClick={e => e.stopPropagation()} style={{ position: 'absolute', left: 0, top: 20, zIndex: 50, width: 120, borderRadius: 10, boxShadow: '0 8px 32px rgba(0,0,0,0.5)', padding: '4px 0', overflow: 'hidden', background: '#242428', border: '1px solid rgba(255,255,255,0.09)' }}>
+        <div onClick={e => e.stopPropagation()} style={{ position: 'absolute', left: 0, top: 22, zIndex: 50, width: 120, borderRadius: 10, boxShadow: '0 8px 32px rgba(0,0,0,0.5)', padding: '4px 0', overflow: 'hidden', background: '#242428', border: '1px solid rgba(255,255,255,0.09)' }}>
           {TYPE_ORDER.map(t => (
             <button
               key={t}
@@ -359,29 +443,12 @@ export default function IdeasPage() {
                         onBlur={() => commitEdit(idea)}
                         onKeyDown={e => { if (e.key === 'Enter') commitEdit(idea); if (e.key === 'Escape') setEditingField(null) }}
                         placeholder="Platform"
-                        style={{ fontSize: 11, background: 'var(--bg-tertiary)', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--text-primary)', padding: '2px 6px', width: '100%' }}
+                        style={{ fontSize: 12.5, background: 'var(--bg-tertiary)', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--text-primary)', padding: '2px 6px', width: '100%' }}
                       />
-                      {(() => {
-                        const suggestions = platformOptions.filter(o => o.toLowerCase().includes(editValue.trim().toLowerCase()))
-                        return suggestions.length > 0 && (
-                          <div onMouseDown={e => e.preventDefault()} style={{ position: 'absolute', left: 0, top: 24, zIndex: 50, minWidth: 140, borderRadius: 10, boxShadow: '0 8px 32px rgba(0,0,0,0.5)', padding: '4px 0', overflow: 'hidden', background: '#242428', border: '1px solid rgba(255,255,255,0.09)' }}>
-                            {suggestions.map(opt => (
-                              <button
-                                key={opt}
-                                onClick={() => commitFieldValue(idea, 'platform', opt)}
-                                style={{ display: 'block', width: '100%', padding: '7px 12px', fontSize: 12, color: 'var(--text-secondary)', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left' }}
-                                onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.06)')}
-                                onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
-                              >
-                                {opt}
-                              </button>
-                            ))}
-                          </div>
-                        )
-                      })()}
+                      {renderSuggestionDropdown(idea, 'platform', platformOptions, 26)}
                     </div>
                   ) : (
-                    <div onClick={() => startEdit(idea, 'platform')} style={{ fontSize: 11, color: 'var(--text-muted)', cursor: 'text' }} className="truncate">
+                    <div onClick={() => startEdit(idea, 'platform')} style={{ fontSize: 12.5, color: 'var(--text-muted)', cursor: 'text' }} className="truncate">
                       {idea.platform || '+ Platform'}
                     </div>
                   )}
@@ -397,33 +464,16 @@ export default function IdeasPage() {
                         onBlur={() => commitEdit(idea)}
                         onKeyDown={e => { if (e.key === 'Enter') commitEdit(idea); if (e.key === 'Escape') setEditingField(null) }}
                         placeholder="Category"
-                        style={{ fontSize: 10.5, background: 'var(--bg-tertiary)', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--text-primary)', padding: '2px 6px', width: '100%' }}
+                        style={{ fontSize: 12.5, background: 'var(--bg-tertiary)', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--text-primary)', padding: '2px 6px', width: '100%' }}
                       />
-                      {(() => {
-                        const suggestions = categoryOptions.filter(o => o.toLowerCase().includes(editValue.trim().toLowerCase()))
-                        return suggestions.length > 0 && (
-                          <div onMouseDown={e => e.preventDefault()} style={{ position: 'absolute', left: 0, top: 22, zIndex: 50, minWidth: 130, borderRadius: 10, boxShadow: '0 8px 32px rgba(0,0,0,0.5)', padding: '4px 0', overflow: 'hidden', background: '#242428', border: '1px solid rgba(255,255,255,0.09)' }}>
-                            {suggestions.map(opt => (
-                              <button
-                                key={opt}
-                                onClick={() => commitFieldValue(idea, 'category', opt)}
-                                style={{ display: 'block', width: '100%', padding: '7px 12px', fontSize: 12, color: 'var(--text-secondary)', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left' }}
-                                onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.06)')}
-                                onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
-                              >
-                                {opt}
-                              </button>
-                            ))}
-                          </div>
-                        )
-                      })()}
+                      {renderSuggestionDropdown(idea, 'category', categoryOptions, 26)}
                     </div>
                   ) : idea.category ? (
-                    <span onClick={() => startEdit(idea, 'category')} className="truncate" style={{ fontSize: 10.5, padding: '2px 8px', borderRadius: 5, background: 'var(--bg-tertiary)', color: 'var(--text-muted)', cursor: 'text', width: 'fit-content' }}>
+                    <span onClick={() => startEdit(idea, 'category')} className="truncate" style={{ fontSize: 12, padding: '2px 8px', borderRadius: 5, background: 'var(--bg-tertiary)', color: 'var(--text-muted)', cursor: 'text', width: 'fit-content' }}>
                       {idea.category}
                     </span>
                   ) : (
-                    <div onClick={() => startEdit(idea, 'category')} style={{ fontSize: 10.5, color: 'var(--text-muted)', cursor: 'text' }}>+ Category</div>
+                    <div onClick={() => startEdit(idea, 'category')} style={{ fontSize: 12.5, color: 'var(--text-muted)', cursor: 'text' }}>+ Category</div>
                   )}
 
                   <button
@@ -489,9 +539,9 @@ export default function IdeasPage() {
                             )}
                             <div className="flex items-center justify-between">
                               <div className="flex items-center gap-1.5 flex-wrap">
-                                {idea.type && <span style={{ fontSize: 10.5, padding: '2px 8px', borderRadius: 5, background: 'var(--bg-tertiary)', color: TYPE_META[idea.type]?.color ?? 'var(--text-muted)' }}>{TYPE_META[idea.type]?.label ?? idea.type}</span>}
-                                {idea.platform && <span style={{ fontSize: 10.5, padding: '2px 8px', borderRadius: 5, background: 'var(--bg-tertiary)', color: 'var(--text-muted)' }}>{idea.platform}</span>}
-                                {idea.category && <span style={{ fontSize: 10.5, padding: '2px 8px', borderRadius: 5, background: 'var(--bg-tertiary)', color: 'var(--text-muted)' }}>{idea.category}</span>}
+                                {idea.type && <span style={{ fontSize: 12, padding: '2px 8px', borderRadius: 5, background: 'var(--bg-tertiary)', color: TYPE_META[idea.type]?.color ?? 'var(--text-muted)' }}>{TYPE_META[idea.type]?.label ?? idea.type}</span>}
+                                {idea.platform && <span style={{ fontSize: 12, padding: '2px 8px', borderRadius: 5, background: 'var(--bg-tertiary)', color: 'var(--text-muted)' }}>{idea.platform}</span>}
+                                {idea.category && <span style={{ fontSize: 12, padding: '2px 8px', borderRadius: 5, background: 'var(--bg-tertiary)', color: 'var(--text-muted)' }}>{idea.category}</span>}
                               </div>
                               <button
                                 onClick={() => handleDocAction(idea)}
