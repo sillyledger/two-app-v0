@@ -56,6 +56,7 @@ export default function IdeasPage() {
   const [renamingSuggestion, setRenamingSuggestion] = useState<{ field: 'platform' | 'category'; value: string } | null>(null)
   const [renameSuggestionValue, setRenameSuggestionValue] = useState('')
   const renameSuggestionInputRef = useRef<HTMLInputElement>(null)
+  const fieldEditWrapperRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     fetch('/api/content-ideas')
@@ -225,6 +226,7 @@ export default function IdeasPage() {
     const { field, value: from } = renamingSuggestion
     const to = renameSuggestionValue.trim()
     setRenamingSuggestion(null)
+    setEditingField(null)
     if (!to || to === from) return
     handleBulkFieldUpdate(field, from, to)
   }
@@ -435,12 +437,12 @@ export default function IdeasPage() {
                   {renderTypeControl(idea)}
 
                   {editingField?.id === idea.id && editingField.field === 'platform' ? (
-                    <div style={{ position: 'relative' }}>
+                    <div style={{ position: 'relative' }} ref={fieldEditWrapperRef}>
                       <input
                         ref={editInputRef}
                         value={editValue}
                         onChange={e => setEditValue(e.target.value)}
-                        onBlur={() => commitEdit(idea)}
+                        onBlur={e => { if (fieldEditWrapperRef.current && e.relatedTarget && fieldEditWrapperRef.current.contains(e.relatedTarget as Node)) return; commitEdit(idea) }}
                         onKeyDown={e => { if (e.key === 'Enter') commitEdit(idea); if (e.key === 'Escape') setEditingField(null) }}
                         placeholder="Platform"
                         style={{ fontSize: 12.5, background: 'var(--bg-tertiary)', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--text-primary)', padding: '2px 6px', width: '100%' }}
@@ -456,12 +458,12 @@ export default function IdeasPage() {
                   {renderStatusControl(idea)}
 
                   {editingField?.id === idea.id && editingField.field === 'category' ? (
-                    <div style={{ position: 'relative' }}>
+                    <div style={{ position: 'relative' }} ref={fieldEditWrapperRef}>
                       <input
                         ref={editInputRef}
                         value={editValue}
                         onChange={e => setEditValue(e.target.value)}
-                        onBlur={() => commitEdit(idea)}
+                        onBlur={e => { if (fieldEditWrapperRef.current && e.relatedTarget && fieldEditWrapperRef.current.contains(e.relatedTarget as Node)) return; commitEdit(idea) }}
                         onKeyDown={e => { if (e.key === 'Enter') commitEdit(idea); if (e.key === 'Escape') setEditingField(null) }}
                         placeholder="Category"
                         style={{ fontSize: 12.5, background: 'var(--bg-tertiary)', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--text-primary)', padding: '2px 6px', width: '100%' }}
