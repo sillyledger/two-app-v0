@@ -1,7 +1,7 @@
 CREATE TABLE content_ideas (
   id SERIAL PRIMARY KEY,
   uuid TEXT NOT NULL UNIQUE DEFAULT gen_random_uuid()::TEXT,
-  user_id INTEGER NOT NULL,
+  user_id TEXT NOT NULL,
   title TEXT NOT NULL,
   status TEXT NOT NULL DEFAULT 'not_started',
   platform TEXT,
