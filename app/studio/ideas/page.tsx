@@ -34,6 +34,8 @@ const TYPE_ORDER = ['post', 'audio', 'video', 'other']
 
 const GRID_COLS = '1fr 110px 130px 120px 110px 120px 26px'
 
+const FONT = "'DM Sans', system-ui, sans-serif"
+
 export default function IdeasPage() {
   const router = useRouter()
   const [collapsed, setCollapsed] = useState(false)
@@ -258,7 +260,7 @@ export default function IdeasPage() {
               onChange={e => setRenameSuggestionValue(e.target.value)}
               onBlur={commitRenameSuggestion}
               onKeyDown={e => { if (e.key === 'Enter') commitRenameSuggestion(); if (e.key === 'Escape') setRenamingSuggestion(null) }}
-              style={{ display: 'block', width: 'calc(100% - 16px)', margin: '2px 8px', fontSize: 12.5, background: 'var(--bg-tertiary)', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--text-primary)', padding: '5px 6px' }}
+              style={{ display: 'block', width: 'calc(100% - 16px)', margin: '2px 8px', fontSize: 12.5, fontFamily: FONT, background: 'var(--bg-tertiary)', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--text-primary)', padding: '5px 6px' }}
             />
           ) : (
             <div key={opt} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '7px 8px 7px 12px' }}
@@ -267,7 +269,7 @@ export default function IdeasPage() {
             >
               <button
                 onClick={() => commitFieldValue(idea, field, opt)}
-                style={{ flex: 1, minWidth: 0, textAlign: 'left', fontSize: 12.5, color: 'var(--text-secondary)', background: 'transparent', border: 'none', cursor: 'pointer', padding: 0 }}
+                style={{ flex: 1, minWidth: 0, textAlign: 'left', fontSize: 12.5, fontFamily: FONT, color: 'var(--text-secondary)', background: 'transparent', border: 'none', cursor: 'pointer', padding: 0 }}
                 className="truncate"
               >
                 {opt}
@@ -291,7 +293,7 @@ export default function IdeasPage() {
     <div style={{ position: 'relative' }} ref={statusMenuId === idea.id ? statusMenuRef : undefined}>
       <button
         onClick={e => { e.stopPropagation(); setStatusMenuId(prev => prev === idea.id ? null : idea.id) }}
-        style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'transparent', border: 'none', cursor: 'pointer', fontSize: 12.5, color: STATUS_META[idea.status].color, padding: 0 }}
+        style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'transparent', border: 'none', cursor: 'pointer', fontSize: 11.5, fontFamily: FONT, color: STATUS_META[idea.status].color, padding: 0 }}
       >
         <span style={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: STATUS_META[idea.status].color, flexShrink: 0 }} />
         {STATUS_META[idea.status].label}
@@ -302,7 +304,7 @@ export default function IdeasPage() {
             <button
               key={s}
               onClick={() => handleSetStatus(idea, s)}
-              style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '8px 12px', fontSize: 12.5, color: 'var(--text-secondary)', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left' }}
+              style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '8px 12px', fontSize: 12.5, fontFamily: FONT, color: 'var(--text-secondary)', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left' }}
               onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.06)')}
               onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
             >
@@ -320,14 +322,14 @@ export default function IdeasPage() {
       {idea.type ? (
         <button
           onClick={e => { e.stopPropagation(); setTypeMenuId(prev => prev === idea.id ? null : idea.id) }}
-          style={{ fontSize: 12, padding: '2px 8px', borderRadius: 5, background: 'var(--bg-tertiary)', color: TYPE_META[idea.type]?.color ?? 'var(--text-muted)', border: 'none', cursor: 'pointer' }}
+          style={{ fontSize: 11.5, fontFamily: FONT, padding: 0, background: 'transparent', color: TYPE_META[idea.type]?.color ?? 'var(--text-muted)', border: 'none', cursor: 'pointer' }}
         >
           {TYPE_META[idea.type]?.label ?? idea.type}
         </button>
       ) : (
         <button
           onClick={e => { e.stopPropagation(); setTypeMenuId(prev => prev === idea.id ? null : idea.id) }}
-          style={{ fontSize: 12.5, color: 'var(--text-muted)', background: 'transparent', border: 'none', cursor: 'pointer', padding: 0 }}
+          style={{ fontSize: 11.5, fontFamily: FONT, color: 'var(--text-muted)', background: 'transparent', border: 'none', cursor: 'pointer', padding: 0 }}
         >
           + Type
         </button>
@@ -338,7 +340,7 @@ export default function IdeasPage() {
             <button
               key={t}
               onClick={() => handleSetType(idea, t)}
-              style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '8px 12px', fontSize: 12.5, color: TYPE_META[t].color, background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left' }}
+              style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '8px 12px', fontSize: 12.5, fontFamily: FONT, color: TYPE_META[t].color, background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left' }}
               onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.06)')}
               onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
             >
@@ -364,20 +366,20 @@ export default function IdeasPage() {
                 onChange={e => setSearch(e.target.value)}
                 placeholder="Search ideas..."
                 className="w-full rounded-lg pl-9 pr-4 py-2.5 text-sm outline-none"
-                style={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border)', color: 'var(--text-primary)' }}
+                style={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border)', color: 'var(--text-primary)', fontFamily: FONT }}
               />
             </div>
             <div className="flex items-center gap-2.5" style={{ flexShrink: 0 }}>
               <div style={{ display: 'flex', border: '1px solid var(--border)', borderRadius: 8, overflow: 'hidden' }}>
                 <button
                   onClick={() => setView('list')}
-                  style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 11px', fontSize: 12.5, border: 'none', borderRight: '1px solid var(--border)', cursor: 'pointer', background: view === 'list' ? 'var(--bg-tertiary)' : 'transparent', color: view === 'list' ? 'var(--text-primary)' : 'var(--text-muted)' }}
+                  style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 11px', fontSize: 12.5, fontFamily: FONT, border: 'none', borderRight: '1px solid var(--border)', cursor: 'pointer', background: view === 'list' ? 'var(--bg-tertiary)' : 'transparent', color: view === 'list' ? 'var(--text-primary)' : 'var(--text-muted)' }}
                 >
                   <List size={14} /> List
                 </button>
                 <button
                   onClick={() => setView('board')}
-                  style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 11px', fontSize: 12.5, border: 'none', cursor: 'pointer', background: view === 'board' ? 'var(--bg-tertiary)' : 'transparent', color: view === 'board' ? 'var(--text-primary)' : 'var(--text-muted)' }}
+                  style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 11px', fontSize: 12.5, fontFamily: FONT, border: 'none', cursor: 'pointer', background: view === 'board' ? 'var(--bg-tertiary)' : 'transparent', color: view === 'board' ? 'var(--text-primary)' : 'var(--text-muted)' }}
                 >
                   <LayoutGrid size={14} /> Board
                 </button>
@@ -385,14 +387,14 @@ export default function IdeasPage() {
               <button
                 onClick={handleNewIdea}
                 className="flex items-center gap-2 px-3.5 py-2 rounded-lg text-[13.5px] font-medium"
-                style={{ backgroundColor: 'var(--text-primary)', color: 'var(--bg)' }}
+                style={{ backgroundColor: 'var(--text-primary)', color: 'var(--bg)', fontFamily: FONT }}
               >
                 <Plus size={14} /> New idea
               </button>
             </div>
           </div>
 
-          <p className="text-sm mb-6" style={{ color: 'var(--text-muted)' }}>
+          <p className="text-sm mb-6" style={{ color: 'var(--text-muted)', fontFamily: FONT }}>
             {trimmedQuery ? `${filteredIdeas.length} matching ideas` : `${ideas.length} ideas`}
           </p>
 
@@ -422,13 +424,13 @@ export default function IdeasPage() {
                       onChange={e => setEditValue(e.target.value)}
                       onBlur={() => commitEdit(idea)}
                       onKeyDown={e => { if (e.key === 'Enter') commitEdit(idea); if (e.key === 'Escape') setEditingField(null) }}
-                      style={{ minWidth: 0, fontSize: 17, fontWeight: 400, lineHeight: 1.5, background: 'var(--bg-tertiary)', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--text-primary)', padding: '2px 6px' }}
+                      style={{ minWidth: 0, fontSize: 14, fontWeight: 500, lineHeight: 1.4, fontFamily: FONT, background: 'var(--bg-tertiary)', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--text-primary)', padding: '2px 6px' }}
                     />
                   ) : (
                     <div
                       className="truncate"
                       onClick={() => startEdit(idea, 'title')}
-                      style={{ minWidth: 0, fontSize: 17, fontWeight: 400, lineHeight: 1.5, color: '#eeede7', cursor: 'text' }}
+                      style={{ minWidth: 0, fontSize: 14, fontWeight: 500, lineHeight: 1.4, fontFamily: FONT, color: '#eeede7', cursor: 'text' }}
                     >
                       {idea.title}
                     </div>
@@ -445,12 +447,12 @@ export default function IdeasPage() {
                         onBlur={e => { if (fieldEditWrapperRef.current && e.relatedTarget && fieldEditWrapperRef.current.contains(e.relatedTarget as Node)) return; commitEdit(idea) }}
                         onKeyDown={e => { if (e.key === 'Enter') commitEdit(idea); if (e.key === 'Escape') setEditingField(null) }}
                         placeholder="Platform"
-                        style={{ fontSize: 12.5, background: 'var(--bg-tertiary)', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--text-primary)', padding: '2px 6px', width: '100%' }}
+                        style={{ fontSize: 12.5, fontFamily: FONT, background: 'var(--bg-tertiary)', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--text-primary)', padding: '2px 6px', width: '100%' }}
                       />
                       {renderSuggestionDropdown(idea, 'platform', platformOptions, 26)}
                     </div>
                   ) : (
-                    <div onClick={() => startEdit(idea, 'platform')} style={{ fontSize: 12.5, color: 'var(--text-muted)', cursor: 'text' }} className="truncate">
+                    <div onClick={() => startEdit(idea, 'platform')} style={{ fontSize: 11.5, fontFamily: FONT, color: 'var(--text-muted)', cursor: 'text' }} className="truncate">
                       {idea.platform || '+ Platform'}
                     </div>
                   )}
@@ -466,22 +468,22 @@ export default function IdeasPage() {
                         onBlur={e => { if (fieldEditWrapperRef.current && e.relatedTarget && fieldEditWrapperRef.current.contains(e.relatedTarget as Node)) return; commitEdit(idea) }}
                         onKeyDown={e => { if (e.key === 'Enter') commitEdit(idea); if (e.key === 'Escape') setEditingField(null) }}
                         placeholder="Category"
-                        style={{ fontSize: 12.5, background: 'var(--bg-tertiary)', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--text-primary)', padding: '2px 6px', width: '100%' }}
+                        style={{ fontSize: 12.5, fontFamily: FONT, background: 'var(--bg-tertiary)', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--text-primary)', padding: '2px 6px', width: '100%' }}
                       />
                       {renderSuggestionDropdown(idea, 'category', categoryOptions, 26)}
                     </div>
                   ) : idea.category ? (
-                    <span onClick={() => startEdit(idea, 'category')} className="truncate" style={{ fontSize: 12, padding: '2px 8px', borderRadius: 5, background: 'var(--bg-tertiary)', color: 'var(--text-muted)', cursor: 'text', width: 'fit-content' }}>
+                    <span onClick={() => startEdit(idea, 'category')} className="truncate" style={{ fontSize: 11.5, fontFamily: FONT, padding: '3px 9px', borderRadius: 6, background: 'var(--bg-tertiary)', color: 'var(--text-muted)', cursor: 'text', width: 'fit-content' }}>
                       {idea.category}
                     </span>
                   ) : (
-                    <div onClick={() => startEdit(idea, 'category')} style={{ fontSize: 12.5, color: 'var(--text-muted)', cursor: 'text' }}>+ Category</div>
+                    <div onClick={() => startEdit(idea, 'category')} style={{ fontSize: 11.5, fontFamily: FONT, color: 'var(--text-muted)', cursor: 'text' }}>+ Category</div>
                   )}
 
                   <button
                     onClick={() => handleDocAction(idea)}
                     className="opacity-0 group-hover:opacity-100 transition-opacity"
-                    style={{ fontSize: 11, color: '#8f89e6', background: 'transparent', border: 'none', padding: '5px 8px', whiteSpace: 'nowrap', cursor: 'pointer' }}
+                    style={{ fontSize: 11, fontFamily: FONT, color: '#8f89e6', background: 'transparent', border: 'none', padding: '5px 8px', whiteSpace: 'nowrap', cursor: 'pointer' }}
                   >
                     {idea.doc_uuid ? 'Open Doc' : 'Turn into Doc'}
                   </button>
@@ -498,7 +500,7 @@ export default function IdeasPage() {
                       <div onClick={e => e.stopPropagation()} style={{ position: 'absolute', right: 0, top: 30, zIndex: 50, width: 130, borderRadius: 10, boxShadow: '0 8px 32px rgba(0,0,0,0.5)', padding: '4px 0', overflow: 'hidden', background: '#242428', border: '1px solid rgba(255,255,255,0.09)' }}>
                         <button
                           onClick={() => handleDelete(idea)}
-                          style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '8px 12px', fontSize: 13, color: '#f87171', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left' }}
+                          style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '8px 12px', fontSize: 13, fontFamily: FONT, color: '#f87171', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left' }}
                           onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.06)')}
                           onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                         >
@@ -534,21 +536,21 @@ export default function IdeasPage() {
                                 onChange={e => setEditValue(e.target.value)}
                                 onBlur={() => commitEdit(idea)}
                                 onKeyDown={e => { if (e.key === 'Enter') commitEdit(idea); if (e.key === 'Escape') setEditingField(null) }}
-                                style={{ width: '100%', fontSize: 12.5, fontWeight: 500, background: 'var(--bg-tertiary)', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--text-primary)', padding: '2px 6px', marginBottom: 8 }}
+                                style={{ width: '100%', fontSize: 12.5, fontWeight: 500, fontFamily: FONT, background: 'var(--bg-tertiary)', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--text-primary)', padding: '2px 6px', marginBottom: 8 }}
                               />
                             ) : (
-                              <div onClick={() => startEdit(idea, 'title')} style={{ fontSize: 12.5, fontWeight: 500, marginBottom: 8, cursor: 'text', lineHeight: 1.4 }}>{idea.title}</div>
+                              <div onClick={() => startEdit(idea, 'title')} style={{ fontSize: 12.5, fontWeight: 500, fontFamily: FONT, marginBottom: 8, cursor: 'text', lineHeight: 1.4 }}>{idea.title}</div>
                             )}
                             <div className="flex items-center justify-between">
                               <div className="flex items-center gap-1.5 flex-wrap">
-                                {idea.type && <span style={{ fontSize: 12, padding: '2px 8px', borderRadius: 5, background: 'var(--bg-tertiary)', color: TYPE_META[idea.type]?.color ?? 'var(--text-muted)' }}>{TYPE_META[idea.type]?.label ?? idea.type}</span>}
-                                {idea.platform && <span style={{ fontSize: 12, padding: '2px 8px', borderRadius: 5, background: 'var(--bg-tertiary)', color: 'var(--text-muted)' }}>{idea.platform}</span>}
-                                {idea.category && <span style={{ fontSize: 12, padding: '2px 8px', borderRadius: 5, background: 'var(--bg-tertiary)', color: 'var(--text-muted)' }}>{idea.category}</span>}
+                                {idea.type && <span style={{ fontSize: 12, fontFamily: FONT, padding: '2px 8px', borderRadius: 5, background: 'var(--bg-tertiary)', color: TYPE_META[idea.type]?.color ?? 'var(--text-muted)' }}>{TYPE_META[idea.type]?.label ?? idea.type}</span>}
+                                {idea.platform && <span style={{ fontSize: 12, fontFamily: FONT, padding: '2px 8px', borderRadius: 5, background: 'var(--bg-tertiary)', color: 'var(--text-muted)' }}>{idea.platform}</span>}
+                                {idea.category && <span style={{ fontSize: 12, fontFamily: FONT, padding: '2px 8px', borderRadius: 5, background: 'var(--bg-tertiary)', color: 'var(--text-muted)' }}>{idea.category}</span>}
                               </div>
                               <button
                                 onClick={() => handleDocAction(idea)}
                                 className="opacity-0 group-hover:opacity-100 transition-opacity"
-                                style={{ fontSize: 10.5, color: '#8f89e6', background: 'transparent', border: 'none', padding: 0, whiteSpace: 'nowrap', cursor: 'pointer', flexShrink: 0 }}
+                                style={{ fontSize: 10.5, fontFamily: FONT, color: '#8f89e6', background: 'transparent', border: 'none', padding: 0, whiteSpace: 'nowrap', cursor: 'pointer', flexShrink: 0 }}
                               >
                                 {idea.doc_uuid ? 'Open Doc' : '→ Doc'}
                               </button>
