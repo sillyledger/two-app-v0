@@ -92,11 +92,9 @@ export default function IdeasPage() {
     setEditingField({ id: idea.id, field })
   }
 
-  const commitEdit = async (idea: ContentIdea) => {
-    const field = editingField?.field
+  const commitFieldValue = async (idea: ContentIdea, field: 'title' | 'platform' | 'category', rawValue: string) => {
     setEditingField(null)
-    if (!field) return
-    const trimmed = editValue.trim()
+    const trimmed = rawValue.trim()
     if (field === 'title' && !trimmed) return
     const value = trimmed || null
     if ((idea[field] ?? null) === value) return
@@ -108,6 +106,11 @@ export default function IdeasPage() {
         body: JSON.stringify({ [field]: value }),
       })
     } catch {}
+  }
+
+  const commitEdit = (idea: ContentIdea) => {
+    if (!editingField) return
+    commitFieldValue(idea, editingField.field, editValue)
   }
 
   const handleNewIdea = async () => {
@@ -194,6 +197,9 @@ export default function IdeasPage() {
         (i.type ?? '').toLowerCase().includes(trimmedQuery)
       )
     : ideas
+
+  const platformOptions = Array.from(new Set(ideas.map(i => i.platform).filter((v): v is string => !!v))).sort()
+  const categoryOptions = Array.from(new Set(ideas.map(i => i.category).filter((v): v is string => !!v))).sort()
 
   const renderStatusControl = (idea: ContentIdea) => (
     <div style={{ position: 'relative' }} ref={statusMenuId === idea.id ? statusMenuRef : undefined}>
@@ -345,15 +351,35 @@ export default function IdeasPage() {
                   {renderTypeControl(idea)}
 
                   {editingField?.id === idea.id && editingField.field === 'platform' ? (
-                    <input
-                      ref={editInputRef}
-                      value={editValue}
-                      onChange={e => setEditValue(e.target.value)}
-                      onBlur={() => commitEdit(idea)}
-                      onKeyDown={e => { if (e.key === 'Enter') commitEdit(idea); if (e.key === 'Escape') setEditingField(null) }}
-                      placeholder="Platform"
-                      style={{ fontSize: 11, background: 'var(--bg-tertiary)', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--text-primary)', padding: '2px 6px' }}
-                    />
+                    <div style={{ position: 'relative' }}>
+                      <input
+                        ref={editInputRef}
+                        value={editValue}
+                        onChange={e => setEditValue(e.target.value)}
+                        onBlur={() => commitEdit(idea)}
+                        onKeyDown={e => { if (e.key === 'Enter') commitEdit(idea); if (e.key === 'Escape') setEditingField(null) }}
+                        placeholder="Platform"
+                        style={{ fontSize: 11, background: 'var(--bg-tertiary)', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--text-primary)', padding: '2px 6px', width: '100%' }}
+                      />
+                      {(() => {
+                        const suggestions = platformOptions.filter(o => o.toLowerCase().includes(editValue.trim().toLowerCase()))
+                        return suggestions.length > 0 && (
+                          <div onMouseDown={e => e.preventDefault()} style={{ position: 'absolute', left: 0, top: 24, zIndex: 50, minWidth: 140, borderRadius: 10, boxShadow: '0 8px 32px rgba(0,0,0,0.5)', padding: '4px 0', overflow: 'hidden', background: '#242428', border: '1px solid rgba(255,255,255,0.09)' }}>
+                            {suggestions.map(opt => (
+                              <button
+                                key={opt}
+                                onClick={() => commitFieldValue(idea, 'platform', opt)}
+                                style={{ display: 'block', width: '100%', padding: '7px 12px', fontSize: 12, color: 'var(--text-secondary)', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left' }}
+                                onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.06)')}
+                                onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                              >
+                                {opt}
+                              </button>
+                            ))}
+                          </div>
+                        )
+                      })()}
+                    </div>
                   ) : (
                     <div onClick={() => startEdit(idea, 'platform')} style={{ fontSize: 11, color: 'var(--text-muted)', cursor: 'text' }} className="truncate">
                       {idea.platform || '+ Platform'}
@@ -363,15 +389,35 @@ export default function IdeasPage() {
                   {renderStatusControl(idea)}
 
                   {editingField?.id === idea.id && editingField.field === 'category' ? (
-                    <input
-                      ref={editInputRef}
-                      value={editValue}
-                      onChange={e => setEditValue(e.target.value)}
-                      onBlur={() => commitEdit(idea)}
-                      onKeyDown={e => { if (e.key === 'Enter') commitEdit(idea); if (e.key === 'Escape') setEditingField(null) }}
-                      placeholder="Category"
-                      style={{ fontSize: 10.5, background: 'var(--bg-tertiary)', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--text-primary)', padding: '2px 6px' }}
-                    />
+                    <div style={{ position: 'relative' }}>
+                      <input
+                        ref={editInputRef}
+                        value={editValue}
+                        onChange={e => setEditValue(e.target.value)}
+                        onBlur={() => commitEdit(idea)}
+                        onKeyDown={e => { if (e.key === 'Enter') commitEdit(idea); if (e.key === 'Escape') setEditingField(null) }}
+                        placeholder="Category"
+                        style={{ fontSize: 10.5, background: 'var(--bg-tertiary)', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--text-primary)', padding: '2px 6px', width: '100%' }}
+                      />
+                      {(() => {
+                        const suggestions = categoryOptions.filter(o => o.toLowerCase().includes(editValue.trim().toLowerCase()))
+                        return suggestions.length > 0 && (
+                          <div onMouseDown={e => e.preventDefault()} style={{ position: 'absolute', left: 0, top: 22, zIndex: 50, minWidth: 130, borderRadius: 10, boxShadow: '0 8px 32px rgba(0,0,0,0.5)', padding: '4px 0', overflow: 'hidden', background: '#242428', border: '1px solid rgba(255,255,255,0.09)' }}>
+                            {suggestions.map(opt => (
+                              <button
+                                key={opt}
+                                onClick={() => commitFieldValue(idea, 'category', opt)}
+                                style={{ display: 'block', width: '100%', padding: '7px 12px', fontSize: 12, color: 'var(--text-secondary)', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left' }}
+                                onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.06)')}
+                                onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                              >
+                                {opt}
+                              </button>
+                            ))}
+                          </div>
+                        )
+                      })()}
+                    </div>
                   ) : idea.category ? (
                     <span onClick={() => startEdit(idea, 'category')} className="truncate" style={{ fontSize: 10.5, padding: '2px 8px', borderRadius: 5, background: 'var(--bg-tertiary)', color: 'var(--text-muted)', cursor: 'text', width: 'fit-content' }}>
                       {idea.category}
