@@ -31,13 +31,13 @@ export async function POST(request: Request) {
   if (!payload) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   try {
-    const { title, platform = null, category = null } = await request.json()
+    const { title, type = null, platform = null, category = null } = await request.json()
     if (!title?.trim()) {
       return NextResponse.json({ error: 'Title is required' }, { status: 400 })
     }
     const result = await sql`
-      INSERT INTO content_ideas (user_id, title, platform, category)
-      VALUES (${payload.userId}, ${title.trim()}, ${platform}, ${category})
+      INSERT INTO content_ideas (user_id, title, type, platform, category)
+      VALUES (${payload.userId}, ${title.trim()}, ${type}, ${platform}, ${category})
       RETURNING *
     `
     return NextResponse.json(result[0], { status: 201 })

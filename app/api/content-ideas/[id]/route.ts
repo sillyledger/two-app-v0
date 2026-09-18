@@ -16,6 +16,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     const result = await sql`
       UPDATE content_ideas SET
         title = COALESCE(${body.title ?? null}, title),
+        type = COALESCE(${body.type ?? null}, type),
         status = COALESCE(${body.status ?? null}, status),
         platform = COALESCE(${body.platform ?? null}, platform),
         category = COALESCE(${body.category ?? null}, category),
