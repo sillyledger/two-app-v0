@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Sidebar from '@/components/sidebar'
 import { Search, Plus, List, LayoutGrid, MoreVertical, Trash2, Pencil } from 'lucide-react'
+import PusherJS from 'pusher-js'
 
 interface ContentIdea {
   id: number
@@ -67,6 +68,36 @@ export default function IdeasPage() {
       .catch(() => setIdeas([]))
       .finally(() => setLoading(false))
   }, [])
+
+  const linkedDocUuidsKey = Array.from(new Set(ideas.map(i => i.doc_uuid).filter(Boolean))).sort().join(',')
+
+  useEffect(() => {
+    if (!linkedDocUuidsKey) return
+
+    const docUuids = linkedDocUuidsKey.split(',')
+    const pusher = new PusherJS(process.env.NEXT_PUBLIC_PUSHER_KEY!, {
+      cluster: process.env.NEXT_PUBLIC_PUSHER_CLUSTER!,
+    })
+
+    const channels = docUuids.map(docUuid => {
+      const channel = pusher.subscribe(`doc-${docUuid}`)
+      channel.bind('updated', () => {
+        fetch('/api/content-ideas')
+          .then(r => r.json())
+          .then(data => setIdeas(Array.isArray(data) ? data : []))
+          .catch(() => {})
+      })
+      return channel
+    })
+
+    return () => {
+      channels.forEach((channel, i) => {
+        channel.unbind_all()
+        pusher.unsubscribe(`doc-${docUuids[i]}`)
+      })
+      pusher.disconnect()
+    }
+  }, [linkedDocUuidsKey])
 
   useEffect(() => {
     const h = (e: MouseEvent) => { if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenuOpenId(null) }

@@ -2,6 +2,15 @@ import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { verifyToken } from '@/lib/auth'
 import { sql } from '@/lib/db'
+import Pusher from 'pusher'
+
+const pusher = new Pusher({
+  appId: process.env.PUSHER_APP_ID!,
+  key: process.env.PUSHER_KEY!,
+  secret: process.env.PUSHER_SECRET!,
+  cluster: process.env.PUSHER_CLUSTER!,
+  useTLS: true,
+})
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const cookieStore = await cookies()
@@ -26,6 +35,20 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       RETURNING *
     `
     if (!result[0]) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+
+    if (body.title !== undefined && result[0].doc_uuid) {
+      await sql`
+        UPDATE docs
+        SET title = ${body.title.trim()}, updated_at = CURRENT_TIMESTAMP
+        WHERE uuid = ${result[0].doc_uuid} AND user_id = ${payload.userId}
+      `
+      try {
+        await pusher.trigger(`doc-${result[0].doc_uuid}`, 'updated', {})
+      } catch (pusherError) {
+        console.error('Pusher notification failed (save itself succeeded):', pusherError)
+      }
+    }
+
     return NextResponse.json(result[0])
   } catch (error) {
     console.error('Failed to update content idea:', error)

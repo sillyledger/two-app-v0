@@ -12,9 +12,16 @@ export async function GET() {
 
   try {
     const ideas = await sql`
-      SELECT * FROM content_ideas
-      WHERE user_id = ${payload.userId}
-      ORDER BY created_at DESC
+      SELECT
+        content_ideas.id, content_ideas.uuid, content_ideas.user_id,
+        content_ideas.status, content_ideas.platform, content_ideas.category,
+        content_ideas.type, content_ideas.doc_uuid, content_ideas.created_at,
+        content_ideas.updated_at,
+        COALESCE(docs.title, content_ideas.title) AS title
+      FROM content_ideas
+      LEFT JOIN docs ON docs.uuid = content_ideas.doc_uuid AND docs.deleted_at IS NULL
+      WHERE content_ideas.user_id = ${payload.userId}
+      ORDER BY content_ideas.created_at DESC
     `
     return NextResponse.json(ideas)
   } catch (error) {
