@@ -420,13 +420,13 @@ export default function IdeasPage() {
                       onChange={e => setEditValue(e.target.value)}
                       onBlur={() => commitEdit(idea)}
                       onKeyDown={e => { if (e.key === 'Enter') commitEdit(idea); if (e.key === 'Escape') setEditingField(null) }}
-                      style={{ minWidth: 0, fontSize: 15, fontWeight: 600, background: 'var(--bg-tertiary)', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--text-primary)', padding: '2px 6px' }}
+                      style={{ minWidth: 0, fontSize: 17, fontWeight: 400, lineHeight: 1.5, background: 'var(--bg-tertiary)', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--text-primary)', padding: '2px 6px' }}
                     />
                   ) : (
                     <div
                       className="truncate"
                       onClick={() => startEdit(idea, 'title')}
-                      style={{ minWidth: 0, fontSize: 15, fontWeight: 600, color: '#eeede7', cursor: 'text' }}
+                      style={{ minWidth: 0, fontSize: 17, fontWeight: 400, lineHeight: 1.5, color: '#eeede7', cursor: 'text' }}
                     >
                       {idea.title}
                     </div>
