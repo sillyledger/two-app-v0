@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Sidebar from '@/components/sidebar'
-import { Plus, Atom, Search, MoreVertical, Pencil, Trash2 } from 'lucide-react'
+import { Plus, Atom, Search, MoreVertical, Pencil, Trash2, ChevronRight } from 'lucide-react'
 
 interface Board {
   id: number
@@ -99,6 +99,22 @@ export default function CanvasBoardsPage() {
 
       <main className="flex-1 overflow-y-auto">
         <div className="max-w-[1180px] mx-auto px-10 py-10">
+          <div className="flex items-center flex-wrap gap-1 mb-3 text-[12px]" style={{ color: 'var(--text-muted)' }}>
+            <button
+              onClick={() => router.push('/studio')}
+              className="transition-colors"
+              style={{ color: 'var(--text-muted)' }}
+              onMouseEnter={e => (e.currentTarget.style.color = 'var(--text-primary)')}
+              onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-muted)')}
+            >
+              Studio
+            </button>
+            <span className="flex items-center gap-1">
+              <ChevronRight size={12} />
+              <span className="font-semibold" style={{ color: 'var(--text-primary)' }}>Canvas</span>
+            </span>
+          </div>
+
           <div className="flex items-center justify-between mb-6 gap-4">
             <div className="relative flex-1" style={{ maxWidth: 420 }}>
               <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: 'var(--text-muted)' }} />
