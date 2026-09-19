@@ -8,11 +8,21 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   const { id } = await params
 
   try {
-    const { name } = await request.json()
-    if (!name?.trim()) return NextResponse.json({ error: 'Name required' }, { status: 400 })
+    const { name, category_id } = await request.json()
+    if (name === undefined && category_id === undefined) {
+      return NextResponse.json({ error: 'Nothing to update' }, { status: 400 })
+    }
+    if (name !== undefined && !name.trim()) {
+      return NextResponse.json({ error: 'Name required' }, { status: 400 })
+    }
     const result = await sql`
-      UPDATE boards SET name = ${name.trim()} WHERE uuid = ${id} AND user_id = ${session.userId} RETURNING *
+      UPDATE boards SET
+        name = COALESCE(${name?.trim() ?? null}, name),
+        category_id = CASE WHEN ${category_id !== undefined} THEN ${category_id ?? null} ELSE category_id END
+      WHERE uuid = ${id} AND user_id = ${session.userId}
+      RETURNING *
     `
+    if (!result[0]) return NextResponse.json({ error: 'Not found' }, { status: 404 })
     return NextResponse.json(result[0])
   } catch (error) {
     console.error('Failed to rename board:', error)
