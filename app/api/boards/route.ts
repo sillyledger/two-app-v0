@@ -37,14 +37,14 @@ export async function POST(request: Request) {
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   try {
-    const { name, workspace_id } = await request.json()
+    const { name, workspace_id, category_id = null } = await request.json()
     if (!name?.trim()) {
       return NextResponse.json({ error: 'Invalid name' }, { status: 400 })
     }
     const type = 'canvas'
     const result = await sql`
-      INSERT INTO boards (name, type, workspace_id, user_id)
-      VALUES (${name.trim()}, ${type}, ${workspace_id}, ${session.userId})
+      INSERT INTO boards (name, type, workspace_id, user_id, category_id)
+      VALUES (${name.trim()}, ${type}, ${workspace_id}, ${session.userId}, ${category_id})
       RETURNING *
     `
     return NextResponse.json(result[0], { status: 201 })

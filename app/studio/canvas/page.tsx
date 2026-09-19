@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef, Fragment } from 'react'
 import { useRouter } from 'next/navigation'
 import Sidebar from '@/components/sidebar'
-import { Plus, Atom, Search, MoreVertical, Pencil, Trash2, ChevronRight, ChevronDown } from 'lucide-react'
+import { Plus, Atom, Search, MoreVertical, Pencil, Trash2, ChevronRight, ChevronDown, Tag } from 'lucide-react'
 
 interface Board {
   id: number
@@ -59,6 +59,7 @@ export default function CanvasBoardsPage() {
   const [renamingId, setRenamingId] = useState<number | null>(null)
   const [renameValue, setRenameValue] = useState('')
   const renameInputRef = useRef<HTMLInputElement>(null)
+  const [movingId, setMovingId] = useState<number | null>(null)
 
   const [boardCategories, setBoardCategories] = useState<BoardCategory[]>([])
   const [activeCategory, setActiveCategory] = useState<number | 'all'>('all')
@@ -120,7 +121,7 @@ export default function CanvasBoardsPage() {
     const res = await fetch('/api/boards', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: 'Untitled board', type: 'canvas', workspace_id: workspace.id }),
+      body: JSON.stringify({ name: 'Untitled board', type: 'canvas', workspace_id: workspace.id, category_id: activeCategory === 'all' ? null : activeCategory }),
     })
     const board = await res.json()
     router.push(`/studio/canvas/${board.uuid}`)
@@ -152,6 +153,20 @@ export default function CanvasBoardsPage() {
     if (!confirmed) return
     setBoards(prev => prev.filter(b => b.id !== board.id))
     try { await fetch(`/api/boards/${board.uuid}`, { method: 'DELETE' }) } catch {}
+  }
+
+  async function handleMoveBoard(board: Board, categoryId: number | null) {
+    setMenuOpenId(null)
+    setMovingId(null)
+    const category = boardCategories.find(c => c.id === categoryId)
+    setBoards(prev => prev.map(b => b.id === board.id ? { ...b, category_id: categoryId, category_name: category?.name ?? null, category_color: category?.color ?? null } : b))
+    try {
+      await fetch(`/api/boards/${board.uuid}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ category_id: categoryId }),
+      })
+    } catch {}
   }
 
   function openCategoryModal(parentId: number | null = null) {
@@ -318,7 +333,10 @@ export default function CanvasBoardsPage() {
   }
 
   const trimmedQuery = searchQuery.trim().toLowerCase()
-  const filteredBoards = trimmedQuery ? boards.filter(b => b.name.toLowerCase().includes(trimmedQuery)) : boards
+  const activeCategoryIds = activeCategory === 'all' ? null : [activeCategory, ...collectDescendantIds(activeCategory, boardCategories)]
+  const filteredBoards = boards
+    .filter(b => activeCategory === 'all' || (activeCategoryIds !== null && b.category_id !== null && activeCategoryIds.includes(b.category_id)))
+    .filter(b => !trimmedQuery || b.name.toLowerCase().includes(trimmedQuery))
 
   return (
     <div className="flex h-screen overflow-hidden" style={{ backgroundColor: 'var(--bg)' }}>
@@ -437,7 +455,7 @@ export default function CanvasBoardsPage() {
                     <Atom size={18} style={{ color: '#c98a5e' }} />
                     <div style={{ position: 'relative' }} ref={menuOpenId === board.id ? menuRef : undefined}>
                       <button
-                        onClick={e => { e.stopPropagation(); setMenuOpenId(prev => prev === board.id ? null : board.id) }}
+                        onClick={e => { e.stopPropagation(); setMovingId(null); setMenuOpenId(prev => prev === board.id ? null : board.id) }}
                         title="More options"
                         className="transition-opacity"
                         style={{ color: 'var(--text-muted)', opacity: menuOpenId === board.id ? 1 : 0.4 }}
@@ -456,35 +474,72 @@ export default function CanvasBoardsPage() {
                             background: '#242428', border: '1px solid rgba(255,255,255,0.09)',
                           }}
                         >
-                          <button
-                            onClick={() => startRenaming(board)}
-                            style={{
-                              display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '8px 12px',
-                              fontSize: 13, color: 'var(--text-muted)', background: 'transparent', border: 'none',
-                              cursor: 'pointer', textAlign: 'left',
-                            }}
-                            onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.06)')}
-                            onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
-                          >
-                            <Pencil size={12} /> Rename
-                          </button>
-                          <button
-                            onClick={() => handleDeleteBoard(board)}
-                            style={{
-                              display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '8px 12px',
-                              fontSize: 13, color: '#f87171', background: 'transparent', border: 'none',
-                              cursor: 'pointer', textAlign: 'left',
-                            }}
-                            onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.06)')}
-                            onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
-                          >
-                            <Trash2 size={12} /> Delete
-                          </button>
+                          {movingId === board.id ? (
+                            <>
+                              <button onClick={() => handleMoveBoard(board, null)} style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '8px 12px', fontSize: 12.5, color: 'var(--text-secondary)', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left', fontFamily: FONT }} onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.06)')} onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+                                No category
+                              </button>
+                              {sortCategoriesForMove(boardCategories).map(cat => (
+                                <button key={cat.id} onClick={() => handleMoveBoard(board, cat.id)} style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: cat.depth > 0 ? '8px 12px 8px 28px' : '8px 12px', fontSize: 12.5, color: 'var(--text-secondary)', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left', fontFamily: FONT }} onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.06)')} onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+                                  {cat.depth > 0 && (
+                                    <span style={{ position: 'absolute', left: 16, top: 0, bottom: '50%', width: 10, borderLeft: '1px solid var(--border)', borderBottom: '1px solid var(--border)', borderRadius: '0 0 0 4px' }} />
+                                  )}
+                                  <span style={{ width: 7, height: 7, borderRadius: '50%', background: cat.color, flexShrink: 0 }} />
+                                  {cat.name}
+                                </button>
+                              ))}
+                            </>
+                          ) : (
+                            <>
+                              <button
+                                onClick={() => startRenaming(board)}
+                                style={{
+                                  display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '8px 12px',
+                                  fontSize: 13, color: 'var(--text-muted)', background: 'transparent', border: 'none',
+                                  cursor: 'pointer', textAlign: 'left',
+                                }}
+                                onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.06)')}
+                                onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                              >
+                                <Pencil size={12} /> Rename
+                              </button>
+                              <button
+                                onClick={() => setMovingId(board.id)}
+                                style={{
+                                  display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '8px 12px',
+                                  fontSize: 13, color: 'var(--text-muted)', background: 'transparent', border: 'none',
+                                  cursor: 'pointer', textAlign: 'left',
+                                }}
+                                onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.06)')}
+                                onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                              >
+                                <Tag size={12} /> Move to category
+                              </button>
+                              <button
+                                onClick={() => handleDeleteBoard(board)}
+                                style={{
+                                  display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '8px 12px',
+                                  fontSize: 13, color: '#f87171', background: 'transparent', border: 'none',
+                                  cursor: 'pointer', textAlign: 'left',
+                                }}
+                                onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.06)')}
+                                onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                              >
+                                <Trash2 size={12} /> Delete
+                              </button>
+                            </>
+                          )}
                         </div>
                       )}
                     </div>
                   </div>
                   <div>
+                    {board.category_name && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+                        <span style={{ width: 6, height: 6, borderRadius: '50%', background: board.category_color || '#888890', flexShrink: 0 }} />
+                        <span style={{ fontSize: 11, color: board.category_color || 'var(--text-muted)' }}>{board.category_name}</span>
+                      </div>
+                    )}
                     {renamingId === board.id ? (
                       <input
                         ref={renameInputRef}
