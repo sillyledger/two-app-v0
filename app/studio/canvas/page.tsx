@@ -1,9 +1,9 @@
 'use client'
 
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef, Fragment } from 'react'
 import { useRouter } from 'next/navigation'
 import Sidebar from '@/components/sidebar'
-import { Plus, Atom, Search, MoreVertical, Pencil, Trash2, ChevronRight } from 'lucide-react'
+import { Plus, Atom, Search, MoreVertical, Pencil, Trash2, ChevronRight, ChevronDown } from 'lucide-react'
 
 interface Board {
   id: number
@@ -11,6 +11,41 @@ interface Board {
   name: string
   type: 'canvas'
   created_at: string
+  category_id: number | null
+  category_name: string | null
+  category_color: string | null
+}
+
+interface BoardCategory {
+  id: number
+  name: string
+  color: string
+  parent_id: number | null
+  created_at: string
+}
+
+const FONT = "'DM Sans', system-ui, sans-serif"
+
+const SWATCHES = [
+  '#7F77DD', '#1D9E75', '#D85A30', '#D4537E',
+  '#378ADD', '#639922', '#BA7517', '#E24B4A', '#888890',
+]
+
+function collectDescendantIds(id: number, cats: BoardCategory[]): number[] {
+  const children = cats.filter(c => c.parent_id === id)
+  return children.flatMap(child => [child.id, ...collectDescendantIds(child.id, cats)])
+}
+
+function sortCategoriesForMove(cats: BoardCategory[]): (BoardCategory & { depth: number })[] {
+  const result: (BoardCategory & { depth: number })[] = []
+  function walk(parentId: number | null, depth: number) {
+    cats.filter(c => c.parent_id === parentId).forEach(c => {
+      result.push({ ...c, depth })
+      walk(c.id, depth + 1)
+    })
+  }
+  walk(null, 0)
+  return result
 }
 
 export default function CanvasBoardsPage() {
@@ -25,16 +60,34 @@ export default function CanvasBoardsPage() {
   const [renameValue, setRenameValue] = useState('')
   const renameInputRef = useRef<HTMLInputElement>(null)
 
+  const [boardCategories, setBoardCategories] = useState<BoardCategory[]>([])
+  const [activeCategory, setActiveCategory] = useState<number | 'all'>('all')
+
+  const [showCategoryModal, setShowCategoryModal] = useState(false)
+  const [newCategoryName, setNewCategoryName] = useState('')
+  const [newCategoryColor, setNewCategoryColor] = useState(SWATCHES[0])
+  const [newCategoryParentId, setNewCategoryParentId] = useState<number | null>(null)
+  const categoryNameRef = useRef<HTMLInputElement>(null)
+
+  const [openCategoryMenuId, setOpenCategoryMenuId] = useState<number | null>(null)
+  const [categoryMenuMode, setCategoryMenuMode] = useState<'actions' | 'picker'>('actions')
+  const categoryMenuRef = useRef<HTMLDivElement>(null)
+  const [expandedCategoryId, setExpandedCategoryId] = useState<number | null>(null)
+
   useEffect(() => {
     const saved = localStorage.getItem('sidebar-collapsed')
     if (saved === 'true') setCollapsed(true)
   }, [])
 
   useEffect(() => {
-    fetch('/api/boards')
-      .then(r => r.json())
-      .then(data => { setBoards(Array.isArray(data) ? data : []); setLoading(false) })
-      .catch(() => setLoading(false))
+    Promise.all([
+      fetch('/api/boards').then(r => r.json()),
+      fetch('/api/board-categories').then(r => r.json()),
+    ]).then(([boardsData, categoriesData]) => {
+      setBoards(Array.isArray(boardsData) ? boardsData : [])
+      setBoardCategories(Array.isArray(categoriesData) ? categoriesData : [])
+      setLoading(false)
+    }).catch(() => setLoading(false))
   }, [])
 
   useEffect(() => {
@@ -49,6 +102,17 @@ export default function CanvasBoardsPage() {
       renameInputRef.current.select()
     }
   }, [renamingId])
+
+  useEffect(() => {
+    const h = (e: MouseEvent) => {
+      if (categoryMenuRef.current && !categoryMenuRef.current.contains(e.target as Node)) {
+        setOpenCategoryMenuId(null)
+        setCategoryMenuMode('actions')
+      }
+    }
+    if (openCategoryMenuId !== null) document.addEventListener('mousedown', h)
+    return () => document.removeEventListener('mousedown', h)
+  }, [openCategoryMenuId])
 
   const createBoard = async () => {
     const workspaceRes = await fetch('/api/workspace')
@@ -90,6 +154,169 @@ export default function CanvasBoardsPage() {
     try { await fetch(`/api/boards/${board.uuid}`, { method: 'DELETE' }) } catch {}
   }
 
+  function openCategoryModal(parentId: number | null = null) {
+    setNewCategoryName('')
+    setNewCategoryColor(SWATCHES[0])
+    setNewCategoryParentId(parentId)
+    setShowCategoryModal(true)
+    setTimeout(() => categoryNameRef.current?.focus(), 50)
+  }
+
+  async function handleCreateCategory() {
+    const name = newCategoryName.trim()
+    if (!name) { setShowCategoryModal(false); return }
+    setShowCategoryModal(false)
+    try {
+      const res = await fetch('/api/board-categories', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, color: newCategoryColor, parent_id: newCategoryParentId }),
+      })
+      const category = await res.json()
+      setBoardCategories(prev => [...prev, category])
+    } catch {}
+  }
+
+  async function handleDeleteCategory(id: number) {
+    setOpenCategoryMenuId(null)
+    setCategoryMenuMode('actions')
+    const descendantIds = collectDescendantIds(id, boardCategories)
+    const hasChildren = descendantIds.length > 0
+    const confirmMessage = hasChildren
+      ? 'Delete this category and its subcategories? Boards inside them will not be deleted — they\'ll just lose their category.'
+      : 'Delete this category? Boards inside it will not be deleted — they\'ll just lose their category.'
+    if (!confirm(confirmMessage)) return
+    const idsToRemove = [id, ...descendantIds]
+    setBoardCategories(prev => prev.filter(c => !idsToRemove.includes(c.id)))
+    setBoards(prev => prev.map(b => b.category_id !== null && idsToRemove.includes(b.category_id) ? { ...b, category_id: null, category_name: null, category_color: null } : b))
+    if (activeCategory !== 'all' && idsToRemove.includes(activeCategory)) setActiveCategory('all')
+    if (expandedCategoryId !== null && idsToRemove.includes(expandedCategoryId)) setExpandedCategoryId(null)
+    try { await fetch(`/api/board-categories/${id}`, { method: 'DELETE' }) } catch {}
+  }
+
+  async function handleMoveCategory(cat: BoardCategory, parentId: number | null) {
+    setOpenCategoryMenuId(null)
+    setCategoryMenuMode('actions')
+    setBoardCategories(prev => prev.map(c => c.id === cat.id ? { ...c, parent_id: parentId } : c))
+    try {
+      await fetch(`/api/board-categories/${cat.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ parent_id: parentId }),
+      })
+    } catch {}
+  }
+
+  function CategoryChip({ cat, small }: { cat: BoardCategory; small?: boolean }) {
+    const hasChildren = boardCategories.some(c => c.parent_id === cat.id)
+    const isMenuOpen = openCategoryMenuId === cat.id
+    const descendantIds = collectDescendantIds(cat.id, boardCategories)
+    const eligible = boardCategories.filter(c => c.id !== cat.id && !descendantIds.includes(c.id))
+    const eligibleTopLevel = eligible.filter(c => c.parent_id === null)
+
+    const menuItemStyle: React.CSSProperties = { width: '100%', textAlign: 'left', background: 'transparent', border: 'none', borderRadius: 6, padding: '7px 9px', fontSize: 12.5, color: 'var(--text-primary)', cursor: 'pointer', fontFamily: FONT }
+
+    return (
+      <div style={{ position: 'relative' }} ref={isMenuOpen ? categoryMenuRef : undefined}>
+        <button
+          onClick={() => { setActiveCategory(cat.id); if (hasChildren) setExpandedCategoryId(cat.id) }}
+          onContextMenu={e => { e.preventDefault(); setOpenCategoryMenuId(cat.id); setCategoryMenuMode('actions') }}
+          style={{
+            display: 'flex', alignItems: 'center', gap: small ? 5 : 6,
+            background: activeCategory === cat.id ? 'var(--bg-tertiary)' : 'var(--bg-secondary)',
+            color: 'var(--text-primary)', border: '1px solid var(--border)',
+            fontSize: small ? 11 : 12, padding: small ? '5px 11px' : '6px 13px', borderRadius: 999, cursor: 'pointer', fontFamily: FONT,
+          }}
+        >
+          <span style={{ width: small ? 6 : 7, height: small ? 6 : 7, borderRadius: '50%', background: cat.color, flexShrink: 0 }} />
+          {cat.name}
+          {hasChildren && !small && (
+            <span
+              onClick={e => { e.stopPropagation(); setExpandedCategoryId(expandedCategoryId === cat.id ? null : cat.id) }}
+              style={{ display: 'flex', alignItems: 'center', color: 'var(--text-muted)', marginLeft: 1 }}
+            >
+              {expandedCategoryId === cat.id ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+            </span>
+          )}
+          <span
+            onClick={e => { e.stopPropagation(); setOpenCategoryMenuId(isMenuOpen ? null : cat.id); setCategoryMenuMode('actions') }}
+            style={{ fontSize: 11, color: 'var(--text-muted)', marginLeft: 2, lineHeight: 1 }}
+          >
+            ⋯
+          </span>
+        </button>
+        {isMenuOpen && (
+          <div style={{ position: 'absolute', top: 'calc(100% + 4px)', left: 0, zIndex: 20, background: 'var(--bg-secondary)', border: '1px solid var(--border)', borderRadius: 9, padding: 4, minWidth: categoryMenuMode === 'picker' ? 180 : 150, maxHeight: 260, overflowY: 'auto', boxShadow: '0 8px 24px rgba(0,0,0,0.3)' }}>
+            {categoryMenuMode === 'actions' ? (
+              <>
+                <button
+                  onClick={() => setCategoryMenuMode('picker')}
+                  style={menuItemStyle}
+                  onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-tertiary)')}
+                  onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                >
+                  Move to category
+                </button>
+                {cat.parent_id !== null && (
+                  <button
+                    onClick={() => handleMoveCategory(cat, null)}
+                    style={menuItemStyle}
+                    onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-tertiary)')}
+                    onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                  >
+                    Move to top level
+                  </button>
+                )}
+                <button
+                  onClick={() => handleDeleteCategory(cat.id)}
+                  style={{ ...menuItemStyle, color: '#E24B4A' }}
+                  onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-tertiary)')}
+                  onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                >
+                  Delete category
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  onClick={() => handleMoveCategory(cat, null)}
+                  style={menuItemStyle}
+                  onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-tertiary)')}
+                  onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                >
+                  Top level
+                </button>
+                {eligibleTopLevel.map(top => (
+                  <Fragment key={top.id}>
+                    <button
+                      onClick={() => handleMoveCategory(cat, top.id)}
+                      style={menuItemStyle}
+                      onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-tertiary)')}
+                      onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                    >
+                      {top.name}
+                    </button>
+                    {eligible.filter(c => c.parent_id === top.id).map(child => (
+                      <button
+                        key={child.id}
+                        onClick={() => handleMoveCategory(cat, child.id)}
+                        style={{ ...menuItemStyle, paddingLeft: 22 }}
+                        onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-tertiary)')}
+                        onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                      >
+                        {child.name}
+                      </button>
+                    ))}
+                  </Fragment>
+                ))}
+              </>
+            )}
+          </div>
+        )}
+      </div>
+    )
+  }
+
   const trimmedQuery = searchQuery.trim().toLowerCase()
   const filteredBoards = trimmedQuery ? boards.filter(b => b.name.toLowerCase().includes(trimmedQuery)) : boards
 
@@ -127,13 +354,59 @@ export default function CanvasBoardsPage() {
                 style={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border)', color: 'var(--text-primary)' }}
               />
             </div>
-            <button
-              onClick={() => createBoard()}
-              className="flex items-center gap-2 px-3.5 py-2 rounded-lg text-[13.5px] font-medium"
-              style={{ backgroundColor: 'var(--text-primary)', color: 'var(--bg)', flexShrink: 0 }}
-            >
-              <Plus size={14} /> New board
-            </button>
+            <div className="flex items-center gap-2.5" style={{ flexShrink: 0 }}>
+              <button
+                onClick={() => openCategoryModal()}
+                style={{ background: 'transparent', color: 'var(--text-primary)', border: '1px solid var(--border)', borderRadius: 8, padding: '9px 14px', fontSize: 13, fontWeight: 500, cursor: 'pointer', fontFamily: FONT }}
+              >
+                + New category
+              </button>
+              <button
+                onClick={() => createBoard()}
+                className="flex items-center gap-2 px-3.5 py-2 rounded-lg text-[13.5px] font-medium"
+                style={{ backgroundColor: 'var(--text-primary)', color: 'var(--bg)', flexShrink: 0 }}
+              >
+                <Plus size={14} /> New board
+              </button>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 7, marginBottom: 20 }}>
+            <div style={{ display: 'flex', gap: 7, flexWrap: 'wrap' }}>
+              <button
+                onClick={() => setActiveCategory('all')}
+                style={{
+                  background: activeCategory === 'all' ? 'var(--bg-tertiary)' : 'var(--bg-secondary)',
+                  color: 'var(--text-primary)', border: '1px solid var(--border)',
+                  fontSize: 12, padding: '6px 13px', borderRadius: 999, cursor: 'pointer', fontFamily: FONT,
+                }}
+              >
+                All
+              </button>
+              {boardCategories.filter(c => c.parent_id === null).map(cat => (
+                <CategoryChip key={cat.id} cat={cat} />
+              ))}
+              <button
+                onClick={() => openCategoryModal()}
+                style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'transparent', border: '1px dashed var(--border)', color: 'var(--text-muted)', fontSize: 12, padding: '6px 13px', borderRadius: 999, cursor: 'pointer', fontFamily: FONT }}
+              >
+                + Add category
+              </button>
+            </div>
+
+            {expandedCategoryId !== null && (
+              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', paddingLeft: 24, borderLeft: '2px solid var(--border)', marginLeft: 10 }}>
+                {boardCategories.filter(c => c.parent_id === expandedCategoryId).map(subcat => (
+                  <CategoryChip key={subcat.id} cat={subcat} small />
+                ))}
+                <button
+                  onClick={() => openCategoryModal(expandedCategoryId)}
+                  style={{ display: 'flex', alignItems: 'center', gap: 5, background: 'transparent', border: '1px dashed var(--border)', color: 'var(--text-muted)', fontSize: 11, padding: '5px 11px', borderRadius: 999, cursor: 'pointer', fontFamily: FONT }}
+                >
+                  + New subcategory
+                </button>
+              </div>
+            )}
           </div>
 
           <p className="text-sm mb-6" style={{ color: 'var(--text-muted)' }}>
@@ -236,6 +509,43 @@ export default function CanvasBoardsPage() {
           )}
         </div>
       </main>
+
+      {showCategoryModal && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.55)' }} onClick={() => setShowCategoryModal(false)} />
+          <div style={{ position: 'relative', borderRadius: 14, width: 320, padding: '22px 22px 18px', zIndex: 10, background: 'var(--bg-secondary)', border: '1px solid var(--border)', fontFamily: FONT }}>
+            <h2 style={{ fontSize: 14, fontWeight: 600, marginBottom: 16, color: 'var(--text-primary)' }}>{newCategoryParentId !== null ? 'New subcategory' : 'New category'}</h2>
+            <label style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--text-muted)', display: 'block', marginBottom: 6 }}>Name</label>
+            <input
+              ref={categoryNameRef}
+              type="text"
+              value={newCategoryName}
+              onChange={e => setNewCategoryName(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter') handleCreateCategory(); if (e.key === 'Escape') setShowCategoryModal(false) }}
+              placeholder="e.g. Research"
+              style={{ width: '100%', borderRadius: 9, padding: '9px 12px', fontSize: 13.5, outline: 'none', background: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--text-primary)', fontFamily: FONT, boxSizing: 'border-box', marginBottom: 16 }}
+            />
+            <label style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--text-muted)', display: 'block', marginBottom: 8 }}>Color</label>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 20 }}>
+              {SWATCHES.map(color => (
+                <button
+                  key={color}
+                  onClick={() => setNewCategoryColor(color)}
+                  style={{
+                    width: 24, height: 24, borderRadius: '50%', background: color, cursor: 'pointer',
+                    border: newCategoryColor === color ? '2px solid var(--text-primary)' : '2px solid transparent',
+                    padding: 0,
+                  }}
+                />
+              ))}
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+              <button onClick={() => setShowCategoryModal(false)} style={{ padding: '7px 14px', borderRadius: 8, fontSize: 13, fontWeight: 500, color: 'var(--text-muted)', background: 'transparent', border: 'none', cursor: 'pointer', fontFamily: FONT }}>Cancel</button>
+              <button onClick={handleCreateCategory} style={{ padding: '7px 14px', borderRadius: 8, fontSize: 13, fontWeight: 600, color: '#fff', background: '#6b5ce7', border: 'none', cursor: 'pointer', fontFamily: FONT }}>Create</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

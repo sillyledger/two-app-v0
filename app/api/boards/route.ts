@@ -11,8 +11,20 @@ export async function GET(request: Request) {
 
   try {
     const boards = workspaceId
-      ? await sql`SELECT * FROM boards WHERE user_id = ${session.userId} AND workspace_id = ${workspaceId} ORDER BY created_at DESC`
-      : await sql`SELECT * FROM boards WHERE user_id = ${session.userId} ORDER BY created_at DESC`
+      ? await sql`
+          SELECT boards.*, board_categories.name AS category_name, board_categories.color AS category_color
+          FROM boards
+          LEFT JOIN board_categories ON board_categories.id = boards.category_id
+          WHERE boards.user_id = ${session.userId} AND boards.workspace_id = ${workspaceId}
+          ORDER BY boards.created_at DESC
+        `
+      : await sql`
+          SELECT boards.*, board_categories.name AS category_name, board_categories.color AS category_color
+          FROM boards
+          LEFT JOIN board_categories ON board_categories.id = boards.category_id
+          WHERE boards.user_id = ${session.userId}
+          ORDER BY boards.created_at DESC
+        `
     return NextResponse.json(boards)
   } catch (error) {
     console.error('Failed to fetch boards:', error)
