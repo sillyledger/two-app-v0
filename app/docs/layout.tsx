@@ -172,7 +172,7 @@ export default function DocsLayout({ children }: { children: React.ReactNode }) 
   )
 
   return (
-    <div className="flex min-h-screen">
+    <div className="flex h-screen overflow-hidden">
       <Sidebar
         onNewNote={handleNewDoc}
         collapsed={collapsed}
@@ -187,7 +187,7 @@ export default function DocsLayout({ children }: { children: React.ReactNode }) 
 
         {/* Main content area — single or split */}
         {splitActive && splitTarget ? (
-          <div ref={containerRef} className="flex flex-1 min-h-0" style={{ paddingTop: '0' }}>
+          <div ref={containerRef} className="flex flex-1 min-h-0 overflow-hidden" style={{ paddingTop: '0' }}>
 
             {/* Left pane — current doc */}
             <div className="min-w-0 overflow-hidden flex flex-col" style={{ width: `${leftWidth}%` }}>

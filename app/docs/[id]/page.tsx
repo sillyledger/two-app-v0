@@ -659,7 +659,7 @@ export default function DocPage() {
   }
 
   if (!authChecked || !doc) return (
-    <div className="flex-1 flex flex-col min-h-screen min-w-0 overflow-hidden">
+    <div className="flex-1 flex flex-col h-full min-w-0 overflow-hidden">
       {/* Topbar skeleton */}
       <div
         className="fixed top-0 right-0 z-20 flex items-center px-4 gap-3"
@@ -721,7 +721,7 @@ export default function DocPage() {
         />
 
         <div
-          className="flex-1 flex flex-col min-h-screen transition-all duration-300 ease-in-out min-w-0 overflow-hidden"
+          className="flex-1 flex flex-col h-full transition-all duration-300 ease-in-out min-w-0 overflow-hidden"
           style={{ marginRight: detailOpen ? '280px' : '0' }}
         >
           <DocTopbar
