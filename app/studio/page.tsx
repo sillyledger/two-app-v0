@@ -129,9 +129,10 @@ export default function StudioOverviewPage() {
     : boards
   const visibleBoards = trimmedQuery ? filteredBoards : filteredBoards.slice(0, 3)
 
-  const ghostBtnStyle: React.CSSProperties = {
-    fontSize: 11.5, fontFamily: FONT, color: 'var(--text-muted)', background: 'transparent',
-    border: '1px solid var(--border)', borderRadius: 6, padding: '4px 9px', cursor: 'pointer',
+  const newBtnStyle: React.CSSProperties = {
+    fontSize: 12.5, fontWeight: 500, fontFamily: FONT,
+    background: 'var(--text-primary)', color: 'var(--bg)', border: 'none',
+    borderRadius: 8, padding: '7px 13px', cursor: 'pointer',
     display: 'flex', alignItems: 'center', gap: 4,
   }
 
@@ -164,7 +165,7 @@ export default function StudioOverviewPage() {
               </span>
             </div>
             <div className="flex items-center gap-3">
-              <button onClick={handleNewIdea} style={ghostBtnStyle}>
+              <button onClick={handleNewIdea} style={newBtnStyle}>
                 <Plus size={12} /> New idea
               </button>
               <Link href="/studio/ideas" style={{ fontSize: 11.5, fontFamily: FONT, color: '#8f89e6', textDecoration: 'none' }}>
@@ -237,7 +238,7 @@ export default function StudioOverviewPage() {
               </span>
             </div>
             <div className="flex items-center gap-3">
-              <button onClick={createBoard} style={ghostBtnStyle}>
+              <button onClick={createBoard} style={newBtnStyle}>
                 <Plus size={12} /> New board
               </button>
               <Link href="/studio/canvas" style={{ fontSize: 11.5, fontFamily: FONT, color: '#8f89e6', textDecoration: 'none' }}>
