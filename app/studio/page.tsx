@@ -134,7 +134,7 @@ export default function StudioOverviewPage() {
     background: 'var(--text-primary)', color: 'var(--bg)', border: 'none',
     borderRadius: 8, padding: '7px 13px', cursor: 'pointer',
     display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
-    width: 112,
+    width: 130, whiteSpace: 'nowrap',
   }
 
   return (
