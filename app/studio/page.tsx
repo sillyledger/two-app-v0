@@ -158,7 +158,7 @@ export default function StudioOverviewPage() {
           </div>
 
           {/* Ideas section */}
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-2">
               <span style={{ fontSize: 13, fontWeight: 600, fontFamily: FONT, color: 'var(--text-primary)' }}>Ideas</span>
               <span style={{ fontSize: 11.5, fontFamily: FONT, color: 'var(--text-muted)' }}>
@@ -228,10 +228,10 @@ export default function StudioOverviewPage() {
             </div>
           )}
 
-          <div style={{ borderTop: '1px solid var(--border)', marginBottom: 40 }} />
+          <div style={{ marginBottom: 56 }} />
 
           {/* Canvas section */}
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-2">
               <span style={{ fontSize: 13, fontWeight: 600, fontFamily: FONT, color: 'var(--text-primary)' }}>Canvas boards</span>
               <span style={{ fontSize: 11.5, fontFamily: FONT, color: 'var(--text-muted)' }}>
