@@ -121,7 +121,7 @@ export default function CanvasBoardsPage() {
     const res = await fetch('/api/boards', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: 'Untitled board', type: 'canvas', workspace_id: workspace.id, category_id: activeCategory === 'all' ? null : activeCategory }),
+      body: JSON.stringify({ name: 'Untitled canvas', type: 'canvas', workspace_id: workspace.id, category_id: activeCategory === 'all' ? null : activeCategory }),
     })
     const board = await res.json()
     router.push(`/studio/canvas/${board.uuid}`)
@@ -149,7 +149,7 @@ export default function CanvasBoardsPage() {
 
   const handleDeleteBoard = async (board: Board) => {
     setMenuOpenId(null)
-    const confirmed = window.confirm(`Delete "${board.name}"? Everything on this board will be permanently deleted.`)
+    const confirmed = window.confirm(`Delete "${board.name}"? Everything on this canvas will be permanently deleted.`)
     if (!confirmed) return
     setBoards(prev => prev.filter(b => b.id !== board.id))
     try { await fetch(`/api/boards/${board.uuid}`, { method: 'DELETE' }) } catch {}
@@ -367,7 +367,7 @@ export default function CanvasBoardsPage() {
                 type="text"
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
-                placeholder="Search boards..."
+                placeholder="Search canvases..."
                 className="w-full rounded-lg pl-9 pr-4 py-2.5 text-sm outline-none placeholder-[var(--text-muted)]"
                 style={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border)', color: 'var(--text-primary)' }}
               />
@@ -384,7 +384,7 @@ export default function CanvasBoardsPage() {
                 className="flex items-center gap-2 px-3.5 py-2 rounded-lg text-[13.5px] font-medium"
                 style={{ backgroundColor: 'var(--text-primary)', color: 'var(--bg)', flexShrink: 0 }}
               >
-                <Plus size={14} /> New board
+                <Plus size={14} /> New canvas
               </button>
             </div>
           </div>
@@ -428,7 +428,7 @@ export default function CanvasBoardsPage() {
           </div>
 
           <p className="text-sm mb-6" style={{ color: 'var(--text-muted)' }}>
-            {trimmedQuery ? `${filteredBoards.length} matching boards` : `${boards.length} boards`}
+            {trimmedQuery ? `${filteredBoards.length} matching canvases` : `${boards.length} canvases`}
           </p>
 
           {loading ? (
@@ -437,8 +437,8 @@ export default function CanvasBoardsPage() {
             </div>
           ) : filteredBoards.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-64 gap-2">
-              <p className="text-sm" style={{ color: 'var(--text-muted)' }}>{trimmedQuery ? 'No boards match your search' : 'No boards yet'}</p>
-              <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{trimmedQuery ? 'Try a different search term' : 'Click New board to create your first one'}</p>
+              <p className="text-sm" style={{ color: 'var(--text-muted)' }}>{trimmedQuery ? 'No canvases match your search' : 'No canvases yet'}</p>
+              <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{trimmedQuery ? 'Try a different search term' : 'Click New canvas to create your first one'}</p>
             </div>
           ) : (
             <div className="grid grid-cols-3 gap-3.5">

@@ -111,7 +111,7 @@ export default function StudioOverviewPage() {
     const res = await fetch('/api/boards', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: 'Untitled board', type: 'canvas', workspace_id: workspace.id }),
+      body: JSON.stringify({ name: 'Untitled canvas', type: 'canvas', workspace_id: workspace.id }),
     })
     const board = await res.json()
     router.push(`/studio/canvas/${board.uuid}`)
@@ -233,14 +233,14 @@ export default function StudioOverviewPage() {
           {/* Canvas section */}
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-2">
-              <span style={{ fontSize: 13, fontWeight: 600, fontFamily: FONT, color: 'var(--text-primary)' }}>Canvas boards</span>
+              <span style={{ fontSize: 13, fontWeight: 600, fontFamily: FONT, color: 'var(--text-primary)' }}>Canvas</span>
               <span style={{ fontSize: 11.5, fontFamily: FONT, color: 'var(--text-muted)' }}>
                 {trimmedQuery ? `${filteredBoards.length} matching` : `${boards.length}`}
               </span>
             </div>
             <div className="flex items-center gap-3">
               <button onClick={createBoard} style={newBtnStyle}>
-                <Plus size={12} /> New board
+                <Plus size={12} /> New canvas
               </button>
               <Link href="/studio/canvas" style={{ fontSize: 11.5, fontFamily: FONT, color: '#8f89e6', textDecoration: 'none' }}>
                 View all →
@@ -258,7 +258,7 @@ export default function StudioOverviewPage() {
                 {trimmedQuery ? 'No boards match your search' : 'No boards yet'}
               </p>
               <p style={{ fontSize: 11.5, fontFamily: FONT, color: 'var(--text-muted)' }}>
-                {trimmedQuery ? 'Try a different search term' : 'Click + New board to create your first one'}
+                {trimmedQuery ? 'Try a different search term' : 'Click + New canvas to create your first one'}
               </p>
             </div>
           ) : (
