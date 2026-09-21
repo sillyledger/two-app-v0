@@ -262,7 +262,7 @@ export default function Sidebar({ onNewNote, onToggle }: SidebarProps = {}) {
   const [modalTargetWorkspaceId, setModalTargetWorkspaceId] = useState<string | null>(null)
   const modalInputRef = useRef<HTMLInputElement>(null)
   const [showHelp, setShowHelp] = useState(false)
-  const [helpTab, setHelpTab] = useState<"shortcuts" | "started" | "tips" | "new" | "bug">("shortcuts")
+  const [helpTab, setHelpTab] = useState<"shortcuts" | "started" | "tips" | "bug">("shortcuts")
 
   // ── Quick jump / command palette state ──
   const [showPalette, setShowPalette] = useState(false)
@@ -1056,9 +1056,9 @@ export default function Sidebar({ onNewNote, onToggle }: SidebarProps = {}) {
           <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.65)", backdropFilter: "blur(3px)" }} onClick={() => setShowHelp(false)} />
           <div style={{ position: "relative", borderRadius: 14, boxShadow: "0 24px 64px rgba(0,0,0,0.6)", width: 500, maxWidth: "calc(100vw - 32px)", zIndex: 10, overflow: "hidden", background: "#1c1c1f", border: "1px solid rgba(255,255,255,0.09)", fontFamily: FONT }}>
             <div style={{ display: "flex", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
-              {(["shortcuts", "started", "tips", "new", "bug"] as const).map(tab => (
+              {(["shortcuts", "started", "tips", "bug"] as const).map(tab => (
                 <button key={tab} onClick={() => setHelpTab(tab)} style={{ padding: "10px 14px", fontSize: 12, fontWeight: 500, background: "none", border: "none", cursor: "pointer", borderBottom: helpTab === tab ? "2px solid #e0dfd9" : "2px solid transparent", color: helpTab === tab ? "#e0dfd9" : MUTED, fontFamily: FONT, transition: "color 0.12s" }}>
-                  {tab === "shortcuts" && "Shortcuts"}{tab === "started" && "Getting Started"}{tab === "tips" && "Tips"}{tab === "new" && "What's New"}{tab === "bug" && "Report a Bug"}
+                  {tab === "shortcuts" && "Shortcuts"}{tab === "started" && "Getting Started"}{tab === "tips" && "Tips"}{tab === "bug" && "Report a Bug"}
                 </button>
               ))}
               <button onClick={() => setShowHelp(false)} style={{ marginLeft: "auto", padding: "8px 14px", fontSize: 13, color: MUTED, background: "none", border: "none", cursor: "pointer" }} onMouseEnter={e => (e.currentTarget.style.color = "#aaa")} onMouseLeave={e => (e.currentTarget.style.color = MUTED)}>✕</button>
@@ -1095,20 +1095,6 @@ export default function Sidebar({ onNewNote, onToggle }: SidebarProps = {}) {
                     <div key={tip.title} style={{ padding: "12px 0", borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
                       <p style={{ fontSize: 12, fontWeight: 500, color: "#e0dfd9", marginBottom: 4 }}>{tip.title}</p>
                       <p style={{ fontSize: 12, lineHeight: 1.6, color: "#4a4a52" }}>{tip.desc}</p>
-                    </div>
-                  ))}
-                </div>
-              )}
-              {helpTab === "new" && (
-                <div style={{ padding: 20 }}>
-                  {[{ version: "v0.4", date: "May 2026", tag: "Latest", items: ["Notes scoped per user", "Autosave with Saved indicator", "Search bar with autocomplete"] }, { version: "v0.3", date: "Apr 2026", tag: null, items: ["Rich text editor with toolbar", "Heading levels H1–H3", "Code blocks and inline code"] }, { version: "v0.2", date: "Mar 2026", tag: null, items: ["Auth system — signup, login, logout", "Sidebar with settings and avatar"] }].map(release => (
-                    <div key={release.version} style={{ padding: "12px 0", borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-                        <span style={{ fontSize: 12, fontFamily: "monospace", fontWeight: 500, color: "#e0dfd9" }}>{release.version}</span>
-                        <span style={{ fontSize: 11, color: MUTED }}>{release.date}</span>
-                        {release.tag && <span style={{ fontSize: 10, padding: "2px 6px", borderRadius: 4, background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.08)", color: ITEM_COLOR }}>{release.tag}</span>}
-                      </div>
-                      {release.items.map(item => <p key={item} style={{ fontSize: 12, lineHeight: 1.6, color: "#4a4a52", paddingLeft: 12, position: "relative" }}><span style={{ position: "absolute", left: 0, color: "#2a2a32" }}>–</span>{item}</p>)}
                     </div>
                   ))}
                 </div>
