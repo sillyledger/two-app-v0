@@ -1067,7 +1067,7 @@ export default function Sidebar({ onNewNote, onToggle }: SidebarProps = {}) {
             <div style={{ overflowY: "auto", maxHeight: 380 }}>
               {helpTab === "shortcuts" && (
                 <div style={{ padding: 20, display: "flex", flexDirection: "column", gap: 20 }}>
-                  {[{ label: "Formatting", rows: [{ action: "Bold", keys: ["⌘","B"] }, { action: "Italic", keys: ["⌘","I"] }, { action: "Strikethrough", keys: ["⌘","⇧","S"] }, { action: "Inline code", keys: ["⌘","E"] }, { action: "Heading 1 / 2 / 3", keys: ["⌘","⌥","1–3"] }] }, { label: "Navigation", rows: [{ action: "New doc", keys: ["⌘","N"] }, { action: "Search", keys: ["⌘","K"] }, { action: "Toggle sidebar", keys: ["⌘","\\"] }, { action: "Open help", keys: ["?"] }] }].map(section => (
+                  {[{ label: "Formatting", rows: [{ action: "Bold", keys: ["⌘","B"] }, { action: "Italic", keys: ["⌘","I"] }, { action: "Strikethrough", keys: ["⌘","⇧","S"] }, { action: "Inline code", keys: ["⌘","E"] }, { action: "Heading 1 / 2 / 3", keys: ["⌘","⌥","1–3"] }] }, { label: "Navigation", rows: [{ action: "Search", keys: ["⌘","K"] }, { action: "Open help", keys: ["?"] }] }].map(section => (
                     <div key={section.label}>
                       <p style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: MUTED, marginBottom: 8 }}>{section.label}</p>
                       {section.rows.map(row => (
