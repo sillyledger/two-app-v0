@@ -262,7 +262,7 @@ export default function Sidebar({ onNewNote, onToggle }: SidebarProps = {}) {
   const [modalTargetWorkspaceId, setModalTargetWorkspaceId] = useState<string | null>(null)
   const modalInputRef = useRef<HTMLInputElement>(null)
   const [showHelp, setShowHelp] = useState(false)
-  const [helpTab, setHelpTab] = useState<"shortcuts" | "started" | "tips" | "new">("shortcuts")
+  const [helpTab, setHelpTab] = useState<"shortcuts" | "started" | "tips" | "new" | "bug">("shortcuts")
 
   // ── Quick jump / command palette state ──
   const [showPalette, setShowPalette] = useState(false)
@@ -1056,9 +1056,9 @@ export default function Sidebar({ onNewNote, onToggle }: SidebarProps = {}) {
           <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.65)", backdropFilter: "blur(3px)" }} onClick={() => setShowHelp(false)} />
           <div style={{ position: "relative", borderRadius: 14, boxShadow: "0 24px 64px rgba(0,0,0,0.6)", width: 500, maxWidth: "calc(100vw - 32px)", zIndex: 10, overflow: "hidden", background: "#1c1c1f", border: "1px solid rgba(255,255,255,0.09)", fontFamily: FONT }}>
             <div style={{ display: "flex", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
-              {(["shortcuts", "started", "tips", "new"] as const).map(tab => (
+              {(["shortcuts", "started", "tips", "new", "bug"] as const).map(tab => (
                 <button key={tab} onClick={() => setHelpTab(tab)} style={{ padding: "10px 14px", fontSize: 12, fontWeight: 500, background: "none", border: "none", cursor: "pointer", borderBottom: helpTab === tab ? "2px solid #e0dfd9" : "2px solid transparent", color: helpTab === tab ? "#e0dfd9" : MUTED, fontFamily: FONT, transition: "color 0.12s" }}>
-                  {tab === "shortcuts" && "Shortcuts"}{tab === "started" && "Getting Started"}{tab === "tips" && "Tips"}{tab === "new" && "What's New"}
+                  {tab === "shortcuts" && "Shortcuts"}{tab === "started" && "Getting Started"}{tab === "tips" && "Tips"}{tab === "new" && "What's New"}{tab === "bug" && "Report a Bug"}
                 </button>
               ))}
               <button onClick={() => setShowHelp(false)} style={{ marginLeft: "auto", padding: "8px 14px", fontSize: 13, color: MUTED, background: "none", border: "none", cursor: "pointer" }} onMouseEnter={e => (e.currentTarget.style.color = "#aaa")} onMouseLeave={e => (e.currentTarget.style.color = MUTED)}>✕</button>
@@ -1111,6 +1111,29 @@ export default function Sidebar({ onNewNote, onToggle }: SidebarProps = {}) {
                       {release.items.map(item => <p key={item} style={{ fontSize: 12, lineHeight: 1.6, color: "#4a4a52", paddingLeft: 12, position: "relative" }}><span style={{ position: "absolute", left: 0, color: "#2a2a32" }}>–</span>{item}</p>)}
                     </div>
                   ))}
+                </div>
+              )}
+              {helpTab === "bug" && (
+                <div style={{ padding: 20 }}>
+                  <p style={{ fontSize: 12, lineHeight: 1.65, color: "#4a4a52", marginBottom: 18 }}>
+                    Found something broken, or a rough edge that shouldn't be there?
+                    Let us know. The more detail you can give (what you were doing,
+                    what you expected, what happened instead), the faster we can
+                    track it down.
+                  </p>
+                  <div style={{ display: "flex", justifyContent: "flex-end" }}>
+                    <a
+                      href="https://www.two.so/report-a-bug"
+                      target="_blank"
+                      rel="noopener"
+                      style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12.5, fontWeight: 500, background: "#e0dfd9", color: "#1c1c1f", border: "none", borderRadius: 8, padding: "8px 14px", cursor: "pointer", textDecoration: "none", fontFamily: FONT }}
+                    >
+                      Report a bug ↗
+                    </a>
+                  </div>
+                  <p style={{ fontSize: 11, color: MUTED, marginTop: 12, textAlign: "right" }}>
+                    Opens two.so/report-a-bug in a new tab.
+                  </p>
                 </div>
               )}
             </div>
