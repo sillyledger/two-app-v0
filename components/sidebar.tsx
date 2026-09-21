@@ -1137,8 +1137,6 @@ export default function Sidebar({ onNewNote, onToggle }: SidebarProps = {}) {
             </div>
             <div style={{ padding: "10px 20px", borderTop: "1px solid rgba(255,255,255,0.06)", display: "flex", alignItems: "center", gap: 6 }}>
               <span style={{ fontSize: 11, color: MUTED }}>Press</span>
-              <kbd style={{ fontFamily: "monospace", fontSize: 10, padding: "2px 6px", borderRadius: 5, background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", color: "#c0bfba" }}>?</kbd>
-              <span style={{ fontSize: 11, color: MUTED }}>or</span>
               <kbd style={{ fontFamily: "monospace", fontSize: 10, padding: "2px 6px", borderRadius: 5, background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", color: "#c0bfba" }}>Esc</kbd>
               <span style={{ fontSize: 11, color: MUTED }}>to close</span>
             </div>
