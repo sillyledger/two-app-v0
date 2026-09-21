@@ -9,6 +9,7 @@ import {
   Layers, Plus, FolderOpen, MoreVertical,
   Pencil, Trash2, LogOut, PanelLeftClose, PanelLeftOpen, Pin, PinOff,
   Home, CalendarDays, StickyNote, Activity, Library, FileText, Users,
+  Columns2, Tag,
 } from "lucide-react"
 
 interface Doc { id: string; uuid: string; title: string }
@@ -1091,10 +1092,21 @@ export default function Sidebar({ onNewNote, onToggle }: SidebarProps = {}) {
               )}
               {helpTab === "tips" && (
                 <div style={{ padding: 20 }}>
-                  {[{ title: "Use headings to create structure", desc: "Break long docs into sections with H1, H2, and H3." }, { title: "Code blocks for technical notes", desc: "Wrap commands or config values in a code block." }, { title: "Keep one doc per topic", desc: "Short focused docs are easier to find and reference." }, { title: "Blockquotes for highlights", desc: "Use blockquotes to call out key decisions or quotes." }].map(tip => (
-                    <div key={tip.title} style={{ padding: "12px 0", borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
-                      <p style={{ fontSize: 12, fontWeight: 500, color: "#e0dfd9", marginBottom: 4 }}>{tip.title}</p>
-                      <p style={{ fontSize: 12, lineHeight: 1.6, color: "#4a4a52" }}>{tip.desc}</p>
+                  {[
+                    { Icon: Columns2, title: "Work in two docs at once", desc: "Open Split View to reference one doc while you write in another, side by side." },
+                    { Icon: FileText, title: "Turn an idea into a doc", desc: "Every idea in Studio can become a real doc in one click, and stays linked both ways." },
+                    { Icon: Tag, title: "Organize with categories", desc: "Group your Notes and Canvas boards into color-coded categories, nested if you need it." },
+                    { Icon: Layers, title: "Docs, Notes, or Canvas", desc: "Docs for writing, Notes for quick capture, Canvas for freeform boards, pick what fits." },
+                    { Icon: ChevronRight, title: "Jump back with breadcrumbs", desc: "Every nested page shows a trail back to where it lives, click it to jump up." },
+                  ].map(tip => (
+                    <div key={tip.title} style={{ display: "flex", gap: 12, padding: "12px 0", borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
+                      <div style={{ width: 24, height: 24, borderRadius: 7, border: "1px solid rgba(255,255,255,0.08)", background: "rgba(255,255,255,0.03)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 1, color: ITEM_COLOR }}>
+                        <tip.Icon size={13} />
+                      </div>
+                      <div>
+                        <p style={{ fontSize: 12, fontWeight: 500, color: "#e0dfd9", marginBottom: 4 }}>{tip.title}</p>
+                        <p style={{ fontSize: 12, lineHeight: 1.6, color: "#4a4a52" }}>{tip.desc}</p>
+                      </div>
                     </div>
                   ))}
                 </div>
