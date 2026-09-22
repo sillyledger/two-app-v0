@@ -563,8 +563,10 @@ export default function CanvasBoardPage() {
                   {isHovered && !connectDrag && (
                     <div
                       onMouseDown={e => onHandleMouseDown(e, item)}
-                      style={{ position: 'absolute', bottom: -6, right: -6, width: 12, height: 12, borderRadius: '50%', backgroundColor: 'var(--bg)', border: '1.5px solid #8f89e6', cursor: 'crosshair' }}
-                    />
+                      style={{ position: 'absolute', bottom: -14, right: -14, width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'crosshair' }}
+                    >
+                      <div style={{ width: 12, height: 12, borderRadius: '50%', backgroundColor: 'var(--bg)', border: '1.5px solid #8f89e6' }} />
+                    </div>
                   )}
                   {contextMenuId === item.id && (
                     <div ref={contextMenuRef} style={{ position: 'absolute', top: '100%', left: 0, marginTop: 4, backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border)', borderRadius: 8, boxShadow: '0 6px 20px rgba(0,0,0,0.4)', overflow: 'hidden', zIndex: 10, width: 130 }}>
