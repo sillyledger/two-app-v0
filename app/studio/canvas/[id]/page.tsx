@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef, useCallback } from 'react'
 import { useParams } from 'next/navigation'
 import Sidebar from '@/components/sidebar'
-import { Plus, FileText, StickyNote, Image as ImageIcon, Search, X, Minus, RotateCcw, Type } from 'lucide-react'
+import { Plus, FileText, StickyNote, Image as ImageIcon, Search, X, Minus, RotateCcw, Type, Loader2 } from 'lucide-react'
 
 interface BoardItem {
   id: number
@@ -33,9 +33,34 @@ const MAX_ZOOM = 2.5
 
 function cardSize(type: BoardItem['type']) {
   if (type === 'swatch') return { w: 130, h: 100 }
-  if (type === 'image') return { w: 150, h: 110 }
+  if (type === 'image') return { w: 260, h: 190 }
   if (type === 'text') return { w: 200, h: 80 }
   return { w: 160, h: 70 }
+}
+
+async function resizeImageFile(file: File, maxDimension = 1600): Promise<File> {
+  if (file.type === 'image/gif') return file // preserve animation, don't resize
+  try {
+    const bitmap = await createImageBitmap(file)
+    const scale = Math.min(1, maxDimension / Math.max(bitmap.width, bitmap.height))
+    if (scale === 1) return file
+    const targetW = Math.round(bitmap.width * scale)
+    const targetH = Math.round(bitmap.height * scale)
+    const canvas = document.createElement('canvas')
+    canvas.width = targetW
+    canvas.height = targetH
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return file
+    ctx.drawImage(bitmap, 0, 0, targetW, targetH)
+    const outputType = file.type === 'image/png' ? 'image/png' : 'image/jpeg'
+    const quality = outputType === 'image/jpeg' ? 0.85 : undefined
+    const blob: Blob | null = await new Promise(resolve => canvas.toBlob(resolve, outputType, quality))
+    if (!blob || blob.size >= file.size) return file
+    const ext = outputType === 'image/png' ? 'png' : 'jpg'
+    return new File([blob], file.name.replace(/\.[^.]+$/, '') + '.' + ext, { type: outputType })
+  } catch {
+    return file
+  }
 }
 
 function edgePoint(rect: { x: number; y: number; w: number; h: number }, towardX: number, towardY: number) {
@@ -63,6 +88,7 @@ export default function CanvasBoardPage() {
   const [notes, setNotes] = useState<DocOrNote[]>([])
 
   const [swatchMenuOpen, setSwatchMenuOpen] = useState(false)
+  const [uploadingImage, setUploadingImage] = useState(false)
   const [hoveredTool, setHoveredTool] = useState<string | null>(null)
   const [pickerType, setPickerType] = useState<'doc' | 'note' | null>(null)
   const [pickerQuery, setPickerQuery] = useState('')
@@ -153,12 +179,18 @@ export default function CanvasBoardPage() {
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
-    const formData = new FormData()
-    formData.append('file', file)
-    const res = await fetch('/api/upload', { method: 'POST', body: formData })
-    const data = await res.json()
-    if (data.url) await addItem({ type: 'image', content: data.url })
-    e.target.value = ''
+    setUploadingImage(true)
+    try {
+      const resized = await resizeImageFile(file)
+      const formData = new FormData()
+      formData.append('file', resized)
+      const res = await fetch('/api/upload', { method: 'POST', body: formData })
+      const data = await res.json()
+      if (data.url) await addItem({ type: 'image', content: data.url })
+    } finally {
+      setUploadingImage(false)
+      e.target.value = ''
+    }
   }
 
   const saveTitle = async () => {
@@ -411,10 +443,11 @@ export default function CanvasBoardPage() {
               onClick={handleUploadClick}
               onMouseEnter={() => setHoveredTool('image')}
               onMouseLeave={() => setHoveredTool(null)}
-              style={{ position: 'relative', width: 36, height: 36, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#5DCAA5' }}
+              disabled={uploadingImage}
+              style={{ position: 'relative', width: 36, height: 36, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#5DCAA5', opacity: uploadingImage ? 0.5 : 1, cursor: uploadingImage ? 'not-allowed' : 'pointer' }}
             >
-              <ImageIcon size={16} />
-              {hoveredTool === 'image' && <div style={{ position: 'absolute', top: -38, left: '50%', transform: 'translateX(-50%)', backgroundColor: 'var(--bg-tertiary)', color: 'var(--text-primary)', fontSize: 11, padding: '5px 9px', borderRadius: 6, whiteSpace: 'nowrap', boxShadow: '0 4px 12px rgba(0,0,0,0.3)' }}>Image</div>}
+              {uploadingImage ? <Loader2 size={16} className="animate-spin" /> : <ImageIcon size={16} />}
+              {hoveredTool === 'image' && !uploadingImage && <div style={{ position: 'absolute', top: -38, left: '50%', transform: 'translateX(-50%)', backgroundColor: 'var(--bg-tertiary)', color: 'var(--text-primary)', fontSize: 11, padding: '5px 9px', borderRadius: 6, whiteSpace: 'nowrap', boxShadow: '0 4px 12px rgba(0,0,0,0.3)' }}>Image</div>}
             </button>
             <div style={{ width: 1, height: 20, backgroundColor: 'var(--border)', margin: '0 4px' }} />
             <button
