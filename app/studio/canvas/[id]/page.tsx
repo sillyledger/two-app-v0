@@ -387,7 +387,7 @@ export default function CanvasBoardPage() {
               style={{ position: 'relative', width: 36, height: 36, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#8f89e6' }}
             >
               <FileText size={16} />
-              {hoveredTool === 'doc' && <div style={{ position: 'absolute', top: -38, left: '50%', transform: 'translateX(-50%)', backgroundColor: 'var(--bg-tertiary)', color: 'var(--text-primary)', fontSize: 11, padding: '5px 9px', borderRadius: 6, whiteSpace: 'nowrap', boxShadow: '0 4px 12px rgba(0,0,0,0.3)' }}>Doc</div>}
+              {hoveredTool === 'doc' && <div style={{ position: 'absolute', top: -38, left: '50%', transform: 'translateX(-50%)', backgroundColor: 'var(--bg-tertiary)', color: 'var(--text-primary)', fontSize: 11, padding: '5px 9px', borderRadius: 6, whiteSpace: 'nowrap', boxShadow: '0 4px 12px rgba(0,0,0,0.3)' }}>Link a doc</div>}
             </button>
             <button
               onClick={() => setPickerType('note')}
@@ -396,7 +396,7 @@ export default function CanvasBoardPage() {
               style={{ position: 'relative', width: 36, height: 36, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#c98a5e' }}
             >
               <StickyNote size={16} />
-              {hoveredTool === 'note' && <div style={{ position: 'absolute', top: -38, left: '50%', transform: 'translateX(-50%)', backgroundColor: 'var(--bg-tertiary)', color: 'var(--text-primary)', fontSize: 11, padding: '5px 9px', borderRadius: 6, whiteSpace: 'nowrap', boxShadow: '0 4px 12px rgba(0,0,0,0.3)' }}>Note</div>}
+              {hoveredTool === 'note' && <div style={{ position: 'absolute', top: -38, left: '50%', transform: 'translateX(-50%)', backgroundColor: 'var(--bg-tertiary)', color: 'var(--text-primary)', fontSize: 11, padding: '5px 9px', borderRadius: 6, whiteSpace: 'nowrap', boxShadow: '0 4px 12px rgba(0,0,0,0.3)' }}>Link a note</div>}
             </button>
             <button
               onClick={async () => { const item = await addItem({ type: 'text', content: '' }); if (item) { setEditingItemId(item.id); setEditingText('') } }}
