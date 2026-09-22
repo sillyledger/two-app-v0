@@ -416,6 +416,7 @@ export default function CanvasBoardPage() {
               onClick={() => setPickerType('doc')}
               onMouseEnter={() => setHoveredTool('doc')}
               onMouseLeave={() => setHoveredTool(null)}
+              title="Link a doc"
               style={{ position: 'relative', width: 36, height: 36, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#8f89e6' }}
             >
               <FileText size={16} />
@@ -425,6 +426,7 @@ export default function CanvasBoardPage() {
               onClick={() => setPickerType('note')}
               onMouseEnter={() => setHoveredTool('note')}
               onMouseLeave={() => setHoveredTool(null)}
+              title="Link a note"
               style={{ position: 'relative', width: 36, height: 36, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#c98a5e' }}
             >
               <StickyNote size={16} />
@@ -434,6 +436,7 @@ export default function CanvasBoardPage() {
               onClick={async () => { const item = await addItem({ type: 'text', content: '' }); if (item) { setEditingItemId(item.id); setEditingText('') } }}
               onMouseEnter={() => setHoveredTool('text')}
               onMouseLeave={() => setHoveredTool(null)}
+              title="Text"
               style={{ position: 'relative', width: 36, height: 36, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-primary)', backgroundColor: 'rgba(255,255,255,0.06)' }}
             >
               <Type size={16} />
@@ -443,6 +446,7 @@ export default function CanvasBoardPage() {
               onClick={handleUploadClick}
               onMouseEnter={() => setHoveredTool('image')}
               onMouseLeave={() => setHoveredTool(null)}
+              title="Image"
               disabled={uploadingImage}
               style={{ position: 'relative', width: 36, height: 36, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#5DCAA5', opacity: uploadingImage ? 0.5 : 1, cursor: uploadingImage ? 'not-allowed' : 'pointer' }}
             >
@@ -454,6 +458,7 @@ export default function CanvasBoardPage() {
               onClick={() => setSwatchMenuOpen(v => !v)}
               onMouseEnter={() => setHoveredTool('swatch')}
               onMouseLeave={() => setHoveredTool(null)}
+              title="Color"
               style={{ position: 'relative', width: 36, height: 36, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
             >
               <span style={{ width: 16, height: 16, borderRadius: 5, backgroundColor: '#EF9F27', display: 'block' }} />
