@@ -38,6 +38,20 @@ function cardSize(type: BoardItem['type']) {
   return { w: 160, h: 70 }
 }
 
+function edgePoint(rect: { x: number; y: number; w: number; h: number }, towardX: number, towardY: number) {
+  const cx = rect.x + rect.w / 2
+  const cy = rect.y + rect.h / 2
+  const dx = towardX - cx
+  const dy = towardY - cy
+  if (dx === 0 && dy === 0) return { x: cx, y: cy }
+  const hw = rect.w / 2
+  const hh = rect.h / 2
+  const scaleX = dx !== 0 ? hw / Math.abs(dx) : Infinity
+  const scaleY = dy !== 0 ? hh / Math.abs(dy) : Infinity
+  const scale = Math.min(scaleX, scaleY)
+  return { x: cx + dx * scale, y: cy + dy * scale }
+}
+
 export default function CanvasBoardPage() {
   const params = useParams()
   const boardId = params.id as string
@@ -453,10 +467,11 @@ export default function CanvasBoardPage() {
                 if (!from || !to) return null
                 const fromSize = cardSize(from.type)
                 const toSize = cardSize(to.type)
-                const x1 = from.x + fromSize.w
-                const y1 = from.y + fromSize.h
-                const x2 = to.x + toSize.w / 2
-                const y2 = to.y + toSize.h / 2
+                const fromRect = { x: from.x, y: from.y, w: fromSize.w, h: fromSize.h }
+                const toRect = { x: to.x, y: to.y, w: toSize.w, h: toSize.h }
+                const p1 = edgePoint(fromRect, to.x + toSize.w / 2, to.y + toSize.h / 2)
+                const p2 = edgePoint(toRect, from.x + fromSize.w / 2, from.y + fromSize.h / 2)
+                const x1 = p1.x, y1 = p1.y, x2 = p2.x, y2 = p2.y
                 return (
                   <g key={c.id} style={{ pointerEvents: 'stroke', cursor: 'pointer' }} onClick={() => deleteConnector(c.id)}>
                     <line x1={x1} y1={y1} x2={x2} y2={y2} stroke="transparent" strokeWidth={10} />
@@ -469,10 +484,12 @@ export default function CanvasBoardPage() {
                 const from = items.find(i => i.id === connectDrag.fromId)
                 if (!from) return null
                 const size = cardSize(from.type)
+                const fromRect = { x: from.x, y: from.y, w: size.w, h: size.h }
+                const p1 = edgePoint(fromRect, connectDrag.x, connectDrag.y)
                 return (
                   <>
-                    <line x1={from.x + size.w} y1={from.y + size.h} x2={connectDrag.x} y2={connectDrag.y} stroke="#8f89e6" strokeWidth={1.3} strokeDasharray="3,4" />
-                    <circle cx={from.x + size.w} cy={from.y + size.h} r={3} fill="var(--bg)" stroke="#8f89e6" strokeWidth={1.3} />
+                    <line x1={p1.x} y1={p1.y} x2={connectDrag.x} y2={connectDrag.y} stroke="#8f89e6" strokeWidth={1.3} strokeDasharray="3,4" />
+                    <circle cx={p1.x} cy={p1.y} r={3} fill="var(--bg)" stroke="#8f89e6" strokeWidth={1.3} />
                   </>
                 )
               })()}
