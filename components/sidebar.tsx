@@ -379,8 +379,9 @@ export default function Sidebar({ onNewNote, onToggle }: SidebarProps = {}) {
         setUserName(name); setUserAvatar(avatar)
         cacheSet("sb_userName", name); cacheSet("sb_userAvatar", avatar)
 
-        if (data.user.theme) {
+        if (data.user.theme && data.user.theme !== localStorage.getItem('theme')) {
           localStorage.setItem('theme', data.user.theme)
+          document.cookie = `theme=${data.user.theme}; path=/; max-age=31536000`
           document.documentElement.classList.remove('dark', 'light')
           if (data.user.theme === 'system') {
             const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches

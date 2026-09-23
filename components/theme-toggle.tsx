@@ -17,6 +17,7 @@ export default function ThemeToggle() {
     const next = theme === "dark" ? "light" : "dark"
     setTheme(next)
     localStorage.setItem("theme", next)
+    document.cookie = `theme=${next}; path=/; max-age=31536000`
     const html = document.documentElement
     html.classList.remove("dark", "light")
     html.classList.add(next)

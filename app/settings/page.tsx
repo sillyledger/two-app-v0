@@ -129,6 +129,7 @@ function SettingsPageInner() {
           if (data.user.theme === 'light' || data.user.theme === 'dark' || data.user.theme === 'system') {
             setTheme(data.user.theme)
             localStorage.setItem('theme', data.user.theme)
+            document.cookie = `theme=${data.user.theme}; path=/; max-age=31536000`
             applyTheme(data.user.theme)
           }
           if (data.user.font_size) {
@@ -195,6 +196,7 @@ function SettingsPageInner() {
   const handleTheme = (t: Theme) => {
     setTheme(t)
     localStorage.setItem('theme', t)
+    document.cookie = `theme=${t}; path=/; max-age=31536000`
     fetch('/api/settings', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },

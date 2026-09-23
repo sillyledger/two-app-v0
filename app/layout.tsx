@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { cookies } from 'next/headers'
 import { Geist, Geist_Mono, Instrument_Serif } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import './globals.css'
@@ -27,13 +28,17 @@ export const metadata: Metadata = {
   manifest: '/manifest.webmanifest',
 }
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode
 }>) {
+  const cookieStore = await cookies()
+  const themeCookie = cookieStore.get('theme')?.value
+  const htmlClass = themeCookie === 'light' ? 'light' : 'dark'
+
   return (
-    <html lang="en" suppressHydrationWarning className={`dark bg-background ${instrumentSerif.variable}`}>
+    <html lang="en" suppressHydrationWarning className={`${htmlClass} bg-background ${instrumentSerif.variable}`}>
       <head>
         <meta name="apple-mobile-web-app-title" content="TWO" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -43,7 +48,11 @@ export default function RootLayout({
             __html: `
               (function() {
                 try {
-                  var theme = localStorage.getItem('theme');
+                  function getCookie(name) {
+                    var match = document.cookie.match(new RegExp('(^|; )' + name + '=([^;]*)'));
+                    return match ? decodeURIComponent(match[2]) : null;
+                  }
+                  var theme = getCookie('theme') || localStorage.getItem('theme');
                   if (theme === 'light') {
                     document.documentElement.classList.remove('dark');
                     document.documentElement.classList.add('light');
