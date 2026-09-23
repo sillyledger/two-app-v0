@@ -722,10 +722,6 @@ export default function CanvasBoardPage() {
         {isSelectedShape && (
           <>
             <div style={{ position: 'absolute', inset: -4, border: '1.5px solid #8f89e6', borderRadius: item.shape === 'circle' ? '50%' : item.shape === 'rounded' ? 18 : 4, pointerEvents: 'none' }} />
-            <div onMouseDown={e => onResizeMouseDown(e, item, 'nw')} style={{ position: 'absolute', top: -6, left: -6, width: 12, height: 12, backgroundColor: '#fff', border: '1.5px solid #8f89e6', cursor: 'nwse-resize' }} />
-            <div onMouseDown={e => onResizeMouseDown(e, item, 'ne')} style={{ position: 'absolute', top: -6, right: -6, width: 12, height: 12, backgroundColor: '#fff', border: '1.5px solid #8f89e6', cursor: 'nesw-resize' }} />
-            <div onMouseDown={e => onResizeMouseDown(e, item, 'sw')} style={{ position: 'absolute', bottom: -6, left: -6, width: 12, height: 12, backgroundColor: '#fff', border: '1.5px solid #8f89e6', cursor: 'nesw-resize' }} />
-            <div onMouseDown={e => onResizeMouseDown(e, item, 'se')} style={{ position: 'absolute', bottom: -6, right: -6, width: 12, height: 12, backgroundColor: '#fff', border: '1.5px solid #8f89e6', cursor: 'nwse-resize' }} />
             <div
               onMouseDown={e => e.stopPropagation()}
               style={{ position: 'absolute', top: -58, left: '50%', transform: 'translateX(-50%)', display: 'flex', alignItems: 'center', gap: 6, padding: 6, borderRadius: 10, backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border)', boxShadow: '0 10px 30px rgba(0,0,0,0.4)', zIndex: 50, whiteSpace: 'nowrap' }}
@@ -757,10 +753,28 @@ export default function CanvasBoardPage() {
         {isHovered && !connectDrag && (
           <div
             onMouseDown={e => onHandleMouseDown(e, item)}
-            style={{ position: 'absolute', bottom: -14, right: -14, width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'crosshair' }}
+            style={item.type === 'shape'
+              ? { position: 'absolute', top: '50%', right: -14, transform: 'translateY(-50%)', width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'crosshair' }
+              : { position: 'absolute', bottom: -14, right: -14, width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'crosshair' }}
           >
             <div style={{ width: 12, height: 12, borderRadius: '50%', backgroundColor: 'var(--bg)', border: '1.5px solid #8f89e6' }} />
           </div>
+        )}
+        {isSelectedShape && (
+          <>
+            <div onMouseDown={e => onResizeMouseDown(e, item, 'nw')} style={{ position: 'absolute', top: -11, left: -11, width: 22, height: 22, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'nwse-resize', zIndex: 20 }}>
+              <div style={{ width: 12, height: 12, backgroundColor: '#fff', border: '1.5px solid #8f89e6' }} />
+            </div>
+            <div onMouseDown={e => onResizeMouseDown(e, item, 'ne')} style={{ position: 'absolute', top: -11, right: -11, width: 22, height: 22, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'nesw-resize', zIndex: 20 }}>
+              <div style={{ width: 12, height: 12, backgroundColor: '#fff', border: '1.5px solid #8f89e6' }} />
+            </div>
+            <div onMouseDown={e => onResizeMouseDown(e, item, 'sw')} style={{ position: 'absolute', bottom: -11, left: -11, width: 22, height: 22, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'nesw-resize', zIndex: 20 }}>
+              <div style={{ width: 12, height: 12, backgroundColor: '#fff', border: '1.5px solid #8f89e6' }} />
+            </div>
+            <div onMouseDown={e => onResizeMouseDown(e, item, 'se')} style={{ position: 'absolute', bottom: -11, right: -11, width: 22, height: 22, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'nwse-resize', zIndex: 20 }}>
+              <div style={{ width: 12, height: 12, backgroundColor: '#fff', border: '1.5px solid #8f89e6' }} />
+            </div>
+          </>
         )}
         {contextMenuId === item.id && (
           <div ref={contextMenuRef} style={{ position: 'absolute', top: '100%', left: 0, marginTop: 4, backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border)', borderRadius: 8, boxShadow: '0 6px 20px rgba(0,0,0,0.4)', overflow: 'hidden', zIndex: 10, width: 130 }}>
