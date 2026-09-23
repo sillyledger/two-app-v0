@@ -4,7 +4,7 @@ import { useEffect, useState, useRef, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import { useParams } from 'next/navigation'
 import Sidebar from '@/components/sidebar'
-import { Plus, FileText, StickyNote, Image as ImageIcon, Search, X, Minus, RotateCcw, Type, Loader2 } from 'lucide-react'
+import { Plus, FileText, StickyNote, Image as ImageIcon, Search, X, Minus, RotateCcw, Type, Loader2, Pencil, Copy } from 'lucide-react'
 
 interface BoardItem {
   id: number
@@ -33,7 +33,7 @@ const MIN_ZOOM = 0.25
 const MAX_ZOOM = 2.5
 
 function cardSize(type: BoardItem['type']) {
-  if (type === 'swatch') return { w: 130, h: 100 }
+  if (type === 'swatch') return { w: 150, h: 100 }
   if (type === 'image') return { w: 260, h: 190 }
   if (type === 'text') return { w: 200, h: 80 }
   return { w: 160, h: 70 }
@@ -105,6 +105,8 @@ export default function CanvasBoardPage() {
   const [connectDrag, setConnectDrag] = useState<{ fromId: number; x: number; y: number } | null>(null)
   const [hoverTargetId, setHoverTargetId] = useState<number | null>(null)
   const [copiedItemId, setCopiedItemId] = useState<number | null>(null)
+  const [colorPopoverId, setColorPopoverId] = useState<number | null>(null)
+  const [hexInput, setHexInput] = useState('')
 
   const [zoom, setZoom] = useState(1)
   const [pan, setPan] = useState({ x: 0, y: 0 })
@@ -116,16 +118,20 @@ export default function CanvasBoardPage() {
   const addMenuRef = useRef<HTMLDivElement>(null)
   const pickerRef = useRef<HTMLDivElement>(null)
   const contextMenuRef = useRef<HTMLDivElement>(null)
+  const colorPopoverRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const boardRef = useRef<HTMLDivElement>(null)
   const dragState = useRef<{ id: number; offsetX: number; offsetY: number } | null>(null)
+  const cardClickStart = useRef<{ id: number; x: number; y: number } | null>(null)
   const connectState = useRef<{ fromId: number } | null>(null)
   const hoverTargetRef = useRef<number | null>(null)
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const copyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const skipBlurSaveRef = useRef(false)
+  const colorPopoverIdRef = useRef<number | null>(null)
+  const colorPopoverBaselineRef = useRef<string | null>(null)
   const itemsRef = useRef<BoardItem[]>([])
   itemsRef.current = items
+  colorPopoverIdRef.current = colorPopoverId
   const panState = useRef<{ startX: number; startY: number; startPanX: number; startPanY: number } | null>(null)
 
   useEffect(() => {
@@ -146,6 +152,7 @@ export default function CanvasBoardPage() {
       if (addMenuRef.current && !addMenuRef.current.contains(e.target as Node)) setSwatchMenuOpen(false)
       if (pickerRef.current && !pickerRef.current.contains(e.target as Node)) setPickerType(null)
       if (!contextMenuRef.current || !contextMenuRef.current.contains(e.target as Node)) setContextMenuId(null)
+      if (colorPopoverRef.current && !colorPopoverRef.current.contains(e.target as Node)) closeColorPopover()
     }
     document.addEventListener('mousedown', handleClick)
     return () => document.removeEventListener('mousedown', handleClick)
@@ -249,18 +256,33 @@ export default function CanvasBoardPage() {
     return `#${v.toUpperCase()}`
   }
 
-  const saveSwatchColor = async (id: number) => {
-    const canceled = skipBlurSaveRef.current
-    skipBlurSaveRef.current = false
-    setEditingItemId(null)
-    if (canceled) return
+  const closeColorPopover = async () => {
+    const id = colorPopoverIdRef.current
+    if (id == null) return
+    setColorPopoverId(null)
+    colorPopoverIdRef.current = null
     const current = itemsRef.current.find(i => i.id === id)
-    const normalized = normalizeHex(editingText)
-    if (!normalized || normalized === current?.color) return
-    setItems(prev => prev.map(i => (i.id === id ? { ...i, color: normalized } : i)))
+    const baseline = colorPopoverBaselineRef.current
+    colorPopoverBaselineRef.current = null
+    if (!current || current.color === baseline) return
     await fetch(`/api/boards/${boardId}/items/${id}`, {
-      method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ color: normalized }),
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ color: current.color }),
     })
+  }
+
+  const openColorPopover = async (item: BoardItem) => {
+    if (colorPopoverIdRef.current !== null && colorPopoverIdRef.current !== item.id) {
+      await closeColorPopover()
+    }
+    colorPopoverBaselineRef.current = item.color
+    colorPopoverIdRef.current = item.id
+    setColorPopoverId(item.id)
+    setHexInput(item.color ?? '')
+  }
+
+  const setSwatchLiveColor = (id: number, color: string) => {
+    setItems(prev => prev.map(i => (i.id === id ? { ...i, color } : i)))
+    setHexInput(color)
   }
 
   const copyColor = (item: BoardItem) => {
@@ -294,6 +316,7 @@ export default function CanvasBoardPage() {
   const onCardMouseDown = (e: React.MouseEvent, item: BoardItem) => {
     if (e.button !== 0) return
     e.stopPropagation()
+    cardClickStart.current = { id: item.id, x: e.clientX, y: e.clientY }
     const canvasPos = screenToCanvas(e.clientX, e.clientY)
     dragState.current = { id: item.id, offsetX: canvasPos.x - item.x, offsetY: canvasPos.y - item.y }
     document.addEventListener('mousemove', onMouseMove)
@@ -308,17 +331,23 @@ export default function CanvasBoardPage() {
     setItems(prev => prev.map(i => (i.id === dragState.current!.id ? { ...i, x, y } : i)))
   }, [])
 
-  const onMouseUp = useCallback(async () => {
+  const onMouseUp = useCallback(async (e: MouseEvent) => {
     document.removeEventListener('mousemove', onMouseMove)
     document.removeEventListener('mouseup', onMouseUp)
     const id = dragState.current?.id
     dragState.current = null
+    const clickStart = cardClickStart.current
+    cardClickStart.current = null
     if (!id) return
     setItems(prev => {
       const item = prev.find(i => i.id === id)
       if (item) fetch(`/api/boards/${boardId}/items/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ x: item.x, y: item.y }) })
       return prev
     })
+    if (clickStart && clickStart.id === id && Math.hypot(e.clientX - clickStart.x, e.clientY - clickStart.y) < 4) {
+      const item = itemsRef.current.find(i => i.id === id)
+      if (item && item.type === 'swatch') openColorPopover(item)
+    }
   }, [boardId, onMouseMove])
 
   const onHandleMouseDown = (e: React.MouseEvent, item: BoardItem) => {
@@ -484,16 +513,30 @@ export default function CanvasBoardPage() {
               onClick={() => setSwatchMenuOpen(v => !v)}
               onMouseEnter={e => { setHoveredTool('swatch'); const r = e.currentTarget.getBoundingClientRect(); setTooltipRect({ top: r.top, left: r.left + r.width / 2, width: r.width }) }}
               onMouseLeave={() => setHoveredTool(null)}
-              title="Color"
+              title="Add color card"
               style={{ position: 'relative', width: 36, height: 36, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
             >
               <span style={{ width: 16, height: 16, borderRadius: 5, backgroundColor: '#EF9F27', display: 'block' }} />
             </button>
             {swatchMenuOpen && (
-              <div style={{ position: 'absolute', top: 'calc(100% + 8px)', right: 0, backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border)', borderRadius: 10, boxShadow: '0 10px 30px rgba(0,0,0,0.4)', padding: 10, zIndex: 50, display: 'flex', gap: 6, flexWrap: 'wrap', width: 140 }}>
-                {SWATCHES.map(c => (
-                  <div key={c} onClick={() => { addItem({ type: 'swatch', color: c }); setSwatchMenuOpen(false) }} style={{ width: 22, height: 22, borderRadius: 6, backgroundColor: c, cursor: 'pointer' }} />
-                ))}
+              <div style={{ position: 'absolute', top: 'calc(100% + 8px)', right: 0, backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border)', borderRadius: 10, boxShadow: '0 10px 30px rgba(0,0,0,0.4)', padding: 10, zIndex: 50, width: 140 }}>
+                <p style={{ fontSize: 11, color: 'var(--text-muted)', margin: '0 0 8px 0' }}>Add color card</p>
+                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                  {SWATCHES.map(c => (
+                    <div key={c} onClick={() => { addItem({ type: 'swatch', color: c }); setSwatchMenuOpen(false) }} style={{ width: 22, height: 22, borderRadius: 6, backgroundColor: c, cursor: 'pointer' }} />
+                  ))}
+                  <button
+                    aria-label="Pick a custom color"
+                    onClick={async () => {
+                      setSwatchMenuOpen(false)
+                      const item = await addItem({ type: 'swatch', color: '#8F89E6' })
+                      if (item) await openColorPopover(item)
+                    }}
+                    style={{ width: 22, height: 22, borderRadius: 6, border: '1px dashed var(--border)', backgroundColor: 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', cursor: 'pointer', padding: 0 }}
+                  >
+                    <Plus size={12} />
+                  </button>
+                </div>
               </div>
             )}
             {pickerType && (
@@ -515,7 +558,7 @@ export default function CanvasBoardPage() {
           </div>
           {hoveredTool && !(hoveredTool === 'swatch' && swatchMenuOpen) && tooltipRect && typeof document !== 'undefined' && createPortal(
             <div style={{ position: 'fixed', top: tooltipRect.top - 34, left: tooltipRect.left, transform: 'translateX(-50%)', backgroundColor: 'var(--bg-tertiary)', color: 'var(--text-primary)', fontSize: 11, padding: '5px 9px', borderRadius: 6, whiteSpace: 'nowrap', boxShadow: '0 4px 12px rgba(0,0,0,0.3)', zIndex: 9999, pointerEvents: 'none' }}>
-              {hoveredTool === 'doc' ? 'Link a doc' : hoveredTool === 'note' ? 'Link a note' : hoveredTool === 'text' ? 'Text' : hoveredTool === 'image' ? 'Image' : hoveredTool === 'swatch' ? 'Color' : ''}
+              {hoveredTool === 'doc' ? 'Link a doc' : hoveredTool === 'note' ? 'Link a note' : hoveredTool === 'text' ? 'Text' : hoveredTool === 'image' ? 'Image' : hoveredTool === 'swatch' ? 'Add color card' : ''}
             </div>,
             document.body
           )}
@@ -606,30 +649,67 @@ export default function CanvasBoardPage() {
                       </div>
                     )
                   ) : item.type === 'swatch' ? (
-                    <div style={{ width: size.w, height: size.h, borderRadius: 8, position: 'relative', overflow: 'hidden', backgroundColor: item.color ?? '#888', boxShadow: '0 4px 12px rgba(0,0,0,0.3)', border: isConnectTarget ? '1.5px solid #8f89e6' : '1.5px solid transparent' }}>
-                      {editingItemId === item.id ? (
-                        <input
-                          autoFocus
-                          value={editingText}
-                          onChange={e => setEditingText(e.target.value)}
-                          onFocus={e => e.target.select()}
-                          onBlur={() => saveSwatchColor(item.id)}
-                          onKeyDown={e => {
-                            if (e.key === 'Enter') { e.preventDefault(); (e.target as HTMLInputElement).blur() }
-                            if (e.key === 'Escape') { e.preventDefault(); skipBlurSaveRef.current = true; (e.target as HTMLInputElement).blur() }
-                          }}
-                          onMouseDown={e => e.stopPropagation()}
-                          onClick={e => e.stopPropagation()}
-                          style={{ position: 'absolute', left: 0, right: 0, bottom: 0, width: '100%', boxSizing: 'border-box', background: 'rgba(0,0,0,0.55)', color: '#fff', fontFamily: 'ui-monospace, monospace', fontSize: 11, border: 'none', outline: 'none', padding: '4px 6px' }}
-                        />
-                      ) : (
-                        <div
-                          onMouseDown={e => e.stopPropagation()}
-                          onClick={e => { e.stopPropagation(); copyColor(item) }}
-                          onDoubleClick={e => { e.stopPropagation(); setEditingItemId(item.id); setEditingText(item.color ?? '') }}
-                          style={{ position: 'absolute', left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.55)', color: '#fff', fontFamily: 'ui-monospace, monospace', fontSize: 11, padding: '4px 6px', cursor: 'pointer', userSelect: 'none' }}
+                    <div style={{ width: size.w, height: size.h, borderRadius: 8, position: 'relative', overflow: 'hidden', boxShadow: '0 4px 12px rgba(0,0,0,0.3)', border: isConnectTarget ? '1.5px solid #8f89e6' : '1.5px solid transparent' }}>
+                      <div style={{ position: 'absolute', inset: 0, bottom: 32, backgroundColor: item.color ?? '#888' }} />
+                      <div style={{ position: 'absolute', top: 8, right: 8, width: 24, height: 24, borderRadius: 6, backgroundColor: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}>
+                        <Pencil size={12} style={{ color: '#fff' }} />
+                      </div>
+                      <div
+                        onMouseDown={e => e.stopPropagation()}
+                        style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: 32, boxSizing: 'border-box', backgroundColor: '#1d1d20', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 8px' }}
+                      >
+                        <span style={{ color: '#fff', fontFamily: 'ui-monospace, monospace', fontSize: 11 }}>{(item.color ?? '#888888').toUpperCase()}</span>
+                        <button
+                          onClick={() => copyColor(item)}
+                          style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'transparent', border: 'none', color: '#fff', fontSize: 11, cursor: 'pointer', padding: '2px 4px' }}
                         >
-                          {copiedItemId === item.id ? 'Copied' : (item.color ?? '#888888').toUpperCase()}
+                          <Copy size={11} />
+                          {copiedItemId === item.id ? 'Copied' : 'Copy'}
+                        </button>
+                      </div>
+                      {colorPopoverId === item.id && (
+                        <div
+                          ref={colorPopoverRef}
+                          onMouseDown={e => e.stopPropagation()}
+                          onKeyDown={e => { if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); closeColorPopover() } }}
+                          style={{ position: 'absolute', top: 'calc(100% + 8px)', left: 0, width: 200, backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border)', borderRadius: 10, boxShadow: '0 10px 30px rgba(0,0,0,0.4)', padding: 12, zIndex: 50 }}
+                        >
+                          <p style={{ fontSize: 11, color: 'var(--text-muted)', margin: '0 0 8px 0' }}>Change color</p>
+                          <div style={{ display: 'flex', gap: 6, marginBottom: 10, flexWrap: 'wrap' }}>
+                            {SWATCHES.map(c => (
+                              <div
+                                key={c}
+                                onClick={() => setSwatchLiveColor(item.id, c)}
+                                style={{ width: 22, height: 22, borderRadius: 6, backgroundColor: c, cursor: 'pointer', boxShadow: (item.color ?? '').toUpperCase() === c.toUpperCase() ? '0 0 0 2px #fff' : 'none' }}
+                              />
+                            ))}
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <div style={{ position: 'relative', width: 36, height: 36, borderRadius: 8, overflow: 'hidden', backgroundColor: item.color ?? '#888', flexShrink: 0 }}>
+                              <input
+                                type="color"
+                                value={(normalizeHex(item.color ?? '') ?? '#888888').toLowerCase()}
+                                onChange={e => setSwatchLiveColor(item.id, e.target.value.toUpperCase())}
+                                style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', opacity: 0, cursor: 'pointer', border: 'none', padding: 0 }}
+                              />
+                            </div>
+                            <input
+                              value={hexInput}
+                              onChange={e => {
+                                const value = e.target.value
+                                setHexInput(value)
+                                const normalized = normalizeHex(value)
+                                if (normalized) setItems(prev => prev.map(i => (i.id === item.id ? { ...i, color: normalized } : i)))
+                              }}
+                              style={{ flex: 1, minWidth: 0, background: 'var(--bg-tertiary)', border: '1px solid var(--border)', borderRadius: 6, padding: '6px 8px', fontFamily: 'ui-monospace, monospace', fontSize: 12, color: 'var(--text-primary)', outline: 'none' }}
+                            />
+                          </div>
+                          <button
+                            onClick={() => closeColorPopover()}
+                            style={{ marginTop: 10, width: '100%', padding: '6px 0', borderRadius: 6, backgroundColor: 'var(--bg-tertiary)', color: 'var(--text-primary)', fontSize: 12, border: 'none', cursor: 'pointer' }}
+                          >
+                            Done
+                          </button>
                         </div>
                       )}
                     </div>
