@@ -138,6 +138,7 @@ export default function CanvasBoardPage() {
   const contextMenuRef = useRef<HTMLDivElement>(null)
   const colorPopoverRef = useRef<HTMLDivElement>(null)
   const hexInputRef = useRef<HTMLInputElement>(null)
+  const shapeTextareaRef = useRef<HTMLTextAreaElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const boardRef = useRef<HTMLDivElement>(null)
   const dragState = useRef<{ id: number; offsetX: number; offsetY: number } | null>(null)
@@ -189,6 +190,14 @@ export default function CanvasBoardPage() {
       hexInputRef.current?.select()
     }
   }, [colorPopoverId])
+
+  useEffect(() => {
+    const el = shapeTextareaRef.current
+    if (!el) return
+    el.style.height = 'auto'
+    el.style.height = `${el.scrollHeight}px`
+    el.style.overflowY = el.scrollHeight > el.clientHeight ? 'auto' : 'hidden'
+  }, [editingText, editingItemId])
 
   useEffect(() => {
     const ro = new ResizeObserver(entries => {
@@ -763,12 +772,14 @@ export default function CanvasBoardPage() {
                 {isEditingShape ? (
                   <textarea
                     autoFocus
+                    ref={shapeTextareaRef}
+                    rows={1}
                     value={editingText}
                     onChange={e => setEditingText(e.target.value)}
                     onBlur={() => saveText(item.id)}
                     onKeyDown={e => { if (e.key === 'Escape') saveText(item.id) }}
                     onMouseDown={e => e.stopPropagation()}
-                    style={{ width: '100%', height: '100%', background: 'transparent', border: 'none', outline: 'none', resize: 'none', textAlign: 'center', color: textColor, fontSize: 14, fontWeight: 500, lineHeight: 1.35, fontFamily: 'inherit' }}
+                    style={{ width: '100%', maxHeight: '100%', background: 'transparent', border: 'none', outline: 'none', resize: 'none', textAlign: 'center', color: textColor, fontSize: 14, fontWeight: 500, lineHeight: 1.35, fontFamily: 'inherit', padding: 0, margin: 0, display: 'block', overflow: 'hidden' }}
                   />
                 ) : (
                   <div style={{ width: '100%', textAlign: 'center', color: textColor, fontSize: 14, fontWeight: 500, lineHeight: 1.35, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
