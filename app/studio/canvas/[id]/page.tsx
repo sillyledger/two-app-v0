@@ -39,12 +39,11 @@ function cardSize(type: BoardItem['type']) {
   return { w: 160, h: 70 }
 }
 
-async function resizeImageFile(file: File, maxDimension = 1600): Promise<File> {
+async function resizeImageFile(file: File, maxDimension = 1200): Promise<File> {
   if (file.type === 'image/gif') return file // preserve animation, don't resize
   try {
     const bitmap = await createImageBitmap(file)
     const scale = Math.min(1, maxDimension / Math.max(bitmap.width, bitmap.height))
-    if (scale === 1) return file
     const targetW = Math.round(bitmap.width * scale)
     const targetH = Math.round(bitmap.height * scale)
     const canvas = document.createElement('canvas')
@@ -53,12 +52,14 @@ async function resizeImageFile(file: File, maxDimension = 1600): Promise<File> {
     const ctx = canvas.getContext('2d')
     if (!ctx) return file
     ctx.drawImage(bitmap, 0, 0, targetW, targetH)
-    const outputType = file.type === 'image/png' ? 'image/png' : 'image/jpeg'
-    const quality = outputType === 'image/jpeg' ? 0.85 : undefined
-    const blob: Blob | null = await new Promise(resolve => canvas.toBlob(resolve, outputType, quality))
+    let blob: Blob | null = await new Promise(resolve => canvas.toBlob(resolve, 'image/webp', 0.82))
+    if (!blob || blob.type !== 'image/webp') {
+      const fallbackType = file.type === 'image/png' ? 'image/png' : 'image/jpeg'
+      blob = await new Promise(resolve => canvas.toBlob(resolve, fallbackType, fallbackType === 'image/jpeg' ? 0.85 : undefined))
+    }
     if (!blob || blob.size >= file.size) return file
-    const ext = outputType === 'image/png' ? 'png' : 'jpg'
-    return new File([blob], file.name.replace(/\.[^.]+$/, '') + '.' + ext, { type: outputType })
+    const ext = blob.type === 'image/webp' ? 'webp' : blob.type === 'image/png' ? 'png' : 'jpg'
+    return new File([blob], file.name.replace(/\.[^.]+$/, '') + '.' + ext, { type: blob.type })
   } catch {
     return file
   }
@@ -189,6 +190,7 @@ export default function CanvasBoardPage() {
       const res = await fetch('/api/upload', { method: 'POST', body: formData })
       const data = await res.json()
       if (data.url) await addItem({ type: 'image', content: data.url })
+      else alert(data.error || 'Image upload failed. Please try again.')
     } finally {
       setUploadingImage(false)
       e.target.value = ''
@@ -607,7 +609,12 @@ export default function CanvasBoardPage() {
                     </div>
                   ) : item.type === 'image' ? (
                     <div style={{ width: size.w, borderRadius: 8, overflow: 'hidden', boxShadow: '0 4px 12px rgba(0,0,0,0.3)', border: isConnectTarget ? '1.5px solid #8f89e6' : '1.5px solid transparent' }}>
-                      <img src={item.content ?? ''} style={{ width: '100%', display: 'block' }} />
+                      <img
+                        src={item.content ?? ''}
+                        draggable={false}
+                        onDragStart={e => e.preventDefault()}
+                        style={{ width: '100%', display: 'block', pointerEvents: 'none', userSelect: 'none' }}
+                      />
                     </div>
                   ) : (
                     <div style={{ width: size.w, backgroundColor: 'var(--bg-secondary)', borderRadius: 8, padding: 12, boxShadow: '0 4px 12px rgba(0,0,0,0.3)', border: isConnectTarget ? '1.5px solid #8f89e6' : '1.5px solid transparent' }}>
