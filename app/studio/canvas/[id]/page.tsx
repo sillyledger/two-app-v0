@@ -119,6 +119,7 @@ export default function CanvasBoardPage() {
   const pickerRef = useRef<HTMLDivElement>(null)
   const contextMenuRef = useRef<HTMLDivElement>(null)
   const colorPopoverRef = useRef<HTMLDivElement>(null)
+  const hexInputRef = useRef<HTMLInputElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const boardRef = useRef<HTMLDivElement>(null)
   const dragState = useRef<{ id: number; offsetX: number; offsetY: number } | null>(null)
@@ -157,6 +158,13 @@ export default function CanvasBoardPage() {
     document.addEventListener('mousedown', handleClick)
     return () => document.removeEventListener('mousedown', handleClick)
   }, [])
+
+  useEffect(() => {
+    if (colorPopoverId !== null) {
+      hexInputRef.current?.focus()
+      hexInputRef.current?.select()
+    }
+  }, [colorPopoverId])
 
   const screenToCanvas = (clientX: number, clientY: number) => {
     const rect = boardRef.current!.getBoundingClientRect()
@@ -649,23 +657,25 @@ export default function CanvasBoardPage() {
                       </div>
                     )
                   ) : item.type === 'swatch' ? (
-                    <div style={{ width: size.w, height: size.h, borderRadius: 8, position: 'relative', overflow: 'hidden', boxShadow: '0 4px 12px rgba(0,0,0,0.3)', border: isConnectTarget ? '1.5px solid #8f89e6' : '1.5px solid transparent' }}>
-                      <div style={{ position: 'absolute', inset: 0, bottom: 32, backgroundColor: item.color ?? '#888' }} />
-                      <div style={{ position: 'absolute', top: 8, right: 8, width: 24, height: 24, borderRadius: 6, backgroundColor: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}>
-                        <Pencil size={12} style={{ color: '#fff' }} />
-                      </div>
-                      <div
-                        onMouseDown={e => e.stopPropagation()}
-                        style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: 32, boxSizing: 'border-box', backgroundColor: '#1d1d20', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 8px' }}
-                      >
-                        <span style={{ color: '#fff', fontFamily: 'ui-monospace, monospace', fontSize: 11 }}>{(item.color ?? '#888888').toUpperCase()}</span>
-                        <button
-                          onClick={() => copyColor(item)}
-                          style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'transparent', border: 'none', color: '#fff', fontSize: 11, cursor: 'pointer', padding: '2px 4px' }}
+                    <div style={{ position: 'relative', width: size.w }}>
+                      <div style={{ width: size.w, height: size.h, borderRadius: 8, position: 'relative', overflow: 'hidden', boxShadow: '0 4px 12px rgba(0,0,0,0.3)', border: isConnectTarget ? '1.5px solid #8f89e6' : '1.5px solid transparent' }}>
+                        <div style={{ position: 'absolute', inset: 0, bottom: 32, backgroundColor: item.color ?? '#888' }} />
+                        <div style={{ position: 'absolute', top: 8, right: 8, width: 24, height: 24, borderRadius: 6, backgroundColor: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}>
+                          <Pencil size={12} style={{ color: '#fff' }} />
+                        </div>
+                        <div
+                          onMouseDown={e => e.stopPropagation()}
+                          style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: 32, boxSizing: 'border-box', backgroundColor: '#1d1d20', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 8px' }}
                         >
-                          <Copy size={11} />
-                          {copiedItemId === item.id ? 'Copied' : 'Copy'}
-                        </button>
+                          <span style={{ color: '#fff', fontFamily: 'ui-monospace, monospace', fontSize: 11 }}>{(item.color ?? '#888888').toUpperCase()}</span>
+                          <button
+                            onClick={() => copyColor(item)}
+                            style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'transparent', border: 'none', color: '#fff', fontSize: 11, cursor: 'pointer', padding: '2px 4px' }}
+                          >
+                            <Copy size={11} />
+                            {copiedItemId === item.id ? 'Copied' : 'Copy'}
+                          </button>
+                        </div>
                       </div>
                       {colorPopoverId === item.id && (
                         <div
@@ -694,6 +704,7 @@ export default function CanvasBoardPage() {
                               />
                             </div>
                             <input
+                              ref={hexInputRef}
                               value={hexInput}
                               onChange={e => {
                                 const value = e.target.value
