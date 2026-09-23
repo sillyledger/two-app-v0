@@ -91,6 +91,7 @@ export default function CanvasBoardPage() {
 
   const [swatchMenuOpen, setSwatchMenuOpen] = useState(false)
   const [uploadingImage, setUploadingImage] = useState(false)
+  const [pendingImages, setPendingImages] = useState<{ tempId: string; x: number; y: number; rotation: number; previewUrl: string }[]>([])
   const [hoveredTool, setHoveredTool] = useState<string | null>(null)
   const [tooltipRect, setTooltipRect] = useState<{ top: number; left: number; width: number } | null>(null)
   const [pickerType, setPickerType] = useState<'doc' | 'note' | null>(null)
@@ -162,9 +163,9 @@ export default function CanvasBoardPage() {
     const rect = boardRef.current!.getBoundingClientRect()
     const center = screenToCanvas(rect.left + rect.width / 2, rect.top + rect.height / 2)
     const jitter = items.length % 6
-    const x = center.x - 75 + jitter * 20
-    const y = center.y - 50 + jitter * 15
-    const rotation = Math.random() * 6 - 3
+    const x = payload.x ?? center.x - 75 + jitter * 20
+    const y = payload.y ?? center.y - 50 + jitter * 15
+    const rotation = payload.rotation ?? Math.random() * 6 - 3
     const res = await fetch(`/api/boards/${boardId}/items`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -181,19 +182,44 @@ export default function CanvasBoardPage() {
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
+    e.target.value = ''
     if (!file) return
     setUploadingImage(true)
+    const resized = await resizeImageFile(file)
+    const previewUrl = URL.createObjectURL(resized)
+    const tempId = `temp-${Date.now()}-${Math.random().toString(36).slice(2)}`
+    const rect = boardRef.current!.getBoundingClientRect()
+    const center = screenToCanvas(rect.left + rect.width / 2, rect.top + rect.height / 2)
+    const jitter = (items.length + pendingImages.length) % 6
+    const x = center.x - 75 + jitter * 20
+    const y = center.y - 50 + jitter * 15
+    const rotation = Math.random() * 6 - 3
+    setPendingImages(prev => [...prev, { tempId, x, y, rotation, previewUrl }])
+    setUploadingImage(false)
     try {
-      const resized = await resizeImageFile(file)
       const formData = new FormData()
       formData.append('file', resized)
       const res = await fetch('/api/upload', { method: 'POST', body: formData })
       const data = await res.json()
-      if (data.url) await addItem({ type: 'image', content: data.url })
-      else alert(data.error || 'Image upload failed. Please try again.')
-    } finally {
-      setUploadingImage(false)
-      e.target.value = ''
+      if (!data.url) {
+        setPendingImages(prev => prev.filter(p => p.tempId !== tempId))
+        URL.revokeObjectURL(previewUrl)
+        alert(data.error || 'Image upload failed. Please try again.')
+        return
+      }
+      const item = await addItem({ type: 'image', content: data.url, x, y, rotation })
+      await new Promise<void>(resolve => {
+        const img = new Image()
+        img.onload = () => resolve()
+        img.onerror = () => resolve()
+        img.src = item.content
+      })
+      setPendingImages(prev => prev.filter(p => p.tempId !== tempId))
+      URL.revokeObjectURL(previewUrl)
+    } catch {
+      setPendingImages(prev => prev.filter(p => p.tempId !== tempId))
+      URL.revokeObjectURL(previewUrl)
+      alert('Image upload failed. Please try again.')
     }
   }
 
@@ -639,6 +665,22 @@ export default function CanvasBoardPage() {
                       <button onClick={() => deleteItem(item.id)} className="w-full text-left px-3 py-2 text-[12px] text-red-400" onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)')} onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}>Delete</button>
                     </div>
                   )}
+                </div>
+              )
+            })}
+            {pendingImages.map(p => {
+              const size = cardSize('image')
+              return (
+                <div
+                  key={p.tempId}
+                  style={{ position: 'absolute', left: p.x, top: p.y, transform: `rotate(${p.rotation}deg)`, userSelect: 'none', WebkitUserSelect: 'none' }}
+                >
+                  <div style={{ width: size.w, borderRadius: 8, overflow: 'hidden', boxShadow: '0 4px 12px rgba(0,0,0,0.3)', border: '1.5px solid transparent', position: 'relative' }}>
+                    <img src={p.previewUrl} draggable={false} style={{ width: '100%', display: 'block', pointerEvents: 'none', userSelect: 'none' }} />
+                    <div style={{ position: 'absolute', top: 6, right: 6, width: 20, height: 20, borderRadius: '50%', backgroundColor: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <Loader2 size={12} className="animate-spin" style={{ color: '#fff' }} />
+                    </div>
+                  </div>
                 </div>
               )
             })}
