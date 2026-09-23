@@ -15,6 +15,16 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     `
     if (!owned[0]) return NextResponse.json({ error: 'Not found' }, { status: 404 })
     const body = await request.json()
+    if (typeof body.width === 'number' && typeof body.height === 'number') {
+      const width = Math.max(60, body.width)
+      const height = Math.max(40, body.height)
+      if (typeof body.x === 'number' && typeof body.y === 'number') {
+        const result = await sql`UPDATE board_items SET width = ${width}, height = ${height}, x = ${body.x}, y = ${body.y} WHERE id = ${itemId} RETURNING *`
+        return NextResponse.json(result[0])
+      }
+      const result = await sql`UPDATE board_items SET width = ${width}, height = ${height} WHERE id = ${itemId} RETURNING *`
+      return NextResponse.json(result[0])
+    }
     if (typeof body.x === 'number' && typeof body.y === 'number') {
       const result = await sql`UPDATE board_items SET x = ${body.x}, y = ${body.y} WHERE id = ${itemId} RETURNING *`
       return NextResponse.json(result[0])

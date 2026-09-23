@@ -8,13 +8,16 @@ import { Plus, FileText, StickyNote, Image as ImageIcon, Search, X, Minus, Rotat
 
 interface BoardItem {
   id: number
-  type: 'doc' | 'note' | 'image' | 'swatch' | 'text'
+  type: 'doc' | 'note' | 'image' | 'swatch' | 'text' | 'shape'
   ref_id: string | null
   content: string | null
   color: string | null
   x: number
   y: number
   rotation: number
+  width?: number | null
+  height?: number | null
+  shape?: string | null
 }
 
 interface BoardConnector {

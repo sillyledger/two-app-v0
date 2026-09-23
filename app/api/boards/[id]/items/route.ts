@@ -26,13 +26,16 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   try {
     const board = await sql`SELECT id FROM boards WHERE uuid = ${id} AND user_id = ${session.userId}`
     if (!board[0]) return NextResponse.json({ error: 'Not found' }, { status: 404 })
-    const { type, ref_id, content, color, x, y, rotation } = await request.json()
-    if (!['doc', 'note', 'image', 'swatch', 'text'].includes(type)) {
+    const { type, ref_id, content, color, x, y, rotation, width, height, shape } = await request.json()
+    if (!['doc', 'note', 'image', 'swatch', 'text', 'shape'].includes(type)) {
       return NextResponse.json({ error: 'Invalid type' }, { status: 400 })
     }
+    if (type === 'shape' && !['rect', 'rounded', 'circle', 'diamond'].includes(shape)) {
+      return NextResponse.json({ error: 'Invalid shape' }, { status: 400 })
+    }
     const result = await sql`
-      INSERT INTO board_items (board_id, type, ref_id, content, color, x, y, rotation)
-      VALUES (${board[0].id}, ${type}, ${ref_id ?? null}, ${content ?? null}, ${color ?? null}, ${x ?? 40}, ${y ?? 40}, ${rotation ?? 0})
+      INSERT INTO board_items (board_id, type, ref_id, content, color, x, y, rotation, width, height, shape)
+      VALUES (${board[0].id}, ${type}, ${ref_id ?? null}, ${content ?? null}, ${color ?? null}, ${x ?? 40}, ${y ?? 40}, ${rotation ?? 0}, ${width ?? null}, ${height ?? null}, ${shape ?? null})
       RETURNING *
     `
     return NextResponse.json(result[0], { status: 201 })
