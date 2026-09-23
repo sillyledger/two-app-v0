@@ -107,6 +107,7 @@ export default function CanvasBoardPage() {
   const [swatchMenuOpen, setSwatchMenuOpen] = useState(false)
   const [shapeMenuOpen, setShapeMenuOpen] = useState(false)
   const [selectedShapeId, setSelectedShapeId] = useState<number | null>(null)
+  const [measuredSizes, setMeasuredSizes] = useState<Record<number, { w: number; h: number }>>({})
   const [uploadingImage, setUploadingImage] = useState(false)
   const [pendingImages, setPendingImages] = useState<{ tempId: string; x: number; y: number; rotation: number; previewUrl: string }[]>([])
   const [hoveredTool, setHoveredTool] = useState<string | null>(null)
@@ -151,6 +152,11 @@ export default function CanvasBoardPage() {
   const itemsRef = useRef<BoardItem[]>([])
   itemsRef.current = items
   colorPopoverIdRef.current = colorPopoverId
+  const measuredSizesRef = useRef<Record<number, { w: number; h: number }>>({})
+  measuredSizesRef.current = measuredSizes
+  const cardResizeObserverRef = useRef<ResizeObserver | null>(null)
+  const cardElements = useRef<Map<number, HTMLElement>>(new Map())
+  const cardRefCallbacks = useRef<Map<number, (el: HTMLElement | null) => void>>(new Map())
   const panState = useRef<{ startX: number; startY: number; startPanX: number; startPanY: number } | null>(null)
 
   useEffect(() => {
@@ -183,6 +189,60 @@ export default function CanvasBoardPage() {
       hexInputRef.current?.select()
     }
   }, [colorPopoverId])
+
+  useEffect(() => {
+    const ro = new ResizeObserver(entries => {
+      setMeasuredSizes(prev => {
+        let changed = false
+        const next = { ...prev }
+        for (const entry of entries) {
+          const idAttr = (entry.target as HTMLElement).dataset.itemId
+          if (!idAttr) continue
+          const id = Number(idAttr)
+          const w = Math.round((entry.target as HTMLElement).offsetWidth)
+          const h = Math.round((entry.target as HTMLElement).offsetHeight)
+          const existing = next[id]
+          if (!existing || existing.w !== w || existing.h !== h) {
+            next[id] = { w, h }
+            changed = true
+          }
+        }
+        return changed ? next : prev
+      })
+    })
+    cardResizeObserverRef.current = ro
+    return () => {
+      ro.disconnect()
+      cardResizeObserverRef.current = null
+    }
+  }, [])
+
+  const getCardRef = (id: number) => {
+    let cb = cardRefCallbacks.current.get(id)
+    if (!cb) {
+      cb = (el: HTMLElement | null) => {
+        const ro = cardResizeObserverRef.current
+        const prevEl = cardElements.current.get(id)
+        if (prevEl && ro) ro.unobserve(prevEl)
+        if (el) {
+          cardElements.current.set(id, el)
+          if (ro) ro.observe(el)
+        } else {
+          cardElements.current.delete(id)
+          cardRefCallbacks.current.delete(id)
+        }
+      }
+      cardRefCallbacks.current.set(id, cb)
+    }
+    return cb
+  }
+
+  const connectorSize = (item: BoardItem) => {
+    if (typeof item.width === 'number' && typeof item.height === 'number') return { w: item.width, h: item.height }
+    const measured = measuredSizesRef.current[item.id]
+    if (measured) return measured
+    return cardSize(item.type)
+  }
 
   const screenToCanvas = (clientX: number, clientY: number) => {
     const rect = boardRef.current!.getBoundingClientRect()
@@ -347,6 +407,12 @@ export default function CanvasBoardPage() {
     setItems(prev => prev.filter(i => i.id !== id))
     setConnectors(prev => prev.filter(c => c.from_item_id !== id && c.to_item_id !== id))
     setContextMenuId(null)
+    setMeasuredSizes(prev => {
+      if (!(id in prev)) return prev
+      const next = { ...prev }
+      delete next[id]
+      return next
+    })
     await fetch(`/api/boards/${boardId}/items/${id}`, { method: 'DELETE' })
   }
 
@@ -396,7 +462,7 @@ export default function CanvasBoardPage() {
 
   const onHandleMouseDown = (e: React.MouseEvent, item: BoardItem) => {
     e.stopPropagation()
-    const size = itemSize(item)
+    const size = connectorSize(item)
     connectState.current = { fromId: item.id }
     setConnectDrag({ fromId: item.id, x: item.x + size.w, y: item.y + size.h })
     document.addEventListener('mousemove', onConnectMove)
@@ -409,7 +475,7 @@ export default function CanvasBoardPage() {
     setConnectDrag(prev => (prev ? { ...prev, x: pos.x, y: pos.y } : prev))
     const target = itemsRef.current.find(i => {
       if (i.id === connectState.current!.fromId) return false
-      const size = itemSize(i)
+      const size = connectorSize(i)
       return pos.x >= i.x && pos.x <= i.x + size.w && pos.y >= i.y && pos.y <= i.y + size.h
     })
     hoverTargetRef.current = target ? target.id : null
@@ -579,16 +645,18 @@ export default function CanvasBoardPage() {
               onBlur={() => { if (saveTimerRef.current) clearTimeout(saveTimerRef.current); saveText(item.id) }}
               onKeyDown={e => { if (e.key === 'Escape') saveText(item.id) }}
               onMouseDown={e => e.stopPropagation()}
+              ref={getCardRef(item.id)}
+              data-item-id={item.id}
               style={{ width: size.w, minHeight: size.h, background: 'transparent', border: '1px dashed rgba(255,255,255,0.25)', borderRadius: 6, padding: 8, fontSize: 14, color: 'var(--text-primary)', outline: 'none', resize: 'both', fontFamily: 'inherit' }}
             />
           ) : (
-            <div style={{ width: size.w, minHeight: 24, padding: 8, fontSize: 14, color: 'var(--text-primary)', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+            <div ref={getCardRef(item.id)} data-item-id={item.id} style={{ width: size.w, minHeight: 24, padding: 8, fontSize: 14, color: 'var(--text-primary)', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
               {item.content || <span style={{ color: 'var(--text-muted)' }}>Empty text</span>}
             </div>
           )
         ) : item.type === 'swatch' ? (
           <div style={{ position: 'relative', width: size.w }}>
-            <div style={{ width: size.w, height: size.h, borderRadius: 8, position: 'relative', overflow: 'hidden', boxShadow: '0 4px 12px rgba(0,0,0,0.3)', border: isConnectTarget ? '1.5px solid #8f89e6' : '1.5px solid transparent' }}>
+            <div ref={getCardRef(item.id)} data-item-id={item.id} style={{ width: size.w, height: size.h, borderRadius: 8, position: 'relative', overflow: 'hidden', boxShadow: '0 4px 12px rgba(0,0,0,0.3)', border: isConnectTarget ? '1.5px solid #8f89e6' : '1.5px solid transparent' }}>
               <div style={{ position: 'absolute', inset: 0, bottom: 32, backgroundColor: item.color ?? '#888' }} />
               <div style={{ position: 'absolute', top: 8, right: 8, width: 24, height: 24, borderRadius: 6, backgroundColor: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}>
                 <Pencil size={12} style={{ color: '#fff' }} />
@@ -655,7 +723,7 @@ export default function CanvasBoardPage() {
             )}
           </div>
         ) : item.type === 'image' ? (
-          <div style={{ width: size.w, borderRadius: 8, overflow: 'hidden', boxShadow: '0 4px 12px rgba(0,0,0,0.3)', border: isConnectTarget ? '1.5px solid #8f89e6' : '1.5px solid transparent' }}>
+          <div ref={getCardRef(item.id)} data-item-id={item.id} style={{ width: size.w, borderRadius: 8, overflow: 'hidden', boxShadow: '0 4px 12px rgba(0,0,0,0.3)', border: isConnectTarget ? '1.5px solid #8f89e6' : '1.5px solid transparent' }}>
             <img
               src={item.content ?? ''}
               draggable={false}
@@ -711,7 +779,7 @@ export default function CanvasBoardPage() {
             </div>
           )
         })() : (
-          <div style={{ width: size.w, backgroundColor: 'var(--bg-secondary)', borderRadius: 8, padding: 12, boxShadow: '0 4px 12px rgba(0,0,0,0.3)', border: isConnectTarget ? '1.5px solid #8f89e6' : '1.5px solid transparent' }}>
+          <div ref={getCardRef(item.id)} data-item-id={item.id} style={{ width: size.w, backgroundColor: 'var(--bg-secondary)', borderRadius: 8, padding: 12, boxShadow: '0 4px 12px rgba(0,0,0,0.3)', border: isConnectTarget ? '1.5px solid #8f89e6' : '1.5px solid transparent' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
               {item.type === 'doc' ? <FileText size={13} style={{ color: '#8f89e6' }} /> : <StickyNote size={13} style={{ color: '#c98a5e' }} />}
               <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{item.type === 'doc' ? 'Doc' : 'Note'}</span>
@@ -948,8 +1016,8 @@ export default function CanvasBoardPage() {
                 const from = items.find(i => i.id === c.from_item_id)
                 const to = items.find(i => i.id === c.to_item_id)
                 if (!from || !to) return null
-                const fromSize = itemSize(from)
-                const toSize = itemSize(to)
+                const fromSize = connectorSize(from)
+                const toSize = connectorSize(to)
                 const fromRect = { x: from.x, y: from.y, w: fromSize.w, h: fromSize.h }
                 const toRect = { x: to.x, y: to.y, w: toSize.w, h: toSize.h }
                 const p1 = edgePoint(fromRect, to.x + toSize.w / 2, to.y + toSize.h / 2)
@@ -966,7 +1034,7 @@ export default function CanvasBoardPage() {
               {connectDrag && (() => {
                 const from = items.find(i => i.id === connectDrag.fromId)
                 if (!from) return null
-                const size = itemSize(from)
+                const size = connectorSize(from)
                 const fromRect = { x: from.x, y: from.y, w: size.w, h: size.h }
                 const p1 = edgePoint(fromRect, connectDrag.x, connectDrag.y)
                 return (
