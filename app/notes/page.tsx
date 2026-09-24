@@ -266,7 +266,7 @@ function NotesPageContent() {
     const eligible = categories.filter(c => c.id !== cat.id && !descendantIds.includes(c.id))
     const eligibleTopLevel = eligible.filter(c => c.parent_id === null)
 
-    const menuItemStyle: React.CSSProperties = { width: '100%', textAlign: 'left', background: 'transparent', border: 'none', borderRadius: 6, padding: '7px 9px', fontSize: 12.5, color: 'var(--text-primary)', cursor: 'pointer', fontFamily: FONT }
+    const menuItemStyle: React.CSSProperties = { width: '100%', textAlign: 'left', background: 'transparent', border: 'none', borderRadius: 6, padding: '7px 9px', fontSize: 12.5, color: 'var(--text-1)', cursor: 'pointer', fontFamily: FONT }
 
     return (
       <div style={{ position: 'relative' }} ref={isMenuOpen ? categoryMenuRef : undefined}>
@@ -275,8 +275,8 @@ function NotesPageContent() {
           onContextMenu={e => { e.preventDefault(); setOpenCategoryMenuId(cat.id); setCategoryMenuMode('actions') }}
           style={{
             display: 'flex', alignItems: 'center', gap: small ? 5 : 6,
-            background: activeCategory === cat.id ? 'var(--bg-tertiary)' : 'var(--bg-secondary)',
-            color: 'var(--text-primary)', border: '1px solid var(--border)',
+            background: activeCategory === cat.id ? 'var(--surface-2)' : 'var(--surface)',
+            color: 'var(--text-1)', border: '1px solid var(--border-subtle)',
             fontSize: small ? 11 : 12, padding: small ? '5px 11px' : '6px 13px', borderRadius: 999, cursor: 'pointer', fontFamily: FONT,
           }}
         >
@@ -285,26 +285,26 @@ function NotesPageContent() {
           {hasChildren && !small && (
             <span
               onClick={e => { e.stopPropagation(); setExpandedCategoryId(expandedCategoryId === cat.id ? null : cat.id) }}
-              style={{ display: 'flex', alignItems: 'center', color: 'var(--text-muted)', marginLeft: 1 }}
+              style={{ display: 'flex', alignItems: 'center', color: 'var(--text-3)', marginLeft: 1 }}
             >
               {expandedCategoryId === cat.id ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
             </span>
           )}
           <span
             onClick={e => { e.stopPropagation(); setOpenCategoryMenuId(isMenuOpen ? null : cat.id); setCategoryMenuMode('actions') }}
-            style={{ fontSize: 11, color: 'var(--text-muted)', marginLeft: 2, lineHeight: 1 }}
+            style={{ fontSize: 11, color: 'var(--text-3)', marginLeft: 2, lineHeight: 1 }}
           >
             ⋯
           </span>
         </button>
         {isMenuOpen && (
-          <div style={{ position: 'absolute', top: 'calc(100% + 4px)', left: 0, zIndex: 20, background: 'var(--bg-secondary)', border: '1px solid var(--border)', borderRadius: 9, padding: 4, minWidth: categoryMenuMode === 'picker' ? 180 : 150, maxHeight: 260, overflowY: 'auto', boxShadow: '0 8px 24px rgba(0,0,0,0.3)' }}>
+          <div style={{ position: 'absolute', top: 'calc(100% + 4px)', left: 0, zIndex: 20, background: 'var(--menu-bg)', border: '1px solid var(--border-subtle)', borderRadius: 9, padding: 4, minWidth: categoryMenuMode === 'picker' ? 180 : 150, maxHeight: 260, overflowY: 'auto', boxShadow: '0 8px 24px rgba(0,0,0,0.3)' }}>
             {categoryMenuMode === 'actions' ? (
               <>
                 <button
                   onClick={() => setCategoryMenuMode('picker')}
                   style={menuItemStyle}
-                  onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-tertiary)')}
+                  onMouseEnter={e => (e.currentTarget.style.background = 'var(--surface-2)')}
                   onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                 >
                   Move to category
@@ -313,7 +313,7 @@ function NotesPageContent() {
                   <button
                     onClick={() => handleMoveCategory(cat, null)}
                     style={menuItemStyle}
-                    onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-tertiary)')}
+                    onMouseEnter={e => (e.currentTarget.style.background = 'var(--surface-2)')}
                     onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                   >
                     Move to top level
@@ -321,8 +321,8 @@ function NotesPageContent() {
                 )}
                 <button
                   onClick={() => handleDeleteCategory(cat.id)}
-                  style={{ ...menuItemStyle, color: '#E24B4A' }}
-                  onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-tertiary)')}
+                  style={{ ...menuItemStyle, color: 'var(--note-danger)' }}
+                  onMouseEnter={e => (e.currentTarget.style.background = 'var(--surface-2)')}
                   onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                 >
                   Delete category
@@ -333,7 +333,7 @@ function NotesPageContent() {
                 <button
                   onClick={() => handleMoveCategory(cat, null)}
                   style={menuItemStyle}
-                  onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-tertiary)')}
+                  onMouseEnter={e => (e.currentTarget.style.background = 'var(--surface-2)')}
                   onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                 >
                   Top level
@@ -343,7 +343,7 @@ function NotesPageContent() {
                     <button
                       onClick={() => handleMoveCategory(cat, top.id)}
                       style={menuItemStyle}
-                      onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-tertiary)')}
+                      onMouseEnter={e => (e.currentTarget.style.background = 'var(--surface-2)')}
                       onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                     >
                       {top.name}
@@ -353,7 +353,7 @@ function NotesPageContent() {
                         key={child.id}
                         onClick={() => handleMoveCategory(cat, child.id)}
                         style={{ ...menuItemStyle, paddingLeft: 22 }}
-                        onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-tertiary)')}
+                        onMouseEnter={e => (e.currentTarget.style.background = 'var(--surface-2)')}
                         onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                       >
                         {child.name}
@@ -373,31 +373,31 @@ function NotesPageContent() {
 
   return (
     <>
-      <main className="flex-1 overflow-y-auto" style={{ fontFamily: FONT, backgroundColor: 'var(--bg)' }}>
+      <main className="flex-1 overflow-y-auto" style={{ fontFamily: FONT, backgroundColor: 'var(--panel)' }}>
         <div style={{ maxWidth: 1080, margin: '0 auto', padding: '48px 40px' }}>
 
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, marginBottom: 24 }}>
             <div style={{ position: 'relative', flex: 1, maxWidth: 420 }}>
-              <Search size={15} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', pointerEvents: 'none' }} />
+              <Search size={15} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-3)', pointerEvents: 'none' }} />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
                 placeholder="Search notes..."
-                style={{ width: '100%', boxSizing: 'border-box', borderRadius: 8, padding: '10px 16px 10px 36px', fontSize: 13.5, outline: 'none', backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border)', color: 'var(--text-primary)', fontFamily: FONT }}
+                style={{ width: '100%', boxSizing: 'border-box', borderRadius: 8, padding: '10px 16px 10px 36px', fontSize: 13.5, outline: 'none', backgroundColor: 'var(--surface)', border: '1px solid var(--border-subtle)', color: 'var(--text-1)', fontFamily: FONT }}
               />
             </div>
             <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
               <button
                 onClick={() => openCategoryModal()}
-                style={{ background: 'transparent', color: 'var(--text-primary)', border: '1px solid var(--border)', borderRadius: 8, padding: '9px 14px', fontSize: 13, fontWeight: 500, cursor: 'pointer', fontFamily: FONT }}
+                style={{ background: 'transparent', color: 'var(--text-1)', border: '1px solid var(--border-subtle)', borderRadius: 8, padding: '9px 14px', fontSize: 13, fontWeight: 500, cursor: 'pointer', fontFamily: FONT }}
               >
                 + New category
               </button>
               <button
                 onClick={handleNewNote}
                 disabled={creating}
-                style={{ backgroundColor: 'var(--text-primary)', color: 'var(--bg)', border: 'none', borderRadius: 8, padding: '9px 16px', fontSize: 13, fontWeight: 600, cursor: creating ? 'default' : 'pointer', opacity: creating ? 0.6 : 1, fontFamily: FONT }}
+                style={{ backgroundColor: 'var(--primary-bg)', color: 'var(--primary-text)', border: 'none', borderRadius: 8, padding: '9px 16px', fontSize: 13, fontWeight: 600, cursor: creating ? 'default' : 'pointer', opacity: creating ? 0.6 : 1, fontFamily: FONT }}
               >
                 + New note
               </button>
@@ -410,8 +410,8 @@ function NotesPageContent() {
                 <button
                   onClick={() => setActiveCategory('all')}
                   style={{
-                    background: activeCategory === 'all' ? 'var(--bg-tertiary)' : 'var(--bg-secondary)',
-                    color: 'var(--text-primary)', border: '1px solid var(--border)',
+                    background: activeCategory === 'all' ? 'var(--surface-2)' : 'var(--surface)',
+                    color: 'var(--text-1)', border: '1px solid var(--border-subtle)',
                     fontSize: 12, padding: '6px 13px', borderRadius: 999, cursor: 'pointer', fontFamily: FONT,
                   }}
                 >
@@ -422,20 +422,20 @@ function NotesPageContent() {
                 ))}
                 <button
                   onClick={() => openCategoryModal()}
-                  style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'transparent', border: '1px dashed var(--border)', color: 'var(--text-muted)', fontSize: 12, padding: '6px 13px', borderRadius: 999, cursor: 'pointer', fontFamily: FONT }}
+                  style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'transparent', border: '1px dashed var(--border-subtle)', color: 'var(--text-3)', fontSize: 12, padding: '6px 13px', borderRadius: 999, cursor: 'pointer', fontFamily: FONT }}
                 >
                   + Add category
                 </button>
               </div>
 
               {expandedCategoryId !== null && (
-                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', paddingLeft: 24, borderLeft: '2px solid var(--border)', marginLeft: 10 }}>
+                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', paddingLeft: 24, borderLeft: '2px solid var(--border-subtle)', marginLeft: 10 }}>
                   {categories.filter(c => c.parent_id === expandedCategoryId).map(subcat => (
                     <CategoryChip key={subcat.id} cat={subcat} small />
                   ))}
                   <button
                     onClick={() => openCategoryModal(expandedCategoryId)}
-                    style={{ display: 'flex', alignItems: 'center', gap: 5, background: 'transparent', border: '1px dashed var(--border)', color: 'var(--text-muted)', fontSize: 11, padding: '5px 11px', borderRadius: 999, cursor: 'pointer', fontFamily: FONT }}
+                    style={{ display: 'flex', alignItems: 'center', gap: 5, background: 'transparent', border: '1px dashed var(--border-subtle)', color: 'var(--text-3)', fontSize: 11, padding: '5px 11px', borderRadius: 999, cursor: 'pointer', fontFamily: FONT }}
                   >
                     + New subcategory
                   </button>
@@ -450,9 +450,9 @@ function NotesPageContent() {
                 style={{
                   width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center',
                   borderRadius: 8,
-                  border: '1px solid ' + (view === 'grid' ? 'var(--bg-tertiary)' : 'var(--border)'),
-                  backgroundColor: view === 'grid' ? 'var(--bg-tertiary)' : 'transparent',
-                  color: view === 'grid' ? 'var(--text-primary)' : 'var(--text-muted)',
+                  border: '1px solid ' + (view === 'grid' ? 'var(--surface-2)' : 'var(--border-subtle)'),
+                  backgroundColor: view === 'grid' ? 'var(--surface-2)' : 'transparent',
+                  color: view === 'grid' ? 'var(--text-1)' : 'var(--text-3)',
                   cursor: 'pointer',
                 }}
               >
@@ -464,9 +464,9 @@ function NotesPageContent() {
                 style={{
                   width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center',
                   borderRadius: 8,
-                  border: '1px solid ' + (view === 'list' ? 'var(--bg-tertiary)' : 'var(--border)'),
-                  backgroundColor: view === 'list' ? 'var(--bg-tertiary)' : 'transparent',
-                  color: view === 'list' ? 'var(--text-primary)' : 'var(--text-muted)',
+                  border: '1px solid ' + (view === 'list' ? 'var(--surface-2)' : 'var(--border-subtle)'),
+                  backgroundColor: view === 'list' ? 'var(--surface-2)' : 'transparent',
+                  color: view === 'list' ? 'var(--text-1)' : 'var(--text-3)',
                   cursor: 'pointer',
                 }}
               >
@@ -476,14 +476,14 @@ function NotesPageContent() {
           </div>
 
           {loading ? (
-            <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>Loading...</p>
+            <p style={{ color: 'var(--text-3)', fontSize: 14 }}>Loading...</p>
           ) : filtered.length === 0 ? (
-            <div style={{ border: '1px dashed var(--border)', borderRadius: 14, padding: '60px 20px', textAlign: 'center' }}>
-              <p style={{ color: 'var(--text-muted)', fontSize: 13.5, marginBottom: 14 }}>No notes yet</p>
+            <div style={{ border: '1px dashed var(--border-subtle)', borderRadius: 14, padding: '60px 20px', textAlign: 'center' }}>
+              <p style={{ color: 'var(--text-3)', fontSize: 13.5, marginBottom: 14 }}>No notes yet</p>
               <button
                 onClick={handleNewNote}
                 disabled={creating}
-                style={{ backgroundColor: 'var(--text-primary)', color: 'var(--bg)', border: 'none', borderRadius: 8, padding: '9px 16px', fontSize: 13, fontWeight: 600, cursor: creating ? 'default' : 'pointer', fontFamily: FONT }}
+                style={{ backgroundColor: 'var(--primary-bg)', color: 'var(--primary-text)', border: 'none', borderRadius: 8, padding: '9px 16px', fontSize: 13, fontWeight: 600, cursor: creating ? 'default' : 'pointer', fontFamily: FONT }}
               >
                 + New note
               </button>
@@ -495,51 +495,51 @@ function NotesPageContent() {
                   key={note.uuid}
                   onClick={() => router.push(`/notes/${note.uuid}`)}
                   className="flex items-center group"
-                  style={{ borderBottom: '1px solid var(--border)', padding: '12px 8px', gap: 12, cursor: 'pointer' }}
-                  onMouseEnter={e => { e.currentTarget.style.backgroundColor = 'var(--bg-secondary)' }}
+                  style={{ borderBottom: '1px solid var(--border-subtle)', padding: '12px 8px', gap: 12, cursor: 'pointer' }}
+                  onMouseEnter={e => { e.currentTarget.style.backgroundColor = 'var(--surface)' }}
                   onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'transparent' }}
                 >
-                  <div style={{ width: 28, height: 28, borderRadius: 8, background: '#1c1c1e', border: '1px solid rgba(255,255,255,0.07)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#888890" strokeWidth="2" strokeLinecap="round">
+                  <div style={{ width: 28, height: 28, borderRadius: 8, background: 'var(--note-icon-bg)', border: '1px solid var(--border-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--note-card-preview)" strokeWidth="2" strokeLinecap="round">
                       <rect x="4" y="2.5" width="16" height="19" rx="3" />
                       <line x1="8" y1="8" x2="16" y2="8" />
                       <line x1="8" y1="12" x2="16" y2="12" />
                       <line x1="8" y1="16" x2="12.5" y2="16" />
                     </svg>
                   </div>
-                  <div className="truncate" style={{ flex: 1, minWidth: 0, fontSize: 15, fontWeight: 600, color: '#eeede7' }}>
+                  <div className="truncate" style={{ flex: 1, minWidth: 0, fontSize: 15, fontWeight: 600, color: 'var(--text-1)' }}>
                     {note.title || 'Untitled'}
                   </div>
                   {note.category_name && (
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
                       <span style={{ width: 6, height: 6, borderRadius: '50%', background: note.category_color || '#888890', flexShrink: 0 }} />
-                      <span style={{ fontSize: 11, color: note.category_color || 'var(--text-muted)' }}>{note.category_name}</span>
+                      <span style={{ fontSize: 11, color: note.category_color || 'var(--text-3)' }}>{note.category_name}</span>
                     </div>
                   )}
-                  <div style={{ fontSize: 11.5, color: 'var(--text-muted)', flexShrink: 0, textAlign: 'right', minWidth: 60 }}>
+                  <div style={{ fontSize: 11.5, color: 'var(--text-3)', flexShrink: 0, textAlign: 'right', minWidth: 60 }}>
                     {timeAgo(note.updated_at)}
                   </div>
                   <div style={{ position: 'relative' }} ref={openNoteMenuId === note.uuid ? noteMenuRef : undefined}>
                     <button
                       onClick={e => { e.stopPropagation(); setMovingNoteId(null); setOpenNoteMenuId(openNoteMenuId === note.uuid ? null : note.uuid) }}
                       className="opacity-0 group-hover:opacity-100 transition-opacity"
-                      style={{ width: 26, height: 26, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 6, color: 'var(--text-muted)', background: 'transparent', border: 'none', cursor: 'pointer', flexShrink: 0 }}
-                      onMouseEnter={e => { e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.08)' }}
+                      style={{ width: 26, height: 26, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 6, color: 'var(--text-3)', background: 'transparent', border: 'none', cursor: 'pointer', flexShrink: 0 }}
+                      onMouseEnter={e => { e.currentTarget.style.backgroundColor = 'var(--hover)' }}
                       onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'transparent' }}
                     >
                       <MoreVertical size={15} />
                     </button>
                     {openNoteMenuId === note.uuid && (
-                      <div onClick={e => e.stopPropagation()} style={{ position: 'absolute', right: 0, top: 30, zIndex: 50, width: 160, borderRadius: 10, boxShadow: '0 8px 32px rgba(0,0,0,0.5)', padding: '4px 0', overflow: 'hidden', background: '#242428', border: '1px solid rgba(255,255,255,0.09)' }}>
+                      <div onClick={e => e.stopPropagation()} style={{ position: 'absolute', right: 0, top: 30, zIndex: 50, width: 160, borderRadius: 10, boxShadow: '0 8px 32px rgba(0,0,0,0.5)', padding: '4px 0', overflow: 'hidden', background: 'var(--menu-bg)', border: '1px solid var(--border-subtle)' }}>
                         {movingNoteId === note.uuid ? (
                           <>
-                            <button onClick={e => handleMoveNote(note, null, e)} style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '8px 12px', fontSize: 12.5, color: 'var(--text-secondary)', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left', fontFamily: FONT }} onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.06)')} onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+                            <button onClick={e => handleMoveNote(note, null, e)} style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '8px 12px', fontSize: 12.5, color: 'var(--text-2)', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left', fontFamily: FONT }} onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.06)')} onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
                               No category
                             </button>
                             {sortCategoriesForMove(categories).map(cat => (
-                              <button key={cat.id} onClick={e => handleMoveNote(note, cat.id, e)} style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: cat.depth > 0 ? '8px 12px 8px 28px' : '8px 12px', fontSize: 12.5, color: 'var(--text-secondary)', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left', fontFamily: FONT }} onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.06)')} onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+                              <button key={cat.id} onClick={e => handleMoveNote(note, cat.id, e)} style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: cat.depth > 0 ? '8px 12px 8px 28px' : '8px 12px', fontSize: 12.5, color: 'var(--text-2)', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left', fontFamily: FONT }} onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.06)')} onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
                                 {cat.depth > 0 && (
-                                  <span style={{ position: 'absolute', left: 16, top: 0, bottom: '50%', width: 10, borderLeft: '1px solid var(--border)', borderBottom: '1px solid var(--border)', borderRadius: '0 0 0 4px' }} />
+                                  <span style={{ position: 'absolute', left: 16, top: 0, bottom: '50%', width: 10, borderLeft: '1px solid var(--border-subtle)', borderBottom: '1px solid var(--border-subtle)', borderRadius: '0 0 0 4px' }} />
                                 )}
                                 <span style={{ width: 7, height: 7, borderRadius: '50%', background: cat.color, flexShrink: 0 }} />
                                 {cat.name}
@@ -548,10 +548,10 @@ function NotesPageContent() {
                           </>
                         ) : (
                           <>
-                            <button onClick={e => { e.stopPropagation(); setMovingNoteId(note.uuid) }} style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '8px 12px', fontSize: 12.5, color: 'var(--text-secondary)', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left', fontFamily: FONT }} onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.06)')} onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
-                              <Tag size={13} style={{ color: 'var(--text-muted)' }} /> Move
+                            <button onClick={e => { e.stopPropagation(); setMovingNoteId(note.uuid) }} style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '8px 12px', fontSize: 12.5, color: 'var(--text-2)', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left', fontFamily: FONT }} onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.06)')} onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+                              <Tag size={13} style={{ color: 'var(--text-3)' }} /> Move
                             </button>
-                            <button onClick={e => handleDeleteNote(note, e)} style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '8px 12px', fontSize: 12.5, color: '#E24B4A', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left', fontFamily: FONT }} onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.06)')} onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+                            <button onClick={e => handleDeleteNote(note, e)} style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '8px 12px', fontSize: 12.5, color: 'var(--note-danger)', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left', fontFamily: FONT }} onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.06)')} onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
                               <Trash2 size={13} /> Delete
                             </button>
                           </>
@@ -574,7 +574,7 @@ function NotesPageContent() {
                     className="group"
                     style={{
                       gridColumn: 'span ' + span.col, gridRow: 'span ' + span.row,
-                      background: '#1c1c1e', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 14,
+                      background: 'var(--note-card-bg)', border: '1px solid var(--border-subtle)', borderRadius: 14,
                       padding: 16, display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
                       cursor: 'pointer', minWidth: 0, position: 'relative',
                     }}
@@ -583,23 +583,23 @@ function NotesPageContent() {
                       <button
                         onClick={e => { e.stopPropagation(); setMovingNoteId(null); setOpenNoteMenuId(openNoteMenuId === note.uuid ? null : note.uuid) }}
                         className="opacity-0 group-hover:opacity-100 transition-opacity"
-                        style={{ width: 26, height: 26, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 6, color: 'var(--text-muted)', background: 'transparent', border: 'none', cursor: 'pointer', flexShrink: 0 }}
-                        onMouseEnter={e => { e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.08)' }}
+                        style={{ width: 26, height: 26, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 6, color: 'var(--text-3)', background: 'transparent', border: 'none', cursor: 'pointer', flexShrink: 0 }}
+                        onMouseEnter={e => { e.currentTarget.style.backgroundColor = 'var(--hover)' }}
                         onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'transparent' }}
                       >
                         <MoreVertical size={15} />
                       </button>
                       {openNoteMenuId === note.uuid && (
-                        <div onClick={e => e.stopPropagation()} style={{ position: 'absolute', right: 0, top: 30, zIndex: 50, width: 160, borderRadius: 10, boxShadow: '0 8px 32px rgba(0,0,0,0.5)', padding: '4px 0', overflow: 'hidden', background: '#242428', border: '1px solid rgba(255,255,255,0.09)' }}>
+                        <div onClick={e => e.stopPropagation()} style={{ position: 'absolute', right: 0, top: 30, zIndex: 50, width: 160, borderRadius: 10, boxShadow: '0 8px 32px rgba(0,0,0,0.5)', padding: '4px 0', overflow: 'hidden', background: 'var(--menu-bg)', border: '1px solid var(--border-subtle)' }}>
                           {movingNoteId === note.uuid ? (
                             <>
-                              <button onClick={e => handleMoveNote(note, null, e)} style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '8px 12px', fontSize: 12.5, color: 'var(--text-secondary)', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left', fontFamily: FONT }} onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.06)')} onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+                              <button onClick={e => handleMoveNote(note, null, e)} style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '8px 12px', fontSize: 12.5, color: 'var(--text-2)', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left', fontFamily: FONT }} onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.06)')} onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
                                 No category
                               </button>
                               {sortCategoriesForMove(categories).map(cat => (
-                                <button key={cat.id} onClick={e => handleMoveNote(note, cat.id, e)} style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: cat.depth > 0 ? '8px 12px 8px 28px' : '8px 12px', fontSize: 12.5, color: 'var(--text-secondary)', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left', fontFamily: FONT }} onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.06)')} onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+                                <button key={cat.id} onClick={e => handleMoveNote(note, cat.id, e)} style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: cat.depth > 0 ? '8px 12px 8px 28px' : '8px 12px', fontSize: 12.5, color: 'var(--text-2)', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left', fontFamily: FONT }} onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.06)')} onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
                                   {cat.depth > 0 && (
-                                    <span style={{ position: 'absolute', left: 16, top: 0, bottom: '50%', width: 10, borderLeft: '1px solid var(--border)', borderBottom: '1px solid var(--border)', borderRadius: '0 0 0 4px' }} />
+                                    <span style={{ position: 'absolute', left: 16, top: 0, bottom: '50%', width: 10, borderLeft: '1px solid var(--border-subtle)', borderBottom: '1px solid var(--border-subtle)', borderRadius: '0 0 0 4px' }} />
                                   )}
                                   <span style={{ width: 7, height: 7, borderRadius: '50%', background: cat.color, flexShrink: 0 }} />
                                   {cat.name}
@@ -608,10 +608,10 @@ function NotesPageContent() {
                             </>
                           ) : (
                             <>
-                              <button onClick={e => { e.stopPropagation(); setMovingNoteId(note.uuid) }} style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '8px 12px', fontSize: 12.5, color: 'var(--text-secondary)', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left', fontFamily: FONT }} onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.06)')} onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
-                                <Tag size={13} style={{ color: 'var(--text-muted)' }} /> Move
+                              <button onClick={e => { e.stopPropagation(); setMovingNoteId(note.uuid) }} style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '8px 12px', fontSize: 12.5, color: 'var(--text-2)', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left', fontFamily: FONT }} onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.06)')} onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+                                <Tag size={13} style={{ color: 'var(--text-3)' }} /> Move
                               </button>
-                              <button onClick={e => handleDeleteNote(note, e)} style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '8px 12px', fontSize: 12.5, color: '#E24B4A', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left', fontFamily: FONT }} onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.06)')} onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+                              <button onClick={e => handleDeleteNote(note, e)} style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '8px 12px', fontSize: 12.5, color: 'var(--note-danger)', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left', fontFamily: FONT }} onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.06)')} onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
                                 <Trash2 size={13} /> Delete
                               </button>
                             </>
@@ -623,22 +623,22 @@ function NotesPageContent() {
                       {note.category_name && (
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
                           <span style={{ width: 6, height: 6, borderRadius: '50%', background: note.category_color || '#888890', flexShrink: 0 }} />
-                          <span style={{ fontSize: 11, color: note.category_color || 'var(--text-muted)' }}>{note.category_name}</span>
+                          <span style={{ fontSize: 11, color: note.category_color || 'var(--text-3)' }}>{note.category_name}</span>
                         </div>
                       )}
-                      <div style={{ fontSize: span.col > 1 ? 16 : 14, fontWeight: 600, color: '#eeede7', marginBottom: wide ? 8 : 0, lineHeight: 1.3 }}>
+                      <div style={{ fontSize: span.col > 1 ? 16 : 14, fontWeight: 600, color: 'var(--text-1)', marginBottom: wide ? 8 : 0, lineHeight: 1.3 }}>
                         {note.title || 'Untitled'}
                       </div>
                       {wide && (
                         <div style={{
-                          fontSize: 13, color: '#888890', lineHeight: 1.55,
+                          fontSize: 13, color: 'var(--note-card-preview)', lineHeight: 1.55,
                           display: '-webkit-box', WebkitLineClamp: (span.row > 1 && span.col > 1) ? 3 : 2, WebkitBoxOrient: 'vertical', overflow: 'hidden',
                         }}>
                           {excerpt(note.content)}
                         </div>
                       )}
                     </div>
-                    <div style={{ fontSize: 11.5, color: '#555560' }}>{timeAgo(note.updated_at)}</div>
+                    <div style={{ fontSize: 11.5, color: 'var(--note-card-meta)' }}>{timeAgo(note.updated_at)}</div>
                   </div>
                 )
               })}
@@ -646,9 +646,9 @@ function NotesPageContent() {
                 onClick={handleNewNote}
                 disabled={creating}
                 style={{
-                  background: 'transparent', border: '1px dashed rgba(255,255,255,0.14)', borderRadius: 14,
+                  background: 'transparent', border: '1px dashed var(--note-tile-border)', borderRadius: 14,
                   display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: creating ? 'default' : 'pointer',
-                  color: '#555560', fontFamily: FONT,
+                  color: 'var(--note-card-meta)', fontFamily: FONT,
                 }}
               >
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
@@ -664,10 +664,10 @@ function NotesPageContent() {
 
       {showCategoryModal && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.55)' }} onClick={() => setShowCategoryModal(false)} />
-          <div style={{ position: 'relative', borderRadius: 14, width: 320, padding: '22px 22px 18px', zIndex: 10, background: 'var(--bg-secondary)', border: '1px solid var(--border)', fontFamily: FONT }}>
-            <h2 style={{ fontSize: 14, fontWeight: 600, marginBottom: 16, color: 'var(--text-primary)' }}>{newCategoryParentId !== null ? 'New subcategory' : 'New category'}</h2>
-            <label style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--text-muted)', display: 'block', marginBottom: 6 }}>Name</label>
+          <div style={{ position: 'absolute', inset: 0, background: 'var(--overlay)' }} onClick={() => setShowCategoryModal(false)} />
+          <div style={{ position: 'relative', borderRadius: 14, width: 320, padding: '22px 22px 18px', zIndex: 10, background: 'var(--menu-bg)', border: '1px solid var(--border-subtle)', fontFamily: FONT }}>
+            <h2 style={{ fontSize: 14, fontWeight: 600, marginBottom: 16, color: 'var(--text-1)' }}>{newCategoryParentId !== null ? 'New subcategory' : 'New category'}</h2>
+            <label style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--text-3)', display: 'block', marginBottom: 6 }}>Name</label>
             <input
               ref={categoryNameRef}
               type="text"
@@ -675,9 +675,9 @@ function NotesPageContent() {
               onChange={e => setNewCategoryName(e.target.value)}
               onKeyDown={e => { if (e.key === 'Enter') handleCreateCategory(); if (e.key === 'Escape') setShowCategoryModal(false) }}
               placeholder="e.g. Research"
-              style={{ width: '100%', borderRadius: 9, padding: '9px 12px', fontSize: 13.5, outline: 'none', background: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--text-primary)', fontFamily: FONT, boxSizing: 'border-box', marginBottom: 16 }}
+              style={{ width: '100%', borderRadius: 9, padding: '9px 12px', fontSize: 13.5, outline: 'none', background: 'var(--panel)', border: '1px solid var(--border-subtle)', color: 'var(--text-1)', fontFamily: FONT, boxSizing: 'border-box', marginBottom: 16 }}
             />
-            <label style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--text-muted)', display: 'block', marginBottom: 8 }}>Color</label>
+            <label style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--text-3)', display: 'block', marginBottom: 8 }}>Color</label>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 20 }}>
               {SWATCHES.map(color => (
                 <button
@@ -685,14 +685,14 @@ function NotesPageContent() {
                   onClick={() => setNewCategoryColor(color)}
                   style={{
                     width: 24, height: 24, borderRadius: '50%', background: color, cursor: 'pointer',
-                    border: newCategoryColor === color ? '2px solid var(--text-primary)' : '2px solid transparent',
+                    border: newCategoryColor === color ? '2px solid var(--text-1)' : '2px solid transparent',
                     padding: 0,
                   }}
                 />
               ))}
             </div>
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
-              <button onClick={() => setShowCategoryModal(false)} style={{ padding: '7px 14px', borderRadius: 8, fontSize: 13, fontWeight: 500, color: 'var(--text-muted)', background: 'transparent', border: 'none', cursor: 'pointer', fontFamily: FONT }}>Cancel</button>
+              <button onClick={() => setShowCategoryModal(false)} style={{ padding: '7px 14px', borderRadius: 8, fontSize: 13, fontWeight: 500, color: 'var(--text-3)', background: 'transparent', border: 'none', cursor: 'pointer', fontFamily: FONT }}>Cancel</button>
               <button onClick={handleCreateCategory} style={{ padding: '7px 14px', borderRadius: 8, fontSize: 13, fontWeight: 600, color: '#fff', background: '#6b5ce7', border: 'none', cursor: 'pointer', fontFamily: FONT }}>Create</button>
             </div>
           </div>

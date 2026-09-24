@@ -179,9 +179,9 @@ export default function NotesLayout({ children }: { children: React.ReactNode })
             <div
               onMouseDown={onDividerMouseDown}
               className="flex-shrink-0 flex items-center justify-center group"
-              style={{ width: '5px', cursor: 'col-resize', backgroundColor: 'var(--border)', transition: 'background 0.15s' }}
+              style={{ width: '5px', cursor: 'col-resize', backgroundColor: 'var(--border-subtle)', transition: 'background 0.15s' }}
               onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'rgba(107,92,231,0.5)')}
-              onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'var(--border)')}
+              onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'var(--border-subtle)')}
             />
 
             <div className="min-w-0 overflow-hidden flex flex-col" style={{ width: `${100 - leftWidth}%` }}>
@@ -195,30 +195,30 @@ export default function NotesLayout({ children }: { children: React.ReactNode })
       </div>
 
       {splitPickerOpen && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 60, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', paddingTop: '120px', backgroundColor: 'rgba(0,0,0,0.45)' }}>
-          <div ref={pickerRef} style={{ width: '520px', maxWidth: 'calc(100vw - 32px)', borderRadius: '12px', overflow: 'hidden', backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border)', boxShadow: '0 24px 64px rgba(0,0,0,0.6)' }}>
+        <div style={{ position: 'fixed', inset: 0, zIndex: 60, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', paddingTop: '120px', backgroundColor: 'var(--overlay-soft)' }}>
+          <div ref={pickerRef} style={{ width: '520px', maxWidth: 'calc(100vw - 32px)', borderRadius: '12px', overflow: 'hidden', backgroundColor: 'var(--menu-bg)', border: '1px solid var(--border-subtle)', boxShadow: '0 24px 64px rgba(0,0,0,0.6)' }}>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 16px', borderBottom: '1px solid var(--border)' }}>
-              <Search size={14} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 16px', borderBottom: '1px solid var(--border-subtle)' }}>
+              <Search size={14} style={{ color: 'var(--text-3)', flexShrink: 0 }} />
               <input
                 ref={searchRef}
                 type="text"
                 placeholder="Pick a doc or note for split view..."
                 value={splitQuery}
                 onChange={e => setSplitQuery(e.target.value)}
-                style={{ flex: 1, background: 'transparent', border: 'none', outline: 'none', fontSize: 14, color: 'var(--text-primary)' }}
+                style={{ flex: 1, background: 'transparent', border: 'none', outline: 'none', fontSize: 14, color: 'var(--text-1)' }}
               />
               {splitQuery && (
-                <button onClick={() => setSplitQuery('')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: 2, display: 'flex' }}>
+                <button onClick={() => setSplitQuery('')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', padding: 2, display: 'flex' }}>
                   <X size={12} />
                 </button>
               )}
             </div>
 
             <div style={{ maxHeight: '360px', overflowY: 'auto', padding: '6px 0' }}>
-              {splitLoading && <p style={{ padding: '16px', fontSize: 13, color: 'var(--text-muted)', textAlign: 'center' }}>Loading...</p>}
+              {splitLoading && <p style={{ padding: '16px', fontSize: 13, color: 'var(--text-3)', textAlign: 'center' }}>Loading...</p>}
               {!splitLoading && filteredItems.length === 0 && (
-                <p style={{ padding: '16px', fontSize: 13, color: 'var(--text-muted)', textAlign: 'center' }}>
+                <p style={{ padding: '16px', fontSize: 13, color: 'var(--text-3)', textAlign: 'center' }}>
                   {splitQuery ? `No docs or notes matching "${splitQuery}"` : 'No docs or notes found'}
                 </p>
               )}
@@ -227,26 +227,26 @@ export default function NotesLayout({ children }: { children: React.ReactNode })
                   key={item.type + '-' + item.uuid}
                   onClick={() => handlePickSplitItem(item)}
                   style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', padding: '9px 16px', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left', transition: 'background 0.1s' }}
-                  onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)')}
+                  onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--surface-2)')}
                   onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
                 >
                   {item.type === 'doc'
-                    ? <FileText size={14} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
-                    : <StickyNote size={14} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
+                    ? <FileText size={14} style={{ color: 'var(--text-3)', flexShrink: 0 }} />
+                    : <StickyNote size={14} style={{ color: 'var(--text-3)', flexShrink: 0 }} />
                   }
-                  <span style={{ flex: 1, fontSize: 13, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  <span style={{ flex: 1, fontSize: 13, color: 'var(--text-1)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {item.title || 'Untitled'}
                   </span>
-                  {item.type === 'doc' && item.folder_name && <span style={{ fontSize: 11, color: 'var(--text-muted)', flexShrink: 0 }}>{item.folder_name}</span>}
-                  {item.type === 'note' && item.category_name && <span style={{ fontSize: 11, color: 'var(--text-muted)', flexShrink: 0 }}>{item.category_name}</span>}
+                  {item.type === 'doc' && item.folder_name && <span style={{ fontSize: 11, color: 'var(--text-3)', flexShrink: 0 }}>{item.folder_name}</span>}
+                  {item.type === 'note' && item.category_name && <span style={{ fontSize: 11, color: 'var(--text-3)', flexShrink: 0 }}>{item.category_name}</span>}
                 </button>
               ))}
             </div>
 
-            <div style={{ padding: '8px 16px', borderTop: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 6 }}>
-              <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>Press</span>
-              <kbd style={{ fontSize: 10, padding: '2px 5px', borderRadius: 4, background: 'rgba(255,255,255,0.06)', border: '1px solid var(--border)', color: 'var(--text-muted)', fontFamily: 'monospace' }}>Esc</kbd>
-              <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>to cancel</span>
+            <div style={{ padding: '8px 16px', borderTop: '1px solid var(--border-subtle)', display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span style={{ fontSize: 11, color: 'var(--text-3)' }}>Press</span>
+              <kbd style={{ fontSize: 10, padding: '2px 5px', borderRadius: 4, background: 'var(--hover)', border: '1px solid var(--border-subtle)', color: 'var(--text-3)', fontFamily: 'monospace' }}>Esc</kbd>
+              <span style={{ fontSize: 11, color: 'var(--text-3)' }}>to cancel</span>
             </div>
           </div>
         </div>

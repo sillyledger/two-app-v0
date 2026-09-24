@@ -274,30 +274,30 @@ function MoveToCategoryModal({ categories, currentCategoryId, onMove, onClose }:
 }) {
   const ordered = sortCategoriesForMove(categories)
 
-  const onRowEnter = (e: React.MouseEvent<HTMLButtonElement>) => { e.currentTarget.style.backgroundColor = "var(--bg-tertiary)" }
+  const onRowEnter = (e: React.MouseEvent<HTMLButtonElement>) => { e.currentTarget.style.backgroundColor = "var(--surface-2)" }
   const onRowLeave = (e: React.MouseEvent<HTMLButtonElement>) => { e.currentTarget.style.backgroundColor = "transparent" }
 
   return (
-    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-      <div className="rounded-2xl p-4 w-80 shadow-2xl" style={{ backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border)" }}>
-        <h2 className="font-semibold text-base mb-3 px-1" style={{ color: "var(--text-primary)" }}>Move to category</h2>
+    <div className="fixed inset-0 flex items-center justify-center z-50" style={{ backgroundColor: "var(--overlay)" }}>
+      <div className="rounded-2xl p-4 w-80 shadow-2xl" style={{ backgroundColor: "var(--menu-bg)", border: "1px solid var(--border-subtle)" }}>
+        <h2 className="font-semibold text-base mb-3 px-1" style={{ color: "var(--text-1)" }}>Move to category</h2>
 
         <div className="flex flex-col gap-[1px] mb-2 max-h-64 overflow-y-auto">
           <button
             onClick={currentCategoryId === null ? undefined : () => onMove(null)}
             disabled={currentCategoryId === null}
             className="relative text-left flex items-center gap-2.5 px-2 py-1.5 rounded-lg text-sm transition-colors"
-            style={{ color: currentCategoryId === null ? "var(--text-muted)" : "var(--text-secondary)", cursor: currentCategoryId === null ? "default" : "pointer" }}
+            style={{ color: currentCategoryId === null ? "var(--text-3)" : "var(--text-2)", cursor: currentCategoryId === null ? "default" : "pointer" }}
             onMouseEnter={currentCategoryId === null ? undefined : onRowEnter}
             onMouseLeave={currentCategoryId === null ? undefined : onRowLeave}
           >
-            <span style={{ width: 7, height: 7, borderRadius: '50%', background: 'var(--text-muted)', flexShrink: 0 }} />
+            <span style={{ width: 7, height: 7, borderRadius: '50%', background: 'var(--text-3)', flexShrink: 0 }} />
             No category
-            {currentCategoryId === null && <span className="text-[10.5px] shrink-0 ml-1" style={{ color: "var(--text-muted)" }}>Current</span>}
+            {currentCategoryId === null && <span className="text-[10.5px] shrink-0 ml-1" style={{ color: "var(--text-3)" }}>Current</span>}
           </button>
 
           {ordered.length === 0 && (
-            <p className="text-sm px-2 py-4 text-center" style={{ color: "var(--text-muted)" }}>No categories yet.</p>
+            <p className="text-sm px-2 py-4 text-center" style={{ color: "var(--text-3)" }}>No categories yet.</p>
           )}
 
           {ordered.map(cat => {
@@ -308,26 +308,26 @@ function MoveToCategoryModal({ categories, currentCategoryId, onMove, onClose }:
                 onClick={isCurrent ? undefined : () => onMove(cat.id)}
                 disabled={isCurrent}
                 className="relative text-left flex items-center gap-2.5 px-2 py-1.5 rounded-lg text-sm transition-colors"
-                style={{ color: isCurrent ? "var(--text-muted)" : "var(--text-secondary)", cursor: isCurrent ? "default" : "pointer", paddingLeft: cat.depth > 0 ? 28 : 8 }}
+                style={{ color: isCurrent ? "var(--text-3)" : "var(--text-2)", cursor: isCurrent ? "default" : "pointer", paddingLeft: cat.depth > 0 ? 28 : 8 }}
                 onMouseEnter={isCurrent ? undefined : onRowEnter}
                 onMouseLeave={isCurrent ? undefined : onRowLeave}
               >
                 {cat.depth > 0 && (
                   <span
                     className="absolute"
-                    style={{ left: 16, top: 0, bottom: '50%', width: 10, borderLeft: '1px solid var(--border)', borderBottom: '1px solid var(--border)', borderRadius: '0 0 0 4px' }}
+                    style={{ left: 16, top: 0, bottom: '50%', width: 10, borderLeft: '1px solid var(--border-subtle)', borderBottom: '1px solid var(--border-subtle)', borderRadius: '0 0 0 4px' }}
                   />
                 )}
                 <span style={{ width: 7, height: 7, borderRadius: '50%', background: cat.color, flexShrink: 0 }} />
                 <span className="truncate">{cat.name}</span>
-                {isCurrent && <span className="text-[10.5px] shrink-0 ml-1" style={{ color: "var(--text-muted)" }}>Current</span>}
+                {isCurrent && <span className="text-[10.5px] shrink-0 ml-1" style={{ color: "var(--text-3)" }}>Current</span>}
               </button>
             )
           })}
         </div>
 
         <div className="flex justify-end pt-1">
-          <button onClick={onClose} className="px-4 py-2 text-sm" style={{ color: "var(--text-muted)" }}>Cancel</button>
+          <button onClick={onClose} className="px-4 py-2 text-sm" style={{ color: "var(--text-3)" }}>Cancel</button>
         </div>
       </div>
     </div>
@@ -388,21 +388,21 @@ export default function NoteTopbar({
     <>
       <header
         className="fixed top-0 z-40 h-[44px] flex items-center px-4 transition-all duration-200"
-        style={{ left: "var(--sidebar-width, 0px)", right: 0, backgroundColor: "var(--bg)" }}
+        style={{ left: "var(--sidebar-width, 0px)", right: 0, backgroundColor: "var(--panel)" }}
       >
         {/* LEFT — breadcrumb */}
         <div className="flex items-center gap-0.5 min-w-0 flex-1">
-          <Link href="/notes" className="text-[12px] font-medium truncate transition-colors" style={{ color: "var(--text-muted)" }}>
+          <Link href="/notes" className="text-[12px] font-medium truncate transition-colors" style={{ color: "var(--text-3)" }}>
             Notes
           </Link>
           {category && (
             <>
-              <span className="mx-1 text-[12px]" style={{ color: "var(--text-muted)" }}>/</span>
-              <span className="text-[12px] font-medium truncate" style={{ color: "var(--text-muted)" }}>{category.name}</span>
+              <span className="mx-1 text-[12px]" style={{ color: "var(--text-3)" }}>/</span>
+              <span className="text-[12px] font-medium truncate" style={{ color: "var(--text-3)" }}>{category.name}</span>
             </>
           )}
-          <span className="mx-1 text-[12px]" style={{ color: "var(--text-muted)" }}>/</span>
-          <span className="text-[12px] font-medium truncate max-w-[220px]" style={{ color: "var(--text-secondary)" }}>
+          <span className="mx-1 text-[12px]" style={{ color: "var(--text-3)" }}>/</span>
+          <span className="text-[12px] font-medium truncate max-w-[220px]" style={{ color: "var(--text-2)" }}>
             {noteTitle || "Untitled"}
           </span>
         </div>
@@ -415,13 +415,13 @@ export default function NoteTopbar({
             {saveStatus === "saving" && (
               <>
                 <span className="w-1.5 h-1.5 rounded-full bg-yellow-400/80 animate-pulse" />
-                <span className="text-[11px]" style={{ color: "var(--text-muted)" }}>Saving...</span>
+                <span className="text-[11px]" style={{ color: "var(--text-3)" }}>Saving...</span>
               </>
             )}
             {saveStatus === "saved" && (
               <>
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500/80" />
-                <span className="text-[11px]" style={{ color: "var(--text-muted)" }}>Saved</span>
+                <span className="text-[11px]" style={{ color: "var(--text-3)" }}>Saved</span>
               </>
             )}
           </div>
@@ -430,9 +430,9 @@ export default function NoteTopbar({
           {onMove && (
             <button onClick={openMoveModal} title="Move to category"
               className="flex items-center justify-center w-7 h-7 rounded-md transition-colors"
-              style={{ color: "var(--text-muted)" }}
-              onMouseEnter={e => { e.currentTarget.style.backgroundColor = "var(--bg-tertiary)"; e.currentTarget.style.color = "var(--text-primary)" }}
-              onMouseLeave={e => { e.currentTarget.style.backgroundColor = "transparent"; e.currentTarget.style.color = "var(--text-muted)" }}
+              style={{ color: "var(--text-3)" }}
+              onMouseEnter={e => { e.currentTarget.style.backgroundColor = "var(--surface-2)"; e.currentTarget.style.color = "var(--text-1)" }}
+              onMouseLeave={e => { e.currentTarget.style.backgroundColor = "transparent"; e.currentTarget.style.color = "var(--text-3)" }}
             ><FolderInput size={14} /></button>
           )}
 
@@ -443,11 +443,11 @@ export default function NoteTopbar({
               title={splitViewActive ? "Close split view" : "Open split view"}
               className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[12px] font-medium transition-colors"
               style={{
-                color: splitViewActive ? "var(--sb-active-color)" : "var(--text-muted)",
-                backgroundColor: splitViewActive ? "var(--sb-active-bg)" : "transparent",
+                color: splitViewActive ? "var(--nav-active-text)" : "var(--text-3)",
+                backgroundColor: splitViewActive ? "var(--nav-active-bg)" : "transparent",
               }}
-              onMouseEnter={e => { e.currentTarget.style.backgroundColor = "var(--bg-tertiary)"; e.currentTarget.style.color = "var(--text-primary)" }}
-              onMouseLeave={e => { e.currentTarget.style.backgroundColor = splitViewActive ? "var(--sb-active-bg)" : "transparent"; e.currentTarget.style.color = splitViewActive ? "var(--sb-active-color)" : "var(--text-muted)" }}
+              onMouseEnter={e => { e.currentTarget.style.backgroundColor = "var(--surface-2)"; e.currentTarget.style.color = "var(--text-1)" }}
+              onMouseLeave={e => { e.currentTarget.style.backgroundColor = splitViewActive ? "var(--nav-active-bg)" : "transparent"; e.currentTarget.style.color = splitViewActive ? "var(--nav-active-text)" : "var(--text-3)" }}
             >
               <Columns2 size={13} /> Split View
             </button>
@@ -457,27 +457,27 @@ export default function NoteTopbar({
           <div className="relative" ref={menuRef}>
             <button onClick={() => setMenuOpen(v => !v)}
               className="flex items-center justify-center w-7 h-7 rounded-md transition-colors"
-              style={{ color: "var(--text-muted)" }}
-              onMouseEnter={e => { e.currentTarget.style.backgroundColor = "var(--bg-tertiary)"; e.currentTarget.style.color = "var(--text-primary)" }}
-              onMouseLeave={e => { e.currentTarget.style.backgroundColor = "transparent"; e.currentTarget.style.color = "var(--text-muted)" }}
+              style={{ color: "var(--text-3)" }}
+              onMouseEnter={e => { e.currentTarget.style.backgroundColor = "var(--surface-2)"; e.currentTarget.style.color = "var(--text-1)" }}
+              onMouseLeave={e => { e.currentTarget.style.backgroundColor = "transparent"; e.currentTarget.style.color = "var(--text-3)" }}
             ><MoreVertical size={15} /></button>
 
             {menuOpen && (
-              <div className="absolute right-0 top-9 z-50 rounded-lg shadow-xl w-[210px] py-1 overflow-hidden" style={{ backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border)" }}>
+              <div className="absolute right-0 top-9 z-50 rounded-lg shadow-xl w-[210px] py-1 overflow-hidden" style={{ backgroundColor: "var(--menu-bg)", border: "1px solid var(--border-subtle)" }}>
 
                 {/* EXPORT */}
-                <p className="px-3 pt-2 pb-1 text-[10px] font-medium uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>Export</p>
-                <button onClick={handleExportMarkdown} className="flex items-center gap-2.5 w-full px-3 py-2 text-[12px] transition-colors" style={{ color: "var(--text-secondary)" }}
-                  onMouseEnter={e => (e.currentTarget.style.backgroundColor = "var(--bg-tertiary)")} onMouseLeave={e => (e.currentTarget.style.backgroundColor = "transparent")}
-                ><Download size={12} style={{ color: "var(--text-muted)" }} /> Export as Markdown</button>
-                <button onClick={handleExportPDF} className="flex items-center gap-2.5 w-full px-3 py-2 text-[12px] transition-colors" style={{ color: "var(--text-secondary)" }}
-                  onMouseEnter={e => (e.currentTarget.style.backgroundColor = "var(--bg-tertiary)")} onMouseLeave={e => (e.currentTarget.style.backgroundColor = "transparent")}
-                ><FileText size={12} style={{ color: "var(--text-muted)" }} /> Export as PDF</button>
+                <p className="px-3 pt-2 pb-1 text-[10px] font-medium uppercase tracking-wider" style={{ color: "var(--text-3)" }}>Export</p>
+                <button onClick={handleExportMarkdown} className="flex items-center gap-2.5 w-full px-3 py-2 text-[12px] transition-colors" style={{ color: "var(--text-2)" }}
+                  onMouseEnter={e => (e.currentTarget.style.backgroundColor = "var(--surface-2)")} onMouseLeave={e => (e.currentTarget.style.backgroundColor = "transparent")}
+                ><Download size={12} style={{ color: "var(--text-3)" }} /> Export as Markdown</button>
+                <button onClick={handleExportPDF} className="flex items-center gap-2.5 w-full px-3 py-2 text-[12px] transition-colors" style={{ color: "var(--text-2)" }}
+                  onMouseEnter={e => (e.currentTarget.style.backgroundColor = "var(--surface-2)")} onMouseLeave={e => (e.currentTarget.style.backgroundColor = "transparent")}
+                ><FileText size={12} style={{ color: "var(--text-3)" }} /> Export as PDF</button>
 
-                <div className="my-1 mx-2" style={{ borderTop: "1px solid var(--border)" }} />
+                <div className="my-1 mx-2" style={{ borderTop: "1px solid var(--border-subtle)" }} />
 
                 {/* DELETE */}
-                <button onClick={() => { setMenuOpen(false); setShowDeleteModal(true) }} className="flex items-center gap-2.5 w-full px-3 py-2 text-[12px] transition-colors" style={{ color: "#f87171" }}
+                <button onClick={() => { setMenuOpen(false); setShowDeleteModal(true) }} className="flex items-center gap-2.5 w-full px-3 py-2 text-[12px] transition-colors" style={{ color: "var(--danger)" }}
                   onMouseEnter={e => (e.currentTarget.style.backgroundColor = "rgba(239,68,68,0.08)")} onMouseLeave={e => (e.currentTarget.style.backgroundColor = "transparent")}
                 ><Trash2 size={12} /> Delete note</button>
               </div>
@@ -488,7 +488,7 @@ export default function NoteTopbar({
 
       {/* Move toast */}
       {moveToast && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 rounded-lg px-4 py-2 text-[12px] shadow-xl" style={{ backgroundColor: "var(--bg-tertiary)", border: "1px solid var(--border)", color: "var(--text-primary)" }}>
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 rounded-lg px-4 py-2 text-[12px] shadow-xl" style={{ backgroundColor: "var(--menu-bg-2)", border: "1px solid var(--border-subtle)", color: "var(--text-1)" }}>
           Note moved
         </div>
       )}
@@ -506,13 +506,13 @@ export default function NoteTopbar({
       {/* Delete modal */}
       {showDeleteModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div className="absolute inset-0 bg-black/50 backdrop-blur-[2px]" onClick={() => setShowDeleteModal(false)} />
-          <div className="relative rounded-xl shadow-2xl w-[320px] p-5 z-10" style={{ backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border)" }}>
-            <h2 className="text-[14px] font-semibold mb-1" style={{ color: "var(--text-primary)" }}>Delete note</h2>
-            <p className="text-[12px] mb-5" style={{ color: "var(--text-muted)" }}>This note will be permanently deleted. This cannot be undone.</p>
+          <div className="absolute inset-0 backdrop-blur-[2px]" style={{ backgroundColor: "var(--overlay-soft)" }} onClick={() => setShowDeleteModal(false)} />
+          <div className="relative rounded-xl shadow-2xl w-[320px] p-5 z-10" style={{ backgroundColor: "var(--menu-bg)", border: "1px solid var(--border-subtle)" }}>
+            <h2 className="text-[14px] font-semibold mb-1" style={{ color: "var(--text-1)" }}>Delete note</h2>
+            <p className="text-[12px] mb-5" style={{ color: "var(--text-3)" }}>This note will be permanently deleted. This cannot be undone.</p>
             <div className="flex justify-end gap-2">
-              <button onClick={() => setShowDeleteModal(false)} className="px-3 py-1.5 rounded-lg text-[12px] font-medium transition-colors" style={{ color: "var(--text-muted)" }}
-                onMouseEnter={e => (e.currentTarget.style.backgroundColor = "var(--bg-tertiary)")} onMouseLeave={e => (e.currentTarget.style.backgroundColor = "transparent")}
+              <button onClick={() => setShowDeleteModal(false)} className="px-3 py-1.5 rounded-lg text-[12px] font-medium transition-colors" style={{ color: "var(--text-3)" }}
+                onMouseEnter={e => (e.currentTarget.style.backgroundColor = "var(--surface-2)")} onMouseLeave={e => (e.currentTarget.style.backgroundColor = "transparent")}
               >Cancel</button>
               <button onClick={() => { setShowDeleteModal(false); onDelete?.() }} className="px-3 py-1.5 rounded-lg text-[12px] font-medium bg-red-500/90 text-white hover:bg-red-500 transition-colors">
                 Delete

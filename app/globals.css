@@ -115,6 +115,14 @@
   --hl-variable: #9cdcfe;
   --hl-meta: #9b9b9b;
   --hl-deletion: #f44747;
+
+  /* Notes scoped tokens: dark values match the original hardcoded colors exactly */
+  --note-card-bg: #1c1c1e;
+  --note-card-preview: #888890;
+  --note-card-meta: #555560;
+  --note-icon-bg: #1c1c1e;
+  --note-tile-border: rgba(255,255,255,0.14);
+  --note-danger: #E24B4A;
 }
 
 html.light {
@@ -227,6 +235,13 @@ html.light {
   --hl-variable: #0550AE;
   --hl-meta: #6E7781;
   --hl-deletion: #CF222E;
+
+  --note-card-bg: #FFFFFF;
+  --note-card-preview: #5C5F66;
+  --note-card-meta: #8A8E96;
+  --note-icon-bg: #F0F0F2;
+  --note-tile-border: rgba(15,15,25,0.14);
+  --note-danger: #C93C3C;
 }
 
 /* ── App base ── */

@@ -189,14 +189,14 @@ export default function NotePage() {
   if (notFound) return null
 
   if (!note) return (
-    <main className="flex-1 overflow-y-auto" style={{ fontFamily: FONT, backgroundColor: 'var(--bg)' }}>
+    <main className="flex-1 overflow-y-auto" style={{ fontFamily: FONT, backgroundColor: 'var(--panel)' }}>
       <div style={{ maxWidth: 800, margin: '0 auto', padding: '32px 40px 120px' }}>
-        <div className="h-4 w-20 rounded-md animate-pulse mb-8" style={{ backgroundColor: 'var(--bg-tertiary)' }} />
-        <div className="h-10 w-2/3 rounded-lg mb-8 animate-pulse" style={{ backgroundColor: 'var(--bg-tertiary)' }} />
+        <div className="h-4 w-20 rounded-md animate-pulse mb-8" style={{ backgroundColor: 'var(--surface-2)' }} />
+        <div className="h-10 w-2/3 rounded-lg mb-8 animate-pulse" style={{ backgroundColor: 'var(--surface-2)' }} />
         <div className="flex flex-col gap-3">
-          <div className="h-4 w-full rounded animate-pulse" style={{ backgroundColor: 'var(--bg-tertiary)' }} />
-          <div className="h-4 w-5/6 rounded animate-pulse" style={{ backgroundColor: 'var(--bg-tertiary)' }} />
-          <div className="h-4 w-full rounded animate-pulse" style={{ backgroundColor: 'var(--bg-tertiary)' }} />
+          <div className="h-4 w-full rounded animate-pulse" style={{ backgroundColor: 'var(--surface-2)' }} />
+          <div className="h-4 w-5/6 rounded animate-pulse" style={{ backgroundColor: 'var(--surface-2)' }} />
+          <div className="h-4 w-full rounded animate-pulse" style={{ backgroundColor: 'var(--surface-2)' }} />
         </div>
       </div>
     </main>
@@ -216,7 +216,7 @@ export default function NotePage() {
         allCategories={categories}
         onMove={handleMoveNote}
       />
-      <main className="flex-1 overflow-y-auto" style={{ fontFamily: FONT, backgroundColor: 'var(--bg)', paddingTop: '80px' }}>
+      <main className="flex-1 overflow-y-auto" style={{ fontFamily: FONT, backgroundColor: 'var(--panel)', paddingTop: '80px' }}>
         <div style={{ maxWidth: 800, margin: '0 auto', padding: '64px 40px 120px' }}>
 
           <input
@@ -229,7 +229,7 @@ export default function NotePage() {
               display: 'block', width: '100%', marginBottom: 24,
               background: 'transparent', border: 'none', outline: 'none',
               fontSize: '2.375rem', fontWeight: 700, lineHeight: 1.2, letterSpacing: '-0.025em',
-              color: 'var(--text-primary)', fontFamily: FONT,
+              color: 'var(--text-1)', fontFamily: FONT,
             }}
           />
 

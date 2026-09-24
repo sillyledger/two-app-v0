@@ -207,7 +207,7 @@ export default function FoldersPage() {
   )
 
   return (
-    <div className="flex h-screen overflow-hidden" style={{ backgroundColor: "var(--bg)" }}>
+    <div className="flex h-screen overflow-hidden" style={{ backgroundColor: "var(--panel)" }}>
       {sidebarReady && <Sidebar collapsed={collapsed} onToggle={() => setCollapsed(v => !v)} />}
 
       <main className="flex-1 overflow-y-auto transition-all duration-200">
@@ -215,20 +215,20 @@ export default function FoldersPage() {
 
           <div className="flex items-center justify-between mb-6 gap-4">
             <div className="relative flex-1" style={{ maxWidth: 420 }}>
-              <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: "var(--text-muted)" }} />
+              <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: "var(--text-3)" }} />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
                 placeholder="Search folders..."
-                className="w-full rounded-lg pl-9 pr-4 py-2.5 text-sm outline-none placeholder-[var(--text-muted)]"
-                style={{ backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border)", color: "var(--text-primary)" }}
+                className="w-full rounded-lg pl-9 pr-4 py-2.5 text-sm outline-none placeholder-[var(--text-3)]"
+                style={{ backgroundColor: "var(--surface)", border: "1px solid var(--border-subtle)", color: "var(--text-1)" }}
               />
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: "8px", flexShrink: 0 }}>
               <button
                 onClick={openCreateModal}
-                style={{ ...btnBase, backgroundColor: "var(--text-primary)", color: "var(--bg)", border: "1px solid transparent" }}
+                style={{ ...btnBase, backgroundColor: "var(--primary-bg)", color: "var(--primary-text)", border: "1px solid transparent" }}
                 onMouseEnter={e => (e.currentTarget.style.opacity = "0.85")}
                 onMouseLeave={e => (e.currentTarget.style.opacity = "1")}
               >
@@ -241,14 +241,14 @@ export default function FoldersPage() {
           {loading ? (
             <div className="grid grid-cols-4 gap-4">
               {Array.from({ length: 8 }).map((_, i) => (
-                <div key={i} className="h-40 rounded-xl animate-pulse" style={{ backgroundColor: "var(--bg-tertiary)" }} />
+                <div key={i} className="h-40 rounded-xl animate-pulse" style={{ backgroundColor: "var(--surface-2)" }} />
               ))}
             </div>
           ) : (
             <>
-              <p className="text-sm mb-3" style={{ color: "var(--text-muted)" }}>All folders · {filteredFolders.length}</p>
+              <p className="text-sm mb-3" style={{ color: "var(--text-3)" }}>All folders · {filteredFolders.length}</p>
               {filteredFolders.length === 0 ? (
-                <div className="flex flex-col items-center justify-center h-64" style={{ color: "var(--text-muted)" }}>
+                <div className="flex flex-col items-center justify-center h-64" style={{ color: "var(--text-3)" }}>
                   <p className="text-base font-medium mb-1">
                     {trimmedQuery ? "No folders match your search" : "No folders yet"}
                   </p>
@@ -268,20 +268,20 @@ export default function FoldersPage() {
 
       {/* Create folder modal */}
       {createModalOpen && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-          <div className="rounded-2xl p-6 w-80 shadow-2xl" style={{ backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border)" }}>
-            <h2 className="font-semibold text-base mb-4" style={{ color: "var(--text-primary)" }}>New folder</h2>
+        <div className="fixed inset-0 flex items-center justify-center z-50" style={{ backgroundColor: "var(--overlay)" }}>
+          <div className="rounded-2xl p-6 w-80 shadow-2xl" style={{ backgroundColor: "var(--menu-bg)", border: "1px solid var(--border-subtle)" }}>
+            <h2 className="font-semibold text-base mb-4" style={{ color: "var(--text-1)" }}>New folder</h2>
             <input
               autoFocus
               value={newFolderName}
               onChange={e => setNewFolderName(e.target.value)}
               onKeyDown={e => { if (e.key === "Enter") handleCreateFolder(); if (e.key === "Escape") setCreateModalOpen(false) }}
               className="w-full rounded-lg px-3 py-2 text-sm outline-none mb-4"
-              style={{ backgroundColor: "var(--bg-tertiary)", border: "1px solid var(--border)", color: "var(--text-primary)" }}
+              style={{ backgroundColor: "var(--surface-2)", border: "1px solid var(--border-subtle)", color: "var(--text-1)" }}
             />
             <div className="flex gap-2 justify-end">
-              <button onClick={() => setCreateModalOpen(false)} className="px-4 py-2 text-sm" style={{ color: "var(--text-muted)" }}>Cancel</button>
-              <button onClick={handleCreateFolder} className="px-4 py-2 text-sm rounded-lg" style={{ backgroundColor: "var(--bg-tertiary)", color: "var(--text-primary)" }}>Create</button>
+              <button onClick={() => setCreateModalOpen(false)} className="px-4 py-2 text-sm" style={{ color: "var(--text-3)" }}>Cancel</button>
+              <button onClick={handleCreateFolder} className="px-4 py-2 text-sm rounded-lg" style={{ backgroundColor: "var(--surface-2)", color: "var(--text-1)" }}>Create</button>
             </div>
           </div>
         </div>

@@ -340,7 +340,7 @@ export default function FolderPage() {
   }
 
   return (
-    <div className="flex h-screen overflow-hidden" style={{ backgroundColor: "var(--bg)" }}>
+    <div className="flex h-screen overflow-hidden" style={{ backgroundColor: "var(--panel)" }}>
       <Sidebar collapsed={collapsed} onToggle={() => setCollapsed((v) => !v)} />
 
       <main className="flex-1 overflow-y-auto">
@@ -348,11 +348,11 @@ export default function FolderPage() {
 
           {/* Breadcrumb */}
           {folder?.path && folder.path.length > 0 && (
-            <div className="flex items-center flex-wrap gap-1 mb-3 text-[12px]" style={{ color: "var(--text-muted)" }}>
+            <div className="flex items-center flex-wrap gap-1 mb-3 text-[12px]" style={{ color: "var(--text-3)" }}>
               <button onClick={() => {
                 const isSharedContext = folder?.workspace_id && folder.workspace_id !== myWorkspaceId
                 router.push(isSharedContext ? `/workspaces/${folder!.workspace_id}` : "/folders")
-              }} className="transition-colors" style={{ color: "var(--text-muted)" }} onMouseEnter={e => (e.currentTarget.style.color = "var(--text-primary)")} onMouseLeave={e => (e.currentTarget.style.color = "var(--text-muted)")}>
+              }} className="transition-colors" style={{ color: "var(--text-3)" }} onMouseEnter={e => (e.currentTarget.style.color = "var(--text-1)")} onMouseLeave={e => (e.currentTarget.style.color = "var(--text-3)")}>
                 Folders
               </button>
               {folder.path.map((crumb, i) => {
@@ -361,9 +361,9 @@ export default function FolderPage() {
                   <span key={crumb.id} className="flex items-center gap-1">
                     <ChevronRight size={12} />
                     {isLast ? (
-                      <span className="font-semibold" style={{ color: "var(--text-primary)" }}>{crumb.name}</span>
+                      <span className="font-semibold" style={{ color: "var(--text-1)" }}>{crumb.name}</span>
                     ) : (
-                      <button onClick={() => router.push(`/folders/${crumb.id}?name=${encodeURIComponent(crumb.name)}`)} className="transition-colors" style={{ color: "var(--text-muted)" }} onMouseEnter={e => (e.currentTarget.style.color = "var(--text-primary)")} onMouseLeave={e => (e.currentTarget.style.color = "var(--text-muted)")}>
+                      <button onClick={() => router.push(`/folders/${crumb.id}?name=${encodeURIComponent(crumb.name)}`)} className="transition-colors" style={{ color: "var(--text-3)" }} onMouseEnter={e => (e.currentTarget.style.color = "var(--text-1)")} onMouseLeave={e => (e.currentTarget.style.color = "var(--text-3)")}>
                         {crumb.name}
                       </button>
                     )}
@@ -376,11 +376,11 @@ export default function FolderPage() {
           {/* Header */}
           <div className="flex items-center justify-between mb-8">
             <div className="flex items-center gap-3">
-              <Folder size={18} style={{ color: "var(--text-muted)" }} />
-              <h1 className="text-xl font-semibold" style={{ color: "var(--text-primary)" }}>
+              <Folder size={18} style={{ color: "var(--text-3)" }} />
+              <h1 className="text-xl font-semibold" style={{ color: "var(--text-1)" }}>
                 {folder?.name ?? folderNameFromUrl}
               </h1>
-              <span className="text-[12px]" style={{ color: "var(--text-muted)" }}>
+              <span className="text-[12px]" style={{ color: "var(--text-3)" }}>
                 {folder?.doc_count !== undefined ? Number(folder.doc_count) || 0 : docs.length} docs
               </span>
             </div>
@@ -389,9 +389,9 @@ export default function FolderPage() {
               disabled={creating}
               className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-opacity"
               style={{
-                backgroundColor: "var(--text-primary)",
-                border: "1px solid var(--border)",
-                color: "var(--bg)",
+                backgroundColor: "var(--primary-bg)",
+                border: "1px solid var(--border-subtle)",
+                color: "var(--primary-text)",
               }}
               onMouseEnter={e => (e.currentTarget.style.opacity = "0.85")}
               onMouseLeave={e => (e.currentTarget.style.opacity = "1")}
@@ -406,14 +406,14 @@ export default function FolderPage() {
               <button
                 onClick={() => setView("grid")}
                 title="Grid view"
-                style={{ width: "32px", height: "32px", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "8px", border: "1px solid " + (view === "grid" ? "var(--text-primary)" : "var(--border)"), backgroundColor: view === "grid" ? "var(--bg-tertiary)" : "transparent", color: view === "grid" ? "var(--text-primary)" : "var(--text-muted)", cursor: "pointer", transition: "all 0.15s" }}
+                style={{ width: "32px", height: "32px", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "8px", border: "1px solid " + (view === "grid" ? "var(--text-1)" : "var(--border-subtle)"), backgroundColor: view === "grid" ? "var(--surface-2)" : "transparent", color: view === "grid" ? "var(--text-1)" : "var(--text-3)", cursor: "pointer", transition: "all 0.15s" }}
               >
                 <LayoutGrid size={15} />
               </button>
               <button
                 onClick={() => setView("list")}
                 title="List view"
-                style={{ width: "32px", height: "32px", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "8px", border: "1px solid " + (view === "list" ? "var(--text-primary)" : "var(--border)"), backgroundColor: view === "list" ? "var(--bg-tertiary)" : "transparent", color: view === "list" ? "var(--text-primary)" : "var(--text-muted)", cursor: "pointer", transition: "all 0.15s" }}
+                style={{ width: "32px", height: "32px", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "8px", border: "1px solid " + (view === "list" ? "var(--text-1)" : "var(--border-subtle)"), backgroundColor: view === "list" ? "var(--surface-2)" : "transparent", color: view === "list" ? "var(--text-1)" : "var(--text-3)", cursor: "pointer", transition: "all 0.15s" }}
               >
                 <List size={15} />
               </button>
@@ -422,7 +422,7 @@ export default function FolderPage() {
 
           {/* Subfolders */}
           <div className="mb-6">
-            <p className="text-[12px] mb-3" style={{ color: "var(--text-muted)" }}>Folders · {subfolders.length}</p>
+            <p className="text-[12px] mb-3" style={{ color: "var(--text-3)" }}>Folders · {subfolders.length}</p>
             <div className="flex flex-wrap gap-2">
               {subfolders.map((sub, i) => {
                 const subDocCount = Number(sub.doc_count) || 0
@@ -434,19 +434,19 @@ export default function FolderPage() {
                     tabIndex={0}
                     onClick={() => router.push(`/folders/${sub.id}?name=${encodeURIComponent(sub.name)}`)}
                     className="group flex items-center gap-2 rounded-full transition-colors cursor-pointer"
-                    style={{ height: "34px", padding: "0 6px 0 10px", backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border)" }}
-                    onMouseEnter={e => (e.currentTarget.style.borderColor = "var(--text-muted)")}
-                    onMouseLeave={e => (e.currentTarget.style.borderColor = "var(--border)")}
+                    style={{ height: "34px", padding: "0 6px 0 10px", backgroundColor: "var(--surface)", border: "1px solid var(--border-subtle)" }}
+                    onMouseEnter={e => (e.currentTarget.style.borderColor = "var(--text-3)")}
+                    onMouseLeave={e => (e.currentTarget.style.borderColor = "var(--border-subtle)")}
                   >
                     <span style={{ width: "14px", height: "14px", borderRadius: "4px", backgroundColor: getAccent(i), flexShrink: 0 }} />
-                    <span className="text-[13px]" style={{ color: "var(--text-primary)" }}>{sub.name}</span>
-                    <span className="text-[11px]" style={{ color: "var(--text-muted)" }}>{subDocCount}</span>
+                    <span className="text-[13px]" style={{ color: "var(--text-1)" }}>{sub.name}</span>
+                    <span className="text-[11px]" style={{ color: "var(--text-3)" }}>{subDocCount}</span>
                     <div className="relative" ref={isSubMenuOpen ? menuRef : null}>
                       <button
                         onClick={e => { e.stopPropagation(); setOpenMenuId(isSubMenuOpen ? null : sub.id) }}
                         title="More options"
                         className="transition-opacity"
-                        style={{ color: "var(--text-muted)", display: "flex", alignItems: "center", justifyContent: "center", width: "22px", height: "22px", borderRadius: "999px", opacity: isSubMenuOpen ? 1 : 0.4 }}
+                        style={{ color: "var(--text-3)", display: "flex", alignItems: "center", justifyContent: "center", width: "22px", height: "22px", borderRadius: "999px", opacity: isSubMenuOpen ? 1 : 0.4 }}
                         onMouseEnter={e => (e.currentTarget.style.opacity = "1")}
                         onMouseLeave={e => (e.currentTarget.style.opacity = isSubMenuOpen ? "1" : "0.4")}
                       >
@@ -458,17 +458,17 @@ export default function FolderPage() {
                             position: "absolute", right: 0, top: 26, zIndex: 50,
                             borderRadius: 10, boxShadow: "0 8px 32px rgba(0,0,0,0.5)",
                             width: 130, padding: "4px 0", overflow: "hidden",
-                            background: "#242428", border: "1px solid rgba(255,255,255,0.09)",
+                            background: "var(--menu-bg)", border: "1px solid var(--border-subtle)",
                           }}
                         >
                           <button
                             onClick={e => handleOpenMoveSubfolder(sub, e)}
                             style={{
                               display: "flex", alignItems: "center", gap: 8, width: "100%", padding: "8px 12px",
-                              fontSize: 13, color: "var(--text-muted)", background: "transparent", border: "none",
+                              fontSize: 13, color: "var(--text-3)", background: "transparent", border: "none",
                               cursor: "pointer", textAlign: "left",
                             }}
-                            onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.06)")}
+                            onMouseEnter={e => (e.currentTarget.style.background = "var(--hover)")}
                             onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
                           >
                             <FolderInput size={12} /> Move to folder
@@ -477,10 +477,10 @@ export default function FolderPage() {
                             onClick={e => handleMoveToTopLevel(sub, e)}
                             style={{
                               display: "flex", alignItems: "center", gap: 8, width: "100%", padding: "8px 12px",
-                              fontSize: 13, color: "var(--text-muted)", background: "transparent", border: "none",
+                              fontSize: 13, color: "var(--text-3)", background: "transparent", border: "none",
                               cursor: "pointer", textAlign: "left",
                             }}
-                            onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.06)")}
+                            onMouseEnter={e => (e.currentTarget.style.background = "var(--hover)")}
                             onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
                           >
                             <FolderInput size={12} /> Move to top level
@@ -489,10 +489,10 @@ export default function FolderPage() {
                             onClick={e => { setOpenMenuId(null); handleDeleteSubfolder(sub, e) }}
                             style={{
                               display: "flex", alignItems: "center", gap: 8, width: "100%", padding: "8px 12px",
-                              fontSize: 13, color: "#f87171", background: "transparent", border: "none",
+                              fontSize: 13, color: "var(--danger)", background: "transparent", border: "none",
                               cursor: "pointer", textAlign: "left",
                             }}
-                            onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.06)")}
+                            onMouseEnter={e => (e.currentTarget.style.background = "var(--hover)")}
                             onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
                           >
                             <Trash2 size={12} /> Delete
@@ -506,9 +506,9 @@ export default function FolderPage() {
               <button
                 onClick={() => { setNewSubfolderName(""); setNewSubfolderModalOpen(true) }}
                 className="flex items-center gap-1.5 rounded-full transition-colors"
-                style={{ height: "34px", padding: "0 14px", border: "1px dashed var(--border)", backgroundColor: "transparent", color: "var(--text-muted)" }}
-                onMouseEnter={e => (e.currentTarget.style.color = "var(--text-primary)")}
-                onMouseLeave={e => (e.currentTarget.style.color = "var(--text-muted)")}
+                style={{ height: "34px", padding: "0 14px", border: "1px dashed var(--border-subtle)", backgroundColor: "transparent", color: "var(--text-3)" }}
+                onMouseEnter={e => (e.currentTarget.style.color = "var(--text-1)")}
+                onMouseLeave={e => (e.currentTarget.style.color = "var(--text-3)")}
               >
                 <Plus size={13} />
                 New subfolder
@@ -516,25 +516,25 @@ export default function FolderPage() {
             </div>
           </div>
 
-          <div className="mb-7" style={{ borderTop: "1px solid var(--border)" }} />
+          <div className="mb-7" style={{ borderTop: "1px solid var(--border-subtle)" }} />
 
           {/* Doc list */}
           {loading ? (
             <div className="grid grid-cols-4 gap-4">
               {Array.from({ length: 8 }).map((_, i) => (
-                <div key={i} className="h-52 rounded-xl animate-pulse" style={{ backgroundColor: "var(--bg-tertiary)" }} />
+                <div key={i} className="h-52 rounded-xl animate-pulse" style={{ backgroundColor: "var(--surface-2)" }} />
               ))}
             </div>
           ) : docs.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-64" style={{ color: "var(--text-muted)" }}>
-              <Folder size={36} className="mb-3" style={{ color: "var(--text-muted)" }} />
-              <p className="text-[15px] font-medium mb-1" style={{ color: "var(--text-secondary)" }}>No docs in this folder</p>
-              <p className="text-[13px]" style={{ color: "var(--text-muted)" }}>Click New Doc to get started</p>
+            <div className="flex flex-col items-center justify-center h-64" style={{ color: "var(--text-3)" }}>
+              <Folder size={36} className="mb-3" style={{ color: "var(--text-3)" }} />
+              <p className="text-[15px] font-medium mb-1" style={{ color: "var(--text-2)" }}>No docs in this folder</p>
+              <p className="text-[13px]" style={{ color: "var(--text-3)" }}>Click New Doc to get started</p>
             </div>
           ) : (
             <>
               {view === "list" && (
-                <div style={{ display: "flex", alignItems: "center", gap: 16, padding: "0 20px 8px", fontSize: 11, color: "var(--text-muted)" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 16, padding: "0 20px 8px", fontSize: 11, color: "var(--text-3)" }}>
                   <div style={{ width: 28 }} />
                   <span style={{ flex: 1 }}>Name</span>
                   <span>Edited</span>
@@ -550,7 +550,7 @@ export default function FolderPage() {
                     onClick={e => handleToggleFavorite(doc, e)}
                     title={doc.is_starred ? "Remove from favorites" : "Add to favorites"}
                     className="transition-opacity"
-                    style={{ color: doc.is_starred ? "#EF9F27" : "var(--text-muted)", opacity: doc.is_starred ? 1 : 0 }}
+                    style={{ color: doc.is_starred ? "#EF9F27" : "var(--text-3)", opacity: doc.is_starred ? 1 : 0 }}
                     onMouseEnter={e => (e.currentTarget.style.opacity = "1")}
                     onMouseLeave={e => (e.currentTarget.style.opacity = doc.is_starred ? "1" : "0")}
                   >
@@ -562,24 +562,24 @@ export default function FolderPage() {
                   <button
                     onClick={e => { e.stopPropagation(); setOpenMenuId(isMenuOpen ? null : doc.uuid) }}
                     className="w-7 h-7 rounded flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                    style={{ color: "var(--text-muted)" }}
-                    onMouseEnter={e => { e.currentTarget.style.backgroundColor = "var(--bg-tertiary)"; e.currentTarget.style.color = "var(--text-primary)" }}
-                    onMouseLeave={e => { e.currentTarget.style.backgroundColor = "transparent"; e.currentTarget.style.color = "var(--text-muted)" }}
+                    style={{ color: "var(--text-3)" }}
+                    onMouseEnter={e => { e.currentTarget.style.backgroundColor = "var(--surface-2)"; e.currentTarget.style.color = "var(--text-1)" }}
+                    onMouseLeave={e => { e.currentTarget.style.backgroundColor = "transparent"; e.currentTarget.style.color = "var(--text-3)" }}
                   >
                     <MoreVertical size={15} />
                   </button>
                 )
 
                 const menuDropdown = isMenuOpen && (
-                  <div className="absolute right-0 top-8 w-44 rounded-xl shadow-xl z-50 overflow-hidden py-1" style={{ backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border)" }}>
-                    <button onClick={e => { e.stopPropagation(); setRenamingDoc(doc); setRenameValue(doc.title || ""); setOpenMenuId(null) }} className="w-full flex items-center gap-2.5 px-3 py-2 text-sm transition-colors" style={{ color: "var(--text-secondary)" }} onMouseEnter={e => (e.currentTarget.style.backgroundColor = "var(--bg-tertiary)")} onMouseLeave={e => (e.currentTarget.style.backgroundColor = "transparent")}>
-                      <Pencil size={13} style={{ color: "var(--text-muted)" }} /> Rename
+                  <div className="absolute right-0 top-8 w-44 rounded-xl shadow-xl z-50 overflow-hidden py-1" style={{ backgroundColor: "var(--menu-bg)", border: "1px solid var(--border-subtle)" }}>
+                    <button onClick={e => { e.stopPropagation(); setRenamingDoc(doc); setRenameValue(doc.title || ""); setOpenMenuId(null) }} className="w-full flex items-center gap-2.5 px-3 py-2 text-sm transition-colors" style={{ color: "var(--text-2)" }} onMouseEnter={e => (e.currentTarget.style.backgroundColor = "var(--surface-2)")} onMouseLeave={e => (e.currentTarget.style.backgroundColor = "transparent")}>
+                      <Pencil size={13} style={{ color: "var(--text-3)" }} /> Rename
                     </button>
-                    <button onClick={e => { e.stopPropagation(); openMoveModal(doc) }} className="w-full flex items-center gap-2.5 px-3 py-2 text-sm transition-colors" style={{ color: "var(--text-secondary)" }} onMouseEnter={e => (e.currentTarget.style.backgroundColor = "var(--bg-tertiary)")} onMouseLeave={e => (e.currentTarget.style.backgroundColor = "transparent")}>
-                      <FolderInput size={13} style={{ color: "var(--text-muted)" }} /> Move
+                    <button onClick={e => { e.stopPropagation(); openMoveModal(doc) }} className="w-full flex items-center gap-2.5 px-3 py-2 text-sm transition-colors" style={{ color: "var(--text-2)" }} onMouseEnter={e => (e.currentTarget.style.backgroundColor = "var(--surface-2)")} onMouseLeave={e => (e.currentTarget.style.backgroundColor = "transparent")}>
+                      <FolderInput size={13} style={{ color: "var(--text-3)" }} /> Move
                     </button>
-                    <div className="my-1 border-t" style={{ borderColor: "var(--border)" }} />
-                    <button onClick={e => { e.stopPropagation(); setDeletingDoc(doc); setOpenMenuId(null) }} className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-red-400 hover:text-red-300 transition-colors" onMouseEnter={e => (e.currentTarget.style.backgroundColor = "var(--bg-tertiary)")} onMouseLeave={e => (e.currentTarget.style.backgroundColor = "transparent")}>
+                    <div className="my-1 border-t" style={{ borderColor: "var(--border-subtle)" }} />
+                    <button onClick={e => { e.stopPropagation(); setDeletingDoc(doc); setOpenMenuId(null) }} className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-[var(--danger-text)] hover:text-[var(--danger-text-hover)] transition-colors" onMouseEnter={e => (e.currentTarget.style.backgroundColor = "var(--surface-2)")} onMouseLeave={e => (e.currentTarget.style.backgroundColor = "transparent")}>
                       <Trash2 size={13} /> Delete
                     </button>
                   </div>
@@ -587,26 +587,26 @@ export default function FolderPage() {
 
                 if (view === "list") {
                   return (
-                    <div key={doc.uuid} className="relative group flex items-stretch transition-colors overflow-hidden" style={{ borderBottom: "1px solid var(--border)" }}
-                      onMouseEnter={e => { e.currentTarget.style.backgroundColor = "var(--bg-secondary)" }}
+                    <div key={doc.uuid} className="relative group flex items-stretch transition-colors overflow-hidden" style={{ borderBottom: "1px solid var(--border-subtle)" }}
+                      onMouseEnter={e => { e.currentTarget.style.backgroundColor = "var(--surface)" }}
                       onMouseLeave={e => { e.currentTarget.style.backgroundColor = "transparent" }}
                     >
                       <button onClick={() => router.push(`/docs/${doc.uuid}`)} className="text-left flex items-center gap-4 flex-1 min-w-0 px-5 py-3.5" style={{ cursor: "pointer" }}>
-                        <div style={{ width: 28, height: 28, borderRadius: 8, backgroundColor: "#3a393f", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#d4d2c8" strokeWidth="2" strokeLinecap="round">
+                        <div style={{ width: 28, height: 28, borderRadius: 8, backgroundColor: "var(--doc-icon-bg)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--doc-icon-fg)" strokeWidth="2" strokeLinecap="round">
                             <rect x="4" y="2.5" width="16" height="19" rx="3" />
                             <line x1="8" y1="8" x2="16" y2="8" />
                             <line x1="8" y1="12" x2="16" y2="12" />
                             <line x1="8" y1="16" x2="12.5" y2="16" />
                           </svg>
                         </div>
-                        <p className="font-semibold text-[15px] leading-snug flex-1 min-w-0 truncate" style={{ color: "var(--text-primary)" }}>{doc.title || "Untitled"}</p>
+                        <p className="font-semibold text-[15px] leading-snug flex-1 min-w-0 truncate" style={{ color: "var(--text-1)" }}>{doc.title || "Untitled"}</p>
                         {doc.is_workspace_shared && (
-                          <span style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 11, color: "#e0b48c", backgroundColor: "#e0b48c1a", borderRadius: 20, padding: "2px 8px", flexShrink: 0 }}>
+                          <span style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 11, color: "var(--doc-shared-text)", backgroundColor: "var(--doc-shared-bg)", borderRadius: 20, padding: "2px 8px", flexShrink: 0 }}>
                             <Users size={10} /> Shared
                           </span>
                         )}
-                        <p className="text-[12px] flex-shrink-0" style={{ color: "var(--text-muted)" }}>{formatDate(doc.created_at)}</p>
+                        <p className="text-[12px] flex-shrink-0" style={{ color: "var(--text-3)" }}>{formatDate(doc.created_at)}</p>
                       </button>
                       <div className="flex items-center gap-1 pr-4 flex-shrink-0">
                         {favoriteButton}
@@ -620,17 +620,17 @@ export default function FolderPage() {
                 }
 
                 return (
-                  <div key={doc.uuid} className="relative group rounded-xl flex flex-col transition-colors overflow-hidden" style={{ backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border)", minHeight: "200px" }}
-                    onMouseEnter={e => { e.currentTarget.style.backgroundColor = "var(--bg-tertiary)"; e.currentTarget.style.borderColor = "var(--text-muted)" }}
-                    onMouseLeave={e => { e.currentTarget.style.backgroundColor = "var(--bg-secondary)"; e.currentTarget.style.borderColor = "var(--border)" }}
+                  <div key={doc.uuid} className="relative group rounded-xl flex flex-col transition-colors overflow-hidden" style={{ backgroundColor: "var(--surface)", border: "1px solid var(--border-subtle)", minHeight: "200px" }}
+                    onMouseEnter={e => { e.currentTarget.style.backgroundColor = "var(--surface-2)"; e.currentTarget.style.borderColor = "var(--text-3)" }}
+                    onMouseLeave={e => { e.currentTarget.style.backgroundColor = "var(--surface)"; e.currentTarget.style.borderColor = "var(--border-subtle)" }}
                   >
-                    <div style={{ height: "5px", backgroundColor: "#4a4948", width: "100%", flexShrink: 0 }} />
+                    <div style={{ height: "5px", backgroundColor: "var(--doc-card-strip)", width: "100%", flexShrink: 0 }} />
                     <button onClick={() => router.push(`/docs/${doc.uuid}`)} className="text-left px-5 pt-4 pb-3 flex flex-col flex-1 w-full" style={{ cursor: "pointer" }}>
-                      <p className="font-semibold text-[15px] leading-snug mb-3 pr-6" style={{ color: "var(--text-primary)" }}>{doc.title || "Untitled"}</p>
-                      <p className="text-[13px] leading-relaxed line-clamp-3 flex-1" style={{ color: "var(--text-secondary)" }}>{stripHtml(doc.content)}</p>
+                      <p className="font-semibold text-[15px] leading-snug mb-3 pr-6" style={{ color: "var(--text-1)" }}>{doc.title || "Untitled"}</p>
+                      <p className="text-[13px] leading-relaxed line-clamp-3 flex-1" style={{ color: "var(--text-2)" }}>{stripHtml(doc.content)}</p>
                     </button>
-                    <div className="flex items-center justify-between px-5 py-3" style={{ borderTop: "1px solid var(--border)" }}>
-                      <p className="text-[12px]" style={{ color: "var(--text-muted)" }}>{formatDate(doc.created_at)}</p>
+                    <div className="flex items-center justify-between px-5 py-3" style={{ borderTop: "1px solid var(--border-subtle)" }}>
+                      <p className="text-[12px]" style={{ color: "var(--text-3)" }}>{formatDate(doc.created_at)}</p>
                       {favoriteButton}
                     </div>
                     <div className="absolute top-7 right-4" ref={isMenuOpen ? menuRef : null}>
@@ -648,12 +648,12 @@ export default function FolderPage() {
 
       {/* Rename modal */}
       {renamingDoc && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+        <div className="fixed inset-0 flex items-center justify-center z-50" style={{ backgroundColor: "var(--overlay)" }}>
           <div
             className="rounded-2xl p-6 w-80 shadow-2xl"
-            style={{ backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border)" }}
+            style={{ backgroundColor: "var(--menu-bg)", border: "1px solid var(--border-subtle)" }}
           >
-            <h2 className="font-semibold text-base mb-4" style={{ color: "var(--text-primary)" }}>Rename doc</h2>
+            <h2 className="font-semibold text-base mb-4" style={{ color: "var(--text-1)" }}>Rename doc</h2>
             <input
               autoFocus
               value={renameValue}
@@ -661,27 +661,27 @@ export default function FolderPage() {
               onKeyDown={(e) => { if (e.key === "Enter") handleRename(); if (e.key === "Escape") setRenamingDoc(null) }}
               className="w-full rounded-lg px-3 py-2 text-sm outline-none mb-4"
               style={{
-                backgroundColor: "var(--bg-tertiary)",
-                border: "1px solid var(--border)",
-                color: "var(--text-primary)",
+                backgroundColor: "var(--surface-2)",
+                border: "1px solid var(--border-subtle)",
+                color: "var(--text-1)",
               }}
             />
             <div className="flex gap-2 justify-end">
               <button
                 onClick={() => setRenamingDoc(null)}
                 className="px-4 py-2 text-sm transition-colors"
-                style={{ color: "var(--text-muted)" }}
-                onMouseEnter={e => (e.currentTarget.style.color = "var(--text-primary)")}
-                onMouseLeave={e => (e.currentTarget.style.color = "var(--text-muted)")}
+                style={{ color: "var(--text-3)" }}
+                onMouseEnter={e => (e.currentTarget.style.color = "var(--text-1)")}
+                onMouseLeave={e => (e.currentTarget.style.color = "var(--text-3)")}
               >
                 Cancel
               </button>
               <button
                 onClick={handleRename}
                 className="px-4 py-2 text-sm rounded-lg transition-colors"
-                style={{ backgroundColor: "var(--bg-tertiary)", color: "var(--text-primary)" }}
-                onMouseEnter={e => (e.currentTarget.style.backgroundColor = "var(--border)")}
-                onMouseLeave={e => (e.currentTarget.style.backgroundColor = "var(--bg-tertiary)")}
+                style={{ backgroundColor: "var(--surface-2)", color: "var(--text-1)" }}
+                onMouseEnter={e => (e.currentTarget.style.backgroundColor = "var(--border-subtle)")}
+                onMouseLeave={e => (e.currentTarget.style.backgroundColor = "var(--surface-2)")}
               >
                 Rename
               </button>
@@ -692,20 +692,20 @@ export default function FolderPage() {
 
       {/* New subfolder modal */}
       {newSubfolderModalOpen && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-          <div className="rounded-2xl p-6 w-80 shadow-2xl" style={{ backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border)" }}>
-            <h2 className="font-semibold text-base mb-4" style={{ color: "var(--text-primary)" }}>New subfolder</h2>
+        <div className="fixed inset-0 flex items-center justify-center z-50" style={{ backgroundColor: "var(--overlay)" }}>
+          <div className="rounded-2xl p-6 w-80 shadow-2xl" style={{ backgroundColor: "var(--menu-bg)", border: "1px solid var(--border-subtle)" }}>
+            <h2 className="font-semibold text-base mb-4" style={{ color: "var(--text-1)" }}>New subfolder</h2>
             <input
               autoFocus
               value={newSubfolderName}
               onChange={e => setNewSubfolderName(e.target.value)}
               onKeyDown={e => { if (e.key === "Enter") handleCreateSubfolder(); if (e.key === "Escape") setNewSubfolderModalOpen(false) }}
               className="w-full rounded-lg px-3 py-2 text-sm outline-none mb-4"
-              style={{ backgroundColor: "var(--bg-tertiary)", border: "1px solid var(--border)", color: "var(--text-primary)" }}
+              style={{ backgroundColor: "var(--surface-2)", border: "1px solid var(--border-subtle)", color: "var(--text-1)" }}
             />
             <div className="flex gap-2 justify-end">
-              <button onClick={() => setNewSubfolderModalOpen(false)} className="px-4 py-2 text-sm" style={{ color: "var(--text-muted)" }}>Cancel</button>
-              <button onClick={handleCreateSubfolder} className="px-4 py-2 text-sm rounded-lg" style={{ backgroundColor: "var(--bg-tertiary)", color: "var(--text-primary)" }}>Create</button>
+              <button onClick={() => setNewSubfolderModalOpen(false)} className="px-4 py-2 text-sm" style={{ color: "var(--text-3)" }}>Cancel</button>
+              <button onClick={handleCreateSubfolder} className="px-4 py-2 text-sm rounded-lg" style={{ backgroundColor: "var(--surface-2)", color: "var(--text-1)" }}>Create</button>
             </div>
           </div>
         </div>
@@ -733,28 +733,28 @@ export default function FolderPage() {
 
       {/* Delete modal */}
       {deletingDoc && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+        <div className="fixed inset-0 flex items-center justify-center z-50" style={{ backgroundColor: "var(--overlay)" }}>
           <div
             className="rounded-2xl p-6 w-80 shadow-2xl"
-            style={{ backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border)" }}
+            style={{ backgroundColor: "var(--menu-bg)", border: "1px solid var(--border-subtle)" }}
           >
-            <h2 className="font-semibold text-base mb-2" style={{ color: "var(--text-primary)" }}>Delete doc?</h2>
-            <p className="text-sm mb-6" style={{ color: "var(--text-muted)" }}>
+            <h2 className="font-semibold text-base mb-2" style={{ color: "var(--text-1)" }}>Delete doc?</h2>
+            <p className="text-sm mb-6" style={{ color: "var(--text-3)" }}>
               &ldquo;{deletingDoc.title || "Untitled"}&rdquo; will be permanently deleted.
             </p>
             <div className="flex gap-2 justify-end">
               <button
                 onClick={() => setDeletingDoc(null)}
                 className="px-4 py-2 text-sm transition-colors"
-                style={{ color: "var(--text-muted)" }}
-                onMouseEnter={e => (e.currentTarget.style.color = "var(--text-primary)")}
-                onMouseLeave={e => (e.currentTarget.style.color = "var(--text-muted)")}
+                style={{ color: "var(--text-3)" }}
+                onMouseEnter={e => (e.currentTarget.style.color = "var(--text-1)")}
+                onMouseLeave={e => (e.currentTarget.style.color = "var(--text-3)")}
               >
                 Cancel
               </button>
               <button
                 onClick={handleDelete}
-                className="px-4 py-2 text-sm rounded-lg transition-colors bg-red-500/20 hover:bg-red-500/30 text-red-400"
+                className="px-4 py-2 text-sm rounded-lg transition-colors bg-red-500/20 hover:bg-red-500/30 text-[var(--danger-text)]"
               >
                 Delete
               </button>
