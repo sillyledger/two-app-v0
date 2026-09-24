@@ -274,7 +274,7 @@ export default function HomePage() {
   }
 
   return (
-    <div className="flex h-screen overflow-hidden" style={{ backgroundColor: "var(--bg)" }}>
+    <div className="flex h-screen overflow-hidden" style={{ backgroundColor: "var(--panel)" }}>
       {sidebarReady && <Sidebar collapsed={collapsed} onToggle={() => setCollapsed(v => !v)} />}
 
       <main className="flex-1 overflow-y-auto transition-all duration-200">
@@ -286,15 +286,15 @@ export default function HomePage() {
               <Search
                 size={15}
                 className="absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none"
-                style={{ color: "var(--text-muted)" }}
+                style={{ color: "var(--text-3)" }}
               />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
                 placeholder="Search docs..."
-                className="w-full rounded-lg pl-9 pr-4 py-2.5 text-sm outline-none placeholder-[var(--text-muted)]"
-                style={{ backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border)", color: "var(--text-primary)" }}
+                className="w-full rounded-lg pl-9 pr-4 py-2.5 text-sm outline-none placeholder-[var(--text-3)]"
+                style={{ backgroundColor: "var(--surface)", border: "1px solid var(--border-subtle)", color: "var(--text-1)" }}
               />
               {!searchQuery && (
                 <span
@@ -303,9 +303,9 @@ export default function HomePage() {
                     fontSize: "11px",
                     padding: "2px 6px",
                     borderRadius: "4px",
-                    border: "1px solid var(--border)",
-                    color: "var(--text-muted)",
-                    backgroundColor: "var(--bg-tertiary)",
+                    border: "1px solid var(--border-subtle)",
+                    color: "var(--text-3)",
+                    backgroundColor: "var(--surface-2)",
                   }}
                 >
                   ⌘K
@@ -318,18 +318,18 @@ export default function HomePage() {
                 style={{
                   ...btnBase,
                   backgroundColor: "transparent",
-                  color: "var(--text-muted)",
-                  border: "1px solid var(--border)",
+                  color: "var(--text-3)",
+                  border: "1px solid var(--border-subtle)",
                 }}
                 onMouseEnter={e => {
-                  e.currentTarget.style.backgroundColor = "var(--bg-tertiary)"
-                  e.currentTarget.style.color = "var(--text-primary)"
-                  e.currentTarget.style.borderColor = "var(--text-muted)"
+                  e.currentTarget.style.backgroundColor = "var(--surface-2)"
+                  e.currentTarget.style.color = "var(--text-1)"
+                  e.currentTarget.style.borderColor = "var(--text-3)"
                 }}
                 onMouseLeave={e => {
                   e.currentTarget.style.backgroundColor = "transparent"
-                  e.currentTarget.style.color = "var(--text-muted)"
-                  e.currentTarget.style.borderColor = "var(--border)"
+                  e.currentTarget.style.color = "var(--text-3)"
+                  e.currentTarget.style.borderColor = "var(--border-subtle)"
                 }}
               >
                 <LayoutTemplate size={14} />
@@ -339,8 +339,8 @@ export default function HomePage() {
                 onClick={handleNewDoc}
                 style={{
                   ...btnBase,
-                  backgroundColor: "var(--text-primary)",
-                  color: "var(--bg)",
+                  backgroundColor: "var(--primary-bg)",
+                  color: "var(--primary-text)",
                   border: "1px solid transparent",
                 }}
                 onMouseEnter={e => (e.currentTarget.style.opacity = "0.85")}
@@ -358,9 +358,9 @@ export default function HomePage() {
               <Link
                 href="/folders"
                 className="flex items-center gap-1 text-[13px] transition-colors"
-                style={{ color: "var(--text-muted)" }}
-                onMouseEnter={e => (e.currentTarget.style.color = "var(--text-primary)")}
-                onMouseLeave={e => (e.currentTarget.style.color = "var(--text-muted)")}
+                style={{ color: "var(--text-3)" }}
+                onMouseEnter={e => (e.currentTarget.style.color = "var(--text-1)")}
+                onMouseLeave={e => (e.currentTarget.style.color = "var(--text-3)")}
               >
                 All folders
                 <ChevronRight size={14} />
@@ -380,8 +380,8 @@ export default function HomePage() {
                       <div className="mb-2 transition-transform group-hover:scale-105">
                         <FolderIcon color={getAccent(index)} size={48} />
                       </div>
-                      <p className="font-medium text-[13px] truncate w-full" style={{ color: "var(--text-primary)" }}>{folder.name}</p>
-                      <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>{docCount} {docCount === 1 ? "doc" : "docs"}</p>
+                      <p className="font-medium text-[13px] truncate w-full" style={{ color: "var(--text-1)" }}>{folder.name}</p>
+                      <p className="text-[11px]" style={{ color: "var(--text-3)" }}>{docCount} {docCount === 1 ? "doc" : "docs"}</p>
                     </div>
                   )
                 })}
@@ -406,9 +406,9 @@ export default function HomePage() {
                       fontSize: "13.5px",
                       fontWeight: isActive ? 500 : 400,
                       border: "1px solid",
-                      borderColor: isActive ? "var(--text-primary)" : "var(--border)",
-                      backgroundColor: isActive ? "var(--text-primary)" : "transparent",
-                      color: isActive ? "var(--bg)" : "var(--text-muted)",
+                      borderColor: isActive ? "var(--text-1)" : "var(--border-subtle)",
+                      backgroundColor: isActive ? "var(--primary-bg)" : "transparent",
+                      color: isActive ? "var(--primary-text)" : "var(--text-3)",
                       cursor: "pointer",
                       transition: "all 0.15s",
                     }}
@@ -430,9 +430,9 @@ export default function HomePage() {
                   alignItems: "center",
                   justifyContent: "center",
                   borderRadius: "8px",
-                  border: "1px solid " + (view === "grid" ? "var(--text-primary)" : "var(--border)"),
-                  backgroundColor: view === "grid" ? "var(--bg-tertiary)" : "transparent",
-                  color: view === "grid" ? "var(--text-primary)" : "var(--text-muted)",
+                  border: "1px solid " + (view === "grid" ? "var(--text-1)" : "var(--border-subtle)"),
+                  backgroundColor: view === "grid" ? "var(--surface-2)" : "transparent",
+                  color: view === "grid" ? "var(--text-1)" : "var(--text-3)",
                   cursor: "pointer",
                   transition: "all 0.15s",
                 }}
@@ -449,9 +449,9 @@ export default function HomePage() {
                   alignItems: "center",
                   justifyContent: "center",
                   borderRadius: "8px",
-                  border: "1px solid " + (view === "list" ? "var(--text-primary)" : "var(--border)"),
-                  backgroundColor: view === "list" ? "var(--bg-tertiary)" : "transparent",
-                  color: view === "list" ? "var(--text-primary)" : "var(--text-muted)",
+                  border: "1px solid " + (view === "list" ? "var(--text-1)" : "var(--border-subtle)"),
+                  backgroundColor: view === "list" ? "var(--surface-2)" : "transparent",
+                  color: view === "list" ? "var(--text-1)" : "var(--text-3)",
                   cursor: "pointer",
                   transition: "all 0.15s",
                 }}
@@ -465,11 +465,11 @@ export default function HomePage() {
           {loading ? (
             <div className="grid grid-cols-4 gap-4">
               {Array.from({ length: 9 }).map((_, i) => (
-                <div key={i} className="h-52 rounded-xl animate-pulse" style={{ backgroundColor: "var(--bg-tertiary)" }} />
+                <div key={i} className="h-52 rounded-xl animate-pulse" style={{ backgroundColor: "var(--surface-2)" }} />
               ))}
             </div>
           ) : visibleDocs.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-64" style={{ color: "var(--text-muted)" }}>
+            <div className="flex flex-col items-center justify-center h-64" style={{ color: "var(--text-3)" }}>
               <p className="text-base font-medium mb-1">
                 {activeTab === "favorites" ? "No favorites yet" : "No docs yet"}
               </p>
@@ -480,7 +480,7 @@ export default function HomePage() {
           ) : (
             <>
               {view === "list" && (
-                <div style={{ display: "flex", alignItems: "center", gap: 16, padding: "0 20px 8px", fontSize: 11, color: "var(--text-muted)" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 16, padding: "0 20px 8px", fontSize: 11, color: "var(--text-3)" }}>
                   <div style={{ width: 28 }} />
                   <span style={{ flex: 1 }}>Name</span>
                   <span style={{ width: 130 }}>Folder</span>
@@ -503,14 +503,14 @@ export default function HomePage() {
                 }
 
                 const favoriteButton = isLocked ? (
-                  <Lock size={13} style={{ color: "var(--text-muted)" }} />
+                  <Lock size={13} style={{ color: "var(--text-3)" }} />
                 ) : (
                   <button
                     onClick={e => handleToggleFavorite(doc, e)}
                     title={doc.is_starred ? "Remove from favorites" : "Add to favorites"}
                     className="transition-opacity"
                     style={{
-                      color: doc.is_starred ? "#EF9F27" : "var(--text-muted)",
+                      color: doc.is_starred ? "#EF9F27" : "var(--text-3)",
                       opacity: doc.is_starred ? 1 : 0,
                     }}
                     onMouseEnter={e => (e.currentTarget.style.opacity = "1")}
@@ -524,9 +524,9 @@ export default function HomePage() {
                   <button
                     onClick={e => { e.stopPropagation(); setOpenMenuId(isMenuOpen ? null : doc.uuid) }}
                     className="w-7 h-7 rounded flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                    style={{ color: "var(--text-muted)" }}
-                    onMouseEnter={e => { e.currentTarget.style.backgroundColor = "var(--bg-tertiary)"; e.currentTarget.style.color = "var(--text-primary)" }}
-                    onMouseLeave={e => { e.currentTarget.style.backgroundColor = "transparent"; e.currentTarget.style.color = "var(--text-muted)" }}
+                    style={{ color: "var(--text-3)" }}
+                    onMouseEnter={e => { e.currentTarget.style.backgroundColor = "var(--surface-2)"; e.currentTarget.style.color = "var(--text-1)" }}
+                    onMouseLeave={e => { e.currentTarget.style.backgroundColor = "transparent"; e.currentTarget.style.color = "var(--text-3)" }}
                   >
                     <MoreVertical size={15} />
                   </button>
@@ -535,31 +535,31 @@ export default function HomePage() {
                 const menuDropdown = isMenuOpen && (
                   <div
                     className="absolute right-0 top-8 w-44 rounded-xl shadow-xl z-50 overflow-hidden py-1"
-                    style={{ backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border)" }}
+                    style={{ backgroundColor: "var(--menu-bg)", border: "1px solid var(--border-subtle)" }}
                   >
                     <button
                       onClick={e => { e.stopPropagation(); setRenamingDoc(doc); setRenameValue(doc.title || ""); setOpenMenuId(null) }}
                       className="w-full flex items-center gap-2.5 px-3 py-2 text-sm transition-colors"
-                      style={{ color: "var(--text-secondary)" }}
-                      onMouseEnter={e => (e.currentTarget.style.backgroundColor = "var(--bg-tertiary)")}
+                      style={{ color: "var(--text-2)" }}
+                      onMouseEnter={e => (e.currentTarget.style.backgroundColor = "var(--surface-2)")}
                       onMouseLeave={e => (e.currentTarget.style.backgroundColor = "transparent")}
                     >
-                      <Pencil size={13} style={{ color: "var(--text-muted)" }} /> Rename
+                      <Pencil size={13} style={{ color: "var(--text-3)" }} /> Rename
                     </button>
                     <button
                       onClick={e => { e.stopPropagation(); openMoveModal(doc) }}
                       className="w-full flex items-center gap-2.5 px-3 py-2 text-sm transition-colors"
-                      style={{ color: "var(--text-secondary)" }}
-                      onMouseEnter={e => (e.currentTarget.style.backgroundColor = "var(--bg-tertiary)")}
+                      style={{ color: "var(--text-2)" }}
+                      onMouseEnter={e => (e.currentTarget.style.backgroundColor = "var(--surface-2)")}
                       onMouseLeave={e => (e.currentTarget.style.backgroundColor = "transparent")}
                     >
-                      <FolderInput size={13} style={{ color: "var(--text-muted)" }} /> Move
+                      <FolderInput size={13} style={{ color: "var(--text-3)" }} /> Move
                     </button>
-                    <div className="my-1 border-t" style={{ borderColor: "var(--border)" }} />
+                    <div className="my-1 border-t" style={{ borderColor: "var(--border-subtle)" }} />
                     <button
                       onClick={e => { e.stopPropagation(); setDeletingDoc(doc); setOpenMenuId(null) }}
-                      className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-red-400 hover:text-red-300 transition-colors"
-                      onMouseEnter={e => (e.currentTarget.style.backgroundColor = "var(--bg-tertiary)")}
+                      className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-[var(--danger-text)] hover:text-[var(--danger-text-hover)] transition-colors"
+                      onMouseEnter={e => (e.currentTarget.style.backgroundColor = "var(--surface-2)")}
                       onMouseLeave={e => (e.currentTarget.style.backgroundColor = "transparent")}
                     >
                       <Trash2 size={13} /> Delete
@@ -573,12 +573,12 @@ export default function HomePage() {
                       key={doc.uuid}
                       className="relative group flex items-stretch transition-colors overflow-hidden"
                       style={{
-                        borderBottom: "1px solid var(--border)",
+                        borderBottom: "1px solid var(--border-subtle)",
                         opacity: isLocked ? 0.5 : 1,
                       }}
                       onMouseEnter={e => {
                         if (!isLocked) {
-                          e.currentTarget.style.backgroundColor = "var(--bg-secondary)"
+                          e.currentTarget.style.backgroundColor = "var(--surface)"
                         }
                       }}
                       onMouseLeave={e => {
@@ -592,27 +592,27 @@ export default function HomePage() {
                         className="text-left flex items-center gap-4 flex-1 min-w-0 px-5 py-3.5"
                         style={{ cursor: isLocked ? "default" : "pointer" }}
                       >
-                        <div style={{ width: 28, height: 28, borderRadius: 8, backgroundColor: "#3a393f", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#d4d2c8" strokeWidth="2" strokeLinecap="round">
+                        <div style={{ width: 28, height: 28, borderRadius: 8, backgroundColor: "var(--doc-icon-bg)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--doc-icon-fg)" strokeWidth="2" strokeLinecap="round">
                             <rect x="4" y="2.5" width="16" height="19" rx="3" />
                             <line x1="8" y1="8" x2="16" y2="8" />
                             <line x1="8" y1="12" x2="16" y2="12" />
                             <line x1="8" y1="16" x2="12.5" y2="16" />
                           </svg>
                         </div>
-                        <p className="font-semibold text-[15px] leading-snug flex-1 min-w-0 truncate" style={{ color: "var(--text-primary)" }}>
+                        <p className="font-semibold text-[15px] leading-snug flex-1 min-w-0 truncate" style={{ color: "var(--text-1)" }}>
                           {doc.title || "Untitled"}
                         </p>
                         {doc.is_workspace_shared && (
-                          <span style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 11, color: "#e0b48c", backgroundColor: "#e0b48c1a", borderRadius: 20, padding: "2px 8px", flexShrink: 0 }}>
+                          <span style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 11, color: "var(--doc-shared-text)", backgroundColor: "var(--doc-shared-bg)", borderRadius: 20, padding: "2px 8px", flexShrink: 0 }}>
                             <Users size={10} />
                             Shared
                           </span>
                         )}
-                        <div style={{ width: 130, display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--text-muted)", flexShrink: 0 }}>
+                        <div style={{ width: 130, display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--text-3)", flexShrink: 0 }}>
                           {doc.folder_name ? (<><span style={{ width: 6, height: 6, borderRadius: "50%", backgroundColor: folderDotColor(doc.folder_id ?? null) ?? undefined, flexShrink: 0 }} />{doc.folder_name}</>) : <span>—</span>}
                         </div>
-                        <p className="text-[12px] flex-shrink-0" style={{ color: "var(--text-muted)" }}>{formatDate(doc.created_at)}</p>
+                        <p className="text-[12px] flex-shrink-0" style={{ color: "var(--text-3)" }}>{formatDate(doc.created_at)}</p>
                       </button>
 
                       <div className="flex items-center gap-1 pr-4 flex-shrink-0">
@@ -633,41 +633,41 @@ export default function HomePage() {
                     key={doc.uuid}
                     className="relative group rounded-xl flex flex-col transition-colors overflow-hidden"
                     style={{
-                      backgroundColor: "var(--bg-secondary)",
-                      border: `1px solid ${isLocked ? "rgba(255,255,255,0.04)" : "var(--border)"}`,
+                      backgroundColor: "var(--surface)",
+                      border: `1px solid ${isLocked ? "var(--doc-card-locked-border)" : "var(--border-subtle)"}`,
                       minHeight: "200px",
                       opacity: isLocked ? 0.5 : 1,
                     }}
                     onMouseEnter={e => {
                       if (!isLocked) {
-                        e.currentTarget.style.backgroundColor = "var(--bg-tertiary)"
-                        e.currentTarget.style.borderColor = "var(--text-muted)"
+                        e.currentTarget.style.backgroundColor = "var(--surface-2)"
+                        e.currentTarget.style.borderColor = "var(--text-3)"
                       }
                     }}
                     onMouseLeave={e => {
                       if (!isLocked) {
-                        e.currentTarget.style.backgroundColor = "var(--bg-secondary)"
-                        e.currentTarget.style.borderColor = "var(--border)"
+                        e.currentTarget.style.backgroundColor = "var(--surface)"
+                        e.currentTarget.style.borderColor = "var(--border-subtle)"
                       }
                     }}
                   >
-                    <div style={{ height: "5px", backgroundColor: "#4a4948", width: "100%", flexShrink: 0 }} />
+                    <div style={{ height: "5px", backgroundColor: "var(--doc-card-strip)", width: "100%", flexShrink: 0 }} />
 
                     <button
                       onClick={handleOpenDoc}
                       className="text-left px-5 pt-4 pb-3 flex flex-col flex-1 w-full"
                       style={{ cursor: isLocked ? "default" : "pointer" }}
                     >
-                      <p className="font-semibold text-[15px] leading-snug mb-3 pr-6" style={{ color: "var(--text-primary)" }}>
+                      <p className="font-semibold text-[15px] leading-snug mb-3 pr-6" style={{ color: "var(--text-1)" }}>
                         {doc.title || "Untitled"}
                       </p>
-                      <p className="text-[13px] leading-relaxed line-clamp-3 flex-1" style={{ color: "var(--text-secondary)" }}>
+                      <p className="text-[13px] leading-relaxed line-clamp-3 flex-1" style={{ color: "var(--text-2)" }}>
                         {stripHtml(doc.content)}
                       </p>
                     </button>
 
-                    <div className="flex items-center justify-between px-5 py-3" style={{ borderTop: "1px solid var(--border)" }}>
-                      <p className="text-[12px]" style={{ color: "var(--text-muted)" }}>{formatDate(doc.created_at)}</p>
+                    <div className="flex items-center justify-between px-5 py-3" style={{ borderTop: "1px solid var(--border-subtle)" }}>
+                      <p className="text-[12px]" style={{ color: "var(--text-3)" }}>{formatDate(doc.created_at)}</p>
                       {favoriteButton}
                     </div>
 
@@ -690,13 +690,13 @@ export default function HomePage() {
 
       {/* Free limit modal */}
       {limitModalOpen && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-          <div className="rounded-2xl p-8 w-96 shadow-2xl" style={{ backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border)" }}>
+        <div className="fixed inset-0 flex items-center justify-center z-50" style={{ backgroundColor: "var(--overlay)" }}>
+          <div className="rounded-2xl p-8 w-96 shadow-2xl" style={{ backgroundColor: "var(--menu-bg)", border: "1px solid var(--border-subtle)" }}>
             <div style={{ width: 40, height: 40, borderRadius: "10px", background: "#534AB7", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "16px" }}>
               <Lock size={20} color="#fff" />
             </div>
-            <h2 className="font-semibold text-lg mb-2" style={{ color: "var(--text-primary)" }}>This doc is locked</h2>
-            <p className="text-sm mb-6 leading-relaxed" style={{ color: "var(--text-muted)" }}>
+            <h2 className="font-semibold text-lg mb-2" style={{ color: "var(--text-1)" }}>This doc is locked</h2>
+            <p className="text-sm mb-6 leading-relaxed" style={{ color: "var(--text-3)" }}>
               Free accounts can hold up to 30 active docs. Upgrade to Pro to unlock all your docs and get unlimited storage.
             </p>
             <div className="flex flex-col gap-2">
@@ -710,7 +710,7 @@ export default function HomePage() {
               <button
                 onClick={() => setLimitModalOpen(false)}
                 className="w-full py-2.5 rounded-xl text-sm"
-                style={{ color: "var(--text-muted)" }}
+                style={{ color: "var(--text-3)" }}
               >
                 Maybe later
               </button>
@@ -721,20 +721,20 @@ export default function HomePage() {
 
       {/* Rename modal */}
       {renamingDoc && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-          <div className="rounded-2xl p-6 w-80 shadow-2xl" style={{ backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border)" }}>
-            <h2 className="font-semibold text-base mb-4" style={{ color: "var(--text-primary)" }}>Rename doc</h2>
+        <div className="fixed inset-0 flex items-center justify-center z-50" style={{ backgroundColor: "var(--overlay)" }}>
+          <div className="rounded-2xl p-6 w-80 shadow-2xl" style={{ backgroundColor: "var(--menu-bg)", border: "1px solid var(--border-subtle)" }}>
+            <h2 className="font-semibold text-base mb-4" style={{ color: "var(--text-1)" }}>Rename doc</h2>
             <input
               autoFocus
               value={renameValue}
               onChange={e => setRenameValue(e.target.value)}
               onKeyDown={e => { if (e.key === "Enter") handleRename(); if (e.key === "Escape") setRenamingDoc(null) }}
               className="w-full rounded-lg px-3 py-2 text-sm outline-none mb-4"
-              style={{ backgroundColor: "var(--bg-tertiary)", border: "1px solid var(--border)", color: "var(--text-primary)" }}
+              style={{ backgroundColor: "var(--surface-2)", border: "1px solid var(--border-subtle)", color: "var(--text-1)" }}
             />
             <div className="flex gap-2 justify-end">
-              <button onClick={() => setRenamingDoc(null)} className="px-4 py-2 text-sm" style={{ color: "var(--text-muted)" }}>Cancel</button>
-              <button onClick={handleRename} className="px-4 py-2 text-sm rounded-lg" style={{ backgroundColor: "var(--bg-tertiary)", color: "var(--text-primary)" }}>Rename</button>
+              <button onClick={() => setRenamingDoc(null)} className="px-4 py-2 text-sm" style={{ color: "var(--text-3)" }}>Cancel</button>
+              <button onClick={handleRename} className="px-4 py-2 text-sm rounded-lg" style={{ backgroundColor: "var(--surface-2)", color: "var(--text-1)" }}>Rename</button>
             </div>
           </div>
         </div>
@@ -747,13 +747,13 @@ export default function HomePage() {
 
       {/* Delete modal */}
       {deletingDoc && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-          <div className="rounded-2xl p-6 w-80 shadow-2xl" style={{ backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border)" }}>
-            <h2 className="font-semibold text-base mb-2" style={{ color: "var(--text-primary)" }}>Delete doc?</h2>
-            <p className="text-sm mb-6" style={{ color: "var(--text-muted)" }}>&ldquo;{deletingDoc.title || "Untitled"}&rdquo; will be deleted. This cannot be undone.</p>
+        <div className="fixed inset-0 flex items-center justify-center z-50" style={{ backgroundColor: "var(--overlay)" }}>
+          <div className="rounded-2xl p-6 w-80 shadow-2xl" style={{ backgroundColor: "var(--menu-bg)", border: "1px solid var(--border-subtle)" }}>
+            <h2 className="font-semibold text-base mb-2" style={{ color: "var(--text-1)" }}>Delete doc?</h2>
+            <p className="text-sm mb-6" style={{ color: "var(--text-3)" }}>&ldquo;{deletingDoc.title || "Untitled"}&rdquo; will be deleted. This cannot be undone.</p>
             <div className="flex gap-2 justify-end">
-              <button onClick={() => setDeletingDoc(null)} className="px-4 py-2 text-sm" style={{ color: "var(--text-muted)" }}>Cancel</button>
-              <button onClick={handleDelete} className="px-4 py-2 text-sm rounded-lg bg-red-500/20 hover:bg-red-500/30 text-red-400">Delete</button>
+              <button onClick={() => setDeletingDoc(null)} className="px-4 py-2 text-sm" style={{ color: "var(--text-3)" }}>Cancel</button>
+              <button onClick={handleDelete} className="px-4 py-2 text-sm rounded-lg bg-red-500/20 hover:bg-red-500/30 text-[var(--danger-text)]">Delete</button>
             </div>
           </div>
         </div>

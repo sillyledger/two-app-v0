@@ -136,8 +136,8 @@ export default function TabBar() {
         .tab-btn:hover .tab-close,
         .tab-btn-active .tab-close { opacity: 1; }
         .tab-btn { border-radius: 10px; }
-        .tab-btn-active { background-color: var(--bg-secondary) !important; color: var(--text-primary) !important; }
-        .tab-btn:not(.tab-btn-active):hover { background-color: var(--bg-tertiary) !important; color: var(--text-secondary) !important; }
+        .tab-btn-active { background-color: var(--surface) !important; color: var(--text-1) !important; }
+        .tab-btn:not(.tab-btn-active):hover { background-color: var(--surface-2) !important; color: var(--text-2) !important; }
       `}</style>
 
       {/* ── Tab bar ── */}
@@ -148,8 +148,8 @@ export default function TabBar() {
           left: 0,
           width: "calc(100% - var(--sidebar-width, 0px))",
           height: "40px",
-          backgroundColor: "var(--bg)",
-          borderBottom: "1px solid var(--border)",
+          backgroundColor: "var(--panel)",
+          borderBottom: "1px solid var(--border-subtle)",
           scrollbarWidth: "none",
           transform: "translateX(var(--sidebar-width, 0px))",
           transition: "transform 0.3s",
@@ -167,7 +167,7 @@ export default function TabBar() {
                 maxWidth: "180px",
                 minWidth: "80px",
                 cursor: "pointer",
-                color: isActive ? "var(--text-primary)" : "var(--text-muted)",
+                color: isActive ? "var(--text-1)" : "var(--text-3)",
               }}
             >
               <span style={{ width: "6px", height: "6px", borderRadius: "50%", backgroundColor: tabColor(index), flexShrink: 0 }} />
@@ -175,9 +175,9 @@ export default function TabBar() {
               <span
                 className="tab-close flex items-center justify-center w-4 h-4 rounded shrink-0"
                 onClick={(e) => handleClose(e, tab.id)}
-                style={{ color: "var(--text-muted)" }}
-                onMouseEnter={e => { e.currentTarget.style.backgroundColor = "var(--bg-tertiary)"; e.currentTarget.style.color = "var(--text-primary)" }}
-                onMouseLeave={e => { e.currentTarget.style.backgroundColor = "transparent"; e.currentTarget.style.color = "var(--text-muted)" }}
+                style={{ color: "var(--text-3)" }}
+                onMouseEnter={e => { e.currentTarget.style.backgroundColor = "var(--surface-2)"; e.currentTarget.style.color = "var(--text-1)" }}
+                onMouseLeave={e => { e.currentTarget.style.backgroundColor = "transparent"; e.currentTarget.style.color = "var(--text-3)" }}
               >
                 <X size={10} />
               </span>
@@ -190,9 +190,9 @@ export default function TabBar() {
           onClick={() => setPickerOpen(true)}
           title="Open another doc"
           className="flex items-center justify-center w-8 h-8 rounded-lg shrink-0 transition-colors"
-          style={{ color: "var(--text-muted)", background: "none", border: "none", cursor: "pointer" }}
-          onMouseEnter={e => { e.currentTarget.style.color = "var(--text-primary)"; e.currentTarget.style.backgroundColor = "var(--bg-secondary)" }}
-          onMouseLeave={e => { e.currentTarget.style.color = "var(--text-muted)"; e.currentTarget.style.backgroundColor = "transparent" }}
+          style={{ color: "var(--text-3)", background: "none", border: "none", cursor: "pointer" }}
+          onMouseEnter={e => { e.currentTarget.style.color = "var(--text-1)"; e.currentTarget.style.backgroundColor = "var(--surface)" }}
+          onMouseLeave={e => { e.currentTarget.style.color = "var(--text-3)"; e.currentTarget.style.backgroundColor = "transparent" }}
         >
           <Plus size={13} />
         </button>
@@ -204,14 +204,14 @@ export default function TabBar() {
             title="Close all tabs"
             className="flex items-center justify-center w-8 h-8 rounded-lg shrink-0 transition-colors"
             style={{
-              color: "var(--text-muted)",
+              color: "var(--text-3)",
               background: "none",
               border: "none",
               marginLeft: "8px",
               cursor: "pointer",
             }}
-            onMouseEnter={e => { e.currentTarget.style.color = "#ff6b6b"; e.currentTarget.style.backgroundColor = "var(--bg-secondary)" }}
-            onMouseLeave={e => { e.currentTarget.style.color = "var(--text-muted)"; e.currentTarget.style.backgroundColor = "transparent" }}
+            onMouseEnter={e => { e.currentTarget.style.color = "var(--tab-close-hover)"; e.currentTarget.style.backgroundColor = "var(--surface)" }}
+            onMouseLeave={e => { e.currentTarget.style.color = "var(--text-3)"; e.currentTarget.style.backgroundColor = "transparent" }}
           >
             <ListX size={14} />
           </button>
@@ -220,22 +220,22 @@ export default function TabBar() {
 
       {/* ── Doc picker modal ── */}
       {pickerOpen && (
-        <div style={{ position: "fixed", inset: 0, zIndex: 60, display: "flex", alignItems: "flex-start", justifyContent: "center", paddingTop: "120px", backgroundColor: "rgba(0,0,0,0.45)" }}>
-          <div ref={pickerRef} style={{ width: "520px", maxWidth: "calc(100vw - 32px)", borderRadius: "12px", overflow: "hidden", backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border)", boxShadow: "0 24px 64px rgba(0,0,0,0.6)" }}>
+        <div style={{ position: "fixed", inset: 0, zIndex: 60, display: "flex", alignItems: "flex-start", justifyContent: "center", paddingTop: "120px", backgroundColor: "var(--overlay-soft)" }}>
+          <div ref={pickerRef} style={{ width: "520px", maxWidth: "calc(100vw - 32px)", borderRadius: "12px", overflow: "hidden", backgroundColor: "var(--menu-bg)", border: "1px solid var(--border-subtle)", boxShadow: "0 24px 64px rgba(0,0,0,0.6)" }}>
 
             {/* Search */}
-            <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 16px", borderBottom: "1px solid var(--border)" }}>
-              <Search size={14} style={{ color: "var(--text-muted)", flexShrink: 0 }} />
+            <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 16px", borderBottom: "1px solid var(--border-subtle)" }}>
+              <Search size={14} style={{ color: "var(--text-3)", flexShrink: 0 }} />
               <input
                 ref={searchRef}
                 type="text"
                 placeholder="Search docs..."
                 value={query}
                 onChange={e => setQuery(e.target.value)}
-                style={{ flex: 1, background: "transparent", border: "none", outline: "none", fontSize: 14, color: "var(--text-primary)" }}
+                style={{ flex: 1, background: "transparent", border: "none", outline: "none", fontSize: 14, color: "var(--text-1)" }}
               />
               {query && (
-                <button onClick={() => setQuery("")} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", padding: 2, display: "flex" }}>
+                <button onClick={() => setQuery("")} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-3)", padding: 2, display: "flex" }}>
                   <X size={12} />
                 </button>
               )}
@@ -245,26 +245,26 @@ export default function TabBar() {
             <button
               onClick={handleNewDoc}
               disabled={creating}
-              style={{ display: "flex", alignItems: "center", gap: 10, width: "100%", padding: "10px 16px", background: "transparent", border: "none", borderBottom: "1px solid var(--border)", cursor: creating ? "wait" : "pointer", transition: "background 0.1s" }}
-              onMouseEnter={e => (e.currentTarget.style.backgroundColor = "var(--bg-tertiary)")}
+              style={{ display: "flex", alignItems: "center", gap: 10, width: "100%", padding: "10px 16px", background: "transparent", border: "none", borderBottom: "1px solid var(--border-subtle)", cursor: creating ? "wait" : "pointer", transition: "background 0.1s" }}
+              onMouseEnter={e => (e.currentTarget.style.backgroundColor = "var(--surface-2)")}
               onMouseLeave={e => (e.currentTarget.style.backgroundColor = "transparent")}
             >
               <div style={{ width: 26, height: 26, borderRadius: 6, backgroundColor: "rgba(107,92,231,0.15)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                 <FilePlus size={14} style={{ color: "#a89cf7" }} />
               </div>
               <div style={{ textAlign: "left" }}>
-                <p style={{ fontSize: 13, fontWeight: 500, color: "var(--text-primary)", margin: 0 }}>
+                <p style={{ fontSize: 13, fontWeight: 500, color: "var(--text-1)", margin: 0 }}>
                   {creating ? "Creating…" : "New blank doc"}
                 </p>
-                <p style={{ fontSize: 11, color: "var(--text-muted)", margin: 0 }}>Open a fresh doc in this tab</p>
+                <p style={{ fontSize: 11, color: "var(--text-3)", margin: 0 }}>Open a fresh doc in this tab</p>
               </div>
             </button>
 
             {/* Doc list */}
             <div style={{ maxHeight: "320px", overflowY: "auto", padding: "6px 0" }}>
-              {loading && <p style={{ padding: "16px", fontSize: 13, color: "var(--text-muted)", textAlign: "center" }}>Loading...</p>}
+              {loading && <p style={{ padding: "16px", fontSize: 13, color: "var(--text-3)", textAlign: "center" }}>Loading...</p>}
               {!loading && filteredDocs.length === 0 && (
-                <p style={{ padding: "16px", fontSize: 13, color: "var(--text-muted)", textAlign: "center" }}>
+                <p style={{ padding: "16px", fontSize: 13, color: "var(--text-3)", textAlign: "center" }}>
                   {query ? `No docs matching "${query}"` : "No docs found"}
                 </p>
               )}
@@ -275,25 +275,25 @@ export default function TabBar() {
                     key={doc.uuid}
                     onClick={() => handleOpenDoc(doc)}
                     style={{ display: "flex", alignItems: "center", gap: 10, width: "100%", padding: "9px 16px", background: "transparent", border: "none", cursor: "pointer", textAlign: "left", transition: "background 0.1s" }}
-                    onMouseEnter={e => (e.currentTarget.style.backgroundColor = "var(--bg-tertiary)")}
+                    onMouseEnter={e => (e.currentTarget.style.backgroundColor = "var(--surface-2)")}
                     onMouseLeave={e => (e.currentTarget.style.backgroundColor = "transparent")}
                   >
-                    <FileText size={14} style={{ color: "var(--text-muted)", flexShrink: 0 }} />
-                    <span style={{ flex: 1, fontSize: 13, color: "var(--text-primary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    <FileText size={14} style={{ color: "var(--text-3)", flexShrink: 0 }} />
+                    <span style={{ flex: 1, fontSize: 13, color: "var(--text-1)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                       {doc.title || "Untitled"}
                     </span>
-                    {doc.folder_name && <span style={{ fontSize: 11, color: "var(--text-muted)", flexShrink: 0 }}>{doc.folder_name}</span>}
-                    {isAlreadyOpen && <span style={{ fontSize: 10, color: "var(--text-muted)", flexShrink: 0, opacity: 0.5, marginLeft: 4 }}>open</span>}
+                    {doc.folder_name && <span style={{ fontSize: 11, color: "var(--text-3)", flexShrink: 0 }}>{doc.folder_name}</span>}
+                    {isAlreadyOpen && <span style={{ fontSize: 10, color: "var(--text-3)", flexShrink: 0, opacity: 0.5, marginLeft: 4 }}>open</span>}
                   </button>
                 )
               })}
             </div>
 
             {/* Footer */}
-            <div style={{ padding: "8px 16px", borderTop: "1px solid var(--border)", display: "flex", alignItems: "center", gap: 6 }}>
-              <span style={{ fontSize: 11, color: "var(--text-muted)" }}>Press</span>
-              <kbd style={{ fontSize: 10, padding: "2px 5px", borderRadius: 4, background: "rgba(255,255,255,0.06)", border: "1px solid var(--border)", color: "var(--text-muted)", fontFamily: "monospace" }}>Esc</kbd>
-              <span style={{ fontSize: 11, color: "var(--text-muted)" }}>to close</span>
+            <div style={{ padding: "8px 16px", borderTop: "1px solid var(--border-subtle)", display: "flex", alignItems: "center", gap: 6 }}>
+              <span style={{ fontSize: 11, color: "var(--text-3)" }}>Press</span>
+              <kbd style={{ fontSize: 10, padding: "2px 5px", borderRadius: 4, background: "var(--hover)", border: "1px solid var(--border-subtle)", color: "var(--text-3)", fontFamily: "monospace" }}>Esc</kbd>
+              <span style={{ fontSize: 11, color: "var(--text-3)" }}>to close</span>
             </div>
           </div>
         </div>

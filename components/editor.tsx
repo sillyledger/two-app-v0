@@ -343,14 +343,14 @@ function EditorStyles() {
           margin: 0;
           overflow: hidden;
           border-radius: 8px;
-          border: 1px solid var(--border);
+          border: 1px solid var(--border-subtle);
           display: table;
           min-width: 400px;
           table-layout: fixed;
         }
         .editor-content td,
         .editor-content th {
-          border: 1px solid var(--border);
+          border: 1px solid var(--border-subtle);
           padding: 6px 12px;
           min-width: 160px;
           max-width: 320px;
@@ -364,17 +364,17 @@ function EditorStyles() {
           line-height: 1.4;
         }
         .editor-content th {
-          background: var(--bg-tertiary);
+          background: var(--surface-2);
           font-weight: 600;
-          color: var(--text-primary);
+          color: var(--text-1);
           text-align: left;
         }
         .editor-content td {
-          color: var(--text-primary);
-          background: var(--bg-secondary);
+          color: var(--text-1);
+          background: var(--surface);
         }
         .editor-content tr:hover td {
-          background: var(--bg-tertiary);
+          background: var(--surface-2);
         }
         .editor-content td p,
         .editor-content th p {
@@ -405,8 +405,8 @@ function EditorStyles() {
           opacity: 1;
         }
         .slash-menu {
-          background: var(--bg-tertiary);
-          border: 1px solid var(--border);
+          background: var(--menu-bg-2);
+          border: 1px solid var(--border-subtle);
           border-radius: 10px;
           padding: 4px;
           min-width: 220px;
@@ -429,7 +429,7 @@ function EditorStyles() {
         }
         .slash-menu-item:hover,
         .slash-menu-item.active {
-          background: var(--border);
+          background: var(--border-subtle);
         }
         .slash-menu-icon {
           display: flex;
@@ -438,8 +438,8 @@ function EditorStyles() {
           width: 28px;
           height: 28px;
           border-radius: 6px;
-          background: var(--bg-secondary);
-          color: var(--text-primary);
+          background: var(--editor-menu-icon-bg);
+          color: var(--text-1);
           flex-shrink: 0;
         }
         .slash-menu-text {
@@ -450,14 +450,14 @@ function EditorStyles() {
         .slash-menu-title {
           font-size: 13px;
           font-weight: 500;
-          color: var(--text-primary);
+          color: var(--text-1);
         }
         .slash-menu-desc {
           font-size: 11px;
-          color: var(--text-muted);
+          color: var(--text-3);
         }
         .editor-content pre {
-          background: #1e1e1e;
+          background: var(--editor-pre-bg);
           border-radius: 8px;
           padding: 1em 1.25em;
           overflow-x: auto;
@@ -468,22 +468,22 @@ function EditorStyles() {
           padding: 0;
           font-size: 0.875em;
           font-family: ui-monospace, 'Cascadia Code', 'Source Code Pro', Menlo, monospace;
-          color: #d4d4d4;
+          color: var(--editor-pre-text);
         }
-        .hljs-comment, .hljs-quote { color: #6a9955; }
-        .hljs-keyword, .hljs-selector-tag, .hljs-built_in { color: #569cd6; }
-        .hljs-string, .hljs-attr { color: #ce9178; }
-        .hljs-number, .hljs-literal { color: #b5cea8; }
-        .hljs-title, .hljs-section { color: #dcdcaa; }
-        .hljs-type, .hljs-class { color: #4ec9b0; }
-        .hljs-variable, .hljs-template-variable { color: #9cdcfe; }
-        .hljs-tag { color: #569cd6; }
-        .hljs-name { color: #4ec9b0; }
-        .hljs-attribute { color: #9cdcfe; }
-        .hljs-symbol, .hljs-bullet { color: #b5cea8; }
-        .hljs-meta { color: #9b9b9b; }
-        .hljs-deletion { color: #f44747; }
-        .hljs-addition { color: #b5cea8; }
+        .hljs-comment, .hljs-quote { color: var(--hl-comment); }
+        .hljs-keyword, .hljs-selector-tag, .hljs-built_in { color: var(--hl-keyword); }
+        .hljs-string, .hljs-attr { color: var(--hl-string); }
+        .hljs-number, .hljs-literal { color: var(--hl-number); }
+        .hljs-title, .hljs-section { color: var(--hl-title); }
+        .hljs-type, .hljs-class { color: var(--hl-type); }
+        .hljs-variable, .hljs-template-variable { color: var(--hl-variable); }
+        .hljs-tag { color: var(--hl-keyword); }
+        .hljs-name { color: var(--hl-type); }
+        .hljs-attribute { color: var(--hl-variable); }
+        .hljs-symbol, .hljs-bullet { color: var(--hl-number); }
+        .hljs-meta { color: var(--hl-meta); }
+        .hljs-deletion { color: var(--hl-deletion); }
+        .hljs-addition { color: var(--hl-addition); }
         .hljs-emphasis { font-style: italic; }
         .hljs-strong { font-weight: bold; }
         /* ── Callout styles ── */
@@ -934,9 +934,9 @@ export default function Editor({ content, onChange, onReady, onImageUpload, onIn
       <EditorStyles />
 
       {uploading && (
-        <div className="absolute inset-0 z-50 flex items-center justify-center rounded-lg bg-black/40">
-          <div className="flex items-center gap-2 rounded-lg bg-[#2a2a2a] px-4 py-2.5 text-sm text-white/80 shadow-xl">
-            <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/20 border-t-white/80" />
+        <div className="absolute inset-0 z-50 flex items-center justify-center rounded-lg bg-[var(--overlay-soft)]">
+          <div className="flex items-center gap-2 rounded-lg bg-[var(--editor-toolbar-bg)] px-4 py-2.5 text-sm text-[var(--editor-toolbar-text-80)] shadow-xl">
+            <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-[var(--editor-toolbar-active)] border-t-[var(--editor-toolbar-text-80)]" />
             Uploading image…
           </div>
         </div>
@@ -945,7 +945,7 @@ export default function Editor({ content, onChange, onReady, onImageUpload, onIn
       {tableToolbar && editable && (
         <div
           ref={tableToolbarRef}
-          className="fixed z-50 flex items-center gap-0.5 rounded-lg border border-white/10 bg-[#2a2a2a] px-1.5 py-1 shadow-xl"
+          className="fixed z-50 flex items-center gap-0.5 rounded-lg border border-[var(--editor-toolbar-border)] bg-[var(--editor-toolbar-bg)] px-1.5 py-1 shadow-xl"
           style={{ top: tableToolbar.top, left: tableToolbar.left }}
           onMouseDown={(e) => e.preventDefault()}
         >
@@ -955,14 +955,14 @@ export default function Editor({ content, onChange, onReady, onImageUpload, onIn
           <TableButton onClick={() => editor.chain().focus().addColumnAfter().run()} title="Add column right">
             <Columns size={13} /><Plus size={9} className="-ml-0.5 -mt-1" />
           </TableButton>
-          <div className="mx-1 h-4 w-px bg-white/10" />
+          <div className="mx-1 h-4 w-px bg-[var(--editor-toolbar-border)]" />
           <TableButton onClick={() => editor.chain().focus().deleteRow().run()} title="Delete row">
             <Rows size={13} className="opacity-60" /><Trash2 size={9} className="-ml-0.5 -mt-1 text-red-400" />
           </TableButton>
           <TableButton onClick={() => editor.chain().focus().deleteColumn().run()} title="Delete column">
             <Columns size={13} className="opacity-60" /><Trash2 size={9} className="-ml-0.5 -mt-1 text-red-400" />
           </TableButton>
-          <div className="mx-1 h-4 w-px bg-white/10" />
+          <div className="mx-1 h-4 w-px bg-[var(--editor-toolbar-border)]" />
           <button
             onMouseDown={(e) => {
               e.preventDefault()
@@ -974,13 +974,13 @@ export default function Editor({ content, onChange, onReady, onImageUpload, onIn
             }}
             title={tableFitWidth ? "Unset full width" : "Fit to width"}
             className={`flex items-center gap-1 rounded px-2 py-1 text-xs transition-colors ${
-              tableFitWidth ? "bg-white/20 text-white" : "text-white/60 hover:bg-white/10 hover:text-white"
+              tableFitWidth ? "bg-[var(--editor-toolbar-active)] text-[var(--editor-toolbar-text-strong)]" : "text-[var(--editor-toolbar-text)] hover:bg-[var(--editor-toolbar-hover)] hover:text-[var(--editor-toolbar-text-strong)]"
             }`}
           >
             <ArrowLeftRight size={13} />
             <span className="text-[11px]">Fit width</span>
           </button>
-          <div className="mx-1 h-4 w-px bg-white/10" />
+          <div className="mx-1 h-4 w-px bg-[var(--editor-toolbar-border)]" />
           <button
             onMouseDown={(e) => {
               e.preventDefault()
@@ -1007,7 +1007,7 @@ export default function Editor({ content, onChange, onReady, onImageUpload, onIn
               editor.chain().focus().addRowAfter().run()
             }}
             className="w-full flex items-center justify-center gap-1 py-0.5 rounded text-[11px] transition-colors opacity-0 hover:opacity-100"
-            style={{ color: "var(--text-muted)", backgroundColor: "var(--bg-tertiary)", border: "1px solid var(--border)" }}
+            style={{ color: "var(--text-3)", backgroundColor: "var(--surface-2)", border: "1px solid var(--border-subtle)" }}
             title="Add row"
           >
             <Plus size={11} />
@@ -1018,16 +1018,16 @@ export default function Editor({ content, onChange, onReady, onImageUpload, onIn
       {linkPopup && (
         <div
           ref={linkPopupRef}
-          className="absolute z-50 flex items-center gap-1 rounded-lg border border-white/10 bg-[#2a2a2a] px-2 py-1.5 shadow-xl"
+          className="absolute z-50 flex items-center gap-1 rounded-lg border border-[var(--editor-toolbar-border)] bg-[var(--editor-toolbar-bg)] px-2 py-1.5 shadow-xl"
           style={{ top: linkPopup.top, left: linkPopup.left }}
           onMouseEnter={handlePopupMouseEnter}
           onMouseLeave={handlePopupMouseLeave}
           onMouseDown={(e) => e.preventDefault()}
         >
-          <span className="max-w-[200px] truncate text-xs text-white/60">
+          <span className="max-w-[200px] truncate text-xs text-[var(--editor-toolbar-text)]">
             {linkPopup.url.startsWith("/docs/") ? "Internal doc" : linkPopup.url}
           </span>
-          <div className="mx-1 h-3 w-px bg-white/10" />
+          <div className="mx-1 h-3 w-px bg-[var(--editor-toolbar-border)]" />
           <button
             onMouseDown={(e) => {
               e.preventDefault()
@@ -1039,7 +1039,7 @@ export default function Editor({ content, onChange, onReady, onImageUpload, onIn
                 window.open(url, "_blank", "noopener,noreferrer")
               }
             }}
-            className="flex items-center gap-1 rounded px-1.5 py-0.5 text-xs text-white/60 hover:bg-white/10 hover:text-white transition-colors"
+            className="flex items-center gap-1 rounded px-1.5 py-0.5 text-xs text-[var(--editor-toolbar-text)] hover:bg-[var(--editor-toolbar-hover)] hover:text-[var(--editor-toolbar-text-strong)] transition-colors"
           >
             {linkPopup.url.startsWith("/") ? null : <ExternalLink size={11} />}
             Open
@@ -1054,7 +1054,7 @@ export default function Editor({ content, onChange, onReady, onImageUpload, onIn
                   setLinkUrl(url)
                   setLinkModalOpen(true)
                 }}
-                className="flex items-center gap-1 rounded px-1.5 py-0.5 text-xs text-white/60 hover:bg-white/10 hover:text-white transition-colors"
+                className="flex items-center gap-1 rounded px-1.5 py-0.5 text-xs text-[var(--editor-toolbar-text)] hover:bg-[var(--editor-toolbar-hover)] hover:text-[var(--editor-toolbar-text-strong)] transition-colors"
               >
                 <Pencil size={11} />
                 Edit
@@ -1097,11 +1097,11 @@ export default function Editor({ content, onChange, onReady, onImageUpload, onIn
       {linkModalOpen && editable && (
         <div
           className="fixed inset-0 z-[100] flex items-center justify-center"
-          style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
+          style={{ backgroundColor: "var(--overlay-soft)" }}
           onMouseDown={(e) => { if (e.target === e.currentTarget) cancelLink() }}
         >
-          <div className="w-full max-w-sm rounded-xl border border-white/10 bg-[#1e1e1e] p-5 shadow-2xl">
-            <p className="mb-3 text-sm font-medium text-white/70">Insert link</p>
+          <div className="w-full max-w-sm rounded-xl border border-[var(--editor-toolbar-border)] bg-[var(--modal-bg)] p-5 shadow-2xl">
+            <p className="mb-3 text-sm font-medium text-[var(--editor-toolbar-text-70)]">Insert link</p>
             <input
               ref={linkInputRef}
               type="text"
@@ -1109,22 +1109,22 @@ export default function Editor({ content, onChange, onReady, onImageUpload, onIn
               onChange={(e) => setLinkUrl(e.target.value)}
               onKeyDown={handleInputKeyDown}
               placeholder="Paste a URL or search your docs…"
-              className="w-full rounded-lg border border-white/10 bg-[#2a2a2a] px-3 py-2 text-sm text-white placeholder-white/30 outline-none focus:border-white/30"
+              className="w-full rounded-lg border border-[var(--editor-toolbar-border)] bg-[var(--editor-toolbar-bg)] px-3 py-2 text-sm text-[var(--editor-toolbar-text-strong)] placeholder-[var(--editor-toolbar-text-30)] outline-none focus:border-[var(--editor-toolbar-focus)]"
             />
             {docResults.length > 0 && (
-              <div className="mt-2 rounded-lg border border-white/10 bg-[#2a2a2a] overflow-hidden">
+              <div className="mt-2 rounded-lg border border-[var(--editor-toolbar-border)] bg-[var(--editor-toolbar-bg)] overflow-hidden">
                 {docResults.map((doc, i) => (
                   <button
                     key={doc.uuid}
                     onMouseDown={(e) => { e.preventDefault(); pickDoc(doc) }}
                     className="w-full flex items-center gap-2.5 px-3 py-2.5 text-left text-sm transition-colors"
                     style={{
-                      backgroundColor: i === selectedIndex ? "rgba(255,255,255,0.08)" : "transparent",
-                      color: "rgba(255,255,255,0.8)",
+                      backgroundColor: i === selectedIndex ? "var(--editor-toolbar-selected)" : "transparent",
+                      color: "var(--editor-toolbar-text-80)",
                     }}
                     onMouseEnter={() => setSelectedIndex(i)}
                   >
-                    <FileText size={13} style={{ color: "rgba(255,255,255,0.35)", flexShrink: 0 }} />
+                    <FileText size={13} style={{ color: "var(--editor-toolbar-icon)", flexShrink: 0 }} />
                     <span className="truncate">{doc.title || "Untitled"}</span>
                   </button>
                 ))}
@@ -1132,18 +1132,18 @@ export default function Editor({ content, onChange, onReady, onImageUpload, onIn
             )}
             {linkUrl.length > 0 && docResults.length === 0 &&
               !linkUrl.startsWith("http") && !linkUrl.startsWith("www.") && (
-              <p className="mt-2 text-xs text-white/30">No docs match &quot;{linkUrl}&quot;</p>
+              <p className="mt-2 text-xs text-[var(--editor-toolbar-text-30)]">No docs match &quot;{linkUrl}&quot;</p>
             )}
             <div className="mt-4 flex justify-end gap-2">
               <button
                 onMouseDown={(e) => { e.preventDefault(); cancelLink() }}
-                className="rounded-lg px-4 py-1.5 text-sm text-white/50 hover:text-white/80 transition-colors"
+                className="rounded-lg px-4 py-1.5 text-sm text-[var(--editor-toolbar-text-50)] hover:text-[var(--editor-toolbar-text-80)] transition-colors"
               >
                 Cancel
               </button>
               <button
                 onMouseDown={(e) => { e.preventDefault(); confirmLink() }}
-                className="rounded-lg bg-white/10 px-4 py-1.5 text-sm text-white hover:bg-white/20 transition-colors"
+                className="rounded-lg bg-[var(--editor-toolbar-hover)] px-4 py-1.5 text-sm text-[var(--editor-toolbar-text-strong)] hover:bg-[var(--editor-toolbar-active)] transition-colors"
               >
                 Apply
               </button>
@@ -1154,25 +1154,25 @@ export default function Editor({ content, onChange, onReady, onImageUpload, onIn
 
       {bubbleVisible && editable && (
         <div
-          className="absolute z-50 flex items-center gap-0.5 rounded-lg border border-white/10 bg-[#2a2a2a] px-1.5 py-1 shadow-xl"
+          className="absolute z-50 flex items-center gap-0.5 rounded-lg border border-[var(--editor-toolbar-border)] bg-[var(--editor-toolbar-bg)] px-1.5 py-1 shadow-xl"
           style={{ top: bubblePos.top, left: bubblePos.left }}
           onMouseDown={(e) => e.preventDefault()}
         >
           <BubbleButton onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()} active={editor.isActive("heading", { level: 1 })} title="H1"><Heading1 size={14} /></BubbleButton>
           <BubbleButton onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()} active={editor.isActive("heading", { level: 2 })} title="H2"><Heading2 size={14} /></BubbleButton>
           <BubbleButton onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()} active={editor.isActive("heading", { level: 3 })} title="H3"><Heading3 size={14} /></BubbleButton>
-          <div className="mx-1 h-4 w-px bg-white/10" />
+          <div className="mx-1 h-4 w-px bg-[var(--editor-toolbar-border)]" />
           <BubbleButton onClick={() => editor.chain().focus().toggleBold().run()} active={editor.isActive("bold")} title="Bold"><Bold size={14} /></BubbleButton>
           <BubbleButton onClick={() => editor.chain().focus().toggleItalic().run()} active={editor.isActive("italic")} title="Italic"><Italic size={14} /></BubbleButton>
           <BubbleButton onClick={() => editor.chain().focus().toggleStrike().run()} active={editor.isActive("strike")} title="Strikethrough"><Strikethrough size={14} /></BubbleButton>
           <BubbleButton onClick={() => editor.chain().focus().toggleCode().run()} active={editor.isActive("code")} title="Code"><Code size={14} /></BubbleButton>
-          <div className="mx-1 h-4 w-px bg-white/10" />
+          <div className="mx-1 h-4 w-px bg-[var(--editor-toolbar-border)]" />
           <BubbleButton onClick={() => editor.chain().focus().toggleBulletList().run()} active={editor.isActive("bulletList")} title="Bullet List"><List size={14} /></BubbleButton>
           <BubbleButton onClick={() => editor.chain().focus().toggleOrderedList().run()} active={editor.isActive("orderedList")} title="Numbered List"><ListOrdered size={14} /></BubbleButton>
           <BubbleButton onClick={() => editor.chain().focus().toggleTaskList().run()} active={editor.isActive("taskList")} title="Task List"><ListTodo size={14} /></BubbleButton>
           <BubbleButton onClick={() => editor.chain().focus().toggleBlockquote().run()} active={editor.isActive("blockquote")} title="Quote"><Quote size={14} /></BubbleButton>
           <BubbleButton onClick={() => editor.chain().focus().toggleCodeBlock().run()} active={editor.isActive("codeBlock")} title="Code Block"><Code2 size={14} /></BubbleButton>
-          <div className="mx-1 h-4 w-px bg-white/10" />
+          <div className="mx-1 h-4 w-px bg-[var(--editor-toolbar-border)]" />
           <BubbleButton onClick={openLinkModal} active={editor.isActive("link")} title="Link"><LinkIcon size={14} /></BubbleButton>
         </div>
       )}
@@ -1195,7 +1195,7 @@ function BubbleButton({
       onClick={onClick}
       title={title}
       className={`rounded p-1.5 transition-colors ${
-        active ? "bg-white/20 text-white" : "text-white/60 hover:bg-white/10 hover:text-white"
+        active ? "bg-[var(--editor-toolbar-active)] text-[var(--editor-toolbar-text-strong)]" : "text-[var(--editor-toolbar-text)] hover:bg-[var(--editor-toolbar-hover)] hover:text-[var(--editor-toolbar-text-strong)]"
       }`}
     >
       {children}
@@ -1214,7 +1214,7 @@ function TableButton({
     <button
       onMouseDown={(e) => { e.preventDefault(); onClick() }}
       title={title}
-      className="relative flex items-end rounded p-1.5 text-white/60 hover:bg-white/10 hover:text-white transition-colors"
+      className="relative flex items-end rounded p-1.5 text-[var(--editor-toolbar-text)] hover:bg-[var(--editor-toolbar-hover)] hover:text-[var(--editor-toolbar-text-strong)] transition-colors"
     >
       {children}
     </button>

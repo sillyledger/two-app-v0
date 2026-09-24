@@ -293,7 +293,7 @@ function PresenceAvatars({ currentUserName, members }: { currentUserName?: strin
         style={{
           width: 24, height: 24, borderRadius: '50%',
           backgroundColor: '#5271e0',
-          border: '2px solid var(--bg)',
+          border: '2px solid var(--panel)',
           outline: '2px solid #5271e0',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           fontSize: 10, fontWeight: 600, color: '#fff',
@@ -314,7 +314,7 @@ function PresenceAvatars({ currentUserName, members }: { currentUserName?: strin
             style={{
               width: 24, height: 24, borderRadius: '50%',
               backgroundColor: color,
-              border: '2px solid var(--bg)',
+              border: '2px solid var(--panel)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               fontSize: 10, fontWeight: 600, color: '#fff',
               marginLeft: -6, zIndex: 9 - i, position: 'relative', flexShrink: 0,
@@ -328,10 +328,10 @@ function PresenceAvatars({ currentUserName, members }: { currentUserName?: strin
       {overflow > 0 && (
         <div style={{
           width: 24, height: 24, borderRadius: '50%',
-          backgroundColor: 'var(--bg-tertiary)',
-          border: '2px solid var(--bg)',
+          backgroundColor: 'var(--surface-2)',
+          border: '2px solid var(--panel)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: 10, fontWeight: 600, color: 'var(--text-secondary)',
+          fontSize: 10, fontWeight: 600, color: 'var(--text-2)',
           marginLeft: -6, position: 'relative', flexShrink: 0,
         }}>
           +{overflow}
@@ -463,27 +463,27 @@ export default function DocTopbar({
     <>
       <header
         className="fixed top-0 z-40 h-[44px] flex items-center px-4 transition-all duration-200"
-        style={{ left: "var(--sidebar-width, 0px)", right: 0, backgroundColor: "var(--bg)" }}
+        style={{ left: "var(--sidebar-width, 0px)", right: 0, backgroundColor: "var(--panel)" }}
       >
         {/* LEFT — breadcrumb */}
         <div className="flex items-center gap-0.5 min-w-0 flex-1">
-          <Link href="/" className="text-[12px] font-medium truncate transition-colors" style={{ color: "var(--text-muted)" }}>
+          <Link href="/" className="text-[12px] font-medium truncate transition-colors" style={{ color: "var(--text-3)" }}>
             Home
           </Link>
           {folder ? (
             <>
-              <span className="mx-1 text-[12px]" style={{ color: "var(--text-muted)" }}>/</span>
+              <span className="mx-1 text-[12px]" style={{ color: "var(--text-3)" }}>/</span>
               {(folder.path && folder.path.length > 0 ? folder.path : [{ id: folder.id, name: folder.name }]).flatMap((crumb) => [
-                <Link key={`${crumb.id}-link`} href={`/folders/${crumb.id}`} className="text-[12px] font-medium truncate transition-colors hover:underline" style={{ color: "var(--text-muted)" }}>
+                <Link key={`${crumb.id}-link`} href={`/folders/${crumb.id}`} className="text-[12px] font-medium truncate transition-colors hover:underline" style={{ color: "var(--text-3)" }}>
                   {crumb.name}
                 </Link>,
-                <span key={`${crumb.id}-sep`} className="mx-1 text-[12px]" style={{ color: "var(--text-muted)" }}>/</span>,
+                <span key={`${crumb.id}-sep`} className="mx-1 text-[12px]" style={{ color: "var(--text-3)" }}>/</span>,
               ])}
             </>
           ) : (
-            <span className="mx-1 text-[12px]" style={{ color: "var(--text-muted)" }}>/</span>
+            <span className="mx-1 text-[12px]" style={{ color: "var(--text-3)" }}>/</span>
           )}
-          <span className="text-[12px] font-medium truncate max-w-[220px]" style={{ color: "var(--text-secondary)" }}>
+          <span className="text-[12px] font-medium truncate max-w-[220px]" style={{ color: "var(--text-2)" }}>
             {docTitle || "Untitled"}
           </span>
         </div>
@@ -496,13 +496,13 @@ export default function DocTopbar({
             {saveStatus === "saving" && (
               <>
                 <span className="w-1.5 h-1.5 rounded-full bg-yellow-400/80 animate-pulse" />
-                <span className="text-[11px]" style={{ color: "var(--text-muted)" }}>Saving...</span>
+                <span className="text-[11px]" style={{ color: "var(--text-3)" }}>Saving...</span>
               </>
             )}
             {saveStatus === "saved" && (
               <>
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500/80" />
-                <span className="text-[11px]" style={{ color: "var(--text-muted)" }}>Saved</span>
+                <span className="text-[11px]" style={{ color: "var(--text-3)" }}>Saved</span>
               </>
             )}
           </div>
@@ -514,9 +514,9 @@ export default function DocTopbar({
           {onToggleFavorite && (
             <button onClick={onToggleFavorite} title={isFavorite ? "Remove from favorites" : "Add to favorites"}
               className="flex items-center justify-center w-7 h-7 rounded-md transition-colors"
-              style={{ color: isFavorite ? "#EF9F27" : "var(--text-muted)" }}
+              style={{ color: isFavorite ? "#EF9F27" : "var(--text-3)" }}
               onMouseEnter={e => (e.currentTarget.style.color = "#EF9F27")}
-              onMouseLeave={e => (e.currentTarget.style.color = isFavorite ? "#EF9F27" : "var(--text-muted)")}
+              onMouseLeave={e => (e.currentTarget.style.color = isFavorite ? "#EF9F27" : "var(--text-3)")}
             ><Star size={14} fill={isFavorite ? "#EF9F27" : "none"} /></button>
           )}
 
@@ -524,9 +524,9 @@ export default function DocTopbar({
           {onDelete && (
             <button onClick={openMoveModal} title="Move to folder"
               className="flex items-center justify-center w-7 h-7 rounded-md transition-colors"
-              style={{ color: "var(--text-muted)" }}
-              onMouseEnter={e => { e.currentTarget.style.backgroundColor = "var(--bg-tertiary)"; e.currentTarget.style.color = "var(--text-primary)" }}
-              onMouseLeave={e => { e.currentTarget.style.backgroundColor = "transparent"; e.currentTarget.style.color = "var(--text-muted)" }}
+              style={{ color: "var(--text-3)" }}
+              onMouseEnter={e => { e.currentTarget.style.backgroundColor = "var(--surface-2)"; e.currentTarget.style.color = "var(--text-1)" }}
+              onMouseLeave={e => { e.currentTarget.style.backgroundColor = "transparent"; e.currentTarget.style.color = "var(--text-3)" }}
             ><FolderInput size={14} /></button>
           )}
 
@@ -537,11 +537,11 @@ export default function DocTopbar({
               title={splitViewActive ? "Close split view" : "Open split view"}
               className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[12px] font-medium transition-colors"
               style={{
-                color: splitViewActive ? "var(--sb-active-color)" : "var(--text-muted)",
-                backgroundColor: splitViewActive ? "var(--sb-active-bg)" : "transparent",
+                color: splitViewActive ? "var(--nav-active-text)" : "var(--text-3)",
+                backgroundColor: splitViewActive ? "var(--nav-active-bg)" : "transparent",
               }}
-              onMouseEnter={e => { e.currentTarget.style.backgroundColor = "var(--bg-tertiary)"; e.currentTarget.style.color = "var(--text-primary)" }}
-              onMouseLeave={e => { e.currentTarget.style.backgroundColor = splitViewActive ? "var(--sb-active-bg)" : "transparent"; e.currentTarget.style.color = splitViewActive ? "var(--sb-active-color)" : "var(--text-muted)" }}
+              onMouseEnter={e => { e.currentTarget.style.backgroundColor = "var(--surface-2)"; e.currentTarget.style.color = "var(--text-1)" }}
+              onMouseLeave={e => { e.currentTarget.style.backgroundColor = splitViewActive ? "var(--nav-active-bg)" : "transparent"; e.currentTarget.style.color = splitViewActive ? "var(--nav-active-text)" : "var(--text-3)" }}
             >
               <Columns2 size={13} /> Split View
             </button>
@@ -551,9 +551,9 @@ export default function DocTopbar({
           {onToggleDetail && (
             <button onClick={onToggleDetail} title={detailOpen ? "Close details" : "Open details"}
               className="flex items-center justify-center w-7 h-7 rounded-md transition-colors"
-              style={{ color: detailOpen ? "var(--text-primary)" : "var(--text-muted)", backgroundColor: detailOpen ? "var(--bg-tertiary)" : "transparent" }}
-              onMouseEnter={e => { e.currentTarget.style.backgroundColor = "var(--bg-tertiary)"; e.currentTarget.style.color = "var(--text-primary)" }}
-              onMouseLeave={e => { e.currentTarget.style.backgroundColor = detailOpen ? "var(--bg-tertiary)" : "transparent"; e.currentTarget.style.color = detailOpen ? "var(--text-primary)" : "var(--text-muted)" }}
+              style={{ color: detailOpen ? "var(--text-1)" : "var(--text-3)", backgroundColor: detailOpen ? "var(--surface-2)" : "transparent" }}
+              onMouseEnter={e => { e.currentTarget.style.backgroundColor = "var(--surface-2)"; e.currentTarget.style.color = "var(--text-1)" }}
+              onMouseLeave={e => { e.currentTarget.style.backgroundColor = detailOpen ? "var(--surface-2)" : "transparent"; e.currentTarget.style.color = detailOpen ? "var(--text-1)" : "var(--text-3)" }}
             ><PanelRight size={14} /></button>
           )}
 
@@ -561,57 +561,57 @@ export default function DocTopbar({
           <div className="relative" ref={menuRef}>
             <button onClick={() => setMenuOpen(v => !v)}
               className="flex items-center justify-center w-7 h-7 rounded-md transition-colors"
-              style={{ color: "var(--text-muted)" }}
-              onMouseEnter={e => { e.currentTarget.style.backgroundColor = "var(--bg-tertiary)"; e.currentTarget.style.color = "var(--text-primary)" }}
-              onMouseLeave={e => { e.currentTarget.style.backgroundColor = "transparent"; e.currentTarget.style.color = "var(--text-muted)" }}
+              style={{ color: "var(--text-3)" }}
+              onMouseEnter={e => { e.currentTarget.style.backgroundColor = "var(--surface-2)"; e.currentTarget.style.color = "var(--text-1)" }}
+              onMouseLeave={e => { e.currentTarget.style.backgroundColor = "transparent"; e.currentTarget.style.color = "var(--text-3)" }}
             ><MoreVertical size={15} /></button>
 
             {menuOpen && (
-              <div className="absolute right-0 top-9 z-50 rounded-lg shadow-xl w-[210px] py-1 overflow-hidden" style={{ backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border)" }}>
+              <div className="absolute right-0 top-9 z-50 rounded-lg shadow-xl w-[210px] py-1 overflow-hidden" style={{ backgroundColor: "var(--menu-bg)", border: "1px solid var(--border-subtle)" }}>
 
                 {/* VIEW */}
-                <p className="px-3 pt-2 pb-1 text-[10px] font-medium uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>View</p>
+                <p className="px-3 pt-2 pb-1 text-[10px] font-medium uppercase tracking-wider" style={{ color: "var(--text-3)" }}>View</p>
                 {onToggleWide && (
-                  <button onClick={handleWideMode} className="flex items-center gap-2.5 w-full px-3 py-2 text-[12px] transition-colors" style={{ color: "var(--text-secondary)" }}
-                    onMouseEnter={e => (e.currentTarget.style.backgroundColor = "var(--bg-tertiary)")} onMouseLeave={e => (e.currentTarget.style.backgroundColor = "transparent")}
-                  ><ArrowLeftRight size={12} style={{ color: "var(--text-muted)" }} /> {wideMode ? "Narrow view" : "Wide view"}</button>
+                  <button onClick={handleWideMode} className="flex items-center gap-2.5 w-full px-3 py-2 text-[12px] transition-colors" style={{ color: "var(--text-2)" }}
+                    onMouseEnter={e => (e.currentTarget.style.backgroundColor = "var(--surface-2)")} onMouseLeave={e => (e.currentTarget.style.backgroundColor = "transparent")}
+                  ><ArrowLeftRight size={12} style={{ color: "var(--text-3)" }} /> {wideMode ? "Narrow view" : "Wide view"}</button>
                 )}
 
-                <div className="my-1 mx-2" style={{ borderTop: "1px solid var(--border)" }} />
+                <div className="my-1 mx-2" style={{ borderTop: "1px solid var(--border-subtle)" }} />
 
                 {/* SHARE */}
-                <p className="px-3 pt-2 pb-1 text-[10px] font-medium uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>Share</p>
+                <p className="px-3 pt-2 pb-1 text-[10px] font-medium uppercase tracking-wider" style={{ color: "var(--text-3)" }}>Share</p>
                 <div className="relative" ref={shareRef}>
-                  <button onClick={handleOpenShare} className="flex items-center gap-2.5 w-full px-3 py-2 text-[12px] transition-colors" style={{ color: "var(--text-secondary)" }}
-                    onMouseEnter={e => (e.currentTarget.style.backgroundColor = "var(--bg-tertiary)")} onMouseLeave={e => (e.currentTarget.style.backgroundColor = "transparent")}
-                  ><Share2 size={12} style={{ color: "var(--text-muted)" }} /> Share doc…</button>
+                  <button onClick={handleOpenShare} className="flex items-center gap-2.5 w-full px-3 py-2 text-[12px] transition-colors" style={{ color: "var(--text-2)" }}
+                    onMouseEnter={e => (e.currentTarget.style.backgroundColor = "var(--surface-2)")} onMouseLeave={e => (e.currentTarget.style.backgroundColor = "transparent")}
+                  ><Share2 size={12} style={{ color: "var(--text-3)" }} /> Share doc…</button>
                 </div>
 
-                <div className="my-1 mx-2" style={{ borderTop: "1px solid var(--border)" }} />
+                <div className="my-1 mx-2" style={{ borderTop: "1px solid var(--border-subtle)" }} />
 
                 {/* HISTORY */}
-                <p className="px-3 pt-2 pb-1 text-[10px] font-medium uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>History</p>
-                <button onClick={() => { setMenuOpen(false); setShowVersionHistory(true) }} className="flex items-center gap-2.5 w-full px-3 py-2 text-[12px] transition-colors" style={{ color: "var(--text-secondary)" }}
-                  onMouseEnter={e => (e.currentTarget.style.backgroundColor = "var(--bg-tertiary)")} onMouseLeave={e => (e.currentTarget.style.backgroundColor = "transparent")}
-                ><History size={12} style={{ color: "var(--text-muted)" }} /> Version history</button>
-                <div className="my-1 mx-2" style={{ borderTop: "1px solid var(--border)" }} />
+                <p className="px-3 pt-2 pb-1 text-[10px] font-medium uppercase tracking-wider" style={{ color: "var(--text-3)" }}>History</p>
+                <button onClick={() => { setMenuOpen(false); setShowVersionHistory(true) }} className="flex items-center gap-2.5 w-full px-3 py-2 text-[12px] transition-colors" style={{ color: "var(--text-2)" }}
+                  onMouseEnter={e => (e.currentTarget.style.backgroundColor = "var(--surface-2)")} onMouseLeave={e => (e.currentTarget.style.backgroundColor = "transparent")}
+                ><History size={12} style={{ color: "var(--text-3)" }} /> Version history</button>
+                <div className="my-1 mx-2" style={{ borderTop: "1px solid var(--border-subtle)" }} />
 
                 {/* EXPORT */}
-                <p className="px-3 pt-2 pb-1 text-[10px] font-medium uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>Export</p>
-                <button onClick={handleCopyDoc} className="flex items-center gap-2.5 w-full px-3 py-2 text-[12px] transition-colors" style={{ color: "var(--text-secondary)" }}
-                  onMouseEnter={e => (e.currentTarget.style.backgroundColor = "var(--bg-tertiary)")} onMouseLeave={e => (e.currentTarget.style.backgroundColor = "transparent")}
-                ><Copy size={12} style={{ color: "var(--text-muted)" }} /> Copy as Markdown</button>
-                <button onClick={handleExportMarkdown} className="flex items-center gap-2.5 w-full px-3 py-2 text-[12px] transition-colors" style={{ color: "var(--text-secondary)" }}
-                  onMouseEnter={e => (e.currentTarget.style.backgroundColor = "var(--bg-tertiary)")} onMouseLeave={e => (e.currentTarget.style.backgroundColor = "transparent")}
-                ><Download size={12} style={{ color: "var(--text-muted)" }} /> Export as Markdown</button>
-                <button onClick={handleExportPDF} className="flex items-center gap-2.5 w-full px-3 py-2 text-[12px] transition-colors" style={{ color: "var(--text-secondary)" }}
-                  onMouseEnter={e => (e.currentTarget.style.backgroundColor = "var(--bg-tertiary)")} onMouseLeave={e => (e.currentTarget.style.backgroundColor = "transparent")}
-                ><FileText size={12} style={{ color: "var(--text-muted)" }} /> Export as PDF</button>
+                <p className="px-3 pt-2 pb-1 text-[10px] font-medium uppercase tracking-wider" style={{ color: "var(--text-3)" }}>Export</p>
+                <button onClick={handleCopyDoc} className="flex items-center gap-2.5 w-full px-3 py-2 text-[12px] transition-colors" style={{ color: "var(--text-2)" }}
+                  onMouseEnter={e => (e.currentTarget.style.backgroundColor = "var(--surface-2)")} onMouseLeave={e => (e.currentTarget.style.backgroundColor = "transparent")}
+                ><Copy size={12} style={{ color: "var(--text-3)" }} /> Copy as Markdown</button>
+                <button onClick={handleExportMarkdown} className="flex items-center gap-2.5 w-full px-3 py-2 text-[12px] transition-colors" style={{ color: "var(--text-2)" }}
+                  onMouseEnter={e => (e.currentTarget.style.backgroundColor = "var(--surface-2)")} onMouseLeave={e => (e.currentTarget.style.backgroundColor = "transparent")}
+                ><Download size={12} style={{ color: "var(--text-3)" }} /> Export as Markdown</button>
+                <button onClick={handleExportPDF} className="flex items-center gap-2.5 w-full px-3 py-2 text-[12px] transition-colors" style={{ color: "var(--text-2)" }}
+                  onMouseEnter={e => (e.currentTarget.style.backgroundColor = "var(--surface-2)")} onMouseLeave={e => (e.currentTarget.style.backgroundColor = "transparent")}
+                ><FileText size={12} style={{ color: "var(--text-3)" }} /> Export as PDF</button>
 
-                <div className="my-1 mx-2" style={{ borderTop: "1px solid var(--border)" }} />
+                <div className="my-1 mx-2" style={{ borderTop: "1px solid var(--border-subtle)" }} />
 
                 {/* DELETE */}
-                <button onClick={() => { setMenuOpen(false); setShowDeleteModal(true) }} className="flex items-center gap-2.5 w-full px-3 py-2 text-[12px] transition-colors" style={{ color: "#f87171" }}
+                <button onClick={() => { setMenuOpen(false); setShowDeleteModal(true) }} className="flex items-center gap-2.5 w-full px-3 py-2 text-[12px] transition-colors" style={{ color: "var(--danger)" }}
                   onMouseEnter={e => (e.currentTarget.style.backgroundColor = "rgba(239,68,68,0.08)")} onMouseLeave={e => (e.currentTarget.style.backgroundColor = "transparent")}
                 ><Trash2 size={12} /> Delete doc</button>
               </div>
@@ -622,39 +622,39 @@ export default function DocTopbar({
 
       {/* Share dropdown — now rendered outside the menu so it can be opened from the menu item */}
       {shareOpen && (
-        <div ref={shareRef} className="fixed z-50 rounded-xl shadow-2xl w-[300px] p-4" style={{ top: 52, right: 16, backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border)" }}>
-          <p className="text-[13px] font-semibold mb-1" style={{ color: "var(--text-primary)" }}>Share this doc</p>
-          <p className="text-[11px] mb-4" style={{ color: "var(--text-muted)" }}>Anyone with the link can view this doc when enabled.</p>
-          <div className="flex items-center justify-between rounded-lg px-3 py-2.5 mb-3" style={{ backgroundColor: "var(--bg-tertiary)" }}>
+        <div ref={shareRef} className="fixed z-50 rounded-xl shadow-2xl w-[300px] p-4" style={{ top: 52, right: 16, backgroundColor: "var(--menu-bg)", border: "1px solid var(--border-subtle)" }}>
+          <p className="text-[13px] font-semibold mb-1" style={{ color: "var(--text-1)" }}>Share this doc</p>
+          <p className="text-[11px] mb-4" style={{ color: "var(--text-3)" }}>Anyone with the link can view this doc when enabled.</p>
+          <div className="flex items-center justify-between rounded-lg px-3 py-2.5 mb-3" style={{ backgroundColor: "var(--surface-2)" }}>
             <div className="flex items-center gap-2">
-              {publicEnabled ? <Globe size={13} className="text-emerald-400 shrink-0" /> : <Lock size={13} style={{ color: "var(--text-muted)" }} className="shrink-0" />}
+              {publicEnabled ? <Globe size={13} className="text-emerald-400 shrink-0" /> : <Lock size={13} style={{ color: "var(--text-3)" }} className="shrink-0" />}
               <div>
-                <p className="text-[12px] font-medium" style={{ color: "var(--text-secondary)" }}>{publicEnabled ? "Anyone with the link" : "Private"}</p>
-                <p className="text-[10px]" style={{ color: "var(--text-muted)" }}>{publicEnabled ? "Link sharing is on" : "Only you can access"}</p>
+                <p className="text-[12px] font-medium" style={{ color: "var(--text-2)" }}>{publicEnabled ? "Anyone with the link" : "Private"}</p>
+                <p className="text-[10px]" style={{ color: "var(--text-3)" }}>{publicEnabled ? "Link sharing is on" : "Only you can access"}</p>
               </div>
             </div>
-            <button onClick={handleTogglePublic} className={`relative w-9 h-5 rounded-full transition-colors duration-200 shrink-0 ${publicEnabled ? 'bg-emerald-500' : 'bg-[#333]'}`}>
+            <button onClick={handleTogglePublic} className={`relative w-9 h-5 rounded-full transition-colors duration-200 shrink-0 ${publicEnabled ? 'bg-emerald-500' : 'bg-[var(--toggle-off)]'}`}>
               <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform duration-200 ${publicEnabled ? 'translate-x-4' : 'translate-x-0'}`} />
             </button>
           </div>
           <button onClick={handleCopyLink} disabled={!publicEnabled}
             className="flex items-center justify-center gap-2 w-full py-2 rounded-lg text-[12px] font-medium transition-colors"
-            style={{ backgroundColor: publicEnabled ? "var(--bg-tertiary)" : "var(--bg-secondary)", color: publicEnabled ? "var(--text-secondary)" : "var(--text-muted)", cursor: publicEnabled ? "pointer" : "not-allowed" }}
+            style={{ backgroundColor: publicEnabled ? "var(--surface-2)" : "var(--surface)", color: publicEnabled ? "var(--text-2)" : "var(--text-3)", cursor: publicEnabled ? "pointer" : "not-allowed" }}
           ><Copy size={12} />{linkCopied ? "Copied!" : "Copy link"}</button>
-          <button onClick={() => setShareOpen(false)} className="flex items-center justify-center w-full mt-2 py-1.5 text-[11px] rounded-lg transition-colors" style={{ color: "var(--text-muted)" }}
-            onMouseEnter={e => (e.currentTarget.style.backgroundColor = "var(--bg-tertiary)")} onMouseLeave={e => (e.currentTarget.style.backgroundColor = "transparent")}
+          <button onClick={() => setShareOpen(false)} className="flex items-center justify-center w-full mt-2 py-1.5 text-[11px] rounded-lg transition-colors" style={{ color: "var(--text-3)" }}
+            onMouseEnter={e => (e.currentTarget.style.backgroundColor = "var(--surface-2)")} onMouseLeave={e => (e.currentTarget.style.backgroundColor = "transparent")}
           >Close</button>
         </div>
       )}
 
       {/* Toasts */}
       {copyToast && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 rounded-lg px-4 py-2 text-[12px] shadow-xl" style={{ backgroundColor: "var(--bg-tertiary)", border: "1px solid var(--border)", color: "var(--text-primary)" }}>
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 rounded-lg px-4 py-2 text-[12px] shadow-xl" style={{ backgroundColor: "var(--menu-bg-2)", border: "1px solid var(--border-subtle)", color: "var(--text-1)" }}>
           Copied to clipboard
         </div>
       )}
       {moveToast && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 rounded-lg px-4 py-2 text-[12px] shadow-xl" style={{ backgroundColor: "var(--bg-tertiary)", border: "1px solid var(--border)", color: "var(--text-primary)" }}>
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 rounded-lg px-4 py-2 text-[12px] shadow-xl" style={{ backgroundColor: "var(--menu-bg-2)", border: "1px solid var(--border-subtle)", color: "var(--text-1)" }}>
           Doc moved
         </div>
       )}
@@ -667,13 +667,13 @@ export default function DocTopbar({
       {/* Delete modal */}
       {showDeleteModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div className="absolute inset-0 bg-black/50 backdrop-blur-[2px]" onClick={() => setShowDeleteModal(false)} />
-          <div className="relative rounded-xl shadow-2xl w-[320px] p-5 z-10" style={{ backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border)" }}>
-            <h2 className="text-[14px] font-semibold mb-1" style={{ color: "var(--text-primary)" }}>Delete doc</h2>
-            <p className="text-[12px] mb-5" style={{ color: "var(--text-muted)" }}>This doc will be permanently deleted. This cannot be undone.</p>
+          <div className="absolute inset-0 backdrop-blur-[2px]" style={{ backgroundColor: "var(--overlay-soft)" }} onClick={() => setShowDeleteModal(false)} />
+          <div className="relative rounded-xl shadow-2xl w-[320px] p-5 z-10" style={{ backgroundColor: "var(--menu-bg)", border: "1px solid var(--border-subtle)" }}>
+            <h2 className="text-[14px] font-semibold mb-1" style={{ color: "var(--text-1)" }}>Delete doc</h2>
+            <p className="text-[12px] mb-5" style={{ color: "var(--text-3)" }}>This doc will be permanently deleted. This cannot be undone.</p>
             <div className="flex justify-end gap-2">
-              <button onClick={() => setShowDeleteModal(false)} className="px-3 py-1.5 rounded-lg text-[12px] font-medium transition-colors" style={{ color: "var(--text-muted)" }}
-                onMouseEnter={e => (e.currentTarget.style.backgroundColor = "var(--bg-tertiary)")} onMouseLeave={e => (e.currentTarget.style.backgroundColor = "transparent")}
+              <button onClick={() => setShowDeleteModal(false)} className="px-3 py-1.5 rounded-lg text-[12px] font-medium transition-colors" style={{ color: "var(--text-3)" }}
+                onMouseEnter={e => (e.currentTarget.style.backgroundColor = "var(--surface-2)")} onMouseLeave={e => (e.currentTarget.style.backgroundColor = "transparent")}
               >Cancel</button>
               <button onClick={() => { setShowDeleteModal(false); onDelete?.() }} className="px-3 py-1.5 rounded-lg text-[12px] font-medium bg-red-500/90 text-white hover:bg-red-500 transition-colors">
                 Delete
