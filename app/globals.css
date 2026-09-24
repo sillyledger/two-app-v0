@@ -131,6 +131,16 @@
   --trash-bg: #111113;
   --trash-empty-icon: #2a2a32;
   --row-hover-faint: rgba(255,255,255,0.04);
+
+  /* Canvas scoped tokens: dark values match the original hardcoded colors exactly */
+  --canvas-line: #8f89e6;
+  --canvas-card-border: transparent;
+  --canvas-swatch-bar: #1d1d20;
+  --canvas-swatch-bar-text: #ffffff;
+  --canvas-swatch-ring: #ffffff;
+  --canvas-shape-none-outline: rgba(255,255,255,0.35);
+  --canvas-shape-none-text: #d4d4d8;
+  --canvas-text-outline: rgba(255,255,255,0.25);
 }
 
 html.light {
@@ -257,6 +267,15 @@ html.light {
   --trash-bg: #FCFCFC;
   --trash-empty-icon: #D4D5D9;
   --row-hover-faint: #F4F4F5;
+
+  --canvas-line: #6B5CE7;
+  --canvas-card-border: rgba(15,15,25,0.09);
+  --canvas-swatch-bar: #FFFFFF;
+  --canvas-swatch-bar-text: #1C1D1F;
+  --canvas-swatch-ring: #1C1D1F;
+  --canvas-shape-none-outline: rgba(15,15,25,0.3);
+  --canvas-shape-none-text: #5C5F66;
+  --canvas-text-outline: rgba(15,15,25,0.3);
 }
 
 /* ── App base ── */

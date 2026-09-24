@@ -229,7 +229,7 @@ export default function CanvasBoardsPage() {
     const eligible = boardCategories.filter(c => c.id !== cat.id && !descendantIds.includes(c.id))
     const eligibleTopLevel = eligible.filter(c => c.parent_id === null)
 
-    const menuItemStyle: React.CSSProperties = { width: '100%', textAlign: 'left', background: 'transparent', border: 'none', borderRadius: 6, padding: '7px 9px', fontSize: 12.5, color: 'var(--text-primary)', cursor: 'pointer', fontFamily: FONT }
+    const menuItemStyle: React.CSSProperties = { width: '100%', textAlign: 'left', background: 'transparent', border: 'none', borderRadius: 6, padding: '7px 9px', fontSize: 12.5, color: 'var(--text-1)', cursor: 'pointer', fontFamily: FONT }
 
     return (
       <div style={{ position: 'relative' }} ref={isMenuOpen ? categoryMenuRef : undefined}>
@@ -238,8 +238,8 @@ export default function CanvasBoardsPage() {
           onContextMenu={e => { e.preventDefault(); setOpenCategoryMenuId(cat.id); setCategoryMenuMode('actions') }}
           style={{
             display: 'flex', alignItems: 'center', gap: small ? 5 : 6,
-            background: activeCategory === cat.id ? 'var(--bg-tertiary)' : 'var(--bg-secondary)',
-            color: 'var(--text-primary)', border: '1px solid var(--border)',
+            background: activeCategory === cat.id ? 'var(--surface-2)' : 'var(--surface)',
+            color: 'var(--text-1)', border: '1px solid var(--border-subtle)',
             fontSize: small ? 11 : 12, padding: small ? '5px 11px' : '6px 13px', borderRadius: 999, cursor: 'pointer', fontFamily: FONT,
           }}
         >
@@ -248,26 +248,26 @@ export default function CanvasBoardsPage() {
           {hasChildren && !small && (
             <span
               onClick={e => { e.stopPropagation(); setExpandedCategoryId(expandedCategoryId === cat.id ? null : cat.id) }}
-              style={{ display: 'flex', alignItems: 'center', color: 'var(--text-muted)', marginLeft: 1 }}
+              style={{ display: 'flex', alignItems: 'center', color: 'var(--text-3)', marginLeft: 1 }}
             >
               {expandedCategoryId === cat.id ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
             </span>
           )}
           <span
             onClick={e => { e.stopPropagation(); setOpenCategoryMenuId(isMenuOpen ? null : cat.id); setCategoryMenuMode('actions') }}
-            style={{ fontSize: 11, color: 'var(--text-muted)', marginLeft: 2, lineHeight: 1 }}
+            style={{ fontSize: 11, color: 'var(--text-3)', marginLeft: 2, lineHeight: 1 }}
           >
             ⋯
           </span>
         </button>
         {isMenuOpen && (
-          <div style={{ position: 'absolute', top: 'calc(100% + 4px)', left: 0, zIndex: 20, background: 'var(--bg-secondary)', border: '1px solid var(--border)', borderRadius: 9, padding: 4, minWidth: categoryMenuMode === 'picker' ? 180 : 150, maxHeight: 260, overflowY: 'auto', boxShadow: '0 8px 24px rgba(0,0,0,0.3)' }}>
+          <div style={{ position: 'absolute', top: 'calc(100% + 4px)', left: 0, zIndex: 20, background: 'var(--menu-bg)', border: '1px solid var(--border-subtle)', borderRadius: 9, padding: 4, minWidth: categoryMenuMode === 'picker' ? 180 : 150, maxHeight: 260, overflowY: 'auto', boxShadow: '0 8px 24px rgba(0,0,0,0.3)' }}>
             {categoryMenuMode === 'actions' ? (
               <>
                 <button
                   onClick={() => setCategoryMenuMode('picker')}
                   style={menuItemStyle}
-                  onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-tertiary)')}
+                  onMouseEnter={e => (e.currentTarget.style.background = 'var(--surface-2)')}
                   onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                 >
                   Move to category
@@ -276,7 +276,7 @@ export default function CanvasBoardsPage() {
                   <button
                     onClick={() => handleMoveCategory(cat, null)}
                     style={menuItemStyle}
-                    onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-tertiary)')}
+                    onMouseEnter={e => (e.currentTarget.style.background = 'var(--surface-2)')}
                     onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                   >
                     Move to top level
@@ -284,8 +284,8 @@ export default function CanvasBoardsPage() {
                 )}
                 <button
                   onClick={() => handleDeleteCategory(cat.id)}
-                  style={{ ...menuItemStyle, color: '#E24B4A' }}
-                  onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-tertiary)')}
+                  style={{ ...menuItemStyle, color: 'var(--note-danger)' }}
+                  onMouseEnter={e => (e.currentTarget.style.background = 'var(--surface-2)')}
                   onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                 >
                   Delete category
@@ -296,7 +296,7 @@ export default function CanvasBoardsPage() {
                 <button
                   onClick={() => handleMoveCategory(cat, null)}
                   style={menuItemStyle}
-                  onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-tertiary)')}
+                  onMouseEnter={e => (e.currentTarget.style.background = 'var(--surface-2)')}
                   onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                 >
                   Top level
@@ -306,7 +306,7 @@ export default function CanvasBoardsPage() {
                     <button
                       onClick={() => handleMoveCategory(cat, top.id)}
                       style={menuItemStyle}
-                      onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-tertiary)')}
+                      onMouseEnter={e => (e.currentTarget.style.background = 'var(--surface-2)')}
                       onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                     >
                       {top.name}
@@ -316,7 +316,7 @@ export default function CanvasBoardsPage() {
                         key={child.id}
                         onClick={() => handleMoveCategory(cat, child.id)}
                         style={{ ...menuItemStyle, paddingLeft: 22 }}
-                        onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-tertiary)')}
+                        onMouseEnter={e => (e.currentTarget.style.background = 'var(--surface-2)')}
                         onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                       >
                         {child.name}
@@ -339,50 +339,50 @@ export default function CanvasBoardsPage() {
     .filter(b => !trimmedQuery || b.name.toLowerCase().includes(trimmedQuery))
 
   return (
-    <div className="flex h-screen overflow-hidden" style={{ backgroundColor: 'var(--bg)' }}>
+    <div className="flex h-screen overflow-hidden" style={{ backgroundColor: 'var(--panel)' }}>
       <Sidebar collapsed={collapsed} onToggle={() => setCollapsed(v => !v)} />
 
       <main className="flex-1 overflow-y-auto">
         <div className="max-w-[1180px] mx-auto px-10 py-10">
-          <div className="flex items-center flex-wrap gap-1 mb-3 text-[12px]" style={{ color: 'var(--text-muted)' }}>
+          <div className="flex items-center flex-wrap gap-1 mb-3 text-[12px]" style={{ color: 'var(--text-3)' }}>
             <button
               onClick={() => router.push('/studio')}
               className="transition-colors"
-              style={{ color: 'var(--text-muted)' }}
-              onMouseEnter={e => (e.currentTarget.style.color = 'var(--text-primary)')}
-              onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-muted)')}
+              style={{ color: 'var(--text-3)' }}
+              onMouseEnter={e => (e.currentTarget.style.color = 'var(--text-1)')}
+              onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-3)')}
             >
               Studio
             </button>
             <span className="flex items-center gap-1">
               <ChevronRight size={12} />
-              <span className="font-semibold" style={{ color: 'var(--text-primary)' }}>Canvas</span>
+              <span className="font-semibold" style={{ color: 'var(--text-1)' }}>Canvas</span>
             </span>
           </div>
 
           <div className="flex items-center justify-between mb-6 gap-4">
             <div className="relative flex-1" style={{ maxWidth: 420 }}>
-              <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: 'var(--text-muted)' }} />
+              <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: 'var(--text-3)' }} />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
                 placeholder="Search canvases..."
-                className="w-full rounded-lg pl-9 pr-4 py-2.5 text-sm outline-none placeholder-[var(--text-muted)]"
-                style={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border)', color: 'var(--text-primary)' }}
+                className="w-full rounded-lg pl-9 pr-4 py-2.5 text-sm outline-none placeholder-[var(--text-3)]"
+                style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border-subtle)', color: 'var(--text-1)' }}
               />
             </div>
             <div className="flex items-center gap-2.5" style={{ flexShrink: 0 }}>
               <button
                 onClick={() => openCategoryModal()}
-                style={{ background: 'transparent', color: 'var(--text-primary)', border: '1px solid var(--border)', borderRadius: 8, padding: '9px 14px', fontSize: 13, fontWeight: 500, cursor: 'pointer', fontFamily: FONT }}
+                style={{ background: 'transparent', color: 'var(--text-1)', border: '1px solid var(--border-subtle)', borderRadius: 8, padding: '9px 14px', fontSize: 13, fontWeight: 500, cursor: 'pointer', fontFamily: FONT }}
               >
                 + New category
               </button>
               <button
                 onClick={() => createBoard()}
                 className="flex items-center gap-2 px-3.5 py-2 rounded-lg text-[13.5px] font-medium"
-                style={{ backgroundColor: 'var(--text-primary)', color: 'var(--bg)', flexShrink: 0 }}
+                style={{ backgroundColor: 'var(--primary-bg)', color: 'var(--primary-text)', flexShrink: 0 }}
               >
                 <Plus size={14} /> New canvas
               </button>
@@ -394,8 +394,8 @@ export default function CanvasBoardsPage() {
               <button
                 onClick={() => setActiveCategory('all')}
                 style={{
-                  background: activeCategory === 'all' ? 'var(--bg-tertiary)' : 'var(--bg-secondary)',
-                  color: 'var(--text-primary)', border: '1px solid var(--border)',
+                  background: activeCategory === 'all' ? 'var(--surface-2)' : 'var(--surface)',
+                  color: 'var(--text-1)', border: '1px solid var(--border-subtle)',
                   fontSize: 12, padding: '6px 13px', borderRadius: 999, cursor: 'pointer', fontFamily: FONT,
                 }}
               >
@@ -406,20 +406,20 @@ export default function CanvasBoardsPage() {
               ))}
               <button
                 onClick={() => openCategoryModal()}
-                style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'transparent', border: '1px dashed var(--border)', color: 'var(--text-muted)', fontSize: 12, padding: '6px 13px', borderRadius: 999, cursor: 'pointer', fontFamily: FONT }}
+                style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'transparent', border: '1px dashed var(--border-subtle)', color: 'var(--text-3)', fontSize: 12, padding: '6px 13px', borderRadius: 999, cursor: 'pointer', fontFamily: FONT }}
               >
                 + Add category
               </button>
             </div>
 
             {expandedCategoryId !== null && (
-              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', paddingLeft: 24, borderLeft: '2px solid var(--border)', marginLeft: 10 }}>
+              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', paddingLeft: 24, borderLeft: '2px solid var(--border-subtle)', marginLeft: 10 }}>
                 {boardCategories.filter(c => c.parent_id === expandedCategoryId).map(subcat => (
                   <CategoryChip key={subcat.id} cat={subcat} small />
                 ))}
                 <button
                   onClick={() => openCategoryModal(expandedCategoryId)}
-                  style={{ display: 'flex', alignItems: 'center', gap: 5, background: 'transparent', border: '1px dashed var(--border)', color: 'var(--text-muted)', fontSize: 11, padding: '5px 11px', borderRadius: 999, cursor: 'pointer', fontFamily: FONT }}
+                  style={{ display: 'flex', alignItems: 'center', gap: 5, background: 'transparent', border: '1px dashed var(--border-subtle)', color: 'var(--text-3)', fontSize: 11, padding: '5px 11px', borderRadius: 999, cursor: 'pointer', fontFamily: FONT }}
                 >
                   + New subcategory
                 </button>
@@ -427,18 +427,18 @@ export default function CanvasBoardsPage() {
             )}
           </div>
 
-          <p className="text-sm mb-6" style={{ color: 'var(--text-muted)' }}>
+          <p className="text-sm mb-6" style={{ color: 'var(--text-3)' }}>
             {trimmedQuery ? `${filteredBoards.length} matching canvases` : `${boards.length} canvases`}
           </p>
 
           {loading ? (
             <div className="flex items-center justify-center h-64">
-              <span className="text-xs" style={{ color: 'var(--text-muted)' }}>Loading...</span>
+              <span className="text-xs" style={{ color: 'var(--text-3)' }}>Loading...</span>
             </div>
           ) : filteredBoards.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-64 gap-2">
-              <p className="text-sm" style={{ color: 'var(--text-muted)' }}>{trimmedQuery ? 'No canvases match your search' : 'No canvases yet'}</p>
-              <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{trimmedQuery ? 'Try a different search term' : 'Click New canvas to create your first one'}</p>
+              <p className="text-sm" style={{ color: 'var(--text-3)' }}>{trimmedQuery ? 'No canvases match your search' : 'No canvases yet'}</p>
+              <p className="text-xs" style={{ color: 'var(--text-3)' }}>{trimmedQuery ? 'Try a different search term' : 'Click New canvas to create your first one'}</p>
             </div>
           ) : (
             <div className="grid grid-cols-3 gap-3.5">
@@ -447,9 +447,9 @@ export default function CanvasBoardsPage() {
                   key={board.id}
                   onClick={() => { if (renamingId !== board.id) router.push(`/studio/canvas/${board.uuid}`) }}
                   className="relative rounded-xl p-4 flex flex-col justify-between cursor-pointer transition-colors"
-                  style={{ backgroundColor: 'var(--bg-secondary)', height: 110 }}
-                  onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)')}
-                  onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'var(--bg-secondary)')}
+                  style={{ backgroundColor: 'var(--surface)', height: 110 }}
+                  onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--surface-2)')}
+                  onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'var(--surface)')}
                 >
                   <div className="flex items-start justify-between">
                     <Atom size={18} style={{ color: '#c98a5e' }} />
@@ -458,7 +458,7 @@ export default function CanvasBoardsPage() {
                         onClick={e => { e.stopPropagation(); setMovingId(null); setMenuOpenId(prev => prev === board.id ? null : board.id) }}
                         title="More options"
                         className="transition-opacity"
-                        style={{ color: 'var(--text-muted)', opacity: menuOpenId === board.id ? 1 : 0.4 }}
+                        style={{ color: 'var(--text-3)', opacity: menuOpenId === board.id ? 1 : 0.4 }}
                         onMouseEnter={e => (e.currentTarget.style.opacity = '1')}
                         onMouseLeave={e => (e.currentTarget.style.opacity = menuOpenId === board.id ? '1' : '0.4')}
                       >
@@ -471,18 +471,18 @@ export default function CanvasBoardsPage() {
                             position: 'absolute', right: 0, top: 20, zIndex: 50,
                             borderRadius: 10, boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
                             width: 130, padding: '4px 0', overflow: 'hidden',
-                            background: '#242428', border: '1px solid rgba(255,255,255,0.09)',
+                            background: 'var(--menu-bg)', border: '1px solid var(--border-subtle)',
                           }}
                         >
                           {movingId === board.id ? (
                             <>
-                              <button onClick={() => handleMoveBoard(board, null)} style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '8px 12px', fontSize: 12.5, color: 'var(--text-secondary)', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left', fontFamily: FONT }} onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.06)')} onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+                              <button onClick={() => handleMoveBoard(board, null)} style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '8px 12px', fontSize: 12.5, color: 'var(--text-2)', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left', fontFamily: FONT }} onMouseEnter={e => (e.currentTarget.style.background = 'var(--hover)')} onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
                                 No category
                               </button>
                               {sortCategoriesForMove(boardCategories).map(cat => (
-                                <button key={cat.id} onClick={() => handleMoveBoard(board, cat.id)} style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: cat.depth > 0 ? '8px 12px 8px 28px' : '8px 12px', fontSize: 12.5, color: 'var(--text-secondary)', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left', fontFamily: FONT }} onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.06)')} onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+                                <button key={cat.id} onClick={() => handleMoveBoard(board, cat.id)} style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: cat.depth > 0 ? '8px 12px 8px 28px' : '8px 12px', fontSize: 12.5, color: 'var(--text-2)', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left', fontFamily: FONT }} onMouseEnter={e => (e.currentTarget.style.background = 'var(--hover)')} onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
                                   {cat.depth > 0 && (
-                                    <span style={{ position: 'absolute', left: 16, top: 0, bottom: '50%', width: 10, borderLeft: '1px solid var(--border)', borderBottom: '1px solid var(--border)', borderRadius: '0 0 0 4px' }} />
+                                    <span style={{ position: 'absolute', left: 16, top: 0, bottom: '50%', width: 10, borderLeft: '1px solid var(--border-subtle)', borderBottom: '1px solid var(--border-subtle)', borderRadius: '0 0 0 4px' }} />
                                   )}
                                   <span style={{ width: 7, height: 7, borderRadius: '50%', background: cat.color, flexShrink: 0 }} />
                                   {cat.name}
@@ -495,10 +495,10 @@ export default function CanvasBoardsPage() {
                                 onClick={() => startRenaming(board)}
                                 style={{
                                   display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '8px 12px',
-                                  fontSize: 13, color: 'var(--text-muted)', background: 'transparent', border: 'none',
+                                  fontSize: 13, color: 'var(--text-3)', background: 'transparent', border: 'none',
                                   cursor: 'pointer', textAlign: 'left',
                                 }}
-                                onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.06)')}
+                                onMouseEnter={e => (e.currentTarget.style.background = 'var(--hover)')}
                                 onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                               >
                                 <Pencil size={12} /> Rename
@@ -507,10 +507,10 @@ export default function CanvasBoardsPage() {
                                 onClick={() => setMovingId(board.id)}
                                 style={{
                                   display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '8px 12px',
-                                  fontSize: 13, color: 'var(--text-muted)', background: 'transparent', border: 'none',
+                                  fontSize: 13, color: 'var(--text-3)', background: 'transparent', border: 'none',
                                   cursor: 'pointer', textAlign: 'left',
                                 }}
-                                onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.06)')}
+                                onMouseEnter={e => (e.currentTarget.style.background = 'var(--hover)')}
                                 onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                               >
                                 <Tag size={12} /> Move to category
@@ -519,10 +519,10 @@ export default function CanvasBoardsPage() {
                                 onClick={() => handleDeleteBoard(board)}
                                 style={{
                                   display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '8px 12px',
-                                  fontSize: 13, color: '#f87171', background: 'transparent', border: 'none',
+                                  fontSize: 13, color: 'var(--danger)', background: 'transparent', border: 'none',
                                   cursor: 'pointer', textAlign: 'left',
                                 }}
-                                onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.06)')}
+                                onMouseEnter={e => (e.currentTarget.style.background = 'var(--hover)')}
                                 onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                               >
                                 <Trash2 size={12} /> Delete
@@ -537,7 +537,7 @@ export default function CanvasBoardsPage() {
                     {board.category_name && (
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
                         <span style={{ width: 6, height: 6, borderRadius: '50%', background: board.category_color || '#888890', flexShrink: 0 }} />
-                        <span style={{ fontSize: 11, color: board.category_color || 'var(--text-muted)' }}>{board.category_name}</span>
+                        <span style={{ fontSize: 11, color: board.category_color || 'var(--text-3)' }}>{board.category_name}</span>
                       </div>
                     )}
                     {renamingId === board.id ? (
@@ -552,10 +552,10 @@ export default function CanvasBoardsPage() {
                           if (e.key === 'Escape') setRenamingId(null)
                         }}
                         className="font-medium text-[14px] w-full rounded outline-none"
-                        style={{ backgroundColor: 'var(--bg-tertiary)', border: '1px solid var(--border)', color: 'var(--text-primary)', padding: '1px 4px' }}
+                        style={{ backgroundColor: 'var(--surface-2)', border: '1px solid var(--border-subtle)', color: 'var(--text-1)', padding: '1px 4px' }}
                       />
                     ) : (
-                      <p className="text-[14px] font-medium" style={{ color: 'var(--text-primary)' }}>{board.name}</p>
+                      <p className="text-[14px] font-medium" style={{ color: 'var(--text-1)' }}>{board.name}</p>
                     )}
                   </div>
                 </div>
@@ -567,10 +567,10 @@ export default function CanvasBoardsPage() {
 
       {showCategoryModal && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.55)' }} onClick={() => setShowCategoryModal(false)} />
-          <div style={{ position: 'relative', borderRadius: 14, width: 320, padding: '22px 22px 18px', zIndex: 10, background: 'var(--bg-secondary)', border: '1px solid var(--border)', fontFamily: FONT }}>
-            <h2 style={{ fontSize: 14, fontWeight: 600, marginBottom: 16, color: 'var(--text-primary)' }}>{newCategoryParentId !== null ? 'New subcategory' : 'New category'}</h2>
-            <label style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--text-muted)', display: 'block', marginBottom: 6 }}>Name</label>
+          <div style={{ position: 'absolute', inset: 0, background: 'var(--overlay)' }} onClick={() => setShowCategoryModal(false)} />
+          <div style={{ position: 'relative', borderRadius: 14, width: 320, padding: '22px 22px 18px', zIndex: 10, background: 'var(--menu-bg)', border: '1px solid var(--border-subtle)', fontFamily: FONT }}>
+            <h2 style={{ fontSize: 14, fontWeight: 600, marginBottom: 16, color: 'var(--text-1)' }}>{newCategoryParentId !== null ? 'New subcategory' : 'New category'}</h2>
+            <label style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--text-3)', display: 'block', marginBottom: 6 }}>Name</label>
             <input
               ref={categoryNameRef}
               type="text"
@@ -578,9 +578,9 @@ export default function CanvasBoardsPage() {
               onChange={e => setNewCategoryName(e.target.value)}
               onKeyDown={e => { if (e.key === 'Enter') handleCreateCategory(); if (e.key === 'Escape') setShowCategoryModal(false) }}
               placeholder="e.g. Research"
-              style={{ width: '100%', borderRadius: 9, padding: '9px 12px', fontSize: 13.5, outline: 'none', background: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--text-primary)', fontFamily: FONT, boxSizing: 'border-box', marginBottom: 16 }}
+              style={{ width: '100%', borderRadius: 9, padding: '9px 12px', fontSize: 13.5, outline: 'none', background: 'var(--panel)', border: '1px solid var(--border-subtle)', color: 'var(--text-1)', fontFamily: FONT, boxSizing: 'border-box', marginBottom: 16 }}
             />
-            <label style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--text-muted)', display: 'block', marginBottom: 8 }}>Color</label>
+            <label style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--text-3)', display: 'block', marginBottom: 8 }}>Color</label>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 20 }}>
               {SWATCHES.map(color => (
                 <button
@@ -588,14 +588,14 @@ export default function CanvasBoardsPage() {
                   onClick={() => setNewCategoryColor(color)}
                   style={{
                     width: 24, height: 24, borderRadius: '50%', background: color, cursor: 'pointer',
-                    border: newCategoryColor === color ? '2px solid var(--text-primary)' : '2px solid transparent',
+                    border: newCategoryColor === color ? '2px solid var(--text-1)' : '2px solid transparent',
                     padding: 0,
                   }}
                 />
               ))}
             </div>
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
-              <button onClick={() => setShowCategoryModal(false)} style={{ padding: '7px 14px', borderRadius: 8, fontSize: 13, fontWeight: 500, color: 'var(--text-muted)', background: 'transparent', border: 'none', cursor: 'pointer', fontFamily: FONT }}>Cancel</button>
+              <button onClick={() => setShowCategoryModal(false)} style={{ padding: '7px 14px', borderRadius: 8, fontSize: 13, fontWeight: 500, color: 'var(--text-3)', background: 'transparent', border: 'none', cursor: 'pointer', fontFamily: FONT }}>Cancel</button>
               <button onClick={handleCreateCategory} style={{ padding: '7px 14px', borderRadius: 8, fontSize: 13, fontWeight: 600, color: '#fff', background: '#6b5ce7', border: 'none', cursor: 'pointer', fontFamily: FONT }}>Create</button>
             </div>
           </div>

@@ -656,28 +656,28 @@ export default function CanvasBoardPage() {
               onMouseDown={e => e.stopPropagation()}
               ref={getCardRef(item.id)}
               data-item-id={item.id}
-              style={{ width: size.w, minHeight: size.h, background: 'transparent', border: '1px dashed rgba(255,255,255,0.25)', borderRadius: 6, padding: 8, fontSize: 14, color: 'var(--text-primary)', outline: 'none', resize: 'both', fontFamily: 'inherit' }}
+              style={{ width: size.w, minHeight: size.h, background: 'transparent', border: '1px dashed var(--canvas-text-outline)', borderRadius: 6, padding: 8, fontSize: 14, color: 'var(--text-1)', outline: 'none', resize: 'both', fontFamily: 'inherit' }}
             />
           ) : (
-            <div ref={getCardRef(item.id)} data-item-id={item.id} style={{ width: size.w, minHeight: 24, padding: 8, fontSize: 14, color: 'var(--text-primary)', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
-              {item.content || <span style={{ color: 'var(--text-muted)' }}>Empty text</span>}
+            <div ref={getCardRef(item.id)} data-item-id={item.id} style={{ width: size.w, minHeight: 24, padding: 8, fontSize: 14, color: 'var(--text-1)', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+              {item.content || <span style={{ color: 'var(--text-3)' }}>Empty text</span>}
             </div>
           )
         ) : item.type === 'swatch' ? (
           <div style={{ position: 'relative', width: size.w }}>
-            <div ref={getCardRef(item.id)} data-item-id={item.id} style={{ width: size.w, height: size.h, borderRadius: 8, position: 'relative', overflow: 'hidden', boxShadow: '0 4px 12px rgba(0,0,0,0.3)', border: isConnectTarget ? '1.5px solid #8f89e6' : '1.5px solid transparent' }}>
+            <div ref={getCardRef(item.id)} data-item-id={item.id} style={{ width: size.w, height: size.h, borderRadius: 8, position: 'relative', overflow: 'hidden', boxShadow: 'var(--shadow-card)', border: isConnectTarget ? '1.5px solid var(--canvas-line)' : '1.5px solid var(--canvas-card-border)' }}>
               <div style={{ position: 'absolute', inset: 0, bottom: 32, backgroundColor: item.color ?? '#888' }} />
               <div style={{ position: 'absolute', top: 8, right: 8, width: 24, height: 24, borderRadius: 6, backgroundColor: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}>
                 <Pencil size={12} style={{ color: '#fff' }} />
               </div>
               <div
                 onMouseDown={e => e.stopPropagation()}
-                style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: 32, boxSizing: 'border-box', backgroundColor: '#1d1d20', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 8px' }}
+                style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: 32, boxSizing: 'border-box', backgroundColor: 'var(--canvas-swatch-bar)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 8px' }}
               >
-                <span style={{ color: '#fff', fontFamily: 'ui-monospace, monospace', fontSize: 11 }}>{(item.color ?? '#888888').toUpperCase()}</span>
+                <span style={{ color: 'var(--canvas-swatch-bar-text)', fontFamily: 'ui-monospace, monospace', fontSize: 11 }}>{(item.color ?? '#888888').toUpperCase()}</span>
                 <button
                   onClick={() => copyColor(item)}
-                  style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'transparent', border: 'none', color: '#fff', fontSize: 11, cursor: 'pointer', padding: '2px 4px' }}
+                  style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'transparent', border: 'none', color: 'var(--canvas-swatch-bar-text)', fontSize: 11, cursor: 'pointer', padding: '2px 4px' }}
                 >
                   <Copy size={11} />
                   {copiedItemId === item.id ? 'Copied' : 'Copy'}
@@ -689,15 +689,15 @@ export default function CanvasBoardPage() {
                 ref={colorPopoverRef}
                 onMouseDown={e => e.stopPropagation()}
                 onKeyDown={e => { if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); closeColorPopover() } }}
-                style={{ position: 'absolute', top: 'calc(100% + 8px)', left: 0, width: 200, backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border)', borderRadius: 10, boxShadow: '0 10px 30px rgba(0,0,0,0.4)', padding: 12, zIndex: 50 }}
+                style={{ position: 'absolute', top: 'calc(100% + 8px)', left: 0, width: 200, backgroundColor: 'var(--menu-bg)', border: '1px solid var(--border-subtle)', borderRadius: 10, boxShadow: '0 10px 30px rgba(0,0,0,0.4)', padding: 12, zIndex: 50 }}
               >
-                <p style={{ fontSize: 11, color: 'var(--text-muted)', margin: '0 0 8px 0' }}>Change color</p>
+                <p style={{ fontSize: 11, color: 'var(--text-3)', margin: '0 0 8px 0' }}>Change color</p>
                 <div style={{ display: 'flex', gap: 6, marginBottom: 10, flexWrap: 'wrap' }}>
                   {SWATCHES.map(c => (
                     <div
                       key={c}
                       onClick={() => setSwatchLiveColor(item.id, c)}
-                      style={{ width: 22, height: 22, borderRadius: 6, backgroundColor: c, cursor: 'pointer', boxShadow: (item.color ?? '').toUpperCase() === c.toUpperCase() ? '0 0 0 2px #fff' : 'none' }}
+                      style={{ width: 22, height: 22, borderRadius: 6, backgroundColor: c, cursor: 'pointer', boxShadow: (item.color ?? '').toUpperCase() === c.toUpperCase() ? '0 0 0 2px var(--canvas-swatch-ring)' : 'none' }}
                     />
                   ))}
                 </div>
@@ -719,12 +719,12 @@ export default function CanvasBoardPage() {
                       const normalized = normalizeHex(value)
                       if (normalized) setItems(prev => prev.map(i => (i.id === item.id ? { ...i, color: normalized } : i)))
                     }}
-                    style={{ flex: 1, minWidth: 0, background: 'var(--bg-tertiary)', border: '1px solid var(--border)', borderRadius: 6, padding: '6px 8px', fontFamily: 'ui-monospace, monospace', fontSize: 12, color: 'var(--text-primary)', outline: 'none' }}
+                    style={{ flex: 1, minWidth: 0, background: 'var(--surface-2)', border: '1px solid var(--border-subtle)', borderRadius: 6, padding: '6px 8px', fontFamily: 'ui-monospace, monospace', fontSize: 12, color: 'var(--text-1)', outline: 'none' }}
                   />
                 </div>
                 <button
                   onClick={() => closeColorPopover()}
-                  style={{ marginTop: 10, width: '100%', padding: '6px 0', borderRadius: 6, backgroundColor: 'var(--bg-tertiary)', color: 'var(--text-primary)', fontSize: 12, border: 'none', cursor: 'pointer' }}
+                  style={{ marginTop: 10, width: '100%', padding: '6px 0', borderRadius: 6, backgroundColor: 'var(--surface-2)', color: 'var(--text-1)', fontSize: 12, border: 'none', cursor: 'pointer' }}
                 >
                   Done
                 </button>
@@ -732,7 +732,7 @@ export default function CanvasBoardPage() {
             )}
           </div>
         ) : item.type === 'image' ? (
-          <div ref={getCardRef(item.id)} data-item-id={item.id} style={{ width: size.w, borderRadius: 8, overflow: 'hidden', boxShadow: '0 4px 12px rgba(0,0,0,0.3)', border: isConnectTarget ? '1.5px solid #8f89e6' : '1.5px solid transparent' }}>
+          <div ref={getCardRef(item.id)} data-item-id={item.id} style={{ width: size.w, borderRadius: 8, overflow: 'hidden', boxShadow: 'var(--shadow-card)', border: isConnectTarget ? '1.5px solid var(--canvas-line)' : '1.5px solid var(--canvas-card-border)' }}>
             <img
               src={item.content ?? ''}
               draggable={false}
@@ -743,7 +743,7 @@ export default function CanvasBoardPage() {
         ) : item.type === 'shape' ? (() => {
           const isNone = item.color === 'none'
           const fillColor = item.color && item.color !== 'none' ? item.color : '#AFA9EC'
-          const textColor = isNone ? '#d4d4d8' : '#17171a'
+          const textColor = isNone ? 'var(--canvas-shape-none-text)' : '#17171a'
           const hPad = item.shape === 'circle' ? '14%' : item.shape === 'diamond' ? '22%' : '14px'
           const isEditingShape = editingItemId === item.id
           return (
@@ -753,7 +753,7 @@ export default function CanvasBoardPage() {
                   <polygon
                     points="50,1 99,50 50,99 1,50"
                     fill={isNone ? 'transparent' : fillColor}
-                    stroke={isConnectTarget ? '#8f89e6' : isNone ? 'rgba(255,255,255,0.35)' : 'none'}
+                    stroke={isConnectTarget ? 'var(--canvas-line)' : isNone ? 'var(--canvas-shape-none-outline)' : 'none'}
                     strokeWidth={isConnectTarget || isNone ? 1.5 : 0}
                     strokeDasharray={isNone && !isConnectTarget ? '5,4' : undefined}
                     vectorEffect="non-scaling-stroke"
@@ -764,8 +764,8 @@ export default function CanvasBoardPage() {
                   position: 'absolute', inset: 0, boxSizing: 'border-box',
                   borderRadius: item.shape === 'circle' ? '50%' : item.shape === 'rounded' ? 18 : 4,
                   backgroundColor: isNone ? 'transparent' : fillColor,
-                  border: isConnectTarget ? '1.5px solid #8f89e6' : isNone ? '1.5px dashed rgba(255,255,255,0.35)' : 'none',
-                  boxShadow: isNone ? 'none' : '0 4px 12px rgba(0,0,0,0.3)',
+                  border: isConnectTarget ? '1.5px solid var(--canvas-line)' : isNone ? '1.5px dashed var(--canvas-shape-none-outline)' : 'none',
+                  boxShadow: isNone ? 'none' : 'var(--shadow-card)',
                 }} />
               )}
               <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: `0 ${hPad}`, boxSizing: 'border-box' }}>
@@ -790,39 +790,39 @@ export default function CanvasBoardPage() {
             </div>
           )
         })() : (
-          <div ref={getCardRef(item.id)} data-item-id={item.id} style={{ width: size.w, backgroundColor: 'var(--bg-secondary)', borderRadius: 8, padding: 12, boxShadow: '0 4px 12px rgba(0,0,0,0.3)', border: isConnectTarget ? '1.5px solid #8f89e6' : '1.5px solid transparent' }}>
+          <div ref={getCardRef(item.id)} data-item-id={item.id} style={{ width: size.w, backgroundColor: 'var(--surface)', borderRadius: 8, padding: 12, boxShadow: 'var(--shadow-card)', border: isConnectTarget ? '1.5px solid var(--canvas-line)' : '1.5px solid var(--canvas-card-border)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
-              {item.type === 'doc' ? <FileText size={13} style={{ color: '#8f89e6' }} /> : <StickyNote size={13} style={{ color: '#c98a5e' }} />}
-              <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{item.type === 'doc' ? 'Doc' : 'Note'}</span>
+              {item.type === 'doc' ? <FileText size={13} style={{ color: 'var(--accent)' }} /> : <StickyNote size={13} style={{ color: '#c98a5e' }} />}
+              <span style={{ fontSize: 11, color: 'var(--text-3)' }}>{item.type === 'doc' ? 'Doc' : 'Note'}</span>
             </div>
-            <p style={{ fontSize: 12.5, fontWeight: 500, color: 'var(--text-primary)', margin: 0 }}>{title ?? 'Untitled'}</p>
+            <p style={{ fontSize: 12.5, fontWeight: 500, color: 'var(--text-1)', margin: 0 }}>{title ?? 'Untitled'}</p>
           </div>
         )}
         {isSelectedShape && (
           <>
-            <div style={{ position: 'absolute', inset: -4, border: '1.5px solid #8f89e6', borderRadius: item.shape === 'circle' ? '50%' : item.shape === 'rounded' ? 18 : 4, pointerEvents: 'none' }} />
+            <div style={{ position: 'absolute', inset: -4, border: '1.5px solid var(--canvas-line)', borderRadius: item.shape === 'circle' ? '50%' : item.shape === 'rounded' ? 18 : 4, pointerEvents: 'none' }} />
             <div
               onMouseDown={e => e.stopPropagation()}
-              style={{ position: 'absolute', top: -58, left: '50%', transform: 'translateX(-50%)', display: 'flex', alignItems: 'center', gap: 6, padding: 6, borderRadius: 10, backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border)', boxShadow: '0 10px 30px rgba(0,0,0,0.4)', zIndex: 50, whiteSpace: 'nowrap' }}
+              style={{ position: 'absolute', top: -58, left: '50%', transform: 'translateX(-50%)', display: 'flex', alignItems: 'center', gap: 6, padding: 6, borderRadius: 10, backgroundColor: 'var(--menu-bg)', border: '1px solid var(--border-subtle)', boxShadow: '0 10px 30px rgba(0,0,0,0.4)', zIndex: 50, whiteSpace: 'nowrap' }}
             >
               {SWATCHES.map(c => (
-                <div key={c} onClick={() => setShapeColor(item.id, c)} style={{ width: 18, height: 18, borderRadius: 5, backgroundColor: c, cursor: 'pointer', boxShadow: item.color === c ? '0 0 0 2px #fff' : 'none' }} />
+                <div key={c} onClick={() => setShapeColor(item.id, c)} style={{ width: 18, height: 18, borderRadius: 5, backgroundColor: c, cursor: 'pointer', boxShadow: item.color === c ? '0 0 0 2px var(--canvas-swatch-ring)' : 'none' }} />
               ))}
               <button
                 aria-label="No fill"
                 onClick={() => setShapeColor(item.id, 'none')}
-                style={{ width: 18, height: 18, borderRadius: 5, border: '1px dashed var(--border)', backgroundColor: 'transparent', cursor: 'pointer', padding: 0, boxShadow: item.color === 'none' ? '0 0 0 2px #fff' : 'none' }}
+                style={{ width: 18, height: 18, borderRadius: 5, border: '1px dashed var(--border-subtle)', backgroundColor: 'transparent', cursor: 'pointer', padding: 0, boxShadow: item.color === 'none' ? '0 0 0 2px var(--canvas-swatch-ring)' : 'none' }}
               />
-              <div style={{ width: 1, height: 18, backgroundColor: 'var(--border)' }} />
+              <div style={{ width: 1, height: 18, backgroundColor: 'var(--border-subtle)' }} />
               <button
                 onClick={() => { setEditingItemId(item.id); setEditingText(item.content ?? '') }}
-                style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'transparent', border: 'none', color: 'var(--text-secondary)', fontSize: 12, cursor: 'pointer', padding: '2px 6px' }}
+                style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'transparent', border: 'none', color: 'var(--text-2)', fontSize: 12, cursor: 'pointer', padding: '2px 6px' }}
               >
                 <Type size={13} /> Text
               </button>
               <button
                 onClick={() => deleteItem(item.id)}
-                style={{ display: 'flex', alignItems: 'center', background: 'transparent', border: 'none', color: '#f87171', cursor: 'pointer', padding: '2px 6px' }}
+                style={{ display: 'flex', alignItems: 'center', background: 'transparent', border: 'none', color: 'var(--danger)', cursor: 'pointer', padding: '2px 6px' }}
               >
                 <Trash2 size={13} />
               </button>
@@ -836,29 +836,29 @@ export default function CanvasBoardPage() {
               ? { position: 'absolute', top: '50%', right: -14, transform: 'translateY(-50%)', width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'crosshair' }
               : { position: 'absolute', bottom: -14, right: -14, width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'crosshair' }}
           >
-            <div style={{ width: 12, height: 12, borderRadius: '50%', backgroundColor: 'var(--bg)', border: '1.5px solid #8f89e6' }} />
+            <div style={{ width: 12, height: 12, borderRadius: '50%', backgroundColor: 'var(--canvas-bg)', border: '1.5px solid var(--canvas-line)' }} />
           </div>
         )}
         {isSelectedShape && (
           <>
             <div onMouseDown={e => onResizeMouseDown(e, item, 'nw')} style={{ position: 'absolute', top: -11, left: -11, width: 22, height: 22, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'nwse-resize', zIndex: 20 }}>
-              <div style={{ width: 12, height: 12, backgroundColor: '#fff', border: '1.5px solid #8f89e6' }} />
+              <div style={{ width: 12, height: 12, backgroundColor: '#fff', border: '1.5px solid var(--canvas-line)' }} />
             </div>
             <div onMouseDown={e => onResizeMouseDown(e, item, 'ne')} style={{ position: 'absolute', top: -11, right: -11, width: 22, height: 22, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'nesw-resize', zIndex: 20 }}>
-              <div style={{ width: 12, height: 12, backgroundColor: '#fff', border: '1.5px solid #8f89e6' }} />
+              <div style={{ width: 12, height: 12, backgroundColor: '#fff', border: '1.5px solid var(--canvas-line)' }} />
             </div>
             <div onMouseDown={e => onResizeMouseDown(e, item, 'sw')} style={{ position: 'absolute', bottom: -11, left: -11, width: 22, height: 22, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'nesw-resize', zIndex: 20 }}>
-              <div style={{ width: 12, height: 12, backgroundColor: '#fff', border: '1.5px solid #8f89e6' }} />
+              <div style={{ width: 12, height: 12, backgroundColor: '#fff', border: '1.5px solid var(--canvas-line)' }} />
             </div>
             <div onMouseDown={e => onResizeMouseDown(e, item, 'se')} style={{ position: 'absolute', bottom: -11, right: -11, width: 22, height: 22, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'nwse-resize', zIndex: 20 }}>
-              <div style={{ width: 12, height: 12, backgroundColor: '#fff', border: '1.5px solid #8f89e6' }} />
+              <div style={{ width: 12, height: 12, backgroundColor: '#fff', border: '1.5px solid var(--canvas-line)' }} />
             </div>
           </>
         )}
         {contextMenuId === item.id && (
-          <div ref={contextMenuRef} style={{ position: 'absolute', top: '100%', left: 0, marginTop: 4, backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border)', borderRadius: 8, boxShadow: '0 6px 20px rgba(0,0,0,0.4)', overflow: 'hidden', zIndex: 10, width: 130 }}>
-            {item.type !== 'shape' && <button onClick={() => straighten(item.id)} className="w-full text-left px-3 py-2 text-[12px]" style={{ color: 'var(--text-secondary)' }} onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)')} onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}>Straighten</button>}
-            <button onClick={() => deleteItem(item.id)} className="w-full text-left px-3 py-2 text-[12px] text-red-400" onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)')} onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}>Delete</button>
+          <div ref={contextMenuRef} style={{ position: 'absolute', top: '100%', left: 0, marginTop: 4, backgroundColor: 'var(--menu-bg)', border: '1px solid var(--border-subtle)', borderRadius: 8, boxShadow: '0 6px 20px rgba(0,0,0,0.4)', overflow: 'hidden', zIndex: 10, width: 130 }}>
+            {item.type !== 'shape' && <button onClick={() => straighten(item.id)} className="w-full text-left px-3 py-2 text-[12px]" style={{ color: 'var(--text-2)' }} onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--surface-2)')} onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}>Straighten</button>}
+            <button onClick={() => deleteItem(item.id)} className="w-full text-left px-3 py-2 text-[12px] text-[var(--danger-text)]" onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--surface-2)')} onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}>Delete</button>
           </div>
         )}
       </div>
@@ -866,14 +866,14 @@ export default function CanvasBoardPage() {
   }
 
   return (
-    <div className="flex h-screen overflow-hidden" style={{ backgroundColor: 'var(--bg)' }}>
+    <div className="flex h-screen overflow-hidden" style={{ backgroundColor: 'var(--panel)' }}>
       <Sidebar collapsed={collapsed} onToggle={() => setCollapsed(v => !v)} />
 
       <main className="flex-1 overflow-hidden flex flex-col">
         <div className="flex items-center justify-between py-5" style={{ position: 'relative', zIndex: 20, paddingLeft: collapsed ? 56 : 32, paddingRight: 32 }}>
           <div className="flex items-center gap-0.5 min-w-0 flex-1">
-            <a href="/studio" className="text-[12px] font-medium truncate transition-colors hover:underline" style={{ color: 'var(--text-muted)' }}>Studio</a>
-            <span className="mx-1 text-[12px]" style={{ color: 'var(--text-muted)' }}>/</span>
+            <a href="/studio" className="text-[12px] font-medium truncate transition-colors hover:underline" style={{ color: 'var(--text-3)' }}>Studio</a>
+            <span className="mx-1 text-[12px]" style={{ color: 'var(--text-3)' }}>/</span>
             {editingTitle ? (
               <input
                 autoFocus
@@ -882,25 +882,25 @@ export default function CanvasBoardPage() {
                 onBlur={saveTitle}
                 onKeyDown={e => { if (e.key === 'Enter') saveTitle(); if (e.key === 'Escape') setEditingTitle(false) }}
                 className="text-[13px] font-medium bg-transparent outline-none"
-                style={{ color: 'var(--text-secondary)', border: 'none' }}
+                style={{ color: 'var(--text-2)', border: 'none' }}
               />
             ) : (
               <span
                 className="text-[13px] font-medium truncate max-w-[220px] cursor-text"
-                style={{ color: 'var(--text-secondary)' }}
+                style={{ color: 'var(--text-2)' }}
                 onDoubleClick={() => { setTitleValue(board?.name ?? ''); setEditingTitle(true) }}
               >
                 {board?.name ?? 'Board'}
               </span>
             )}
           </div>
-          <div style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', display: 'flex', alignItems: 'center', gap: 2, padding: 5, borderRadius: 12, backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border)' }} ref={addMenuRef}>
+          <div style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%, -50%)', display: 'flex', alignItems: 'center', gap: 2, padding: 5, borderRadius: 12, backgroundColor: 'var(--menu-bg)', border: '1px solid var(--border-subtle)' }} ref={addMenuRef}>
             <button
               onClick={() => setPickerType('doc')}
               onMouseEnter={e => { setHoveredTool('doc'); const r = e.currentTarget.getBoundingClientRect(); setTooltipRect({ top: r.top, left: r.left + r.width / 2, width: r.width }) }}
               onMouseLeave={() => setHoveredTool(null)}
               title="Link a doc"
-              style={{ position: 'relative', width: 36, height: 36, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#8f89e6' }}
+              style={{ position: 'relative', width: 36, height: 36, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent)' }}
             >
               <FileText size={16} />
             </button>
@@ -918,7 +918,7 @@ export default function CanvasBoardPage() {
               onMouseEnter={e => { setHoveredTool('text'); const r = e.currentTarget.getBoundingClientRect(); setTooltipRect({ top: r.top, left: r.left + r.width / 2, width: r.width }) }}
               onMouseLeave={() => setHoveredTool(null)}
               title="Text"
-              style={{ position: 'relative', width: 36, height: 36, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-primary)', backgroundColor: 'rgba(255,255,255,0.06)' }}
+              style={{ position: 'relative', width: 36, height: 36, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-1)', backgroundColor: 'var(--hover)' }}
             >
               <Type size={16} />
             </button>
@@ -942,23 +942,23 @@ export default function CanvasBoardPage() {
               <Shapes size={16} />
             </button>
             {shapeMenuOpen && (
-              <div style={{ position: 'absolute', top: 'calc(100% + 8px)', right: 0, backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border)', borderRadius: 10, boxShadow: '0 10px 30px rgba(0,0,0,0.4)', padding: 6, zIndex: 50, width: 160 }}>
-                <p style={{ fontSize: 11, color: 'var(--text-muted)', margin: '4px 6px 6px 6px' }}>Add shape</p>
-                <button onClick={() => addShape('rect')} className="w-full text-left px-2 py-2 text-[12.5px]" style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--text-secondary)', borderRadius: 6 }} onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)')} onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}>
+              <div style={{ position: 'absolute', top: 'calc(100% + 8px)', right: 0, backgroundColor: 'var(--menu-bg)', border: '1px solid var(--border-subtle)', borderRadius: 10, boxShadow: '0 10px 30px rgba(0,0,0,0.4)', padding: 6, zIndex: 50, width: 160 }}>
+                <p style={{ fontSize: 11, color: 'var(--text-3)', margin: '4px 6px 6px 6px' }}>Add shape</p>
+                <button onClick={() => addShape('rect')} className="w-full text-left px-2 py-2 text-[12.5px]" style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--text-2)', borderRadius: 6 }} onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--surface-2)')} onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}>
                   <RectangleHorizontal size={14} /> Rectangle
                 </button>
-                <button onClick={() => addShape('rounded')} className="w-full text-left px-2 py-2 text-[12.5px]" style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--text-secondary)', borderRadius: 6 }} onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)')} onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}>
+                <button onClick={() => addShape('rounded')} className="w-full text-left px-2 py-2 text-[12.5px]" style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--text-2)', borderRadius: 6 }} onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--surface-2)')} onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}>
                   <Square size={14} /> Rounded
                 </button>
-                <button onClick={() => addShape('circle')} className="w-full text-left px-2 py-2 text-[12.5px]" style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--text-secondary)', borderRadius: 6 }} onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)')} onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}>
+                <button onClick={() => addShape('circle')} className="w-full text-left px-2 py-2 text-[12.5px]" style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--text-2)', borderRadius: 6 }} onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--surface-2)')} onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}>
                   <Circle size={14} /> Circle
                 </button>
-                <button onClick={() => addShape('diamond')} className="w-full text-left px-2 py-2 text-[12.5px]" style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--text-secondary)', borderRadius: 6 }} onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)')} onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}>
+                <button onClick={() => addShape('diamond')} className="w-full text-left px-2 py-2 text-[12.5px]" style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--text-2)', borderRadius: 6 }} onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--surface-2)')} onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}>
                   <Diamond size={14} /> Diamond
                 </button>
               </div>
             )}
-            <div style={{ width: 1, height: 20, backgroundColor: 'var(--border)', margin: '0 4px' }} />
+            <div style={{ width: 1, height: 20, backgroundColor: 'var(--border-subtle)', margin: '0 4px' }} />
             <button
               onClick={() => setSwatchMenuOpen(v => !v)}
               onMouseEnter={e => { setHoveredTool('swatch'); const r = e.currentTarget.getBoundingClientRect(); setTooltipRect({ top: r.top, left: r.left + r.width / 2, width: r.width }) }}
@@ -969,8 +969,8 @@ export default function CanvasBoardPage() {
               <span style={{ width: 16, height: 16, borderRadius: 5, backgroundColor: '#EF9F27', display: 'block' }} />
             </button>
             {swatchMenuOpen && (
-              <div style={{ position: 'absolute', top: 'calc(100% + 8px)', right: 0, backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border)', borderRadius: 10, boxShadow: '0 10px 30px rgba(0,0,0,0.4)', padding: 10, zIndex: 50, width: 140 }}>
-                <p style={{ fontSize: 11, color: 'var(--text-muted)', margin: '0 0 8px 0' }}>Add color card</p>
+              <div style={{ position: 'absolute', top: 'calc(100% + 8px)', right: 0, backgroundColor: 'var(--menu-bg)', border: '1px solid var(--border-subtle)', borderRadius: 10, boxShadow: '0 10px 30px rgba(0,0,0,0.4)', padding: 10, zIndex: 50, width: 140 }}>
+                <p style={{ fontSize: 11, color: 'var(--text-3)', margin: '0 0 8px 0' }}>Add color card</p>
                 <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                   {SWATCHES.map(c => (
                     <div key={c} onClick={() => { addItem({ type: 'swatch', color: c }); setSwatchMenuOpen(false) }} style={{ width: 22, height: 22, borderRadius: 6, backgroundColor: c, cursor: 'pointer' }} />
@@ -982,7 +982,7 @@ export default function CanvasBoardPage() {
                       const item = await addItem({ type: 'swatch', color: '#8F89E6' })
                       if (item) await openColorPopover(item)
                     }}
-                    style={{ width: 22, height: 22, borderRadius: 6, border: '1px dashed var(--border)', backgroundColor: 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', cursor: 'pointer', padding: 0 }}
+                    style={{ width: 22, height: 22, borderRadius: 6, border: '1px dashed var(--border-subtle)', backgroundColor: 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-3)', cursor: 'pointer', padding: 0 }}
                   >
                     <Plus size={12} />
                   </button>
@@ -990,16 +990,16 @@ export default function CanvasBoardPage() {
               </div>
             )}
             {pickerType && (
-              <div ref={pickerRef} style={{ position: 'absolute', top: 'calc(100% + 8px)', right: 0, width: 280, backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border)', borderRadius: 10, boxShadow: '0 10px 30px rgba(0,0,0,0.4)', overflow: 'hidden', zIndex: 50 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 12px', borderBottom: '1px solid var(--border)' }}>
-                  <Search size={13} style={{ color: 'var(--text-muted)' }} />
-                  <input autoFocus value={pickerQuery} onChange={e => setPickerQuery(e.target.value)} placeholder={`Search ${pickerType}s...`} style={{ flex: 1, background: 'transparent', border: 'none', outline: 'none', fontSize: 13, color: 'var(--text-primary)' }} />
-                  <X size={12} style={{ color: 'var(--text-muted)', cursor: 'pointer' }} onClick={() => setPickerType(null)} />
+              <div ref={pickerRef} style={{ position: 'absolute', top: 'calc(100% + 8px)', right: 0, width: 280, backgroundColor: 'var(--menu-bg)', border: '1px solid var(--border-subtle)', borderRadius: 10, boxShadow: '0 10px 30px rgba(0,0,0,0.4)', overflow: 'hidden', zIndex: 50 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 12px', borderBottom: '1px solid var(--border-subtle)' }}>
+                  <Search size={13} style={{ color: 'var(--text-3)' }} />
+                  <input autoFocus value={pickerQuery} onChange={e => setPickerQuery(e.target.value)} placeholder={`Search ${pickerType}s...`} style={{ flex: 1, background: 'transparent', border: 'none', outline: 'none', fontSize: 13, color: 'var(--text-1)' }} />
+                  <X size={12} style={{ color: 'var(--text-3)', cursor: 'pointer' }} onClick={() => setPickerType(null)} />
                 </div>
                 <div style={{ maxHeight: 240, overflowY: 'auto', padding: '4px 0' }}>
-                  {filteredPickerItems.length === 0 && <p style={{ padding: 14, fontSize: 12.5, color: 'var(--text-muted)', textAlign: 'center' }}>No {pickerType}s found</p>}
+                  {filteredPickerItems.length === 0 && <p style={{ padding: 14, fontSize: 12.5, color: 'var(--text-3)', textAlign: 'center' }}>No {pickerType}s found</p>}
                   {filteredPickerItems.map(d => (
-                    <button key={d.uuid} onClick={() => { addItem({ type: pickerType, ref_id: d.uuid }); setPickerType(null); setPickerQuery('') }} className="w-full text-left px-3 py-2 text-[12.5px]" style={{ color: 'var(--text-secondary)' }} onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)')} onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}>{d.title}</button>
+                    <button key={d.uuid} onClick={() => { addItem({ type: pickerType, ref_id: d.uuid }); setPickerType(null); setPickerQuery('') }} className="w-full text-left px-3 py-2 text-[12.5px]" style={{ color: 'var(--text-2)' }} onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--surface-2)')} onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}>{d.title}</button>
                   ))}
                 </div>
               </div>
@@ -1007,7 +1007,7 @@ export default function CanvasBoardPage() {
             <input ref={fileInputRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleFileChange} />
           </div>
           {hoveredTool && !(hoveredTool === 'swatch' && swatchMenuOpen) && !(hoveredTool === 'shape' && shapeMenuOpen) && tooltipRect && typeof document !== 'undefined' && createPortal(
-            <div style={{ position: 'fixed', top: tooltipRect.top - 34, left: tooltipRect.left, transform: 'translateX(-50%)', backgroundColor: 'var(--bg-tertiary)', color: 'var(--text-primary)', fontSize: 11, padding: '5px 9px', borderRadius: 6, whiteSpace: 'nowrap', boxShadow: '0 4px 12px rgba(0,0,0,0.3)', zIndex: 9999, pointerEvents: 'none' }}>
+            <div style={{ position: 'fixed', top: tooltipRect.top - 34, left: tooltipRect.left, transform: 'translateX(-50%)', backgroundColor: 'var(--menu-bg-2)', color: 'var(--text-1)', fontSize: 11, padding: '5px 9px', borderRadius: 6, whiteSpace: 'nowrap', boxShadow: 'var(--shadow-card)', zIndex: 9999, pointerEvents: 'none' }}>
               {hoveredTool === 'doc' ? 'Link a doc' : hoveredTool === 'note' ? 'Link a note' : hoveredTool === 'text' ? 'Text' : hoveredTool === 'image' ? 'Image' : hoveredTool === 'shape' ? 'Add shape' : hoveredTool === 'swatch' ? 'Add color card' : ''}
             </div>,
             document.body
@@ -1018,7 +1018,7 @@ export default function CanvasBoardPage() {
           ref={boardRef}
           onMouseDown={onBackgroundMouseDown}
           onWheel={onWheel}
-          style={{ flex: 1, position: 'relative', overflow: 'hidden', backgroundColor: 'var(--bg)', cursor: 'grab' }}
+          style={{ flex: 1, position: 'relative', overflow: 'hidden', backgroundColor: 'var(--canvas-bg)', cursor: 'grab' }}
         >
           <div style={{ position: 'absolute', inset: 0, transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`, transformOrigin: '0 0' }}>
 
@@ -1037,8 +1037,8 @@ export default function CanvasBoardPage() {
                 return (
                   <g key={c.id} style={{ pointerEvents: 'stroke', cursor: 'pointer' }} onClick={() => deleteConnector(c.id)}>
                     <line x1={x1} y1={y1} x2={x2} y2={y2} stroke="transparent" strokeWidth={10} />
-                    <line x1={x1} y1={y1} x2={x2} y2={y2} stroke="#8f89e6" strokeWidth={1.3} strokeDasharray="3,4" />
-                    <circle cx={x1} cy={y1} r={3} fill="var(--bg)" stroke="#8f89e6" strokeWidth={1.3} />
+                    <line x1={x1} y1={y1} x2={x2} y2={y2} stroke="var(--canvas-line)" strokeWidth={1.3} strokeDasharray="3,4" />
+                    <circle cx={x1} cy={y1} r={3} fill="var(--canvas-bg)" stroke="var(--canvas-line)" strokeWidth={1.3} />
                   </g>
                 )
               })}
@@ -1050,8 +1050,8 @@ export default function CanvasBoardPage() {
                 const p1 = edgePoint(fromRect, connectDrag.x, connectDrag.y)
                 return (
                   <>
-                    <line x1={p1.x} y1={p1.y} x2={connectDrag.x} y2={connectDrag.y} stroke="#8f89e6" strokeWidth={1.3} strokeDasharray="3,4" />
-                    <circle cx={p1.x} cy={p1.y} r={3} fill="var(--bg)" stroke="#8f89e6" strokeWidth={1.3} />
+                    <line x1={p1.x} y1={p1.y} x2={connectDrag.x} y2={connectDrag.y} stroke="var(--canvas-line)" strokeWidth={1.3} strokeDasharray="3,4" />
+                    <circle cx={p1.x} cy={p1.y} r={3} fill="var(--canvas-bg)" stroke="var(--canvas-line)" strokeWidth={1.3} />
                   </>
                 )
               })()}
@@ -1066,7 +1066,7 @@ export default function CanvasBoardPage() {
                   key={p.tempId}
                   style={{ position: 'absolute', left: p.x, top: p.y, transform: `rotate(${p.rotation}deg)`, userSelect: 'none', WebkitUserSelect: 'none' }}
                 >
-                  <div style={{ width: size.w, borderRadius: 8, overflow: 'hidden', boxShadow: '0 4px 12px rgba(0,0,0,0.3)', border: '1.5px solid transparent', position: 'relative' }}>
+                  <div style={{ width: size.w, borderRadius: 8, overflow: 'hidden', boxShadow: 'var(--shadow-card)', border: '1.5px solid var(--canvas-card-border)', position: 'relative' }}>
                     <img src={p.previewUrl} draggable={false} style={{ width: '100%', display: 'block', pointerEvents: 'none', userSelect: 'none' }} />
                     <div style={{ position: 'absolute', top: 6, right: 6, width: 20, height: 20, borderRadius: '50%', backgroundColor: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                       <Loader2 size={12} className="animate-spin" style={{ color: '#fff' }} />
@@ -1077,12 +1077,12 @@ export default function CanvasBoardPage() {
             })}
           </div>
 
-          <div style={{ position: 'absolute', bottom: 20, right: 20, display: 'flex', alignItems: 'center', gap: 2, backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border)', borderRadius: 10, padding: 4, boxShadow: '0 6px 20px rgba(0,0,0,0.35)' }}>
-            <button onClick={() => zoomBy(1 / 1.2)} style={{ width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 7, color: 'var(--text-muted)' }}><Minus size={13} /></button>
-            <span style={{ fontSize: 12, color: 'var(--text-muted)', width: 40, textAlign: 'center' }}>{Math.round(zoom * 100)}%</span>
-            <button onClick={() => zoomBy(1.2)} style={{ width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 7, color: 'var(--text-muted)' }}><Plus size={13} /></button>
-            <div style={{ width: 1, height: 16, backgroundColor: 'var(--border)', margin: '0 4px' }} />
-            <button onClick={resetView} style={{ width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 7, color: 'var(--text-muted)' }}><RotateCcw size={13} /></button>
+          <div style={{ position: 'absolute', bottom: 20, right: 20, display: 'flex', alignItems: 'center', gap: 2, backgroundColor: 'var(--menu-bg)', border: '1px solid var(--border-subtle)', borderRadius: 10, padding: 4, boxShadow: '0 6px 20px rgba(0,0,0,0.35)' }}>
+            <button onClick={() => zoomBy(1 / 1.2)} style={{ width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 7, color: 'var(--text-3)' }}><Minus size={13} /></button>
+            <span style={{ fontSize: 12, color: 'var(--text-3)', width: 40, textAlign: 'center' }}>{Math.round(zoom * 100)}%</span>
+            <button onClick={() => zoomBy(1.2)} style={{ width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 7, color: 'var(--text-3)' }}><Plus size={13} /></button>
+            <div style={{ width: 1, height: 16, backgroundColor: 'var(--border-subtle)', margin: '0 4px' }} />
+            <button onClick={resetView} style={{ width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 7, color: 'var(--text-3)' }}><RotateCcw size={13} /></button>
           </div>
         </div>
       </main>

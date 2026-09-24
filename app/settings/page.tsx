@@ -622,16 +622,16 @@ function SettingsPageInner() {
                     style={{ backgroundColor: "var(--surface-2)", border: "1px solid var(--border-subtle)", color: "var(--text-1)" }}
                   >
                     <option value="UTC-12">UTC−12</option>
-                    <option value="UTC-8">UTC−8 — Los Angeles</option>
-                    <option value="UTC-5">UTC−5 — New York</option>
-                    <option value="UTC+0">UTC+0 — London</option>
-                    <option value="UTC+1">UTC+1 — Amsterdam</option>
-                    <option value="UTC+2">UTC+2 — Johannesburg</option>
-                    <option value="UTC+3">UTC+3 — Dubai</option>
-                    <option value="UTC+5:30">UTC+5:30 — Mumbai</option>
-                    <option value="UTC+8">UTC+8 — Taipei / Singapore</option>
-                    <option value="UTC+9">UTC+9 — Tokyo</option>
-                    <option value="UTC+10">UTC+10 — Sydney</option>
+                    <option value="UTC-8">UTC−8 · Los Angeles</option>
+                    <option value="UTC-5">UTC−5 · New York</option>
+                    <option value="UTC+0">UTC+0 · London</option>
+                    <option value="UTC+1">UTC+1 · Amsterdam</option>
+                    <option value="UTC+2">UTC+2 · Johannesburg</option>
+                    <option value="UTC+3">UTC+3 · Dubai</option>
+                    <option value="UTC+5:30">UTC+5:30 · Mumbai</option>
+                    <option value="UTC+8">UTC+8 · Taipei / Singapore</option>
+                    <option value="UTC+9">UTC+9 · Tokyo</option>
+                    <option value="UTC+10">UTC+10 · Sydney</option>
                   </select>
                 </div>
 

@@ -19,7 +19,7 @@ interface ContentIdea {
 }
 
 const STATUS_META: Record<ContentIdea['status'], { label: string; color: string }> = {
-  not_started: { label: 'Not started', color: 'var(--text-muted)' },
+  not_started: { label: 'Not started', color: 'var(--text-3)' },
   in_progress: { label: 'In progress', color: '#e0a44d' },
   published: { label: 'Published', color: '#5dbb7a' },
 }
@@ -131,28 +131,28 @@ export default function StudioOverviewPage() {
 
   const newBtnStyle: React.CSSProperties = {
     fontSize: 12.5, fontWeight: 500, fontFamily: FONT,
-    background: 'var(--text-primary)', color: 'var(--bg)', border: 'none',
+    background: 'var(--text-1)', color: 'var(--panel)', border: 'none',
     borderRadius: 8, padding: '7px 13px', cursor: 'pointer',
     display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
     width: 130, whiteSpace: 'nowrap',
   }
 
   return (
-    <div className="flex h-screen overflow-hidden" style={{ backgroundColor: 'var(--bg)' }}>
+    <div className="flex h-screen overflow-hidden" style={{ backgroundColor: 'var(--panel)' }}>
       <Sidebar collapsed={collapsed} onToggle={() => setCollapsed(v => !v)} />
 
       <main className="flex-1 overflow-y-auto">
         <div className="max-w-[1180px] mx-auto px-10 py-10">
           <div className="flex items-center justify-between mb-6 gap-4">
             <div className="relative flex-1" style={{ maxWidth: 420 }}>
-              <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: 'var(--text-muted)' }} />
+              <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: 'var(--text-3)' }} />
               <input
                 type="text"
                 value={search}
                 onChange={e => setSearch(e.target.value)}
                 placeholder="Search ideas and boards..."
-                className="w-full rounded-lg pl-9 pr-4 py-2.5 text-sm outline-none placeholder-[var(--text-muted)]"
-                style={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border)', color: 'var(--text-primary)' }}
+                className="w-full rounded-lg pl-9 pr-4 py-2.5 text-sm outline-none placeholder-[var(--text-3)]"
+                style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border-subtle)', color: 'var(--text-1)' }}
               />
             </div>
           </div>
@@ -160,8 +160,8 @@ export default function StudioOverviewPage() {
           {/* Ideas section */}
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-2">
-              <span style={{ fontSize: 13, fontWeight: 600, fontFamily: FONT, color: 'var(--text-primary)' }}>Ideas</span>
-              <span style={{ fontSize: 11.5, fontFamily: FONT, color: 'var(--text-muted)' }}>
+              <span style={{ fontSize: 13, fontWeight: 600, fontFamily: FONT, color: 'var(--text-1)' }}>Ideas</span>
+              <span style={{ fontSize: 11.5, fontFamily: FONT, color: 'var(--text-3)' }}>
                 {trimmedQuery ? `${filteredIdeas.length} matching` : `${ideas.length}`}
               </span>
             </div>
@@ -169,7 +169,7 @@ export default function StudioOverviewPage() {
               <button onClick={handleNewIdea} style={newBtnStyle}>
                 <Plus size={12} /> New idea
               </button>
-              <Link href="/studio/ideas" style={{ fontSize: 11.5, fontFamily: FONT, color: '#8f89e6', textDecoration: 'none' }}>
+              <Link href="/studio/ideas" style={{ fontSize: 11.5, fontFamily: FONT, color: 'var(--accent)', textDecoration: 'none' }}>
                 View all →
               </Link>
             </div>
@@ -177,14 +177,14 @@ export default function StudioOverviewPage() {
 
           {ideasLoading ? (
             <div className="flex items-center justify-center h-32 mb-10">
-              <span className="text-xs" style={{ color: 'var(--text-muted)', fontFamily: FONT }}>Loading...</span>
+              <span className="text-xs" style={{ color: 'var(--text-3)', fontFamily: FONT }}>Loading...</span>
             </div>
           ) : visibleIdeas.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-32 gap-2 mb-10">
-              <p style={{ fontSize: 13, fontFamily: FONT, color: 'var(--text-muted)' }}>
+              <p style={{ fontSize: 13, fontFamily: FONT, color: 'var(--text-3)' }}>
                 {trimmedQuery ? 'No ideas match your search' : 'No ideas yet'}
               </p>
-              <p style={{ fontSize: 11.5, fontFamily: FONT, color: 'var(--text-muted)' }}>
+              <p style={{ fontSize: 11.5, fontFamily: FONT, color: 'var(--text-3)' }}>
                 {trimmedQuery ? 'Try a different search term' : 'Click + New idea to get started'}
               </p>
             </div>
@@ -195,14 +195,14 @@ export default function StudioOverviewPage() {
                   key={idea.id}
                   onClick={() => router.push('/studio/ideas')}
                   className="cursor-pointer group"
-                  style={{ display: 'grid', gridTemplateColumns: '1fr 130px 140px 120px 90px', alignItems: 'center', gap: 12, borderBottom: '1px solid var(--border)', padding: '12px 8px', borderRadius: 8 }}
-                  onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--bg-secondary)')}
+                  style={{ display: 'grid', gridTemplateColumns: '1fr 130px 140px 120px 90px', alignItems: 'center', gap: 12, borderBottom: '1px solid var(--border-subtle)', padding: '12px 8px', borderRadius: 8 }}
+                  onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--surface)')}
                   onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
                 >
-                  <div className="truncate" style={{ fontSize: 14, fontWeight: 500, lineHeight: 1.4, fontFamily: FONT, color: '#eeede7' }}>
+                  <div className="truncate" style={{ fontSize: 14, fontWeight: 500, lineHeight: 1.4, fontFamily: FONT, color: 'var(--text-1)' }}>
                     {idea.title}
                   </div>
-                  <div className="truncate" style={{ fontSize: 12, fontFamily: FONT, color: 'var(--text-muted)' }}>
+                  <div className="truncate" style={{ fontSize: 12, fontFamily: FONT, color: 'var(--text-3)' }}>
                     {idea.platform || '—'}
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, fontFamily: FONT, color: STATUS_META[idea.status].color }}>
@@ -210,16 +210,16 @@ export default function StudioOverviewPage() {
                     {STATUS_META[idea.status].label}
                   </div>
                   {idea.category ? (
-                    <span className="truncate" style={{ fontSize: 12, fontFamily: FONT, padding: '3px 10px', borderRadius: 6, background: 'var(--bg-tertiary)', color: 'var(--text-muted)', width: 'fit-content' }}>
+                    <span className="truncate" style={{ fontSize: 12, fontFamily: FONT, padding: '3px 10px', borderRadius: 6, background: 'var(--surface-2)', color: 'var(--text-3)', width: 'fit-content' }}>
                       {idea.category}
                     </span>
                   ) : (
-                    <div style={{ fontSize: 12, fontFamily: FONT, color: 'var(--text-muted)' }}>+ Category</div>
+                    <div style={{ fontSize: 12, fontFamily: FONT, color: 'var(--text-3)' }}>+ Category</div>
                   )}
                   <button
                     onClick={e => { e.stopPropagation(); handleDocAction(idea) }}
                     className="opacity-0 group-hover:opacity-100 transition-opacity"
-                    style={{ fontSize: 11, fontFamily: FONT, color: '#8f89e6', background: 'transparent', border: 'none', padding: '5px 8px', whiteSpace: 'nowrap', cursor: 'pointer', textAlign: 'right' }}
+                    style={{ fontSize: 11, fontFamily: FONT, color: 'var(--accent)', background: 'transparent', border: 'none', padding: '5px 8px', whiteSpace: 'nowrap', cursor: 'pointer', textAlign: 'right' }}
                   >
                     {idea.doc_uuid ? 'Open Doc' : 'Turn into Doc'}
                   </button>
@@ -233,8 +233,8 @@ export default function StudioOverviewPage() {
           {/* Canvas section */}
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-2">
-              <span style={{ fontSize: 13, fontWeight: 600, fontFamily: FONT, color: 'var(--text-primary)' }}>Canvas</span>
-              <span style={{ fontSize: 11.5, fontFamily: FONT, color: 'var(--text-muted)' }}>
+              <span style={{ fontSize: 13, fontWeight: 600, fontFamily: FONT, color: 'var(--text-1)' }}>Canvas</span>
+              <span style={{ fontSize: 11.5, fontFamily: FONT, color: 'var(--text-3)' }}>
                 {trimmedQuery ? `${filteredBoards.length} matching` : `${boards.length}`}
               </span>
             </div>
@@ -242,7 +242,7 @@ export default function StudioOverviewPage() {
               <button onClick={createBoard} style={newBtnStyle}>
                 <Plus size={12} /> New canvas
               </button>
-              <Link href="/studio/canvas" style={{ fontSize: 11.5, fontFamily: FONT, color: '#8f89e6', textDecoration: 'none' }}>
+              <Link href="/studio/canvas" style={{ fontSize: 11.5, fontFamily: FONT, color: 'var(--accent)', textDecoration: 'none' }}>
                 View all →
               </Link>
             </div>
@@ -250,14 +250,14 @@ export default function StudioOverviewPage() {
 
           {boardsLoading ? (
             <div className="flex items-center justify-center h-32">
-              <span className="text-xs" style={{ color: 'var(--text-muted)', fontFamily: FONT }}>Loading...</span>
+              <span className="text-xs" style={{ color: 'var(--text-3)', fontFamily: FONT }}>Loading...</span>
             </div>
           ) : visibleBoards.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-32 gap-2">
-              <p style={{ fontSize: 13, fontFamily: FONT, color: 'var(--text-muted)' }}>
+              <p style={{ fontSize: 13, fontFamily: FONT, color: 'var(--text-3)' }}>
                 {trimmedQuery ? 'No boards match your search' : 'No boards yet'}
               </p>
-              <p style={{ fontSize: 11.5, fontFamily: FONT, color: 'var(--text-muted)' }}>
+              <p style={{ fontSize: 11.5, fontFamily: FONT, color: 'var(--text-3)' }}>
                 {trimmedQuery ? 'Try a different search term' : 'Click + New canvas to create your first one'}
               </p>
             </div>
@@ -268,12 +268,12 @@ export default function StudioOverviewPage() {
                   key={board.id}
                   onClick={() => router.push(`/studio/canvas/${board.uuid}`)}
                   className="rounded-xl p-4 flex flex-col justify-between cursor-pointer transition-colors"
-                  style={{ backgroundColor: 'var(--bg-secondary)', height: 110 }}
-                  onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)')}
-                  onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'var(--bg-secondary)')}
+                  style={{ backgroundColor: 'var(--surface)', height: 110 }}
+                  onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--surface-2)')}
+                  onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'var(--surface)')}
                 >
                   <Atom size={18} style={{ color: '#c98a5e' }} />
-                  <p className="truncate" style={{ fontSize: 14, fontWeight: 500, fontFamily: FONT, color: 'var(--text-primary)' }}>{board.name}</p>
+                  <p className="truncate" style={{ fontSize: 14, fontWeight: 500, fontFamily: FONT, color: 'var(--text-1)' }}>{board.name}</p>
                 </div>
               ))}
             </div>
