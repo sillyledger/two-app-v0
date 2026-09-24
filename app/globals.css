@@ -123,6 +123,14 @@
   --note-icon-bg: #1c1c1e;
   --note-tile-border: rgba(255,255,255,0.14);
   --note-danger: #E24B4A;
+
+  /* Remaining pages scoped tokens: dark values match the original hardcoded colors exactly */
+  --planner-btn-bg: #ffffff;
+  --planner-btn-hover: #e8e8e8;
+  --planner-btn-text: #111111;
+  --trash-bg: #111113;
+  --trash-empty-icon: #2a2a32;
+  --row-hover-faint: rgba(255,255,255,0.04);
 }
 
 html.light {
@@ -242,6 +250,13 @@ html.light {
   --note-icon-bg: #F0F0F2;
   --note-tile-border: rgba(15,15,25,0.14);
   --note-danger: #C93C3C;
+
+  --planner-btn-bg: #1C1D1F;
+  --planner-btn-hover: #3A3B3F;
+  --planner-btn-text: #FFFFFF;
+  --trash-bg: #FCFCFC;
+  --trash-empty-icon: #D4D5D9;
+  --row-hover-faint: #F4F4F5;
 }
 
 /* ── App base ── */

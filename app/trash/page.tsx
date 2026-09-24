@@ -14,7 +14,7 @@ interface Doc {
 }
 
 const FONT = "'DM Sans', system-ui, sans-serif"
-const MUTED = "#6a6a74"
+const MUTED = "var(--sb-muted)"
 
 let hasMountedOnClient = false
 
@@ -76,7 +76,7 @@ export default function TrashPage() {
   }
 
   return (
-    <div style={{ display: "flex", minHeight: "100vh", backgroundColor: "#111113", fontFamily: FONT }}>
+    <div style={{ display: "flex", minHeight: "100vh", backgroundColor: "var(--trash-bg)", fontFamily: FONT }}>
       <Sidebar
         collapsed={collapsed}
         onToggle={() => {
@@ -92,13 +92,13 @@ export default function TrashPage() {
           {/* Header */}
           <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 36 }}>
             <div>
-              <h1 style={{ fontSize: 28, fontWeight: 700, color: "#eeede7", margin: "0 0 4px", letterSpacing: "-0.02em" }}>Trash</h1>
+              <h1 style={{ fontSize: 28, fontWeight: 700, color: "var(--text-1)", margin: "0 0 4px", letterSpacing: "-0.02em" }}>Trash</h1>
               <p style={{ fontSize: 13, color: MUTED, margin: 0 }}>Deleted docs are removed permanently after 30 days</p>
             </div>
             {docs.length > 0 && (
               <button
                 onClick={handleEmptyTrash}
-                style={{ fontSize: 12, fontWeight: 500, color: "#e05252", background: "rgba(224,82,82,0.08)", border: "1px solid rgba(224,82,82,0.18)", borderRadius: 8, padding: "7px 14px", cursor: "pointer", fontFamily: FONT, marginTop: 4 }}
+                style={{ fontSize: 12, fontWeight: 500, color: "var(--doc-label-delete)", background: "rgba(224,82,82,0.08)", border: "1px solid rgba(224,82,82,0.18)", borderRadius: 8, padding: "7px 14px", cursor: "pointer", fontFamily: FONT, marginTop: 4 }}
                 onMouseEnter={e => (e.currentTarget.style.background = "rgba(224,82,82,0.14)")}
                 onMouseLeave={e => (e.currentTarget.style.background = "rgba(224,82,82,0.08)")}
               >
@@ -111,7 +111,7 @@ export default function TrashPage() {
           {loading && (
             <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
               {Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} style={{ height: 44, borderRadius: 10, background: "rgba(255,255,255,0.04)" }} />
+                <div key={i} style={{ height: 44, borderRadius: 10, background: "var(--row-hover-faint)" }} />
               ))}
             </div>
           )}
@@ -119,8 +119,8 @@ export default function TrashPage() {
           {/* Empty state */}
           {!loading && docs.length === 0 && (
             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: 240 }}>
-              <Trash2 size={32} style={{ color: "#2a2a32", marginBottom: 12 }} />
-              <p style={{ fontSize: 14, fontWeight: 500, color: "#4a4a52", margin: "0 0 4px" }}>Trash is empty</p>
+              <Trash2 size={32} style={{ color: "var(--trash-empty-icon)", marginBottom: 12 }} />
+              <p style={{ fontSize: 14, fontWeight: 500, color: "var(--sb-hint)", margin: "0 0 4px" }}>Trash is empty</p>
               <p style={{ fontSize: 13, color: MUTED, margin: 0 }}>Deleted docs will appear here</p>
             </div>
           )}
@@ -130,8 +130,8 @@ export default function TrashPage() {
             <>
               {/* Column headers */}
               <div style={{ display: "grid", gridTemplateColumns: "1fr 140px 80px", padding: "6px 12px", marginBottom: 4 }}>
-                <span style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em", color: "#4a4a52" }}>Name</span>
-                <span style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em", color: "#4a4a52" }}>Deleted</span>
+                <span style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--sb-hint)" }}>Name</span>
+                <span style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--sb-hint)" }}>Deleted</span>
                 <span />
               </div>
 
@@ -140,24 +140,24 @@ export default function TrashPage() {
                 <div
                   key={doc.id}
                   style={{ display: "grid", gridTemplateColumns: "1fr 140px 80px", alignItems: "center", padding: "11px 12px", borderRadius: 10, background: "transparent", transition: "background 0.12s" }}
-                  onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.04)")}
+                  onMouseEnter={e => (e.currentTarget.style.background = "var(--row-hover-faint)")}
                   onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
                 >
                   <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
                     <span style={{ fontSize: 13, opacity: 0.4, flexShrink: 0, lineHeight: 1 }}>▣</span>
-                    <span style={{ fontSize: 13.5, color: "#b0afb8", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    <span style={{ fontSize: 13.5, color: "var(--sb-item-color)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                       {doc.title || "Untitled"}
                     </span>
                   </div>
 
-                  <span style={{ fontSize: 12, color: "#4a4a52" }}>{formatDate(doc.deleted_at)}</span>
+                  <span style={{ fontSize: 12, color: "var(--sb-hint)" }}>{formatDate(doc.deleted_at)}</span>
 
                   <div style={{ display: "flex", alignItems: "center", gap: 8, justifyContent: "flex-end" }}>
                     <button
                       onClick={() => handleRestore(doc.id)}
                       title="Restore"
                       style={{ background: "none", border: "none", cursor: "pointer", color: MUTED, padding: 4, borderRadius: 6, display: "flex" }}
-                      onMouseEnter={e => (e.currentTarget.style.color = "#e8e7e1")}
+                      onMouseEnter={e => (e.currentTarget.style.color = "var(--sb-hover-color)")}
                       onMouseLeave={e => (e.currentTarget.style.color = MUTED)}
                     >
                       <RotateCcw size={13} />
@@ -166,7 +166,7 @@ export default function TrashPage() {
                       onClick={() => handlePermanentDelete(doc.id)}
                       title="Delete permanently"
                       style={{ background: "none", border: "none", cursor: "pointer", color: MUTED, padding: 4, borderRadius: 6, display: "flex" }}
-                      onMouseEnter={e => (e.currentTarget.style.color = "#e05252")}
+                      onMouseEnter={e => (e.currentTarget.style.color = "var(--doc-label-delete)")}
                       onMouseLeave={e => (e.currentTarget.style.color = MUTED)}
                     >
                       <Trash2 size={13} />

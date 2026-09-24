@@ -533,11 +533,11 @@ function NotesPageContent() {
                       <div onClick={e => e.stopPropagation()} style={{ position: 'absolute', right: 0, top: 30, zIndex: 50, width: 160, borderRadius: 10, boxShadow: '0 8px 32px rgba(0,0,0,0.5)', padding: '4px 0', overflow: 'hidden', background: 'var(--menu-bg)', border: '1px solid var(--border-subtle)' }}>
                         {movingNoteId === note.uuid ? (
                           <>
-                            <button onClick={e => handleMoveNote(note, null, e)} style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '8px 12px', fontSize: 12.5, color: 'var(--text-2)', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left', fontFamily: FONT }} onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.06)')} onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+                            <button onClick={e => handleMoveNote(note, null, e)} style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '8px 12px', fontSize: 12.5, color: 'var(--text-2)', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left', fontFamily: FONT }} onMouseEnter={e => (e.currentTarget.style.background = 'var(--hover)')} onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
                               No category
                             </button>
                             {sortCategoriesForMove(categories).map(cat => (
-                              <button key={cat.id} onClick={e => handleMoveNote(note, cat.id, e)} style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: cat.depth > 0 ? '8px 12px 8px 28px' : '8px 12px', fontSize: 12.5, color: 'var(--text-2)', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left', fontFamily: FONT }} onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.06)')} onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+                              <button key={cat.id} onClick={e => handleMoveNote(note, cat.id, e)} style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: cat.depth > 0 ? '8px 12px 8px 28px' : '8px 12px', fontSize: 12.5, color: 'var(--text-2)', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left', fontFamily: FONT }} onMouseEnter={e => (e.currentTarget.style.background = 'var(--hover)')} onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
                                 {cat.depth > 0 && (
                                   <span style={{ position: 'absolute', left: 16, top: 0, bottom: '50%', width: 10, borderLeft: '1px solid var(--border-subtle)', borderBottom: '1px solid var(--border-subtle)', borderRadius: '0 0 0 4px' }} />
                                 )}
@@ -548,10 +548,10 @@ function NotesPageContent() {
                           </>
                         ) : (
                           <>
-                            <button onClick={e => { e.stopPropagation(); setMovingNoteId(note.uuid) }} style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '8px 12px', fontSize: 12.5, color: 'var(--text-2)', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left', fontFamily: FONT }} onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.06)')} onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+                            <button onClick={e => { e.stopPropagation(); setMovingNoteId(note.uuid) }} style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '8px 12px', fontSize: 12.5, color: 'var(--text-2)', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left', fontFamily: FONT }} onMouseEnter={e => (e.currentTarget.style.background = 'var(--hover)')} onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
                               <Tag size={13} style={{ color: 'var(--text-3)' }} /> Move
                             </button>
-                            <button onClick={e => handleDeleteNote(note, e)} style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '8px 12px', fontSize: 12.5, color: 'var(--note-danger)', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left', fontFamily: FONT }} onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.06)')} onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+                            <button onClick={e => handleDeleteNote(note, e)} style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '8px 12px', fontSize: 12.5, color: 'var(--note-danger)', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left', fontFamily: FONT }} onMouseEnter={e => (e.currentTarget.style.background = 'var(--hover)')} onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
                               <Trash2 size={13} /> Delete
                             </button>
                           </>
@@ -593,11 +593,11 @@ function NotesPageContent() {
                         <div onClick={e => e.stopPropagation()} style={{ position: 'absolute', right: 0, top: 30, zIndex: 50, width: 160, borderRadius: 10, boxShadow: '0 8px 32px rgba(0,0,0,0.5)', padding: '4px 0', overflow: 'hidden', background: 'var(--menu-bg)', border: '1px solid var(--border-subtle)' }}>
                           {movingNoteId === note.uuid ? (
                             <>
-                              <button onClick={e => handleMoveNote(note, null, e)} style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '8px 12px', fontSize: 12.5, color: 'var(--text-2)', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left', fontFamily: FONT }} onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.06)')} onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+                              <button onClick={e => handleMoveNote(note, null, e)} style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '8px 12px', fontSize: 12.5, color: 'var(--text-2)', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left', fontFamily: FONT }} onMouseEnter={e => (e.currentTarget.style.background = 'var(--hover)')} onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
                                 No category
                               </button>
                               {sortCategoriesForMove(categories).map(cat => (
-                                <button key={cat.id} onClick={e => handleMoveNote(note, cat.id, e)} style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: cat.depth > 0 ? '8px 12px 8px 28px' : '8px 12px', fontSize: 12.5, color: 'var(--text-2)', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left', fontFamily: FONT }} onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.06)')} onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+                                <button key={cat.id} onClick={e => handleMoveNote(note, cat.id, e)} style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: cat.depth > 0 ? '8px 12px 8px 28px' : '8px 12px', fontSize: 12.5, color: 'var(--text-2)', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left', fontFamily: FONT }} onMouseEnter={e => (e.currentTarget.style.background = 'var(--hover)')} onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
                                   {cat.depth > 0 && (
                                     <span style={{ position: 'absolute', left: 16, top: 0, bottom: '50%', width: 10, borderLeft: '1px solid var(--border-subtle)', borderBottom: '1px solid var(--border-subtle)', borderRadius: '0 0 0 4px' }} />
                                   )}
@@ -608,10 +608,10 @@ function NotesPageContent() {
                             </>
                           ) : (
                             <>
-                              <button onClick={e => { e.stopPropagation(); setMovingNoteId(note.uuid) }} style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '8px 12px', fontSize: 12.5, color: 'var(--text-2)', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left', fontFamily: FONT }} onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.06)')} onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+                              <button onClick={e => { e.stopPropagation(); setMovingNoteId(note.uuid) }} style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '8px 12px', fontSize: 12.5, color: 'var(--text-2)', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left', fontFamily: FONT }} onMouseEnter={e => (e.currentTarget.style.background = 'var(--hover)')} onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
                                 <Tag size={13} style={{ color: 'var(--text-3)' }} /> Move
                               </button>
-                              <button onClick={e => handleDeleteNote(note, e)} style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '8px 12px', fontSize: 12.5, color: 'var(--note-danger)', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left', fontFamily: FONT }} onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.06)')} onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+                              <button onClick={e => handleDeleteNote(note, e)} style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '8px 12px', fontSize: 12.5, color: 'var(--note-danger)', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left', fontFamily: FONT }} onMouseEnter={e => (e.currentTarget.style.background = 'var(--hover)')} onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
                                 <Trash2 size={13} /> Delete
                               </button>
                             </>

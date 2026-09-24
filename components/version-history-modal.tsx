@@ -101,30 +101,30 @@ export default function VersionHistoryModal({ docId, docTitle, onClose, onRestor
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="absolute inset-0 bg-black/50 backdrop-blur-[2px]" onClick={onClose} />
-      <div className="relative rounded-xl shadow-2xl w-full max-w-[560px] max-h-[70vh] flex flex-col z-10" style={{ backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border)" }}>
+      <div className="absolute inset-0 backdrop-blur-[2px]" style={{ backgroundColor: "var(--overlay-soft)" }} onClick={onClose} />
+      <div className="relative rounded-xl shadow-2xl w-full max-w-[560px] max-h-[70vh] flex flex-col z-10" style={{ backgroundColor: "var(--menu-bg)", border: "1px solid var(--border-subtle)" }}>
 
         {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3 shrink-0" style={{ borderBottom: "1px solid var(--border)" }}>
-          <h2 className="text-[13px] font-semibold truncate" style={{ color: "var(--text-primary)" }}>
-            Version history · <span style={{ color: "var(--text-muted)", fontWeight: 400 }}>{docTitle || "Untitled"}</span>
+        <div className="flex items-center justify-between px-4 py-3 shrink-0" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
+          <h2 className="text-[13px] font-semibold truncate" style={{ color: "var(--text-1)" }}>
+            Version history · <span style={{ color: "var(--text-3)", fontWeight: 400 }}>{docTitle || "Untitled"}</span>
           </h2>
-          <button onClick={onClose} className="flex items-center justify-center w-6 h-6 rounded-md transition-colors shrink-0" style={{ color: "var(--text-muted)" }}
-            onMouseEnter={e => (e.currentTarget.style.backgroundColor = "var(--bg-tertiary)")} onMouseLeave={e => (e.currentTarget.style.backgroundColor = "transparent")}
+          <button onClick={onClose} className="flex items-center justify-center w-6 h-6 rounded-md transition-colors shrink-0" style={{ color: "var(--text-3)" }}
+            onMouseEnter={e => (e.currentTarget.style.backgroundColor = "var(--surface-2)")} onMouseLeave={e => (e.currentTarget.style.backgroundColor = "transparent")}
           ><X size={14} /></button>
         </div>
 
         <div className="flex flex-1 min-h-0">
 
           {/* Left column — version list, grouped by day */}
-          <div className="overflow-y-auto shrink-0" style={{ width: 180, borderRight: "1px solid var(--border)" }}>
-            {loading && <p className="text-[12px] px-3 py-4" style={{ color: "var(--text-muted)" }}>Loading...</p>}
+          <div className="overflow-y-auto shrink-0" style={{ width: 180, borderRight: "1px solid var(--border-subtle)" }}>
+            {loading && <p className="text-[12px] px-3 py-4" style={{ color: "var(--text-3)" }}>Loading...</p>}
             {!loading && versions.length === 0 && (
-              <p className="text-[12px] px-3 py-4" style={{ color: "var(--text-muted)" }}>No versions yet</p>
+              <p className="text-[12px] px-3 py-4" style={{ color: "var(--text-3)" }}>No versions yet</p>
             )}
             {!loading && days.map(day => (
               <div key={day}>
-                <p className="px-3 pt-3 pb-1 text-[10px] font-medium uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>{formatDayHeader(grouped[day][0].created_at, timezone)}</p>
+                <p className="px-3 pt-3 pb-1 text-[10px] font-medium uppercase tracking-wider" style={{ color: "var(--text-3)" }}>{formatDayHeader(grouped[day][0].created_at, timezone)}</p>
                 {grouped[day].map(v => {
                   const isSelected = v.id === selectedId
                   return (
@@ -132,8 +132,8 @@ export default function VersionHistoryModal({ docId, docTitle, onClose, onRestor
                       key={v.id}
                       onClick={() => setSelectedId(v.id)}
                       className="flex items-center gap-2 w-full px-3 py-2 text-left transition-colors"
-                      style={{ backgroundColor: isSelected ? "var(--bg-tertiary)" : "transparent" }}
-                      onMouseEnter={e => { if (!isSelected) e.currentTarget.style.backgroundColor = "var(--bg-tertiary)" }}
+                      style={{ backgroundColor: isSelected ? "var(--surface-2)" : "transparent" }}
+                      onMouseEnter={e => { if (!isSelected) e.currentTarget.style.backgroundColor = "var(--surface-2)" }}
                       onMouseLeave={e => { if (!isSelected) e.currentTarget.style.backgroundColor = "transparent" }}
                     >
                       <span
@@ -142,7 +142,7 @@ export default function VersionHistoryModal({ docId, docTitle, onClose, onRestor
                       >
                         {initials(v.editor_name)}
                       </span>
-                      <span className="text-[12px] truncate" style={{ color: isSelected ? "var(--text-primary)" : "var(--text-secondary)" }}>
+                      <span className="text-[12px] truncate" style={{ color: isSelected ? "var(--text-1)" : "var(--text-2)" }}>
                         {formatTime(v.created_at)}
                       </span>
                     </button>
@@ -157,12 +157,12 @@ export default function VersionHistoryModal({ docId, docTitle, onClose, onRestor
             {selected ? (
               <>
                 <div className="flex-1 min-h-0 overflow-y-auto px-4 py-4">
-                  <p className="text-[15px] font-semibold mb-2" style={{ color: "var(--text-primary)" }}>{selected.title || "Untitled"}</p>
-                  <p className="text-[12.5px] leading-relaxed whitespace-pre-wrap" style={{ color: "var(--text-secondary)" }}>
+                  <p className="text-[15px] font-semibold mb-2" style={{ color: "var(--text-1)" }}>{selected.title || "Untitled"}</p>
+                  <p className="text-[12.5px] leading-relaxed whitespace-pre-wrap" style={{ color: "var(--text-2)" }}>
                     {stripHtml(selected.content).slice(0, 4000) || "No content"}
                   </p>
                 </div>
-                <div className="px-4 py-3 shrink-0" style={{ borderTop: "1px solid var(--border)" }}>
+                <div className="px-4 py-3 shrink-0" style={{ borderTop: "1px solid var(--border-subtle)" }}>
                   <button
                     onClick={handleRestore}
                     disabled={restoring}
@@ -177,7 +177,7 @@ export default function VersionHistoryModal({ docId, docTitle, onClose, onRestor
               </>
             ) : (
               <div className="flex-1 flex items-center justify-center">
-                <p className="text-[12px]" style={{ color: "var(--text-muted)" }}>{loading ? "" : "No version selected"}</p>
+                <p className="text-[12px]" style={{ color: "var(--text-3)" }}>{loading ? "" : "No version selected"}</p>
               </div>
             )}
           </div>

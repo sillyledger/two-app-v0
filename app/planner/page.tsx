@@ -63,7 +63,7 @@ function formatDueDate(dateStr: string): string {
 }
 
 const FONT = "'DM Sans', system-ui, sans-serif"
-const MUTED = '#6a6a74'
+const MUTED = 'var(--sb-muted)'
 
 export default function PlannerPage() {
   const router = useRouter()
@@ -270,7 +270,7 @@ export default function PlannerPage() {
   const showCompleted = activeTab === 'all' || activeTab === 'completed'
 
   return (
-    <div className="flex min-h-screen" style={{ backgroundColor: 'var(--bg)' }}>
+    <div className="flex min-h-screen" style={{ backgroundColor: 'var(--panel)' }}>
       <Sidebar
         collapsed={collapsed}
         onToggle={() => {
@@ -286,10 +286,10 @@ export default function PlannerPage() {
           {/* Header */}
           <div className="flex items-start justify-between mb-8">
             <div>
-              <h1 className="text-[32px] font-bold tracking-tight" style={{ color: 'var(--text-primary)' }}>
+              <h1 className="text-[32px] font-bold tracking-tight" style={{ color: 'var(--text-1)' }}>
                 Planner
               </h1>
-              <p className="text-[13px] mt-1" style={{ color: 'var(--text-muted)' }}>
+              <p className="text-[13px] mt-1" style={{ color: 'var(--text-3)' }}>
                 Tasks linked to your docs
               </p>
             </div>
@@ -298,11 +298,11 @@ export default function PlannerPage() {
               style={{
                 display: 'flex', alignItems: 'center', gap: 6,
                 padding: '8px 14px', borderRadius: 9, fontSize: 13, fontWeight: 600,
-                color: '#111111', background: '#ffffff', border: 'none', cursor: 'pointer',
+                color: 'var(--planner-btn-text)', background: 'var(--planner-btn-bg)', border: 'none', cursor: 'pointer',
                 fontFamily: FONT, marginTop: 6,
               }}
-              onMouseEnter={e => (e.currentTarget.style.background = '#e8e8e8')}
-onMouseLeave={e => (e.currentTarget.style.background = '#ffffff')}
+              onMouseEnter={e => (e.currentTarget.style.background = 'var(--planner-btn-hover)')}
+onMouseLeave={e => (e.currentTarget.style.background = 'var(--planner-btn-bg)')}
             >
               <Plus size={14} />
               Add Task
@@ -317,9 +317,9 @@ onMouseLeave={e => (e.currentTarget.style.background = '#ffffff')}
                 onClick={() => setActiveTab(tab.key)}
                 className="flex items-center gap-1.5 px-3.5 py-[5px] rounded-full text-[13px] font-medium transition-colors"
                 style={{
-                  backgroundColor: activeTab === tab.key ? 'var(--text-primary)' : 'var(--bg-secondary)',
-                  color: activeTab === tab.key ? 'var(--bg)' : 'var(--text-secondary)',
-                  border: activeTab === tab.key ? '1px solid transparent' : '1px solid var(--border)',
+                  backgroundColor: activeTab === tab.key ? 'var(--primary-bg)' : 'var(--surface)',
+                  color: activeTab === tab.key ? 'var(--primary-text)' : 'var(--text-2)',
+                  border: activeTab === tab.key ? '1px solid transparent' : '1px solid var(--border-subtle)',
                 }}
               >
                 {tab.label}
@@ -334,9 +334,9 @@ onMouseLeave={e => (e.currentTarget.style.background = '#ffffff')}
                   style={{
                     width: 30, height: 30, display: 'flex', alignItems: 'center', justifyContent: 'center',
                     borderRadius: 7, cursor: 'pointer', transition: 'all 0.15s',
-                    border: '1px solid ' + (plannerView === 'board' ? 'var(--text-primary)' : 'var(--border)'),
-                    backgroundColor: plannerView === 'board' ? 'var(--bg-tertiary)' : 'transparent',
-                    color: plannerView === 'board' ? 'var(--text-primary)' : 'var(--text-muted)',
+                    border: '1px solid ' + (plannerView === 'board' ? 'var(--text-1)' : 'var(--border-subtle)'),
+                    backgroundColor: plannerView === 'board' ? 'var(--surface-2)' : 'transparent',
+                    color: plannerView === 'board' ? 'var(--text-1)' : 'var(--text-3)',
                   }}
                 >
                   <LayoutGrid size={14} />
@@ -347,9 +347,9 @@ onMouseLeave={e => (e.currentTarget.style.background = '#ffffff')}
                   style={{
                     width: 30, height: 30, display: 'flex', alignItems: 'center', justifyContent: 'center',
                     borderRadius: 7, cursor: 'pointer', transition: 'all 0.15s',
-                    border: '1px solid ' + (plannerView === 'list' ? 'var(--text-primary)' : 'var(--border)'),
-                    backgroundColor: plannerView === 'list' ? 'var(--bg-tertiary)' : 'transparent',
-                    color: plannerView === 'list' ? 'var(--text-primary)' : 'var(--text-muted)',
+                    border: '1px solid ' + (plannerView === 'list' ? 'var(--text-1)' : 'var(--border-subtle)'),
+                    backgroundColor: plannerView === 'list' ? 'var(--surface-2)' : 'transparent',
+                    color: plannerView === 'list' ? 'var(--text-1)' : 'var(--text-3)',
                   }}
                 >
                   <List size={14} />
@@ -358,12 +358,12 @@ onMouseLeave={e => (e.currentTarget.style.background = '#ffffff')}
             )}
           </div>
 
-          {loading && <p className="text-[13px]" style={{ color: 'var(--text-muted)' }}>Loading...</p>}
+          {loading && <p className="text-[13px]" style={{ color: 'var(--text-3)' }}>Loading...</p>}
 
           {!loading && tasks.length === 0 && (
-            <div className="rounded-xl p-8 text-center" style={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border)' }}>
-              <p className="text-[13px] font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>No tasks yet</p>
-              <p className="text-[12px]" style={{ color: 'var(--text-muted)' }}>Click + Add Task to get started.</p>
+            <div className="rounded-xl p-8 text-center" style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border-subtle)' }}>
+              <p className="text-[13px] font-medium mb-1" style={{ color: 'var(--text-2)' }}>No tasks yet</p>
+              <p className="text-[12px]" style={{ color: 'var(--text-3)' }}>Click + Add Task to get started.</p>
             </div>
           )}
 
@@ -371,8 +371,8 @@ onMouseLeave={e => (e.currentTarget.style.background = '#ffffff')}
             activeTab === 'all' && plannerView === 'board' ? (
               <div className="grid mb-8" style={{ gridTemplateColumns: 'repeat(3, 1fr)', gap: 20 }}>
                 <TaskColumn label="Overdue" dotColor="#e05252" tasks={overdueTasks} onToggle={toggle} onDelete={remove} onEdit={openEditModal} openMenuId={openMenuId} setOpenMenuId={setOpenMenuId} menuRef={menuRef} showDate />
-                <TaskColumn label="Today" dotColor="var(--text-primary)" tasks={todayTasks} onToggle={toggle} onDelete={remove} onEdit={openEditModal} openMenuId={openMenuId} setOpenMenuId={setOpenMenuId} menuRef={menuRef} />
-                <TaskColumn label="Upcoming" dotColor="var(--text-muted)" tasks={upcomingTasks} onToggle={toggle} onDelete={remove} onEdit={openEditModal} openMenuId={openMenuId} setOpenMenuId={setOpenMenuId} menuRef={menuRef} showDate />
+                <TaskColumn label="Today" dotColor="var(--text-1)" tasks={todayTasks} onToggle={toggle} onDelete={remove} onEdit={openEditModal} openMenuId={openMenuId} setOpenMenuId={setOpenMenuId} menuRef={menuRef} />
+                <TaskColumn label="Upcoming" dotColor="var(--text-3)" tasks={upcomingTasks} onToggle={toggle} onDelete={remove} onEdit={openEditModal} openMenuId={openMenuId} setOpenMenuId={setOpenMenuId} menuRef={menuRef} showDate />
               </div>
             ) : (
               <>
@@ -385,10 +385,10 @@ onMouseLeave={e => (e.currentTarget.style.background = '#ffffff')}
           {showNoDate && nodateTasks.length > 0 && <TaskGroup label="No date" tasks={nodateTasks} onToggle={toggle} onDelete={remove} onEdit={openEditModal} openMenuId={openMenuId} setOpenMenuId={setOpenMenuId} menuRef={menuRef} />}
           {showCompleted && completedTasks.length > 0 && <TaskGroup label="Completed" tasks={completedTasks} onToggle={toggle} onDelete={remove} onEdit={openEditModal} openMenuId={openMenuId} setOpenMenuId={setOpenMenuId} menuRef={menuRef} muted onClearAll={clearCompleted} />}
 
-          {!loading && tasks.length > 0 && activeTab === 'today' && todayTasks.length === 0 && <p className="text-[13px]" style={{ color: 'var(--text-muted)' }}>No tasks due today.</p>}
-          {!loading && tasks.length > 0 && activeTab === 'upcoming' && upcomingTasks.length === 0 && <p className="text-[13px]" style={{ color: 'var(--text-muted)' }}>No upcoming tasks.</p>}
-          {!loading && tasks.length > 0 && activeTab === 'overdue' && overdueTasks.length === 0 && <p className="text-[13px]" style={{ color: 'var(--text-muted)' }}>No overdue tasks.</p>}
-          {!loading && tasks.length > 0 && activeTab === 'completed' && completedTasks.length === 0 && <p className="text-[13px]" style={{ color: 'var(--text-muted)' }}>Nothing completed yet.</p>}
+          {!loading && tasks.length > 0 && activeTab === 'today' && todayTasks.length === 0 && <p className="text-[13px]" style={{ color: 'var(--text-3)' }}>No tasks due today.</p>}
+          {!loading && tasks.length > 0 && activeTab === 'upcoming' && upcomingTasks.length === 0 && <p className="text-[13px]" style={{ color: 'var(--text-3)' }}>No upcoming tasks.</p>}
+          {!loading && tasks.length > 0 && activeTab === 'overdue' && overdueTasks.length === 0 && <p className="text-[13px]" style={{ color: 'var(--text-3)' }}>No overdue tasks.</p>}
+          {!loading && tasks.length > 0 && activeTab === 'completed' && completedTasks.length === 0 && <p className="text-[13px]" style={{ color: 'var(--text-3)' }}>Nothing completed yet.</p>}
 
         </div>
       </main>
@@ -396,10 +396,10 @@ onMouseLeave={e => (e.currentTarget.style.background = '#ffffff')}
       {/* Add Task Modal */}
       {showModal && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(3px)' }} onClick={() => setShowModal(false)} />
-          <div style={{ position: 'relative', borderRadius: 14, boxShadow: '0 24px 64px rgba(0,0,0,0.6)', width: 400, padding: '24px 24px 20px', zIndex: 10, background: '#1c1c1f', border: '1px solid rgba(255,255,255,0.09)', fontFamily: FONT }}>
+          <div style={{ position: 'absolute', inset: 0, background: 'var(--overlay)', backdropFilter: 'blur(3px)' }} onClick={() => setShowModal(false)} />
+          <div style={{ position: 'relative', borderRadius: 14, boxShadow: '0 24px 64px rgba(0,0,0,0.6)', width: 400, padding: '24px 24px 20px', zIndex: 10, background: 'var(--modal-bg)', border: '1px solid var(--border-subtle)', fontFamily: FONT }}>
 
-            <h2 style={{ fontSize: 14, fontWeight: 600, marginBottom: 20, color: '#eeede7', letterSpacing: '-0.01em' }}>{editingTaskId ? 'Edit Task' : 'New Task'}</h2>
+            <h2 style={{ fontSize: 14, fontWeight: 600, marginBottom: 20, color: 'var(--text-1)', letterSpacing: '-0.01em' }}>{editingTaskId ? 'Edit Task' : 'New Task'}</h2>
 
             {/* Task name */}
             <label style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.07em', color: MUTED, display: 'block', marginBottom: 6 }}>Task</label>
@@ -410,7 +410,7 @@ onMouseLeave={e => (e.currentTarget.style.background = '#ffffff')}
               value={taskTitle}
               onChange={e => setTaskTitle(e.target.value)}
               onKeyDown={e => { if (e.key === 'Enter') handleSaveTask(); if (e.key === 'Escape') setShowModal(false) }}
-              style={{ width: '100%', borderRadius: 9, padding: '9px 12px', fontSize: 13.5, outline: 'none', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: '#e0dfd9', fontFamily: FONT, boxSizing: 'border-box', marginBottom: 16 }}
+              style={{ width: '100%', borderRadius: 9, padding: '9px 12px', fontSize: 13.5, outline: 'none', background: 'var(--input-bg)', border: '1px solid var(--input-border)', color: 'var(--text-1)', fontFamily: FONT, boxSizing: 'border-box', marginBottom: 16 }}
             />
 
             {/* Doc autocomplete */}
@@ -423,17 +423,17 @@ onMouseLeave={e => (e.currentTarget.style.background = '#ffffff')}
                 value={selectedDoc ? (selectedDoc.title || 'Untitled') : docQuery}
                 onChange={e => { setSelectedDoc(null); setDocQuery(e.target.value) }}
                 onFocus={() => { if (docResults.length > 0) setDocDropdownOpen(true) }}
-                style={{ width: '100%', borderRadius: 9, padding: '9px 12px', fontSize: 13.5, outline: 'none', background: 'rgba(255,255,255,0.06)', border: selectedDoc ? '1px solid #6b5ce7' : '1px solid rgba(255,255,255,0.1)', color: '#e0dfd9', fontFamily: FONT, boxSizing: 'border-box' }}
+                style={{ width: '100%', borderRadius: 9, padding: '9px 12px', fontSize: 13.5, outline: 'none', background: 'var(--input-bg)', border: selectedDoc ? '1px solid #6b5ce7' : '1px solid var(--input-border)', color: 'var(--text-1)', fontFamily: FONT, boxSizing: 'border-box' }}
               />
               {docDropdownOpen && docResults.length > 0 && (
-                <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, marginTop: 4, borderRadius: 10, background: '#242428', border: '1px solid rgba(255,255,255,0.09)', boxShadow: '0 8px 32px rgba(0,0,0,0.5)', zIndex: 60, overflow: 'hidden' }}>
+                <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, marginTop: 4, borderRadius: 10, background: 'var(--menu-bg)', border: '1px solid var(--border-subtle)', boxShadow: '0 8px 32px rgba(0,0,0,0.5)', zIndex: 60, overflow: 'hidden' }}>
                   {docResults.map(doc => (
                     <button
                       key={doc.uuid}
                       onClick={() => { setSelectedDoc(doc); setDocQuery(''); setDocDropdownOpen(false) }}
-                      style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '9px 12px', fontSize: 13, color: '#b0afb8', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left', fontFamily: FONT }}
-                      onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; e.currentTarget.style.color = '#e8e7e1' }}
-                      onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#b0afb8' }}
+                      style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '9px 12px', fontSize: 13, color: 'var(--sb-item-color)', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left', fontFamily: FONT }}
+                      onMouseEnter={e => { e.currentTarget.style.background = 'var(--hover)'; e.currentTarget.style.color = 'var(--sb-hover-color)' }}
+                      onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--sb-item-color)' }}
                     >
                       <FileText size={12} style={{ flexShrink: 0, opacity: 0.5 }} />
                       {doc.title || 'Untitled'}
@@ -451,7 +451,7 @@ onMouseLeave={e => (e.currentTarget.style.background = '#ffffff')}
                   type="date"
                   value={taskDueDate}
                   onChange={e => setTaskDueDate(e.target.value)}
-                  style={{ width: '100%', borderRadius: 9, padding: '9px 12px', fontSize: 13, outline: 'none', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: taskDueDate ? '#e0dfd9' : MUTED, fontFamily: FONT, boxSizing: 'border-box' }}
+                  style={{ width: '100%', borderRadius: 9, padding: '9px 12px', fontSize: 13, outline: 'none', background: 'var(--input-bg)', border: '1px solid var(--input-border)', color: taskDueDate ? 'var(--text-1)' : MUTED, fontFamily: FONT, boxSizing: 'border-box', colorScheme: 'var(--color-scheme)' }}
                 />
               </div>
               <div style={{ flex: 1 }}>
@@ -459,7 +459,7 @@ onMouseLeave={e => (e.currentTarget.style.background = '#ffffff')}
                 <select
                   value={taskPriority}
                   onChange={e => setTaskPriority(e.target.value)}
-                  style={{ width: '100%', borderRadius: 9, padding: '9px 12px', fontSize: 13, outline: 'none', background: '#242428', border: '1px solid rgba(255,255,255,0.1)', color: '#e0dfd9', fontFamily: FONT, boxSizing: 'border-box', cursor: 'pointer' }}
+                  style={{ width: '100%', borderRadius: 9, padding: '9px 12px', fontSize: 13, outline: 'none', background: 'var(--menu-bg)', border: '1px solid var(--input-border)', color: 'var(--text-1)', fontFamily: FONT, boxSizing: 'border-box', cursor: 'pointer' }}
                 >
                   <option value="low">Low</option>
                   <option value="medium">Medium</option>
@@ -470,11 +470,11 @@ onMouseLeave={e => (e.currentTarget.style.background = '#ffffff')}
 
             {/* Buttons */}
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
-              <button onClick={() => setShowModal(false)} style={{ padding: '7px 14px', borderRadius: 8, fontSize: 13, fontWeight: 500, color: '#5a5a62', background: 'transparent', border: 'none', cursor: 'pointer', fontFamily: FONT }} onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.05)')} onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>Cancel</button>
+              <button onClick={() => setShowModal(false)} style={{ padding: '7px 14px', borderRadius: 8, fontSize: 13, fontWeight: 500, color: 'var(--sb-text-row)', background: 'transparent', border: 'none', cursor: 'pointer', fontFamily: FONT }} onMouseEnter={e => (e.currentTarget.style.background = 'var(--hover)')} onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>Cancel</button>
               <button
                 onClick={handleSaveTask}
                 disabled={!taskTitle.trim() || !selectedDoc || submitting}
-                style={{ padding: '7px 14px', borderRadius: 8, fontSize: 13, fontWeight: 600, color: '#fff', background: !taskTitle.trim() || !selectedDoc ? '#3a3a44' : '#6b5ce7', border: 'none', cursor: !taskTitle.trim() || !selectedDoc ? 'not-allowed' : 'pointer', fontFamily: FONT }}
+                style={{ padding: '7px 14px', borderRadius: 8, fontSize: 13, fontWeight: 600, color: '#fff', background: !taskTitle.trim() || !selectedDoc ? 'var(--sb-dot)' : '#6b5ce7', border: 'none', cursor: !taskTitle.trim() || !selectedDoc ? 'not-allowed' : 'pointer', fontFamily: FONT }}
                 onMouseEnter={e => { if (taskTitle.trim() && selectedDoc) e.currentTarget.style.background = '#7c6ef0' }}
                 onMouseLeave={e => { if (taskTitle.trim() && selectedDoc) e.currentTarget.style.background = '#6b5ce7' }}
               >
@@ -506,29 +506,29 @@ function TaskCard({
   return (
     <div
       className="group flex items-start gap-3 rounded-xl transition-colors"
-      style={{ padding: 14, opacity: muted ? 0.5 : 1, backgroundColor: 'var(--bg-secondary)' }}
-      onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)')}
-      onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'var(--bg-secondary)')}
+      style={{ padding: 14, opacity: muted ? 0.5 : 1, backgroundColor: 'var(--surface)' }}
+      onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--surface-2)')}
+      onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'var(--surface)')}
     >
-      <button onClick={() => onToggle(task)} className="mt-[2px] shrink-0" style={{ color: 'var(--text-muted)' }} onMouseEnter={e => (e.currentTarget.style.color = 'var(--text-primary)')} onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-muted)')}>
+      <button onClick={() => onToggle(task)} className="mt-[2px] shrink-0" style={{ color: 'var(--text-3)' }} onMouseEnter={e => (e.currentTarget.style.color = 'var(--text-1)')} onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-3)')}>
         {task.completed ? <CheckCircle2 size={15} /> : <Circle size={15} />}
       </button>
       <div className="flex-1 min-w-0">
-        <span style={{ display: 'block', fontSize: '13px', lineHeight: '1.4', color: 'var(--text-primary)', textDecoration: task.completed ? 'line-through' : 'none', opacity: task.completed ? 0.5 : 1 }}>
+        <span style={{ display: 'block', fontSize: '13px', lineHeight: '1.4', color: 'var(--text-1)', textDecoration: task.completed ? 'line-through' : 'none', opacity: task.completed ? 0.5 : 1 }}>
           {task.title}
         </span>
         <div className="flex items-center gap-2 mt-1 flex-wrap">
-          <Link href={`/docs/${task.doc_id}`} className="flex items-center gap-1 text-[11px] px-1.5 py-0.5 rounded-md" style={{ backgroundColor: 'var(--bg-tertiary)', color: 'var(--text-secondary)' }}>
+          <Link href={`/docs/${task.doc_id}`} className="flex items-center gap-1 text-[11px] px-1.5 py-0.5 rounded-md" style={{ backgroundColor: 'var(--surface-2)', color: 'var(--text-2)' }}>
             <FileText size={10} /><span>{task.doc_title || 'Untitled doc'}</span>
           </Link>
           {showDate && task.due_date && (
-            <span className="flex items-center gap-1 text-[11px]" style={{ color: 'var(--text-muted)' }}>
+            <span className="flex items-center gap-1 text-[11px]" style={{ color: 'var(--text-3)' }}>
               <CalendarDays size={10} />{formatDueDate(task.due_date)}
             </span>
           )}
           {task.priority && (
-            <span className="flex items-center gap-1 text-[11px]" style={{ color: 'var(--text-muted)' }}>
-              <span style={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: PRIORITY_COLORS[task.priority] ?? 'var(--text-muted)', flexShrink: 0 }} />
+            <span className="flex items-center gap-1 text-[11px]" style={{ color: 'var(--text-3)' }}>
+              <span style={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: PRIORITY_COLORS[task.priority] ?? 'var(--text-3)', flexShrink: 0 }} />
               <span style={{ textTransform: 'capitalize' }}>{task.priority}</span>
             </span>
           )}
@@ -538,28 +538,28 @@ function TaskCard({
         <button
           onClick={() => onToggleMenu(isMenuOpen ? null : task.id)}
           className="w-7 h-7 rounded flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-          style={{ color: 'var(--text-muted)' }}
-          onMouseEnter={e => { e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)'; e.currentTarget.style.color = 'var(--text-primary)' }}
-          onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = 'var(--text-muted)' }}
+          style={{ color: 'var(--text-3)' }}
+          onMouseEnter={e => { e.currentTarget.style.backgroundColor = 'var(--surface-2)'; e.currentTarget.style.color = 'var(--text-1)' }}
+          onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = 'var(--text-3)' }}
         >
           <MoreVertical size={15} />
         </button>
         {isMenuOpen && (
-          <div className="absolute right-0 top-8 w-44 rounded-xl shadow-xl z-50 overflow-hidden py-1" style={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border)' }}>
+          <div className="absolute right-0 top-8 w-44 rounded-xl shadow-xl z-50 overflow-hidden py-1" style={{ backgroundColor: 'var(--menu-bg)', border: '1px solid var(--border-subtle)' }}>
             <button
               onClick={() => { onEdit(task); onToggleMenu(null) }}
               className="w-full flex items-center gap-2.5 px-3 py-2 text-sm transition-colors"
-              style={{ color: 'var(--text-secondary)' }}
-              onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)')}
+              style={{ color: 'var(--text-2)' }}
+              onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--surface-2)')}
               onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
             >
-              <Pencil size={13} style={{ color: 'var(--text-muted)' }} /> Edit
+              <Pencil size={13} style={{ color: 'var(--text-3)' }} /> Edit
             </button>
-            <div className="my-1 border-t" style={{ borderColor: 'var(--border)' }} />
+            <div className="my-1 border-t" style={{ borderColor: 'var(--border-subtle)' }} />
             <button
               onClick={() => { onDelete(task.id); onToggleMenu(null) }}
-              className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-red-400 hover:text-red-300 transition-colors"
-              onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)')}
+              className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-[var(--danger-text)] hover:text-[var(--danger-text-hover)] transition-colors"
+              onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--surface-2)')}
               onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
             >
               <Trash2 size={13} /> Delete
@@ -590,15 +590,15 @@ function TaskGroup({
   return (
     <div className="mb-8">
       <div className="flex items-center gap-2 mb-3">
-        <span className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: labelColor ?? 'var(--text-muted)' }}>{label}</span>
-        <span className="text-[11px] font-medium px-1.5 py-0.5 rounded-md" style={{ backgroundColor: 'var(--bg-tertiary)', color: 'var(--text-secondary)' }}>{tasks.length}</span>
+        <span className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: labelColor ?? 'var(--text-3)' }}>{label}</span>
+        <span className="text-[11px] font-medium px-1.5 py-0.5 rounded-md" style={{ backgroundColor: 'var(--surface-2)', color: 'var(--text-2)' }}>{tasks.length}</span>
         {onClearAll && (
           <button
             onClick={onClearAll}
             className="text-[11px] font-medium transition-colors"
-            style={{ color: 'var(--text-muted)' }}
-            onMouseEnter={e => (e.currentTarget.style.color = '#e05252')}
-            onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-muted)')}
+            style={{ color: 'var(--text-3)' }}
+            onMouseEnter={e => (e.currentTarget.style.color = 'var(--doc-label-delete)')}
+            onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-3)')}
           >
             Clear completed
           </button>
@@ -642,11 +642,11 @@ function TaskColumn({
     <div>
       <div className="flex items-center gap-2 mb-3">
         <span style={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: dotColor, flexShrink: 0 }} />
-        <span className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: 'var(--text-secondary)' }}>{label}</span>
-        <span className="text-[11px] font-medium px-1.5 py-0.5 rounded-md" style={{ backgroundColor: 'var(--bg-tertiary)', color: 'var(--text-secondary)' }}>{tasks.length}</span>
+        <span className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: 'var(--text-2)' }}>{label}</span>
+        <span className="text-[11px] font-medium px-1.5 py-0.5 rounded-md" style={{ backgroundColor: 'var(--surface-2)', color: 'var(--text-2)' }}>{tasks.length}</span>
       </div>
       {tasks.length === 0 ? (
-        <p className="text-[13px]" style={{ color: 'var(--text-muted)' }}>No tasks</p>
+        <p className="text-[13px]" style={{ color: 'var(--text-3)' }}>No tasks</p>
       ) : (
         <div className="flex flex-col" style={{ gap: 10 }}>
           {tasks.map(task => (

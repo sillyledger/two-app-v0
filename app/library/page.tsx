@@ -348,7 +348,7 @@ export default function LibraryPage() {
   }
 
   return (
-    <div className="flex h-screen overflow-hidden" style={{ backgroundColor: 'var(--bg)' }}>
+    <div className="flex h-screen overflow-hidden" style={{ backgroundColor: 'var(--panel)' }}>
       <Sidebar collapsed={collapsed} onToggle={() => setCollapsed(v => !v)} />
 
       <main className="flex-1 overflow-y-auto">
@@ -356,20 +356,20 @@ export default function LibraryPage() {
 
           <div className="flex items-center justify-between mb-6 gap-4">
             <div className="relative flex-1" style={{ maxWidth: 420 }}>
-              <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: 'var(--text-muted)' }} />
+              <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: 'var(--text-3)' }} />
               <input
                 type="text"
                 value={search}
                 onChange={e => setSearch(e.target.value)}
                 placeholder="Search library..."
-                className="w-full rounded-lg pl-9 pr-4 py-2.5 text-sm outline-none placeholder-[var(--text-muted)]"
-                style={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border)', color: 'var(--text-primary)' }}
+                className="w-full rounded-lg pl-9 pr-4 py-2.5 text-sm outline-none placeholder-[var(--text-3)]"
+                style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border-subtle)', color: 'var(--text-1)' }}
               />
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
               <button
                 onClick={() => setTemplateModalOpen(true)}
-                style={{ ...btnBase, backgroundColor: 'var(--text-primary)', color: 'var(--bg)', border: '1px solid transparent' }}
+                style={{ ...btnBase, backgroundColor: 'var(--primary-bg)', color: 'var(--primary-text)', border: '1px solid transparent' }}
                 onMouseEnter={e => (e.currentTarget.style.opacity = '0.85')}
                 onMouseLeave={e => (e.currentTarget.style.opacity = '1')}
               >
@@ -377,7 +377,7 @@ export default function LibraryPage() {
               </button>
             </div>
           </div>
-          <p className="text-sm mb-3" style={{ color: 'var(--text-muted)' }}>
+          <p className="text-sm mb-3" style={{ color: 'var(--text-3)' }}>
             {totalDocs} documents across {groupCount} {groupBy}
           </p>
 
@@ -395,9 +395,9 @@ export default function LibraryPage() {
                       style={{
                         padding: '7px 16px', borderRadius: '99px', fontSize: '13px',
                         fontWeight: isActive ? 500 : 400,
-                        border: '1px solid', borderColor: isActive ? 'var(--text-primary)' : 'var(--border)',
-                        backgroundColor: isActive ? 'var(--text-primary)' : 'transparent',
-                        color: isActive ? 'var(--bg)' : 'var(--text-muted)',
+                        border: '1px solid', borderColor: isActive ? 'var(--text-1)' : 'var(--border-subtle)',
+                        backgroundColor: isActive ? 'var(--primary-bg)' : 'transparent',
+                        color: isActive ? 'var(--primary-text)' : 'var(--text-3)',
                         cursor: pill.soon ? 'default' : 'pointer', transition: 'all 0.15s',
                         opacity: pill.soon ? 0.6 : 1,
                       }}
@@ -405,7 +405,7 @@ export default function LibraryPage() {
                       {pill.label}
                     </button>
                     {pill.soon && isHovered && (
-                      <div style={{ position: 'absolute', top: 'calc(100% + 8px)', left: '50%', transform: 'translateX(-50%)', backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border)', borderRadius: '8px', padding: '5px 10px', fontSize: '11px', color: 'var(--text-muted)', whiteSpace: 'nowrap', zIndex: 50, pointerEvents: 'none' }}>
+                      <div style={{ position: 'absolute', top: 'calc(100% + 8px)', left: '50%', transform: 'translateX(-50%)', backgroundColor: 'var(--menu-bg)', border: '1px solid var(--border-subtle)', borderRadius: '8px', padding: '5px 10px', fontSize: '11px', color: 'var(--text-3)', whiteSpace: 'nowrap', zIndex: 50, pointerEvents: 'none' }}>
                         Coming soon
                       </div>
                     )}
@@ -415,8 +415,8 @@ export default function LibraryPage() {
             </div>
 
             <div className="flex items-center gap-2">
-              <span className="text-[12px]" style={{ color: 'var(--text-muted)' }}>Group by</span>
-              <div className="flex p-[3px] rounded-full" style={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border)' }}>
+              <span className="text-[12px]" style={{ color: 'var(--text-3)' }}>Group by</span>
+              <div className="flex p-[3px] rounded-full" style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border-subtle)' }}>
                 {(['folders', 'labels'] as GroupBy[]).map(mode => (
                   <button
                     key={mode}
@@ -424,8 +424,8 @@ export default function LibraryPage() {
                     style={{
                       padding: '6px 14px', borderRadius: '99px', fontSize: '12.5px',
                       fontWeight: groupBy === mode ? 500 : 400,
-                      backgroundColor: groupBy === mode ? 'var(--text-primary)' : 'transparent',
-                      color: groupBy === mode ? 'var(--bg)' : 'var(--text-muted)',
+                      backgroundColor: groupBy === mode ? 'var(--primary-bg)' : 'transparent',
+                      color: groupBy === mode ? 'var(--primary-text)' : 'var(--text-3)',
                       cursor: 'pointer', transition: 'all 0.15s', textTransform: 'capitalize',
                     }}
                   >
@@ -438,19 +438,19 @@ export default function LibraryPage() {
 
           {loading ? (
             <div className="flex items-center justify-center h-64">
-              <span className="text-xs" style={{ color: 'var(--text-muted)' }}>Loading...</span>
+              <span className="text-xs" style={{ color: 'var(--text-3)' }}>Loading...</span>
             </div>
           ) : (
             <>
               {activePill === 'all' && (
                 <>
-                  <div className="text-[11px] font-medium uppercase tracking-wider mb-4" style={{ color: 'var(--text-muted)' }}>
+                  <div className="text-[11px] font-medium uppercase tracking-wider mb-4" style={{ color: 'var(--text-3)' }}>
                     {groupBy === 'folders' ? 'Folders' : 'Labels'}
                   </div>
 
                   {groupBy === 'folders' ? (
                     filteredFolders.length === 0 ? (
-                      <p className="text-sm mb-10" style={{ color: 'var(--text-muted)' }}>No folders yet.</p>
+                      <p className="text-sm mb-10" style={{ color: 'var(--text-3)' }}>No folders yet.</p>
                     ) : (
                       <div className="grid grid-cols-7 gap-2.5 mb-10">
                         {filteredFolders.map(folder => (
@@ -479,24 +479,24 @@ export default function LibraryPage() {
                     )
                   ) : (
                     filteredLabelCollections.length === 0 ? (
-                      <p className="text-sm mb-10" style={{ color: 'var(--text-muted)' }}>No labels yet.</p>
+                      <p className="text-sm mb-10" style={{ color: 'var(--text-3)' }}>No labels yet.</p>
                     ) : (
                       <div className="grid gap-4 mb-10" style={{ gridTemplateColumns: 'repeat(5, minmax(0, 1fr))' }}>
                         {filteredLabelCollections.map(({ label, docs }) => (
                           <div key={label.id} className="relative" style={{ height: '150px' }}>
                             {docs.length > 0 && (
                               <>
-                                <div style={{ position: 'absolute', top: 14, left: 10, right: -10, bottom: 0, borderRadius: 12, backgroundColor: 'var(--bg-secondary)', opacity: 0.35 }} />
-                                <div style={{ position: 'absolute', top: 7, left: 5, right: -5, bottom: 0, borderRadius: 12, backgroundColor: 'var(--bg-secondary)', opacity: 0.6 }} />
+                                <div style={{ position: 'absolute', top: 14, left: 10, right: -10, bottom: 0, borderRadius: 12, backgroundColor: 'var(--surface)', opacity: 0.35 }} />
+                                <div style={{ position: 'absolute', top: 7, left: 5, right: -5, bottom: 0, borderRadius: 12, backgroundColor: 'var(--surface)', opacity: 0.6 }} />
                               </>
                             )}
-                            <div style={{ position: 'absolute', inset: 0, borderRadius: 12, backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border)', padding: '18px 20px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                            <div style={{ position: 'absolute', inset: 0, borderRadius: 12, backgroundColor: 'var(--surface)', border: '1px solid var(--border-subtle)', padding: '18px 20px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                               <div className="flex items-center gap-2">
                                 <span style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: label.color, flexShrink: 0 }} />
-                                <span className="text-[15px] font-medium" style={{ color: 'var(--text-primary)' }}>{label.name}</span>
+                                <span className="text-[15px] font-medium" style={{ color: 'var(--text-1)' }}>{label.name}</span>
                               </div>
-                              <p className="text-[12px] truncate" style={{ color: 'var(--text-muted)' }}>{previewText(docs.map(d => d.title || 'Untitled'))}</p>
-                              <button onClick={() => docs[0] && router.push(`/docs/${docs[0].uuid}`)} className="text-[12.5px] text-left" style={{ color: 'var(--text-secondary)' }}>{docs.length} {docs.length === 1 ? 'doc' : 'docs'}</button>
+                              <p className="text-[12px] truncate" style={{ color: 'var(--text-3)' }}>{previewText(docs.map(d => d.title || 'Untitled'))}</p>
+                              <button onClick={() => docs[0] && router.push(`/docs/${docs[0].uuid}`)} className="text-[12.5px] text-left" style={{ color: 'var(--text-2)' }}>{docs.length} {docs.length === 1 ? 'doc' : 'docs'}</button>
                             </div>
                           </div>
                         ))}
@@ -511,40 +511,40 @@ export default function LibraryPage() {
                   {groupBy === 'folders' ? (
                     filteredUnfiledDocs.length > 0 ? (
                       <>
-                        <div className="text-[11px] font-medium uppercase tracking-wider mb-4" style={{ color: 'var(--text-muted)' }}>Unfiled · {filteredUnfiledDocs.length}</div>
+                        <div className="text-[11px] font-medium uppercase tracking-wider mb-4" style={{ color: 'var(--text-3)' }}>Unfiled · {filteredUnfiledDocs.length}</div>
                         <div className="flex flex-wrap gap-2">
                           {filteredUnfiledDocs.map(doc => (
-                            <button key={doc.uuid} onClick={() => router.push(`/docs/${doc.uuid}`)} className="flex items-center gap-1.5 px-3 py-2 rounded-lg transition-colors" style={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border)', color: 'var(--text-secondary)' }}
-                              onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)')}
-                              onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'var(--bg-secondary)')}
+                            <button key={doc.uuid} onClick={() => router.push(`/docs/${doc.uuid}`)} className="flex items-center gap-1.5 px-3 py-2 rounded-lg transition-colors" style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border-subtle)', color: 'var(--text-2)' }}
+                              onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--surface-2)')}
+                              onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'var(--surface)')}
                             >
-                              <FileText size={11} style={{ color: 'var(--text-muted)' }} />
+                              <FileText size={11} style={{ color: 'var(--text-3)' }} />
                               <span className="text-[12.5px]">{doc.title || 'Untitled'}</span>
                             </button>
                           ))}
                         </div>
                       </>
                     ) : search && activePill === 'other' ? (
-                      <p className="text-sm" style={{ color: 'var(--text-muted)' }}>No matching docs.</p>
+                      <p className="text-sm" style={{ color: 'var(--text-3)' }}>No matching docs.</p>
                     ) : null
                   ) : (
                     filteredUnlabeled.length > 0 ? (
                       <>
-                        <div className="text-[11px] font-medium uppercase tracking-wider mb-4" style={{ color: 'var(--text-muted)' }}>Unlabeled · {filteredUnlabeled.length}</div>
+                        <div className="text-[11px] font-medium uppercase tracking-wider mb-4" style={{ color: 'var(--text-3)' }}>Unlabeled · {filteredUnlabeled.length}</div>
                         <div className="flex flex-wrap gap-2">
                           {filteredUnlabeled.map(doc => (
-                            <button key={doc.uuid} onClick={() => router.push(`/docs/${doc.uuid}`)} className="flex items-center gap-1.5 px-3 py-2 rounded-lg transition-colors" style={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border)', color: 'var(--text-secondary)' }}
-                              onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)')}
-                              onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'var(--bg-secondary)')}
+                            <button key={doc.uuid} onClick={() => router.push(`/docs/${doc.uuid}`)} className="flex items-center gap-1.5 px-3 py-2 rounded-lg transition-colors" style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border-subtle)', color: 'var(--text-2)' }}
+                              onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--surface-2)')}
+                              onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'var(--surface)')}
                             >
-                              <FileText size={11} style={{ color: 'var(--text-muted)' }} />
+                              <FileText size={11} style={{ color: 'var(--text-3)' }} />
                               <span className="text-[12.5px]">{doc.title || 'Untitled'}</span>
                             </button>
                           ))}
                         </div>
                       </>
                     ) : search && activePill === 'other' ? (
-                      <p className="text-sm" style={{ color: 'var(--text-muted)' }}>No matching docs.</p>
+                      <p className="text-sm" style={{ color: 'var(--text-3)' }}>No matching docs.</p>
                     ) : null
                   )}
                 </>
@@ -552,9 +552,9 @@ export default function LibraryPage() {
 
               {activePill === 'all' && (
                 <>
-                  <div className="text-[11px] font-medium uppercase tracking-wider mb-4 mt-10" style={{ color: 'var(--text-muted)' }}>Notes</div>
+                  <div className="text-[11px] font-medium uppercase tracking-wider mb-4 mt-10" style={{ color: 'var(--text-3)' }}>Notes</div>
                   {filteredCategories.length === 0 && filteredUncategorizedNotes.length === 0 ? (
-                    <p className="text-sm mb-10" style={{ color: 'var(--text-muted)' }}>No notes yet.</p>
+                    <p className="text-sm mb-10" style={{ color: 'var(--text-3)' }}>No notes yet.</p>
                   ) : (
                     <>
                       {filteredCategories.length > 0 && (
@@ -578,11 +578,11 @@ export default function LibraryPage() {
                       {filteredUncategorizedNotes.length > 0 && (
                         <div className="flex flex-wrap gap-2 mb-10">
                           {filteredUncategorizedNotes.map(note => (
-                            <button key={note.uuid} onClick={() => router.push(`/notes/${note.uuid}`)} className="flex items-center gap-1.5 px-3 py-2 rounded-lg transition-colors" style={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border)', color: 'var(--text-secondary)' }}
-                              onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)')}
-                              onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'var(--bg-secondary)')}
+                            <button key={note.uuid} onClick={() => router.push(`/notes/${note.uuid}`)} className="flex items-center gap-1.5 px-3 py-2 rounded-lg transition-colors" style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border-subtle)', color: 'var(--text-2)' }}
+                              onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--surface-2)')}
+                              onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'var(--surface)')}
                             >
-                              <FileText size={11} style={{ color: 'var(--text-muted)' }} />
+                              <FileText size={11} style={{ color: 'var(--text-3)' }} />
                               <span className="text-[12.5px]">{note.title || 'Untitled'}</span>
                             </button>
                           ))}
@@ -596,7 +596,7 @@ export default function LibraryPage() {
               {activePill === 'shared' && (
                 <>
                   {sharedWorkspaces.length === 0 ? (
-                    <p className="text-sm" style={{ color: 'var(--text-muted)' }}>No shared workspaces yet.</p>
+                    <p className="text-sm" style={{ color: 'var(--text-3)' }}>No shared workspaces yet.</p>
                   ) : (
                     sharedWorkspaces.map(ws => {
                       const data = sharedData[ws.id]
@@ -612,9 +612,9 @@ export default function LibraryPage() {
                       const filteredWsUnfiled = wsUnfiled.filter(d => (d.title || '').toLowerCase().includes(search.toLowerCase()))
                       return (
                         <div key={ws.id} className="mb-10">
-                          <div className="text-[11px] font-medium uppercase tracking-wider mb-4" style={{ color: 'var(--text-muted)' }}>{ws.name}</div>
+                          <div className="text-[11px] font-medium uppercase tracking-wider mb-4" style={{ color: 'var(--text-3)' }}>{ws.name}</div>
                           {filteredWsFolders.length === 0 ? (
-                            <p className="text-sm mb-4" style={{ color: 'var(--text-muted)' }}>No folders yet.</p>
+                            <p className="text-sm mb-4" style={{ color: 'var(--text-3)' }}>No folders yet.</p>
                           ) : (
                             <div className="grid gap-4 mb-4" style={{ gridTemplateColumns: 'repeat(5, minmax(0, 1fr))' }}>
                               {filteredWsFolders.map(({ folder, color, docs }) => (
@@ -626,17 +626,17 @@ export default function LibraryPage() {
                                 >
                                   {docs.length > 0 && (
                                     <>
-                                      <div style={{ position: 'absolute', top: 14, left: 10, right: -10, bottom: 0, borderRadius: 12, backgroundColor: 'var(--bg-secondary)', opacity: 0.35 }} />
-                                      <div style={{ position: 'absolute', top: 7, left: 5, right: -5, bottom: 0, borderRadius: 12, backgroundColor: 'var(--bg-secondary)', opacity: 0.6 }} />
+                                      <div style={{ position: 'absolute', top: 14, left: 10, right: -10, bottom: 0, borderRadius: 12, backgroundColor: 'var(--surface)', opacity: 0.35 }} />
+                                      <div style={{ position: 'absolute', top: 7, left: 5, right: -5, bottom: 0, borderRadius: 12, backgroundColor: 'var(--surface)', opacity: 0.6 }} />
                                     </>
                                   )}
-                                  <div style={{ position: 'absolute', inset: 0, borderRadius: 12, backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border)', padding: '18px 20px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                                  <div style={{ position: 'absolute', inset: 0, borderRadius: 12, backgroundColor: 'var(--surface)', border: '1px solid var(--border-subtle)', padding: '18px 20px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                                     <div className="flex items-center gap-2">
                                       <span style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: color, flexShrink: 0 }} />
-                                      <span className="text-[15px] font-medium" style={{ color: 'var(--text-primary)' }}>{folder.name}</span>
+                                      <span className="text-[15px] font-medium" style={{ color: 'var(--text-1)' }}>{folder.name}</span>
                                     </div>
-                                    <p className="text-[12px] truncate" style={{ color: 'var(--text-muted)' }}>{previewText(docs.map(d => d.title || 'Untitled'))}</p>
-                                    <span className="text-[12.5px]" style={{ color: 'var(--text-secondary)' }}>{docs.length} {docs.length === 1 ? 'doc' : 'docs'}</span>
+                                    <p className="text-[12px] truncate" style={{ color: 'var(--text-3)' }}>{previewText(docs.map(d => d.title || 'Untitled'))}</p>
+                                    <span className="text-[12.5px]" style={{ color: 'var(--text-2)' }}>{docs.length} {docs.length === 1 ? 'doc' : 'docs'}</span>
                                   </div>
                                 </div>
                               ))}
@@ -645,11 +645,11 @@ export default function LibraryPage() {
                           {filteredWsUnfiled.length > 0 && (
                             <div className="flex flex-wrap gap-2">
                               {filteredWsUnfiled.map(doc => (
-                                <button key={doc.uuid} onClick={() => router.push(`/docs/${doc.uuid}`)} className="flex items-center gap-1.5 px-3 py-2 rounded-lg transition-colors" style={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border)', color: 'var(--text-secondary)' }}
-                                  onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--bg-tertiary)')}
-                                  onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'var(--bg-secondary)')}
+                                <button key={doc.uuid} onClick={() => router.push(`/docs/${doc.uuid}`)} className="flex items-center gap-1.5 px-3 py-2 rounded-lg transition-colors" style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border-subtle)', color: 'var(--text-2)' }}
+                                  onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--surface-2)')}
+                                  onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'var(--surface)')}
                                 >
-                                  <FileText size={11} style={{ color: 'var(--text-muted)' }} />
+                                  <FileText size={11} style={{ color: 'var(--text-3)' }} />
                                   <span className="text-[12.5px]">{doc.title || 'Untitled'}</span>
                                 </button>
                               ))}

@@ -27,7 +27,7 @@ export default function ThemeToggle() {
     <button
       onClick={toggle}
       title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
-      className="flex items-center gap-2 w-full rounded-lg px-2 py-1.5 text-sm transition-colors text-white/50 hover:bg-white/5 hover:text-white/80"
+      className="flex items-center gap-2 w-full rounded-lg px-2 py-1.5 text-sm transition-colors text-[var(--editor-toolbar-text-50)] hover:bg-[var(--hover)] hover:text-[var(--editor-toolbar-text-80)]"
     >
       {theme === "dark" ? <Sun size={15} /> : <Moon size={15} />}
       <span>{theme === "dark" ? "Light mode" : "Dark mode"}</span>

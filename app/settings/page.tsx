@@ -410,7 +410,7 @@ function SettingsPageInner() {
 
   const initial = name ? name.charAt(0).toUpperCase() : '?'
 
-  const inputClass = "w-full px-3 py-2 rounded-lg text-[13px] placeholder-[#555] focus:outline-none"
+  const inputClass = "w-full px-3 py-2 rounded-lg text-[13px] placeholder-[var(--doc-chip-dim)] focus:outline-none"
   const rowClass = "flex items-center justify-between py-4 border-b"
   const labelClass = "text-[13px] font-medium"
   const descClass = "text-[11px] mt-0.5"
@@ -426,28 +426,28 @@ function SettingsPageInner() {
   const storageBarColor = storagePercent > 90 ? '#ef4444' : storagePercent > 70 ? '#f59e0b' : '#534AB7'
 
   if (loading) return (
-    <div className="flex h-screen" style={{ backgroundColor: "var(--bg)" }}>
+    <div className="flex h-screen" style={{ backgroundColor: "var(--panel)" }}>
       <Sidebar collapsed={collapsed} onToggle={() => setCollapsed(v => !v)} />
       <main className="flex-1 flex items-center justify-center">
-        <p style={{ color: "var(--text-muted)" }}>Loading...</p>
+        <p style={{ color: "var(--text-3)" }}>Loading...</p>
       </main>
     </div>
   )
 
   return (
-    <div className="flex h-screen overflow-hidden" style={{ backgroundColor: "var(--bg)" }}>
+    <div className="flex h-screen overflow-hidden" style={{ backgroundColor: "var(--panel)" }}>
       <Sidebar collapsed={collapsed} onToggle={() => setCollapsed(v => !v)} />
 
       <main className="flex-1 flex items-center justify-center overflow-y-auto px-4">
         <div
           className="w-full max-w-[820px] min-h-[560px] rounded-2xl shadow-2xl flex overflow-hidden my-8"
-          style={{ backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border)" }}
+          style={{ backgroundColor: "var(--surface)", border: "1px solid var(--border-subtle)" }}
         >
           {/* Left nav */}
-          <div className="w-[200px] shrink-0 flex flex-col p-4" style={{ borderRight: "1px solid var(--border)" }}>
+          <div className="w-[200px] shrink-0 flex flex-col p-4" style={{ borderRight: "1px solid var(--border-subtle)" }}>
             <div className="flex items-center justify-between mb-5 px-1">
-              <span className="text-[13px] font-semibold" style={{ color: "var(--text-primary)" }}>Settings</span>
-              <button onClick={() => router.back()} style={{ color: "var(--text-muted)" }} className="hover:text-[var(--text-primary)] transition-colors">
+              <span className="text-[13px] font-semibold" style={{ color: "var(--text-1)" }}>Settings</span>
+              <button onClick={() => router.back()} style={{ color: "var(--text-3)" }} className="hover:text-[var(--text-1)] transition-colors">
                 <X size={14} />
               </button>
             </div>
@@ -459,19 +459,19 @@ function SettingsPageInner() {
                   onClick={() => { setSection(item.id); setMessage(null) }}
                   className="flex items-center gap-2.5 px-2.5 py-[6px] rounded-lg text-[13px] font-medium text-left transition-colors"
                   style={{
-                    backgroundColor: section === item.id ? "var(--bg-tertiary)" : "transparent",
-                    color: section === item.id ? "var(--text-primary)" : "var(--text-muted)",
+                    backgroundColor: section === item.id ? "var(--surface-2)" : "transparent",
+                    color: section === item.id ? "var(--text-1)" : "var(--text-3)",
                   }}
                   onMouseEnter={e => {
                     if (section !== item.id) {
-                      e.currentTarget.style.backgroundColor = "var(--bg-tertiary)"
-                      e.currentTarget.style.color = "var(--text-secondary)"
+                      e.currentTarget.style.backgroundColor = "var(--surface-2)"
+                      e.currentTarget.style.color = "var(--text-2)"
                     }
                   }}
                   onMouseLeave={e => {
                     if (section !== item.id) {
                       e.currentTarget.style.backgroundColor = "transparent"
-                      e.currentTarget.style.color = "var(--text-muted)"
+                      e.currentTarget.style.color = "var(--text-3)"
                     }
                   }}
                 >
@@ -487,7 +487,7 @@ function SettingsPageInner() {
 
             {message && (
               <div className={`mb-5 px-4 py-2.5 rounded-lg text-[12px] ${
-                message.type === 'success' ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'
+                message.type === 'success' ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-[var(--danger-text)]'
               }`}>
                 {message.text}
               </div>
@@ -496,10 +496,10 @@ function SettingsPageInner() {
             {/* ACCOUNT */}
             {section === 'account' && (
               <div>
-                <h2 className="text-[15px] font-semibold mb-1" style={{ color: "var(--text-primary)" }}>Account</h2>
-                <p className="text-[12px] mb-6" style={{ color: "var(--text-muted)" }}>Manage your profile information.</p>
+                <h2 className="text-[15px] font-semibold mb-1" style={{ color: "var(--text-1)" }}>Account</h2>
+                <p className="text-[12px] mb-6" style={{ color: "var(--text-3)" }}>Manage your profile information.</p>
 
-                <div className="flex items-center gap-4 mb-6 pb-6" style={{ borderBottom: "1px solid var(--border)" }}>
+                <div className="flex items-center gap-4 mb-6 pb-6" style={{ borderBottom: "1px solid var(--border-subtle)" }}>
                   <button
                     onClick={() => fileInputRef.current?.click()}
                     disabled={uploadingAvatar}
@@ -521,21 +521,21 @@ function SettingsPageInner() {
                   </button>
                   <input ref={fileInputRef} type="file" accept="image/*" onChange={handleAvatarChange} className="hidden" />
                   <div>
-                    <p className="text-[13px] font-medium" style={{ color: "var(--text-secondary)" }}>Profile photo</p>
-                    <p className="text-[11px] mt-0.5" style={{ color: "var(--text-muted)" }}>Click to upload · Max 2MB</p>
+                    <p className="text-[13px] font-medium" style={{ color: "var(--text-2)" }}>Profile photo</p>
+                    <p className="text-[11px] mt-0.5" style={{ color: "var(--text-3)" }}>Click to upload · Max 2MB</p>
                   </div>
                 </div>
 
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-[12px] font-medium mb-1.5" style={{ color: "var(--text-muted)" }}>Display name</label>
+                    <label className="block text-[12px] font-medium mb-1.5" style={{ color: "var(--text-3)" }}>Display name</label>
                     <input
                       type="text"
                       value={name}
                       onChange={(e) => setName(e.target.value)}
                       placeholder="Your name"
                       className={inputClass}
-                      style={{ backgroundColor: "var(--bg-tertiary)", border: "1px solid var(--border)", color: "var(--text-primary)" }}
+                      style={{ backgroundColor: "var(--surface-2)", border: "1px solid var(--border-subtle)", color: "var(--text-1)" }}
                     />
                   </div>
                 </div>
@@ -545,7 +545,7 @@ function SettingsPageInner() {
                     onClick={handleSave}
                     disabled={saving}
                     className="px-4 py-2 rounded-lg text-[13px] font-medium transition-colors disabled:opacity-50"
-                    style={{ backgroundColor: "var(--text-primary)", color: "var(--bg)" }}
+                    style={{ backgroundColor: "var(--primary-bg)", color: "var(--primary-text)" }}
                   >
                     {saving ? 'Saving...' : 'Save changes'}
                   </button>
@@ -556,23 +556,23 @@ function SettingsPageInner() {
             {/* APPEARANCE */}
             {section === 'appearance' && (
               <div>
-                <h2 className="text-[15px] font-semibold mb-1" style={{ color: "var(--text-primary)" }}>Appearance</h2>
-                <p className="text-[12px] mb-6" style={{ color: "var(--text-muted)" }}>Customize how TWO looks for you.</p>
+                <h2 className="text-[15px] font-semibold mb-1" style={{ color: "var(--text-1)" }}>Appearance</h2>
+                <p className="text-[12px] mb-6" style={{ color: "var(--text-3)" }}>Customize how TWO looks for you.</p>
 
-                <div className={rowClass} style={{ borderColor: "var(--border)" }}>
+                <div className={rowClass} style={{ borderColor: "var(--border-subtle)" }}>
                   <div>
-                    <p className={labelClass} style={{ color: "var(--text-secondary)" }}>Interface theme</p>
-                    <p className={descClass} style={{ color: "var(--text-muted)" }}>Dark, light, or follow your system setting</p>
+                    <p className={labelClass} style={{ color: "var(--text-2)" }}>Interface theme</p>
+                    <p className={descClass} style={{ color: "var(--text-3)" }}>Dark, light, or follow your system setting</p>
                   </div>
-                  <div className="flex items-center gap-1 rounded-lg p-0.5" style={{ backgroundColor: "var(--bg-tertiary)", border: "1px solid var(--border)" }}>
+                  <div className="flex items-center gap-1 rounded-lg p-0.5" style={{ backgroundColor: "var(--surface-2)", border: "1px solid var(--border-subtle)" }}>
                     {themeOptions.map((t) => (
                       <button
                         key={t.value}
                         onClick={() => handleTheme(t.value)}
                         className="flex items-center gap-1.5 px-3 py-1 rounded-md text-[12px] font-medium transition-colors"
                         style={{
-                          backgroundColor: theme === t.value ? "var(--bg-secondary)" : "transparent",
-                          color: theme === t.value ? "var(--text-primary)" : "var(--text-muted)",
+                          backgroundColor: theme === t.value ? "var(--surface)" : "transparent",
+                          color: theme === t.value ? "var(--text-1)" : "var(--text-3)",
                         }}
                       >
                         {t.icon}
@@ -584,20 +584,20 @@ function SettingsPageInner() {
 
                 <div className="flex items-center justify-between py-4">
                   <div>
-                    <p className={labelClass} style={{ color: "var(--text-secondary)" }}>Font size</p>
-                    <p className={descClass} style={{ color: "var(--text-muted)" }}>Adjust editor text size</p>
+                    <p className={labelClass} style={{ color: "var(--text-2)" }}>Font size</p>
+                    <p className={descClass} style={{ color: "var(--text-3)" }}>Adjust editor text size</p>
                   </div>
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => handleFontSizeChange(-1)}
                       className="w-7 h-7 rounded-md flex items-center justify-center text-[16px] transition-colors"
-                      style={{ backgroundColor: "var(--bg-tertiary)", border: "1px solid var(--border)", color: "var(--text-secondary)" }}
+                      style={{ backgroundColor: "var(--surface-2)", border: "1px solid var(--border-subtle)", color: "var(--text-2)" }}
                     >−</button>
-                    <span className="text-[13px] w-10 text-center" style={{ color: "var(--text-primary)" }}>{fontSize}px</span>
+                    <span className="text-[13px] w-10 text-center" style={{ color: "var(--text-1)" }}>{fontSize}px</span>
                     <button
                       onClick={() => handleFontSizeChange(1)}
                       className="w-7 h-7 rounded-md flex items-center justify-center text-[16px] transition-colors"
-                      style={{ backgroundColor: "var(--bg-tertiary)", border: "1px solid var(--border)", color: "var(--text-secondary)" }}
+                      style={{ backgroundColor: "var(--surface-2)", border: "1px solid var(--border-subtle)", color: "var(--text-2)" }}
                     >+</button>
                   </div>
                 </div>
@@ -607,19 +607,19 @@ function SettingsPageInner() {
             {/* PREFERENCES */}
             {section === 'preferences' && (
               <div>
-                <h2 className="text-[15px] font-semibold mb-1" style={{ color: "var(--text-primary)" }}>Preferences</h2>
-                <p className="text-[12px] mb-6" style={{ color: "var(--text-muted)" }}>Regional and display settings.</p>
+                <h2 className="text-[15px] font-semibold mb-1" style={{ color: "var(--text-1)" }}>Preferences</h2>
+                <p className="text-[12px] mb-6" style={{ color: "var(--text-3)" }}>Regional and display settings.</p>
 
-                <div className={rowClass} style={{ borderColor: "var(--border)" }}>
+                <div className={rowClass} style={{ borderColor: "var(--border-subtle)" }}>
                   <div>
-                    <p className={labelClass} style={{ color: "var(--text-secondary)" }}>Time zone</p>
-                    <p className={descClass} style={{ color: "var(--text-muted)" }}>Used for timestamps in the app</p>
+                    <p className={labelClass} style={{ color: "var(--text-2)" }}>Time zone</p>
+                    <p className={descClass} style={{ color: "var(--text-3)" }}>Used for timestamps in the app</p>
                   </div>
                   <select
                     value={timezone}
                     onChange={(e) => handleTimezone(e.target.value)}
                     className="px-3 py-2 rounded-lg text-[12px] outline-none"
-                    style={{ backgroundColor: "var(--bg-tertiary)", border: "1px solid var(--border)", color: "var(--text-primary)" }}
+                    style={{ backgroundColor: "var(--surface-2)", border: "1px solid var(--border-subtle)", color: "var(--text-1)" }}
                   >
                     <option value="UTC-12">UTC−12</option>
                     <option value="UTC-8">UTC−8 — Los Angeles</option>
@@ -637,14 +637,14 @@ function SettingsPageInner() {
 
                 <div className="flex items-center justify-between py-4">
                   <div>
-                    <p className={labelClass} style={{ color: "var(--text-secondary)" }}>Date format</p>
-                    <p className={descClass} style={{ color: "var(--text-muted)" }}>How dates are displayed across the app</p>
+                    <p className={labelClass} style={{ color: "var(--text-2)" }}>Date format</p>
+                    <p className={descClass} style={{ color: "var(--text-3)" }}>How dates are displayed across the app</p>
                   </div>
                   <select
                     value={dateFormat}
                     onChange={(e) => handleDateFormat(e.target.value)}
                     className="px-3 py-2 rounded-lg text-[12px] outline-none"
-                    style={{ backgroundColor: "var(--bg-tertiary)", border: "1px solid var(--border)", color: "var(--text-primary)" }}
+                    style={{ backgroundColor: "var(--surface-2)", border: "1px solid var(--border-subtle)", color: "var(--text-1)" }}
                   >
                     <option value="MMM D, YYYY">May 21, 2026</option>
                     <option value="DD/MM/YYYY">21/05/2026</option>
@@ -658,22 +658,22 @@ function SettingsPageInner() {
             {/* EDITOR */}
             {section === 'editor' && (
               <div>
-                <h2 className="text-[15px] font-semibold mb-1" style={{ color: "var(--text-primary)" }}>Editor</h2>
-                <p className="text-[12px] mb-6" style={{ color: "var(--text-muted)" }}>Configure your default writing experience.</p>
+                <h2 className="text-[15px] font-semibold mb-1" style={{ color: "var(--text-1)" }}>Editor</h2>
+                <p className="text-[12px] mb-6" style={{ color: "var(--text-3)" }}>Configure your default writing experience.</p>
 
-                <div className={rowClass} style={{ borderColor: "var(--border)" }}>
+                <div className={rowClass} style={{ borderColor: "var(--border-subtle)" }}>
                   <div>
-                    <p className={labelClass} style={{ color: "var(--text-secondary)" }}>Default page width</p>
+                    <p className={labelClass} style={{ color: "var(--text-2)" }}>Default page width</p>
                   </div>
-                  <div className="flex items-center gap-1 rounded-lg p-0.5" style={{ backgroundColor: "var(--bg-tertiary)", border: "1px solid var(--border)" }}>
+                  <div className="flex items-center gap-1 rounded-lg p-0.5" style={{ backgroundColor: "var(--surface-2)", border: "1px solid var(--border-subtle)" }}>
                     {(['narrow', 'wide'] as const).map((w) => (
                       <button
                         key={w}
                         onClick={() => handleDefaultWidth(w)}
                         className="px-3 py-1 rounded-md text-[12px] font-medium transition-colors capitalize"
                         style={{
-                          backgroundColor: defaultWidth === w ? "var(--bg-secondary)" : "transparent",
-                          color: defaultWidth === w ? "var(--text-primary)" : "var(--text-muted)",
+                          backgroundColor: defaultWidth === w ? "var(--surface)" : "transparent",
+                          color: defaultWidth === w ? "var(--text-1)" : "var(--text-3)",
                         }}
                       >
                         {w === 'narrow' ? 'Narrow' : 'Wide'}
@@ -685,23 +685,23 @@ function SettingsPageInner() {
                 <div className="py-4">
                   <div className="flex items-start justify-between gap-4">
                     <div>
-                      <p className={labelClass} style={{ color: "var(--text-secondary)" }}>Markdown shortcuts</p>
-                      <p className={descClass} style={{ color: "var(--text-muted)" }}>Type # for a heading, ** for bold, or - for a list as you go.</p>
+                      <p className={labelClass} style={{ color: "var(--text-2)" }}>Markdown shortcuts</p>
+                      <p className={descClass} style={{ color: "var(--text-3)" }}>Type # for a heading, ** for bold, or - for a list as you go.</p>
                     </div>
                     <button
                       onClick={() => handleMarkdownShortcuts(!markdownShortcuts)}
                       className="relative shrink-0 rounded-full transition-colors"
                       style={{
                         width: 36, height: 21, marginTop: 1,
-                        backgroundColor: markdownShortcuts ? "#534AB7" : "var(--bg-tertiary)",
-                        border: `1px solid ${markdownShortcuts ? "#534AB7" : "var(--border)"}`,
+                        backgroundColor: markdownShortcuts ? "#534AB7" : "var(--surface-2)",
+                        border: `1px solid ${markdownShortcuts ? "#534AB7" : "var(--border-subtle)"}`,
                       }}
                     >
                       <span
                         className="absolute rounded-full transition-transform"
                         style={{
                           width: 15, height: 15, top: 2, left: 2,
-                          backgroundColor: markdownShortcuts ? "#fff" : "var(--text-muted)",
+                          backgroundColor: markdownShortcuts ? "#fff" : "var(--text-3)",
                           transform: markdownShortcuts ? "translateX(15px)" : "translateX(0)",
                         }}
                       />
@@ -718,9 +718,9 @@ function SettingsPageInner() {
                       <span
                         key={ex.label}
                         className="text-[11px] px-1.5 py-0.5 rounded"
-                        style={{ backgroundColor: "var(--bg-tertiary)", border: "1px solid var(--border)", color: "var(--text-secondary)", fontFamily: "ui-monospace, monospace" }}
+                        style={{ backgroundColor: "var(--surface-2)", border: "1px solid var(--border-subtle)", color: "var(--text-2)", fontFamily: "ui-monospace, monospace" }}
                       >
-                        {ex.sym} <span style={{ color: "var(--text-muted)", fontFamily: "inherit" }}>{ex.label}</span>
+                        {ex.sym} <span style={{ color: "var(--text-3)", fontFamily: "inherit" }}>{ex.label}</span>
                       </span>
                     ))}
                   </div>
@@ -731,10 +731,10 @@ function SettingsPageInner() {
             {/* SECURITY */}
             {section === 'security' && (
               <div>
-                <h2 className="text-[15px] font-semibold mb-1" style={{ color: "var(--text-primary)" }}>Security</h2>
-                <p className="text-[12px] mb-6" style={{ color: "var(--text-muted)" }}>Manage your password and email address.</p>
+                <h2 className="text-[15px] font-semibold mb-1" style={{ color: "var(--text-1)" }}>Security</h2>
+                <p className="text-[12px] mb-6" style={{ color: "var(--text-3)" }}>Manage your password and email address.</p>
 
-                <p className="text-[11px] font-semibold uppercase tracking-wider mb-3" style={{ color: "var(--text-muted)" }}>Password</p>
+                <p className="text-[11px] font-semibold uppercase tracking-wider mb-3" style={{ color: "var(--text-3)" }}>Password</p>
                 <div className="space-y-3 mb-4">
                   {[
                     { label: 'Current password', value: currentPassword, setter: setCurrentPassword },
@@ -742,14 +742,14 @@ function SettingsPageInner() {
                     { label: 'Confirm new password', value: confirmPassword, setter: setConfirmPassword },
                   ].map(({ label, value, setter }) => (
                     <div key={label}>
-                      <label className="block text-[12px] font-medium mb-1.5" style={{ color: "var(--text-muted)" }}>{label}</label>
+                      <label className="block text-[12px] font-medium mb-1.5" style={{ color: "var(--text-3)" }}>{label}</label>
                       <input
                         type="password"
                         value={value}
                         onChange={(e) => setter(e.target.value)}
                         placeholder="••••••••"
                         className={inputClass}
-                        style={{ backgroundColor: "var(--bg-tertiary)", border: "1px solid var(--border)", color: "var(--text-primary)" }}
+                        style={{ backgroundColor: "var(--surface-2)", border: "1px solid var(--border-subtle)", color: "var(--text-1)" }}
                       />
                     </div>
                   ))}
@@ -759,16 +759,16 @@ function SettingsPageInner() {
                     onClick={handleSave}
                     disabled={saving}
                     className="px-4 py-2 rounded-lg text-[13px] font-medium transition-colors disabled:opacity-50"
-                    style={{ backgroundColor: "var(--text-primary)", color: "var(--bg)" }}
+                    style={{ backgroundColor: "var(--primary-bg)", color: "var(--primary-text)" }}
                   >
                     {saving ? 'Saving...' : 'Update password'}
                   </button>
                 </div>
 
-                <div className="pt-6" style={{ borderTop: "1px solid var(--border)" }}>
-                  <p className="text-[11px] font-semibold uppercase tracking-wider mb-3" style={{ color: "var(--text-muted)" }}>Email address</p>
-                  <p className="text-[12px] mb-3" style={{ color: "var(--text-muted)" }}>
-                    Current: <span style={{ color: "var(--text-secondary)" }}>{email}</span>
+                <div className="pt-6" style={{ borderTop: "1px solid var(--border-subtle)" }}>
+                  <p className="text-[11px] font-semibold uppercase tracking-wider mb-3" style={{ color: "var(--text-3)" }}>Email address</p>
+                  <p className="text-[12px] mb-3" style={{ color: "var(--text-3)" }}>
+                    Current: <span style={{ color: "var(--text-2)" }}>{email}</span>
                   </p>
                   <input
                     type="email"
@@ -776,14 +776,14 @@ function SettingsPageInner() {
                     onChange={(e) => setNewEmail(e.target.value)}
                     placeholder="new@email.com"
                     className={inputClass}
-                    style={{ backgroundColor: "var(--bg-tertiary)", border: "1px solid var(--border)", color: "var(--text-primary)" }}
+                    style={{ backgroundColor: "var(--surface-2)", border: "1px solid var(--border-subtle)", color: "var(--text-1)" }}
                   />
                   <div className="flex justify-end mt-3">
                     <button
                       onClick={handleUpdateEmail}
                       disabled={savingEmail}
                       className="px-4 py-2 rounded-lg text-[13px] font-medium transition-colors disabled:opacity-50"
-                      style={{ backgroundColor: "var(--text-primary)", color: "var(--bg)" }}
+                      style={{ backgroundColor: "var(--primary-bg)", color: "var(--primary-text)" }}
                     >
                       {savingEmail ? 'Saving...' : 'Update email'}
                     </button>
@@ -796,16 +796,16 @@ function SettingsPageInner() {
             {section === 'billing' && (
               <div>
                 <div className="flex items-center justify-between mb-1">
-                  <h2 className="text-[15px] font-semibold" style={{ color: "var(--text-primary)" }}>Billing</h2>
+                  <h2 className="text-[15px] font-semibold" style={{ color: "var(--text-1)" }}>Billing</h2>
                   {/* Monthly / Annual toggle — only show if not already on founding plan */}
                   {plan !== 'founding' && (
-                    <div className="flex items-center gap-1 rounded-lg p-0.5" style={{ backgroundColor: "var(--bg-tertiary)", border: "1px solid var(--border)" }}>
+                    <div className="flex items-center gap-1 rounded-lg p-0.5" style={{ backgroundColor: "var(--surface-2)", border: "1px solid var(--border-subtle)" }}>
                       <button
                         onClick={() => setBillingYearly(false)}
                         className="px-3 py-1 rounded-md text-[12px] font-medium transition-colors"
                         style={{
-                          backgroundColor: !billingYearly ? "var(--bg-secondary)" : "transparent",
-                          color: !billingYearly ? "var(--text-primary)" : "var(--text-muted)",
+                          backgroundColor: !billingYearly ? "var(--surface)" : "transparent",
+                          color: !billingYearly ? "var(--text-1)" : "var(--text-3)",
                         }}
                       >
                         Monthly
@@ -814,8 +814,8 @@ function SettingsPageInner() {
                         onClick={() => setBillingYearly(true)}
                         className="px-3 py-1 rounded-md text-[12px] font-medium transition-colors flex items-center gap-1.5"
                         style={{
-                          backgroundColor: billingYearly ? "var(--bg-secondary)" : "transparent",
-                          color: billingYearly ? "var(--text-primary)" : "var(--text-muted)",
+                          backgroundColor: billingYearly ? "var(--surface)" : "transparent",
+                          color: billingYearly ? "var(--text-1)" : "var(--text-3)",
                         }}
                       >
                         Yearly
@@ -826,14 +826,14 @@ function SettingsPageInner() {
                     </div>
                   )}
                 </div>
-                <p className="text-[12px] mb-6" style={{ color: "var(--text-muted)" }}>Manage your plan.</p>
+                <p className="text-[12px] mb-6" style={{ color: "var(--text-3)" }}>Manage your plan.</p>
 
                 {plan === 'pro' && trialEndsAt && (
                   <div className="rounded-xl p-4 mb-5 flex items-center gap-3" style={{ backgroundColor: "rgba(83,74,183,0.1)", border: "1px solid rgba(83,74,183,0.3)" }}>
                     <span style={{ fontSize: '18px' }}>✦</span>
                     <div>
                       <p className="text-[13px] font-semibold" style={{ color: "#a78bfa" }}>Pro trial active</p>
-                      <p className="text-[12px]" style={{ color: "var(--text-muted)" }}>
+                      <p className="text-[12px]" style={{ color: "var(--text-3)" }}>
                         Your trial ends on {formatDate(trialEndsAt, dateFormat, timezone)}. Add a payment method to keep Pro.
                       </p>
                     </div>
@@ -847,31 +847,31 @@ function SettingsPageInner() {
                   </div>
                 )}
 
-                <p className="text-[11px] font-semibold uppercase tracking-wider mb-3" style={{ color: "var(--text-muted)" }}>Plans</p>
+                <p className="text-[11px] font-semibold uppercase tracking-wider mb-3" style={{ color: "var(--text-3)" }}>Plans</p>
 
                 {/* Free */}
-                <div className="rounded-xl p-5 mb-3 flex items-center justify-between" style={{ backgroundColor: "var(--bg-tertiary)", border: `1px solid ${plan === 'free' ? 'var(--text-muted)' : 'var(--border)'}` }}>
+                <div className="rounded-xl p-5 mb-3 flex items-center justify-between" style={{ backgroundColor: "var(--surface-2)", border: `1px solid ${plan === 'free' ? 'var(--text-3)' : 'var(--border-subtle)'}` }}>
                   <div>
                     <div className="flex items-center gap-2 mb-1">
-                      <span className="text-[14px] font-semibold" style={{ color: "var(--text-primary)" }}>Free</span>
+                      <span className="text-[14px] font-semibold" style={{ color: "var(--text-1)" }}>Free</span>
                       {plan === 'free' && (
-                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{ backgroundColor: "var(--bg-secondary)", color: "var(--text-muted)", border: "1px solid var(--border)" }}>Current plan</span>
+                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{ backgroundColor: "var(--surface)", color: "var(--text-3)", border: "1px solid var(--border-subtle)" }}>Current plan</span>
                       )}
                     </div>
-                    <p className="text-[12px]" style={{ color: "var(--text-muted)" }}>30 docs · 1 private workspace · 1GB storage</p>
+                    <p className="text-[12px]" style={{ color: "var(--text-3)" }}>30 docs · 1 private workspace · 1GB storage</p>
                   </div>
                   <div className="text-right">
-                    <span className="text-[22px] font-bold" style={{ color: "var(--text-primary)" }}>$0</span>
-                    <span className="text-[12px] ml-1" style={{ color: "var(--text-muted)" }}>/mo</span>
+                    <span className="text-[22px] font-bold" style={{ color: "var(--text-1)" }}>$0</span>
+                    <span className="text-[12px] ml-1" style={{ color: "var(--text-3)" }}>/mo</span>
                   </div>
                 </div>
 
                 {/* Pro */}
-                <div className="rounded-xl p-5 mb-3" style={{ backgroundColor: "var(--bg-secondary)", border: `1px solid ${plan === 'pro' ? '#534AB7' : '#534AB740'}` }}>
+                <div className="rounded-xl p-5 mb-3" style={{ backgroundColor: "var(--surface)", border: `1px solid ${plan === 'pro' ? '#534AB7' : '#534AB740'}` }}>
                   <div className="flex items-center justify-between">
                     <div>
                       <div className="flex items-center gap-2 mb-1">
-                        <span className="text-[14px] font-semibold" style={{ color: "var(--text-primary)" }}>Pro</span>
+                        <span className="text-[14px] font-semibold" style={{ color: "var(--text-1)" }}>Pro</span>
                         {plan === 'pro' ? (
                           <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{ backgroundColor: "#534AB720", color: "#a78bfa", border: "1px solid #534AB740" }}>
                             {trialEndsAt ? 'Trial active' : 'Current plan'}
@@ -880,17 +880,17 @@ function SettingsPageInner() {
                           <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{ backgroundColor: "#534AB720", color: "#a78bfa", border: "1px solid #534AB740" }}>Upgrade</span>
                         )}
                       </div>
-                      <p className="text-[12px]" style={{ color: "var(--text-muted)" }}>Unlimited docs · Unlimited workspaces · 10GB storage · Priority support</p>
+                      <p className="text-[12px]" style={{ color: "var(--text-3)" }}>Unlimited docs · Unlimited workspaces · 10GB storage · Priority support</p>
                     </div>
                     <div className="text-right shrink-0 ml-4">
                       <div>
-                        <span className="text-[22px] font-bold" style={{ color: "var(--text-primary)" }}>
+                        <span className="text-[22px] font-bold" style={{ color: "var(--text-1)" }}>
                           {billingYearly ? '$5' : '$6'}
                         </span>
-                        <span className="text-[12px] ml-1" style={{ color: "var(--text-muted)" }}>/mo</span>
+                        <span className="text-[12px] ml-1" style={{ color: "var(--text-3)" }}>/mo</span>
                       </div>
                       {billingYearly && (
-                        <p className="text-[11px] mt-0.5" style={{ color: "var(--text-muted)" }}>Billed $60/year</p>
+                        <p className="text-[11px] mt-0.5" style={{ color: "var(--text-3)" }}>Billed $60/year</p>
                       )}
                       {plan !== 'pro' && (
                         <button
@@ -906,39 +906,39 @@ function SettingsPageInner() {
                 </div>
 
                 {/* Team */}
-                <div className="rounded-xl p-5 mb-3" style={{ backgroundColor: "var(--bg-tertiary)", border: "1px solid var(--border)" }}>
+                <div className="rounded-xl p-5 mb-3" style={{ backgroundColor: "var(--surface-2)", border: "1px solid var(--border-subtle)" }}>
                   <div className="flex items-center justify-between">
                     <div>
                       <div className="flex items-center gap-2 mb-1">
-                        <span className="text-[14px] font-semibold" style={{ color: "var(--text-primary)" }}>Team</span>
-                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{ backgroundColor: "var(--bg-secondary)", color: "var(--text-muted)", border: "1px solid var(--border)" }}>Coming soon</span>
+                        <span className="text-[14px] font-semibold" style={{ color: "var(--text-1)" }}>Team</span>
+                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{ backgroundColor: "var(--surface)", color: "var(--text-3)", border: "1px solid var(--border-subtle)" }}>Coming soon</span>
                       </div>
-                      <p className="text-[12px]" style={{ color: "var(--text-muted)" }}>Everything in Pro · Shared team workspaces · Role-based permissions</p>
+                      <p className="text-[12px]" style={{ color: "var(--text-3)" }}>Everything in Pro · Shared team workspaces · Role-based permissions</p>
                     </div>
                     <div className="text-right shrink-0 ml-4">
-                      <span className="text-[22px] font-bold" style={{ color: "var(--text-primary)" }}>$10</span>
-                      <span className="text-[12px] ml-1" style={{ color: "var(--text-muted)" }}>/mo</span>
+                      <span className="text-[22px] font-bold" style={{ color: "var(--text-1)" }}>$10</span>
+                      <span className="text-[12px] ml-1" style={{ color: "var(--text-3)" }}>/mo</span>
                     </div>
                   </div>
                 </div>
 
                 {/* Founding Member */}
-                <div className="rounded-xl p-5 flex items-center justify-between" style={{ backgroundColor: "var(--bg-secondary)", border: `1px solid ${plan === 'founding' ? '#BA7517' : '#BA751740'}` }}>
+                <div className="rounded-xl p-5 flex items-center justify-between" style={{ backgroundColor: "var(--surface)", border: `1px solid ${plan === 'founding' ? '#BA7517' : '#BA751740'}` }}>
                   <div>
                     <div className="flex items-center gap-2 mb-1">
-                      <span className="text-[14px] font-semibold" style={{ color: "var(--text-primary)" }}>Founding Member</span>
+                      <span className="text-[14px] font-semibold" style={{ color: "var(--text-1)" }}>Founding Member</span>
                       {plan === 'founding' ? (
                         <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{ backgroundColor: "#BA751720", color: "#f59e0b", border: "1px solid #BA751740" }}>Current plan</span>
                       ) : (
                         <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{ backgroundColor: "#BA751720", color: "#f59e0b", border: "1px solid #BA751740" }}>500 slots</span>
                       )}
                     </div>
-                    <p className="text-[12px]" style={{ color: "var(--text-muted)" }}>Everything in Pro · Lifetime access · No subscription ever</p>
+                    <p className="text-[12px]" style={{ color: "var(--text-3)" }}>Everything in Pro · Lifetime access · No subscription ever</p>
                   </div>
                   <div className="text-right shrink-0 ml-4">
                     <div>
-                      <span className="text-[22px] font-bold" style={{ color: "var(--text-primary)" }}>$99</span>
-                      <span className="text-[12px] ml-1" style={{ color: "var(--text-muted)" }}>one-time</span>
+                      <span className="text-[22px] font-bold" style={{ color: "var(--text-1)" }}>$99</span>
+                      <span className="text-[12px] ml-1" style={{ color: "var(--text-3)" }}>one-time</span>
                     </div>
                     {plan !== 'founding' && (
                       <button
@@ -959,9 +959,9 @@ function SettingsPageInner() {
                       disabled={portalLoading}
                       className="px-3 py-1.5 rounded-lg text-[12px] font-medium transition-colors"
                       style={{
-                        backgroundColor: "var(--bg-tertiary)",
-                        color: "var(--text-secondary)",
-                        border: "1px solid var(--border)",
+                        backgroundColor: "var(--surface-2)",
+                        color: "var(--text-2)",
+                        border: "1px solid var(--border-subtle)",
                         cursor: portalLoading ? "wait" : "pointer",
                       }}
                     >
@@ -978,39 +978,39 @@ function SettingsPageInner() {
             {/* STORAGE */}
             {section === 'storage' && (
               <div>
-                <h2 className="text-[15px] font-semibold mb-1" style={{ color: "var(--text-primary)" }}>Storage</h2>
-                <p className="text-[12px] mb-6" style={{ color: "var(--text-muted)" }}>Track your image and file storage usage.</p>
+                <h2 className="text-[15px] font-semibold mb-1" style={{ color: "var(--text-1)" }}>Storage</h2>
+                <p className="text-[12px] mb-6" style={{ color: "var(--text-3)" }}>Track your image and file storage usage.</p>
 
-                <div className="rounded-xl p-5 mb-4" style={{ backgroundColor: "var(--bg-tertiary)", border: "1px solid var(--border)" }}>
+                <div className="rounded-xl p-5 mb-4" style={{ backgroundColor: "var(--surface-2)", border: "1px solid var(--border-subtle)" }}>
                   <div className="flex items-end justify-between mb-3">
                     <div>
-                      <p className="text-[13px] font-semibold" style={{ color: "var(--text-primary)" }}>Storage used</p>
-                      <p className="text-[11px] mt-0.5" style={{ color: "var(--text-muted)" }}>Images uploaded to your docs</p>
+                      <p className="text-[13px] font-semibold" style={{ color: "var(--text-1)" }}>Storage used</p>
+                      <p className="text-[11px] mt-0.5" style={{ color: "var(--text-3)" }}>Images uploaded to your docs</p>
                     </div>
-                    <p className="text-[13px] font-medium" style={{ color: "var(--text-secondary)" }}>
-                      {formatBytes(storageUsed)} <span style={{ color: "var(--text-muted)" }}>/ {plan === 'free' ? '1 GB' : '10 GB'}</span>
+                    <p className="text-[13px] font-medium" style={{ color: "var(--text-2)" }}>
+                      {formatBytes(storageUsed)} <span style={{ color: "var(--text-3)" }}>/ {plan === 'free' ? '1 GB' : '10 GB'}</span>
                     </p>
                   </div>
 
-                  <div className="w-full h-2 rounded-full overflow-hidden" style={{ backgroundColor: "var(--bg-secondary)" }}>
+                  <div className="w-full h-2 rounded-full overflow-hidden" style={{ backgroundColor: "var(--surface)" }}>
                     <div
                       className="h-full rounded-full transition-all duration-500"
                       style={{ width: `${storagePercent}%`, backgroundColor: storageBarColor }}
                     />
                   </div>
 
-                  <p className="text-[11px] mt-2" style={{ color: "var(--text-muted)" }}>
+                  <p className="text-[11px] mt-2" style={{ color: "var(--text-3)" }}>
                     {storagePercent < 1 ? 'Less than 1%' : `${storagePercent.toFixed(1)}%`} used
                   </p>
                 </div>
 
-                <div className="rounded-xl p-4" style={{ backgroundColor: "var(--bg-tertiary)", border: "1px solid var(--border)" }}>
+                <div className="rounded-xl p-4" style={{ backgroundColor: "var(--surface-2)", border: "1px solid var(--border-subtle)" }}>
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-[12px] font-medium" style={{ color: "var(--text-secondary)" }}>
+                      <p className="text-[12px] font-medium" style={{ color: "var(--text-2)" }}>
                         {plan === 'free' ? 'Free plan · 1 GB storage' : plan === 'pro' ? 'Pro plan · 10 GB storage' : 'Founding Member · 10 GB storage'}
                       </p>
-                      <p className="text-[11px] mt-0.5" style={{ color: "var(--text-muted)" }}>
+                      <p className="text-[11px] mt-0.5" style={{ color: "var(--text-3)" }}>
                         {plan === 'free' ? 'Upgrade to Pro for 10x more storage.' : 'You have plenty of storage available.'}
                       </p>
                     </div>
@@ -1030,31 +1030,31 @@ function SettingsPageInner() {
 
             {section === 'members' && (
               <div>
-                <h2 className="text-[15px] font-semibold mb-1" style={{ color: "var(--text-primary)" }}>
+                <h2 className="text-[15px] font-semibold mb-1" style={{ color: "var(--text-1)" }}>
                   {membersWorkspaceName ? `Members · ${membersWorkspaceName}` : 'Members'}
                 </h2>
-                <p className="text-[12px] mb-6" style={{ color: "var(--text-muted)" }}>
+                <p className="text-[12px] mb-6" style={{ color: "var(--text-3)" }}>
                   Manage who has access to this shared workspace and what they can do.
                 </p>
 
                 {!membersWorkspaceId ? (
-                  <p className="text-[12px]" style={{ color: "var(--text-muted)" }}>
+                  <p className="text-[12px]" style={{ color: "var(--text-3)" }}>
                     Open this from a shared workspace's Invite button to manage its members.
                   </p>
                 ) : membersLoading ? (
-                  <p className="text-[12px]" style={{ color: "var(--text-muted)" }}>Loading...</p>
+                  <p className="text-[12px]" style={{ color: "var(--text-3)" }}>Loading...</p>
                 ) : (
                   <div className="flex flex-col gap-2">
                     {memberActionError && (
                       <p className="text-[12px] mb-1" style={{ color: "#e07a5f" }}>{memberActionError}</p>
                     )}
                     {members.filter(m => m.status === 'accepted').map(member => (
-                      <div key={member.id} className="flex items-center justify-between rounded-xl p-3.5" style={{ backgroundColor: "var(--bg-tertiary)", border: "1px solid var(--border)" }}>
+                      <div key={member.id} className="flex items-center justify-between rounded-xl p-3.5" style={{ backgroundColor: "var(--surface-2)", border: "1px solid var(--border-subtle)" }}>
                         <div className="min-w-0">
-                          <p className="text-[13px] font-medium truncate" style={{ color: "var(--text-primary)" }}>
+                          <p className="text-[13px] font-medium truncate" style={{ color: "var(--text-1)" }}>
                             {member.user_name || member.user_email || member.email}
                           </p>
-                          <p className="text-[11px] mt-0.5" style={{ color: "var(--text-muted)" }}>{member.email}</p>
+                          <p className="text-[11px] mt-0.5" style={{ color: "var(--text-3)" }}>{member.email}</p>
                         </div>
                         <div className="flex items-center gap-2 shrink-0 ml-3">
                           {canManageMember(member) ? (
@@ -1062,7 +1062,7 @@ function SettingsPageInner() {
                               value={member.role}
                               onChange={e => handleRoleChange(member.id, e.target.value)}
                               className="text-[12px] rounded-lg px-2 py-1.5"
-                              style={{ backgroundColor: "var(--bg-secondary)", color: "var(--text-secondary)", border: "1px solid var(--border)" }}
+                              style={{ backgroundColor: "var(--surface)", color: "var(--text-2)", border: "1px solid var(--border-subtle)" }}
                             >
                               {isOwnerOfMembersWorkspace && <option value="admin">Admin</option>}
                               <option value="editor">Editor</option>
@@ -1070,13 +1070,13 @@ function SettingsPageInner() {
                               <option value="viewer">Viewer</option>
                             </select>
                           ) : (
-                            <span className="text-[12px] capitalize" style={{ color: "var(--text-muted)" }}>{member.role}</span>
+                            <span className="text-[12px] capitalize" style={{ color: "var(--text-3)" }}>{member.role}</span>
                           )}
                           {canManageMember(member) && (
                             <button
                               onClick={() => handleRemoveMember(member.id)}
                               className="text-[12px] rounded-lg px-2.5 py-1.5"
-                              style={{ color: "#e07a5f", background: "transparent", border: "1px solid var(--border)" }}
+                              style={{ color: "#e07a5f", background: "transparent", border: "1px solid var(--border-subtle)" }}
                             >
                               Remove
                             </button>
@@ -1087,17 +1087,17 @@ function SettingsPageInner() {
 
                     {members.some(m => m.status === 'pending') && (
                       <>
-                        <p className="text-[11px] mt-4 mb-1" style={{ color: "var(--text-muted)" }}>Pending invites</p>
+                        <p className="text-[11px] mt-4 mb-1" style={{ color: "var(--text-3)" }}>Pending invites</p>
                         {members.filter(m => m.status === 'pending').map(member => (
-                          <div key={member.id} className="flex items-center justify-between rounded-xl p-3.5" style={{ backgroundColor: "var(--bg-tertiary)", border: "1px solid var(--border)" }}>
-                            <p className="text-[13px]" style={{ color: "var(--text-secondary)" }}>{member.email}</p>
+                          <div key={member.id} className="flex items-center justify-between rounded-xl p-3.5" style={{ backgroundColor: "var(--surface-2)", border: "1px solid var(--border-subtle)" }}>
+                            <p className="text-[13px]" style={{ color: "var(--text-2)" }}>{member.email}</p>
                             <div className="flex items-center gap-2 shrink-0 ml-3">
-                              <span className="text-[11px]" style={{ color: "var(--text-muted)" }}>Pending · {member.role}</span>
+                              <span className="text-[11px]" style={{ color: "var(--text-3)" }}>Pending · {member.role}</span>
                               {canManageMember(member) && (
                                 <button
                                   onClick={() => handleRemoveMember(member.id)}
                                   className="text-[12px] rounded-lg px-2.5 py-1.5"
-                                  style={{ color: "#e07a5f", background: "transparent", border: "1px solid var(--border)" }}
+                                  style={{ color: "#e07a5f", background: "transparent", border: "1px solid var(--border-subtle)" }}
                                 >
                                   Cancel invite
                                 </button>

@@ -138,7 +138,7 @@ export default function ActivityPage() {
   }
 
   return (
-    <div className="flex h-screen overflow-hidden" style={{ backgroundColor: 'var(--bg)' }}>
+    <div className="flex h-screen overflow-hidden" style={{ backgroundColor: 'var(--panel)' }}>
       <Sidebar
         collapsed={collapsed}
         onToggle={() => {
@@ -151,10 +151,10 @@ export default function ActivityPage() {
         <div className="max-w-5xl mx-auto px-10 py-12">
 
           <div className="mb-8">
-            <h1 className="text-[32px] font-bold tracking-tight" style={{ color: 'var(--text-primary)' }}>
+            <h1 className="text-[32px] font-bold tracking-tight" style={{ color: 'var(--text-1)' }}>
               Activity
             </h1>
-            <p className="text-[13px] mt-1" style={{ color: 'var(--text-muted)' }}>
+            <p className="text-[13px] mt-1" style={{ color: 'var(--text-3)' }}>
               Everything you've touched in the last 30 days
             </p>
           </div>
@@ -167,9 +167,9 @@ export default function ActivityPage() {
                   onClick={() => setActiveTab(tab.key)}
                   className="flex items-center gap-1.5 px-3.5 py-[5px] rounded-full text-[13px] font-medium transition-colors"
                   style={{
-                    backgroundColor: activeTab === tab.key ? 'var(--text-primary)' : 'var(--bg-secondary)',
-                    color: activeTab === tab.key ? 'var(--bg)' : 'var(--text-secondary)',
-                    border: activeTab === tab.key ? '1px solid transparent' : '1px solid var(--border)',
+                    backgroundColor: activeTab === tab.key ? 'var(--primary-bg)' : 'var(--surface)',
+                    color: activeTab === tab.key ? 'var(--primary-text)' : 'var(--text-2)',
+                    border: activeTab === tab.key ? '1px solid transparent' : '1px solid var(--border-subtle)',
                   }}
                 >
                   {tab.label}
@@ -189,9 +189,9 @@ export default function ActivityPage() {
                   onClick={() => setSpaceTab(tab.key)}
                   className="px-3.5 py-[5px] rounded-full text-[13px] font-medium transition-colors"
                   style={{
-                    backgroundColor: spaceTab === tab.key ? 'var(--text-primary)' : 'var(--bg-secondary)',
-                    color: spaceTab === tab.key ? 'var(--bg)' : 'var(--text-secondary)',
-                    border: spaceTab === tab.key ? '1px solid transparent' : '1px solid var(--border)',
+                    backgroundColor: spaceTab === tab.key ? 'var(--primary-bg)' : 'var(--surface)',
+                    color: spaceTab === tab.key ? 'var(--primary-text)' : 'var(--text-2)',
+                    border: spaceTab === tab.key ? '1px solid transparent' : '1px solid var(--border-subtle)',
                   }}
                 >
                   {tab.label}
@@ -201,11 +201,11 @@ export default function ActivityPage() {
           </div>
 
           {loading && (
-            <p className="text-[13px]" style={{ color: 'var(--text-muted)' }}>Loading...</p>
+            <p className="text-[13px]" style={{ color: 'var(--text-3)' }}>Loading...</p>
           )}
 
           {!loading && days.length === 0 && (
-            <p className="text-[13px]" style={{ color: 'var(--text-muted)' }}>No activity yet.</p>
+            <p className="text-[13px]" style={{ color: 'var(--text-3)' }}>No activity yet.</p>
           )}
 
           {!loading && days.length > 0 && (
@@ -217,13 +217,13 @@ export default function ActivityPage() {
                   return (
                     <div key={row.key} style={{ display: 'flex', gap: 14 }}>
                       <div style={{ width: 30, flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                        <span style={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: 'var(--text-muted)', flexShrink: 0 }} />
-                        {!isLastRow && <span style={{ width: 2, flex: 1, backgroundColor: 'var(--border)', marginTop: 4 }} />}
+                        <span style={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: 'var(--text-3)', flexShrink: 0 }} />
+                        {!isLastRow && <span style={{ width: 2, flex: 1, backgroundColor: 'var(--border-subtle)', marginTop: 4 }} />}
                       </div>
                       <div style={{ paddingBottom: 10 }}>
                         <p
                           className="text-[11px] font-semibold uppercase tracking-wider"
-                          style={{ color: 'var(--text-muted)' }}
+                          style={{ color: 'var(--text-3)' }}
                         >
                           {row.label}
                         </p>
@@ -248,31 +248,31 @@ export default function ActivityPage() {
                           width: 28, height: 28, borderRadius: '50%', flexShrink: 0,
                           display: 'flex', alignItems: 'center', justifyContent: 'center',
                           fontSize: 11, fontWeight: 600,
-                          backgroundColor: isYou ? 'var(--bg-tertiary)' : 'rgba(93,202,165,0.18)',
-                          color: isYou ? 'var(--text-muted)' : '#5dcaa5',
+                          backgroundColor: isYou ? 'var(--surface-2)' : 'rgba(93,202,165,0.18)',
+                          color: isYou ? 'var(--text-3)' : '#5dcaa5',
                         }}
                       >
                         {initials(entry.editor_name)}
                       </div>
-                      {!isLastRow && <span style={{ width: 2, flex: 1, backgroundColor: 'var(--border)', marginTop: 4 }} />}
+                      {!isLastRow && <span style={{ width: 2, flex: 1, backgroundColor: 'var(--border-subtle)', marginTop: 4 }} />}
                     </div>
                     <div style={{ flex: 1, minWidth: 0, paddingBottom: 20 }}>
-                      <p className="text-[13px]" style={{ color: 'var(--text-primary)' }}>
+                      <p className="text-[13px]" style={{ color: 'var(--text-1)' }}>
                         {actorName} {entry.action || (created ? 'created' : 'edited')}{' '}
                         {isDeleted ? (
-                          <span className="font-semibold" style={{ color: 'var(--text-secondary)' }}>
+                          <span className="font-semibold" style={{ color: 'var(--text-2)' }}>
                             {entry.title || 'Untitled'}
                           </span>
                         ) : (
-                          <Link href={href} className="font-semibold hover:underline" style={{ color: 'var(--text-primary)' }}>
+                          <Link href={href} className="font-semibold hover:underline" style={{ color: 'var(--text-1)' }}>
                             {entry.title || 'Untitled'}
                           </Link>
                         )}
                       </p>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11.5, color: 'var(--text-muted)', marginTop: 3 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11.5, color: 'var(--text-3)', marginTop: 3 }}>
                         {isDeleted && entry.action !== 'deleted' && (
                           <>
-                            <span style={{ fontSize: 11, color: '#e05252', backgroundColor: '#e052521a', borderRadius: 20, padding: '2px 8px' }}>
+                            <span style={{ fontSize: 11, color: 'var(--doc-label-delete)', backgroundColor: '#e052521a', borderRadius: 20, padding: '2px 8px' }}>
                               Deleted
                             </span>
                             <span>·</span>
@@ -280,7 +280,7 @@ export default function ActivityPage() {
                         )}
                         {entry.is_shared ? (
                           <>
-                            <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: '#e0b48c', backgroundColor: '#e0b48c1a', borderRadius: 20, padding: '2px 8px' }}>
+                            <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: 'var(--doc-shared-text)', backgroundColor: 'var(--doc-shared-bg)', borderRadius: 20, padding: '2px 8px' }}>
                               <Users size={10} />
                               {entry.workspace_name}
                             </span>
@@ -289,7 +289,7 @@ export default function ActivityPage() {
                           </>
                         ) : entry.context_name ? (
                           <>
-                            <span style={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: dotColor || 'var(--text-muted)', flexShrink: 0 }} />
+                            <span style={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: dotColor || 'var(--text-3)', flexShrink: 0 }} />
                             <span>{entry.context_name}</span>
                             <span>·</span>
                             <span>{timeAgo(entry.updated_at)}</span>
