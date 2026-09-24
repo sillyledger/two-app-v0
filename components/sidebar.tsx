@@ -102,9 +102,9 @@ function FolderRow({
   const isRenaming = renamingFolderId === folder.id
   return (
     <div className="sb-group"
-      style={{ position: "relative", display: "flex", alignItems: "center", gap: 9, padding: "7px 10px 7px 16px", borderRadius: 8, fontSize: 13.5, cursor: "pointer", color: isActive || isDragOver ? HOVER_COLOR : "#5a5a64", background: isActive || isDragOver ? HOVER_BG : "transparent", transition: "all 0.12s", marginBottom: 1 }}
+      style={{ position: "relative", display: "flex", alignItems: "center", gap: 9, padding: "7px 10px 7px 16px", borderRadius: 8, fontSize: 13.5, cursor: "pointer", color: isActive || isDragOver ? HOVER_COLOR : "var(--sb-text-row)", background: isActive || isDragOver ? HOVER_BG : "transparent", transition: "all 0.12s", marginBottom: 1 }}
       onMouseEnter={e => { e.currentTarget.style.background = HOVER_BG; e.currentTarget.style.color = HOVER_COLOR }}
-      onMouseLeave={e => { e.currentTarget.style.background = isActive ? HOVER_BG : "transparent"; e.currentTarget.style.color = isActive ? HOVER_COLOR : "#5a5a64" }}
+      onMouseLeave={e => { e.currentTarget.style.background = isActive ? HOVER_BG : "transparent"; e.currentTarget.style.color = isActive ? HOVER_COLOR : "var(--sb-text-row)" }}
       onClick={() => { if (!isRenaming) router.push(`/folders/${folder.id}?name=${encodeURIComponent(folder.name)}`) }}
       onDragOver={e => { e.preventDefault(); e.stopPropagation(); setDragOverFolderId(folder.id) }}
       onDragLeave={e => { e.stopPropagation(); setDragOverFolderId(null) }}
@@ -112,21 +112,21 @@ function FolderRow({
     >
       <div style={{ width: 16, height: 12, borderRadius: 3, background: getAccent(index), flexShrink: 0 }} />
       {isRenaming
-        ? <input ref={folderRenameInputRef} value={folderRenameValue} onChange={e => setFolderRenameValue(e.target.value)} onBlur={() => commitFolderRename(folder.id)} onKeyDown={e => { if (e.key === "Enter") commitFolderRename(folder.id); if (e.key === "Escape") setRenamingFolderId(null) }} onClick={e => e.stopPropagation()} style={{ flex: 1, minWidth: 0, borderRadius: 6, padding: "2px 8px", fontSize: 13, outline: "none", background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.12)", color: "var(--text-1)", fontFamily: FONT }} />
+        ? <input ref={folderRenameInputRef} value={folderRenameValue} onChange={e => setFolderRenameValue(e.target.value)} onBlur={() => commitFolderRename(folder.id)} onKeyDown={e => { if (e.key === "Enter") commitFolderRename(folder.id); if (e.key === "Escape") setRenamingFolderId(null) }} onClick={e => e.stopPropagation()} style={{ flex: 1, minWidth: 0, borderRadius: 6, padding: "2px 8px", fontSize: 13, outline: "none", background: "var(--input-bg)", border: "1px solid var(--input-border)", color: "var(--text-1)", fontFamily: FONT }} />
         : <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{folder.name}</span>
       }
       {!isRenaming && (
         <div style={{ position: "relative" }} ref={folderMenuId === folder.id ? folderMenuRef : undefined}>
           <button className="sb-group-btn" onClick={e => { e.stopPropagation(); setFolderMenuId(folderMenuId === folder.id ? null : folder.id) }}
-            style={{ opacity: 0, color: "#555", background: "none", border: "none", cursor: "pointer", padding: 2, borderRadius: 4, display: "flex", transition: "opacity 0.1s" }}>
+            style={{ opacity: 0, color: "var(--sb-faint)", background: "none", border: "none", cursor: "pointer", padding: 2, borderRadius: 4, display: "flex", transition: "opacity 0.1s" }}>
             <MoreVertical size={13} />
           </button>
           {folderMenuId === folder.id && (
             <div style={dropdownStyle}>
               <button style={dropdownBtn()} onClick={e => { e.stopPropagation(); toggleFolderPinned(folder) }} onMouseEnter={e => (e.currentTarget.style.background = "var(--hover)")} onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
-                {folder.pinned ? <PinOff size={12} style={{ color: "#555" }} /> : <Pin size={12} style={{ color: "#555" }} />} {folder.pinned ? "Unpin" : "Pin"}
+                {folder.pinned ? <PinOff size={12} style={{ color: "var(--sb-faint)" }} /> : <Pin size={12} style={{ color: "var(--sb-faint)" }} />} {folder.pinned ? "Unpin" : "Pin"}
               </button>
-              <button style={dropdownBtn()} onClick={e => { e.stopPropagation(); startRenamingFolder(folder) }} onMouseEnter={e => (e.currentTarget.style.background = "var(--hover)")} onMouseLeave={e => (e.currentTarget.style.background = "transparent")}><Pencil size={12} style={{ color: "#555" }} /> Rename</button>
+              <button style={dropdownBtn()} onClick={e => { e.stopPropagation(); startRenamingFolder(folder) }} onMouseEnter={e => (e.currentTarget.style.background = "var(--hover)")} onMouseLeave={e => (e.currentTarget.style.background = "transparent")}><Pencil size={12} style={{ color: "var(--sb-faint)" }} /> Rename</button>
               <button style={dropdownBtn(true)} onClick={e => { e.stopPropagation(); deleteFolder(folder.id) }} onMouseEnter={e => (e.currentTarget.style.background = "var(--hover)")} onMouseLeave={e => (e.currentTarget.style.background = "transparent")}><Trash2 size={12} /> Delete</button>
             </div>
           )}
@@ -164,25 +164,25 @@ function WsFolderRow({
   const isRenaming = renamingWsFolderId === folder.id
   return (
     <div className="sb-group"
-      style={{ position: "relative", display: "flex", alignItems: "center", gap: 9, padding: "7px 10px 7px 16px", borderRadius: 8, fontSize: 13.5, cursor: "pointer", color: isActive ? HOVER_COLOR : "#5a5a64", background: isActive ? HOVER_BG : "transparent", transition: "all 0.12s", marginBottom: 1 }}
+      style={{ position: "relative", display: "flex", alignItems: "center", gap: 9, padding: "7px 10px 7px 16px", borderRadius: 8, fontSize: 13.5, cursor: "pointer", color: isActive ? HOVER_COLOR : "var(--sb-text-row)", background: isActive ? HOVER_BG : "transparent", transition: "all 0.12s", marginBottom: 1 }}
       onMouseEnter={e => { e.currentTarget.style.background = HOVER_BG; e.currentTarget.style.color = HOVER_COLOR }}
-      onMouseLeave={e => { e.currentTarget.style.background = isActive ? HOVER_BG : "transparent"; e.currentTarget.style.color = isActive ? HOVER_COLOR : "#5a5a64" }}
+      onMouseLeave={e => { e.currentTarget.style.background = isActive ? HOVER_BG : "transparent"; e.currentTarget.style.color = isActive ? HOVER_COLOR : "var(--sb-text-row)" }}
       onClick={() => { if (!isRenaming) router.push(`/folders/${folder.id}?name=${encodeURIComponent(folder.name)}`) }}
     >
       <div style={{ width: 16, height: 12, borderRadius: 3, background: getAccent(index), flexShrink: 0 }} />
       {isRenaming
-        ? <input ref={wsFolderRenameInputRef} value={wsFolderRenameValue} onChange={e => setWsFolderRenameValue(e.target.value)} onBlur={() => commitWsFolderRename(wsId, folder.id)} onKeyDown={e => { if (e.key === "Enter") commitWsFolderRename(wsId, folder.id); if (e.key === "Escape") setRenamingWsFolderId(null) }} onClick={e => e.stopPropagation()} style={{ flex: 1, minWidth: 0, borderRadius: 6, padding: "2px 8px", fontSize: 13, outline: "none", background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.12)", color: "var(--text-1)", fontFamily: FONT }} />
+        ? <input ref={wsFolderRenameInputRef} value={wsFolderRenameValue} onChange={e => setWsFolderRenameValue(e.target.value)} onBlur={() => commitWsFolderRename(wsId, folder.id)} onKeyDown={e => { if (e.key === "Enter") commitWsFolderRename(wsId, folder.id); if (e.key === "Escape") setRenamingWsFolderId(null) }} onClick={e => e.stopPropagation()} style={{ flex: 1, minWidth: 0, borderRadius: 6, padding: "2px 8px", fontSize: 13, outline: "none", background: "var(--input-bg)", border: "1px solid var(--input-border)", color: "var(--text-1)", fontFamily: FONT }} />
         : <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{folder.name}</span>
       }
       {!isRenaming && (
         <div style={{ position: "relative" }} ref={wsFolderMenuId === folder.id ? wsFolderMenuRef : undefined}>
           <button className="sb-group-btn" onClick={e => { e.stopPropagation(); setWsFolderMenuId(wsFolderMenuId === folder.id ? null : folder.id) }}
-            style={{ opacity: 0, color: "#555", background: "none", border: "none", cursor: "pointer", padding: 2, borderRadius: 4, display: "flex", transition: "opacity 0.1s" }}>
+            style={{ opacity: 0, color: "var(--sb-faint)", background: "none", border: "none", cursor: "pointer", padding: 2, borderRadius: 4, display: "flex", transition: "opacity 0.1s" }}>
             <MoreVertical size={13} />
           </button>
           {wsFolderMenuId === folder.id && (
             <div style={dropdownStyle}>
-              <button style={dropdownBtn()} onClick={e => { e.stopPropagation(); startRenamingWsFolder(folder) }} onMouseEnter={e => (e.currentTarget.style.background = "var(--hover)")} onMouseLeave={e => (e.currentTarget.style.background = "transparent")}><Pencil size={12} style={{ color: "#555" }} /> Rename</button>
+              <button style={dropdownBtn()} onClick={e => { e.stopPropagation(); startRenamingWsFolder(folder) }} onMouseEnter={e => (e.currentTarget.style.background = "var(--hover)")} onMouseLeave={e => (e.currentTarget.style.background = "transparent")}><Pencil size={12} style={{ color: "var(--sb-faint)" }} /> Rename</button>
               <button style={dropdownBtn(true)} onClick={e => { e.stopPropagation(); deleteWsFolder(wsId, folder.id) }} onMouseEnter={e => (e.currentTarget.style.background = "var(--hover)")} onMouseLeave={e => (e.currentTarget.style.background = "transparent")}><Trash2 size={12} /> Delete</button>
             </div>
           )}
@@ -731,19 +731,19 @@ export default function Sidebar({ onNewNote, onToggle }: SidebarProps = {}) {
               <div style={{ flexShrink: 0, padding: "12px 10px 0" }}>
                 <div style={{ display: "flex", alignItems: "center", padding: "6px 2px 4px" }}>
                   {renamingWorkspace
-                    ? <input ref={workspaceInputRef} value={workspaceRenameValue} onChange={e => setWorkspaceRenameValue(e.target.value)} onBlur={commitWorkspaceRename} onKeyDown={e => { if (e.key === "Enter") commitWorkspaceRename(); if (e.key === "Escape") cancelWorkspaceRename() }} onClick={e => e.stopPropagation()} style={{ flex: 1, minWidth: 0, borderRadius: 6, padding: "2px 8px", fontSize: 13, outline: "none", background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.12)", color: "var(--text-1)", fontFamily: FONT }} />
+                    ? <input ref={workspaceInputRef} value={workspaceRenameValue} onChange={e => setWorkspaceRenameValue(e.target.value)} onBlur={commitWorkspaceRename} onKeyDown={e => { if (e.key === "Enter") commitWorkspaceRename(); if (e.key === "Escape") cancelWorkspaceRename() }} onClick={e => e.stopPropagation()} style={{ flex: 1, minWidth: 0, borderRadius: 6, padding: "2px 8px", fontSize: 13, outline: "none", background: "var(--input-bg)", border: "1px solid var(--input-border)", color: "var(--text-1)", fontFamily: FONT }} />
                     : <span onDoubleClick={e => startRenamingWorkspace()} title="Double-click to rename" style={{ flex: 1, fontSize: 14, fontWeight: 500, color: "var(--text-1)", userSelect: "none", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{workspaceName}</span>
                   }
                   <div style={{ position: "relative", marginLeft: 8, flexShrink: 0 }} ref={pickerRef}>
                     <button onClick={e => { e.stopPropagation(); setShowPicker(v => !v) }} disabled={creating}
                       style={{ background: "none", border: "none", cursor: "pointer", color: MUTED, padding: 2, display: "flex" }}
-                      onMouseEnter={e => (e.currentTarget.style.color = "#888")} onMouseLeave={e => (e.currentTarget.style.color = MUTED)}>
+                      onMouseEnter={e => (e.currentTarget.style.color = "var(--sb-icon-hover)")} onMouseLeave={e => (e.currentTarget.style.color = MUTED)}>
                       <Plus size={13} />
                     </button>
                     {showPicker && (
                       <div style={dropdownStyle}>
                         <button style={dropdownBtn()} onClick={() => openModal("doc", workspaceId ?? undefined)} onMouseEnter={e => (e.currentTarget.style.background = "var(--hover)")} onMouseLeave={e => (e.currentTarget.style.background = "transparent")}><span style={{fontSize:13}}>▣</span> New Doc</button>
-                        <button style={dropdownBtn()} onClick={() => openModal("folder", workspaceId ?? undefined)} onMouseEnter={e => (e.currentTarget.style.background = "var(--hover)")} onMouseLeave={e => (e.currentTarget.style.background = "transparent")}><FolderOpen size={12} style={{ color: "#888" }} /> New Folder</button>
+                        <button style={dropdownBtn()} onClick={() => openModal("folder", workspaceId ?? undefined)} onMouseEnter={e => (e.currentTarget.style.background = "var(--hover)")} onMouseLeave={e => (e.currentTarget.style.background = "transparent")}><FolderOpen size={12} style={{ color: "var(--sb-icon-hover)" }} /> New Folder</button>
                       </div>
                     )}
                   </div>
@@ -809,41 +809,41 @@ export default function Sidebar({ onNewNote, onToggle }: SidebarProps = {}) {
                       </span>
                       <button onClick={e => { e.stopPropagation(); openModal("workspace") }}
                         style={{ background: "none", border: "none", cursor: "pointer", color: MUTED, padding: 2, display: "flex" }}
-                        onMouseEnter={e => (e.currentTarget.style.color = "#888")} onMouseLeave={e => (e.currentTarget.style.color = MUTED)}>
+                        onMouseEnter={e => (e.currentTarget.style.color = "var(--sb-icon-hover)")} onMouseLeave={e => (e.currentTarget.style.color = MUTED)}>
                         <Plus size={13} />
                       </button>
                     </div>
 
                     {sharedOpen && extraWorkspaces.map(ws => (
                       <div key={ws.id} style={{ marginBottom: 2 }}>
-                        <div className="sb-group" style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 4px", borderRadius: 9, cursor: "pointer", fontSize: 13.5, color: "#5a5a64", transition: "all 0.12s" }}
+                        <div className="sb-group" style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 4px", borderRadius: 9, cursor: "pointer", fontSize: 13.5, color: "var(--sb-text-row)", transition: "all 0.12s" }}
                           onClick={() => router.push(`/workspaces/${ws.id}`)}
                           onMouseEnter={e => { e.currentTarget.style.background = HOVER_BG; e.currentTarget.style.color = HOVER_COLOR }}
-                          onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#5a5a64" }}
+                          onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "var(--sb-text-row)" }}
                         >
                           <button onClick={e => { e.stopPropagation(); toggleExtraWorkspace(ws.id) }} style={{ background: "none", border: "none", padding: 0, display: "flex", cursor: "pointer" }}>
                             {expandedWorkspaces[ws.id] ? <ChevronDown size={12} style={{ color: MUTED, flexShrink: 0 }} /> : <ChevronRight size={12} style={{ color: MUTED, flexShrink: 0 }} />}
                           </button>
                           {renamingWsId === ws.id
-                            ? <input ref={wsRenameInputRef} value={wsRenameValue} onChange={e => setWsRenameValue(e.target.value)} onBlur={() => commitExtraWsRename(ws.id)} onKeyDown={e => { if (e.key === "Enter") commitExtraWsRename(ws.id); if (e.key === "Escape") setRenamingWsId(null) }} onClick={e => e.stopPropagation()} style={{ flex: 1, minWidth: 0, borderRadius: 6, padding: "2px 8px", fontSize: 13, outline: "none", background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.12)", color: "var(--text-1)", fontFamily: FONT }} />
+                            ? <input ref={wsRenameInputRef} value={wsRenameValue} onChange={e => setWsRenameValue(e.target.value)} onBlur={() => commitExtraWsRename(ws.id)} onKeyDown={e => { if (e.key === "Enter") commitExtraWsRename(ws.id); if (e.key === "Escape") setRenamingWsId(null) }} onClick={e => e.stopPropagation()} style={{ flex: 1, minWidth: 0, borderRadius: 6, padding: "2px 8px", fontSize: 13, outline: "none", background: "var(--input-bg)", border: "1px solid var(--input-border)", color: "var(--text-1)", fontFamily: FONT }} />
                             : <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{ws.name}</span>
                           }
                           <div style={{ display: "flex", gap: 2, flexShrink: 0 }}>
                             <div style={{ position: "relative" }} ref={wsPlusMenuId === ws.id ? wsPlusMenuRef : undefined}>
-                              <button className="sb-group-btn" onClick={e => { e.stopPropagation(); setWsPlusMenuId(wsPlusMenuId === ws.id ? null : ws.id) }} style={{ opacity: 0, background: "none", border: "none", cursor: "pointer", color: MUTED, padding: 2, display: "flex", transition: "opacity 0.1s" }} onMouseEnter={e => (e.currentTarget.style.color = "#888")} onMouseLeave={e => (e.currentTarget.style.color = MUTED)}><Plus size={12} /></button>
+                              <button className="sb-group-btn" onClick={e => { e.stopPropagation(); setWsPlusMenuId(wsPlusMenuId === ws.id ? null : ws.id) }} style={{ opacity: 0, background: "none", border: "none", cursor: "pointer", color: MUTED, padding: 2, display: "flex", transition: "opacity 0.1s" }} onMouseEnter={e => (e.currentTarget.style.color = "var(--sb-icon-hover)")} onMouseLeave={e => (e.currentTarget.style.color = MUTED)}><Plus size={12} /></button>
                               {wsPlusMenuId === ws.id && (
                                 <div style={dropdownStyle}>
                                   <button style={dropdownBtn()} onClick={e => { e.stopPropagation(); setWsPlusMenuId(null); openModal("doc", ws.id) }} onMouseEnter={e => (e.currentTarget.style.background = "var(--hover)")} onMouseLeave={e => (e.currentTarget.style.background = "transparent")}><span style={{fontSize:13}}>▣</span> New Doc</button>
-                                  <button style={dropdownBtn()} onClick={e => { e.stopPropagation(); setWsPlusMenuId(null); openModal("folder", ws.id) }} onMouseEnter={e => (e.currentTarget.style.background = "var(--hover)")} onMouseLeave={e => (e.currentTarget.style.background = "transparent")}><FolderOpen size={12} style={{ color: "#888" }} /> New Folder</button>
+                                  <button style={dropdownBtn()} onClick={e => { e.stopPropagation(); setWsPlusMenuId(null); openModal("folder", ws.id) }} onMouseEnter={e => (e.currentTarget.style.background = "var(--hover)")} onMouseLeave={e => (e.currentTarget.style.background = "transparent")}><FolderOpen size={12} style={{ color: "var(--sb-icon-hover)" }} /> New Folder</button>
                                 </div>
                               )}
                             </div>
                             <div style={{ position: "relative" }} ref={wsMenuId === ws.id ? wsMenuRef : undefined}>
-                              <button className="sb-group-btn" onClick={e => { e.stopPropagation(); setWsMenuId(wsMenuId === ws.id ? null : ws.id) }} style={{ opacity: 0, background: "none", border: "none", cursor: "pointer", color: MUTED, padding: 2, display: "flex", borderRadius: 4, transition: "opacity 0.1s" }} onMouseEnter={e => (e.currentTarget.style.color = "#888")} onMouseLeave={e => (e.currentTarget.style.color = MUTED)}><MoreVertical size={12} /></button>
+                              <button className="sb-group-btn" onClick={e => { e.stopPropagation(); setWsMenuId(wsMenuId === ws.id ? null : ws.id) }} style={{ opacity: 0, background: "none", border: "none", cursor: "pointer", color: MUTED, padding: 2, display: "flex", borderRadius: 4, transition: "opacity 0.1s" }} onMouseEnter={e => (e.currentTarget.style.color = "var(--sb-icon-hover)")} onMouseLeave={e => (e.currentTarget.style.color = MUTED)}><MoreVertical size={12} /></button>
                               {wsMenuId === ws.id && (
                                 <div style={dropdownStyle}>
-                                  <button style={dropdownBtn()} onClick={e => { e.stopPropagation(); setWsMenuId(null); setWsRenameValue(ws.name); setRenamingWsId(ws.id) }} onMouseEnter={e => (e.currentTarget.style.background = "var(--hover)")} onMouseLeave={e => (e.currentTarget.style.background = "transparent")}><Pencil size={12} style={{ color: "#555" }} /> Rename</button>
-                                  <button style={dropdownBtn()} onClick={e => { e.stopPropagation(); setWsMenuId(null); openInviteModal(ws.id, ws.name) }} onMouseEnter={e => (e.currentTarget.style.background = "var(--hover)")} onMouseLeave={e => (e.currentTarget.style.background = "transparent")}><Plus size={12} style={{ color: "#555" }} /> Invite people</button>
+                                  <button style={dropdownBtn()} onClick={e => { e.stopPropagation(); setWsMenuId(null); setWsRenameValue(ws.name); setRenamingWsId(ws.id) }} onMouseEnter={e => (e.currentTarget.style.background = "var(--hover)")} onMouseLeave={e => (e.currentTarget.style.background = "transparent")}><Pencil size={12} style={{ color: "var(--sb-faint)" }} /> Rename</button>
+                                  <button style={dropdownBtn()} onClick={e => { e.stopPropagation(); setWsMenuId(null); openInviteModal(ws.id, ws.name) }} onMouseEnter={e => (e.currentTarget.style.background = "var(--hover)")} onMouseLeave={e => (e.currentTarget.style.background = "transparent")}><Plus size={12} style={{ color: "var(--sb-faint)" }} /> Invite people</button>
                                   <button style={dropdownBtn(true)} onClick={e => { e.stopPropagation(); deleteExtraWorkspace(ws.id) }} onMouseEnter={e => (e.currentTarget.style.background = "var(--hover)")} onMouseLeave={e => (e.currentTarget.style.background = "transparent")}><Trash2 size={12} /> Delete</button>
                                 </div>
                               )}
@@ -874,11 +874,11 @@ export default function Sidebar({ onNewNote, onToggle }: SidebarProps = {}) {
                               />
                             ))}
                             {(wsData[ws.id]?.docs ?? []).map(doc => (
-                              <div key={doc.uuid} style={{ display: "flex", alignItems: "center", gap: 9, padding: "6px 10px 6px 20px", borderRadius: 7, fontSize: 13, cursor: "pointer", color: "#4a4a54", marginBottom: 1, transition: "all 0.12s" }}
-                                onMouseEnter={e => { e.currentTarget.style.background = HOVER_BG; e.currentTarget.style.color = "#a0a0aa" }}
-                                onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#4a4a54" }}
+                              <div key={doc.uuid} style={{ display: "flex", alignItems: "center", gap: 9, padding: "6px 10px 6px 20px", borderRadius: 7, fontSize: 13, cursor: "pointer", color: "var(--sb-text-dim)", marginBottom: 1, transition: "all 0.12s" }}
+                                onMouseEnter={e => { e.currentTarget.style.background = HOVER_BG; e.currentTarget.style.color = "var(--sb-text-soft)" }}
+                                onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "var(--sb-text-dim)" }}
                                 onClick={() => { openTab(doc.uuid, doc.title || "Untitled"); router.push(`/docs/${doc.uuid}`) }}>
-                                <span style={{ width: 5, height: 5, borderRadius: "50%", background: "#3a3a44", flexShrink: 0, display: "inline-block" }} />
+                                <span style={{ width: 5, height: 5, borderRadius: "50%", background: "var(--sb-dot)", flexShrink: 0, display: "inline-block" }} />
                                 <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{doc.title || "Untitled"}</span>
                               </div>
                             ))}
@@ -904,7 +904,7 @@ export default function Sidebar({ onNewNote, onToggle }: SidebarProps = {}) {
                   <div style={{ ...dropdownStyle, top: "auto", bottom: 30, width: 170 }}>
                     <button style={dropdownBtn()} onClick={e => { e.stopPropagation(); setAccountMenuOpen(false); router.push("/settings") }} onMouseEnter={e => (e.currentTarget.style.background = "var(--hover)")} onMouseLeave={e => (e.currentTarget.style.background = "transparent")}><Settings size={12} /> Settings</button>
                     <button style={dropdownBtn()} onClick={e => { e.stopPropagation(); setAccountMenuOpen(false); router.push("/trash") }} onMouseEnter={e => (e.currentTarget.style.background = "var(--hover)")} onMouseLeave={e => (e.currentTarget.style.background = "transparent")}><Trash2 size={12} /> Trash</button>
-                    <button style={dropdownBtn()} onClick={e => { e.stopPropagation(); setAccountMenuOpen(false); setHelpTab("shortcuts"); setShowHelp(true) }} onMouseEnter={e => (e.currentTarget.style.background = "var(--hover)")} onMouseLeave={e => (e.currentTarget.style.background = "transparent")}><span style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 12, height: 12, borderRadius: 3, border: "1px solid rgba(255,255,255,0.12)", fontSize: 9, fontFamily: "monospace", color: "#555" }}>?</span> Help & Shortcuts</button>
+                    <button style={dropdownBtn()} onClick={e => { e.stopPropagation(); setAccountMenuOpen(false); setHelpTab("shortcuts"); setShowHelp(true) }} onMouseEnter={e => (e.currentTarget.style.background = "var(--hover)")} onMouseLeave={e => (e.currentTarget.style.background = "transparent")}><span style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 12, height: 12, borderRadius: 3, border: "1px solid var(--input-border)", fontSize: 9, fontFamily: "monospace", color: "var(--sb-faint)" }}>?</span> Help & Shortcuts</button>
                     <button style={dropdownBtn(true)} onClick={e => { e.stopPropagation(); setAccountMenuOpen(false); handleLogout() }} onMouseEnter={e => (e.currentTarget.style.background = "var(--hover)")} onMouseLeave={e => (e.currentTarget.style.background = "transparent")}><LogOut size={12} /> Log out</button>
                   </div>
                 )}
@@ -914,22 +914,22 @@ export default function Sidebar({ onNewNote, onToggle }: SidebarProps = {}) {
 
       {collapsed && (
         <button onClick={togglePanel}
-          style={{ position: "fixed", top: 14, left: 14, zIndex: 40, background: "#1c1c1e", border: BORDER, borderRadius: 8, padding: 7, cursor: "pointer", color: MUTED, display: "flex", boxShadow: "0 2px 10px rgba(0,0,0,0.35)" }}
-          onMouseEnter={e => (e.currentTarget.style.color = "#ccc")} onMouseLeave={e => (e.currentTarget.style.color = MUTED)}>
+          style={{ position: "fixed", top: 14, left: 14, zIndex: 40, background: "var(--modal-bg)", border: BORDER, borderRadius: 8, padding: 7, cursor: "pointer", color: MUTED, display: "flex", boxShadow: "0 2px 10px rgba(0,0,0,0.35)" }}
+          onMouseEnter={e => (e.currentTarget.style.color = "var(--text-2)")} onMouseLeave={e => (e.currentTarget.style.color = MUTED)}>
           <PanelLeftOpen size={16} />
         </button>
       )}
 
       {showModal && (
         <div style={{ position: "fixed", inset: 0, zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.65)", backdropFilter: "blur(3px)" }} onClick={() => setShowModal(false)} />
-          <div style={{ position: "relative", borderRadius: 14, boxShadow: "0 24px 64px rgba(0,0,0,0.6)", width: 320, padding: "22px 22px 18px", zIndex: 10, background: "#1c1c1f", border: "1px solid var(--border-subtle)", fontFamily: FONT }}>
+          <div style={{ position: "absolute", inset: 0, background: "var(--overlay)", backdropFilter: "blur(3px)" }} onClick={() => setShowModal(false)} />
+          <div style={{ position: "relative", borderRadius: 14, boxShadow: "0 24px 64px rgba(0,0,0,0.6)", width: 320, padding: "22px 22px 18px", zIndex: 10, background: "var(--modal-bg)", border: "1px solid var(--border-subtle)", fontFamily: FONT }}>
             <h2 style={{ fontSize: 14, fontWeight: 600, marginBottom: 16, color: "var(--text-1)", letterSpacing: "-0.01em" }}>{modalType === "doc" ? "New Doc" : modalType === "folder" ? "New Folder" : "New Shared Workspace"}</h2>
             <label style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.07em", color: MUTED, display: "block", marginBottom: 6 }}>Name</label>
             <input ref={modalInputRef} type="text" value={modalName} onChange={e => setModalName(e.target.value)} onKeyDown={e => { if (e.key === "Enter") handleModalConfirm(); if (e.key === "Escape") setShowModal(false) }}
-              style={{ width: "100%", borderRadius: 9, padding: "9px 12px", fontSize: 13.5, outline: "none", background: "var(--hover)", border: "1px solid var(--border-subtle)", color: "var(--text-1)", fontFamily: FONT, boxSizing: "border-box" }} />
+              style={{ width: "100%", borderRadius: 9, padding: "9px 12px", fontSize: 13.5, outline: "none", background: "var(--input-bg)", border: "1px solid var(--input-border)", color: "var(--text-1)", fontFamily: FONT, boxSizing: "border-box" }} />
             <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 16 }}>
-              <button onClick={() => setShowModal(false)} style={{ padding: "7px 14px", borderRadius: 8, fontSize: 13, fontWeight: 500, color: "#5a5a62", background: "transparent", border: "none", cursor: "pointer", fontFamily: FONT }} onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.05)")} onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>Cancel</button>
+              <button onClick={() => setShowModal(false)} style={{ padding: "7px 14px", borderRadius: 8, fontSize: 13, fontWeight: 500, color: "var(--sb-text-row)", background: "transparent", border: "none", cursor: "pointer", fontFamily: FONT }} onMouseEnter={e => (e.currentTarget.style.background = "var(--hover)")} onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>Cancel</button>
               <button onClick={handleModalConfirm} style={{ padding: "7px 14px", borderRadius: 8, fontSize: 13, fontWeight: 600, color: "#fff", background: "#6b5ce7", border: "none", cursor: "pointer", fontFamily: FONT }} onMouseEnter={e => (e.currentTarget.style.background = "#7c6ef0")} onMouseLeave={e => (e.currentTarget.style.background = "#6b5ce7")}>Create</button>
             </div>
           </div>
@@ -937,7 +937,7 @@ export default function Sidebar({ onNewNote, onToggle }: SidebarProps = {}) {
       )}
 
       {showInviteUpgradeModal && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+        <div className="fixed inset-0 flex items-center justify-center z-50" style={{ background: "var(--overlay)" }}>
           <div className="rounded-2xl p-8 w-96 shadow-2xl" style={{ backgroundColor: "var(--bg-secondary)", border: "1px solid var(--border)" }}>
             <div style={{ width: 40, height: 40, borderRadius: "10px", background: "#534AB7", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "16px" }}>
               <Users size={20} color="#fff" />
@@ -968,39 +968,39 @@ export default function Sidebar({ onNewNote, onToggle }: SidebarProps = {}) {
 
       {showInviteModal && (
         <div style={{ position: "fixed", inset: 0, zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.65)", backdropFilter: "blur(3px)" }} onClick={() => setShowInviteModal(false)} />
-          <div style={{ position: "relative", borderRadius: 14, boxShadow: "0 24px 64px rgba(0,0,0,0.6)", width: 380, padding: "24px 24px 20px", zIndex: 10, background: "#1c1c1f", border: "1px solid var(--border-subtle)", fontFamily: FONT }}>
+          <div style={{ position: "absolute", inset: 0, background: "var(--overlay)", backdropFilter: "blur(3px)" }} onClick={() => setShowInviteModal(false)} />
+          <div style={{ position: "relative", borderRadius: 14, boxShadow: "0 24px 64px rgba(0,0,0,0.6)", width: 380, padding: "24px 24px 20px", zIndex: 10, background: "var(--modal-bg)", border: "1px solid var(--border-subtle)", fontFamily: FONT }}>
             <p style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: MUTED, margin: "0 0 6px" }}>Step 2 of 2</p>
             <h2 style={{ fontSize: 15, fontWeight: 600, color: "var(--text-1)", margin: "0 0 4px", letterSpacing: "-0.01em" }}>Invite people</h2>
-            <p style={{ fontSize: 13, color: "#555", margin: "0 0 20px" }}>You can add up to 2 collaborators on your Pro plan.</p>
+            <p style={{ fontSize: 13, color: "var(--sb-faint)", margin: "0 0 20px" }}>You can add up to 2 collaborators on your Pro plan.</p>
             {inviteRows.map((row, i) => (
               <div key={i} style={{ display: "flex", gap: 8, marginBottom: 10 }}>
                 <input type="email" placeholder="colleague@company.com" value={row.email} onChange={e => updateInviteRow(i, "email", e.target.value)}
-                  style={{ flex: 1, background: "rgba(255,255,255,0.05)", border: "1px solid var(--border-subtle)", borderRadius: 8, padding: "9px 12px", fontSize: 13, color: "#ccc", outline: "none", fontFamily: FONT }} />
+                  style={{ flex: 1, background: "var(--input-bg)", border: "1px solid var(--input-border)", borderRadius: 8, padding: "9px 12px", fontSize: 13, color: "var(--text-2)", outline: "none", fontFamily: FONT }} />
                 <div style={{ position: "relative" }}>
                   <select value={row.role} onChange={e => updateInviteRow(i, "role", e.target.value)}
-                    style={{ background: "rgba(255,255,255,0.05)", border: "1px solid var(--border-subtle)", borderRadius: 8, padding: "9px 28px 9px 10px", fontSize: 13, color: "#aaa", outline: "none", cursor: "pointer", appearance: "none", fontFamily: FONT }}>
+                    style={{ background: "var(--input-bg)", border: "1px solid var(--input-border)", borderRadius: 8, padding: "9px 28px 9px 10px", fontSize: 13, color: "var(--sb-text-soft)", outline: "none", cursor: "pointer", appearance: "none", fontFamily: FONT }}>
                     <option value="admin">Admin</option>
                     <option value="editor">Editor</option>
                     <option value="commenter">Commenter</option>
                     <option value="viewer">Viewer</option>
                   </select>
-                  <span style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", fontSize: 10, color: "#555", pointerEvents: "none" }}>▾</span>
+                  <span style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", fontSize: 10, color: "var(--sb-faint)", pointerEvents: "none" }}>▾</span>
                 </div>
               </div>
             ))}
             {inviteRows.length < 2 && (
-              <button onClick={addInviteRow} style={{ background: "rgba(255,255,255,0.04)", border: "1px solid var(--border-subtle)", borderRadius: 8, padding: "7px 12px", fontSize: 13, color: "#666", cursor: "pointer", display: "flex", alignItems: "center", gap: 6, marginBottom: 16, fontFamily: FONT }}>
+              <button onClick={addInviteRow} style={{ background: "var(--hover)", border: "1px solid var(--border-subtle)", borderRadius: 8, padding: "7px 12px", fontSize: 13, color: "var(--sb-text-row)", cursor: "pointer", display: "flex", alignItems: "center", gap: 6, marginBottom: 16, fontFamily: FONT }}>
                 <Plus size={13} /> Add another person
               </button>
             )}
             {inviteRows.length >= 2 && <div style={{ marginBottom: 16 }} />}
-            <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid var(--border-subtle)", borderRadius: 8, padding: "10px 12px", marginBottom: 20 }}>
-              <p style={{ fontSize: 12, color: "#4a4a52", margin: 0, lineHeight: 1.6 }}>Invites expire after 7 days. Invitees will be asked to log in or create a free account when they accept.</p>
+            <div style={{ background: "var(--hover)", border: "1px solid var(--border-subtle)", borderRadius: 8, padding: "10px 12px", marginBottom: 20 }}>
+              <p style={{ fontSize: 12, color: "var(--sb-hint)", margin: 0, lineHeight: 1.6 }}>Invites expire after 7 days. Invitees will be asked to log in or create a free account when they accept.</p>
             </div>
             {inviteError && <p style={{ fontSize: 12, color: "var(--danger)", marginBottom: 12 }}>{inviteError}</p>}
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <button onClick={() => setShowInviteModal(false)} style={{ padding: "9px 16px", borderRadius: 8, fontSize: 13, color: "#555", background: "transparent", border: "none", cursor: "pointer", fontFamily: FONT }}>Skip for now</button>
+              <button onClick={() => setShowInviteModal(false)} style={{ padding: "9px 16px", borderRadius: 8, fontSize: 13, color: "var(--sb-faint)", background: "transparent", border: "none", cursor: "pointer", fontFamily: FONT }}>Skip for now</button>
               <button onClick={handleSendInvites} disabled={inviteSending} style={{ padding: "9px 20px", borderRadius: 8, fontSize: 13, fontWeight: 600, color: "#fff", background: inviteSending ? "#4a3fa0" : "#6b5ce7", border: "none", cursor: inviteSending ? "default" : "pointer", fontFamily: FONT }}>
                 {inviteSending ? "Sending…" : "Send invites"}
               </button>
@@ -1011,8 +1011,8 @@ export default function Sidebar({ onNewNote, onToggle }: SidebarProps = {}) {
 
       {showPalette && (
         <div style={{ position: "fixed", inset: 0, zIndex: 50, display: "flex", alignItems: "flex-start", justifyContent: "center", paddingTop: "96px" }}>
-          <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.65)", backdropFilter: "blur(3px)" }} onClick={() => setShowPalette(false)} />
-          <div style={{ position: "relative", borderRadius: 14, boxShadow: "0 24px 64px rgba(0,0,0,0.6)", width: 480, maxWidth: "calc(100vw - 32px)", zIndex: 10, overflow: "hidden", background: "#1c1c1f", border: "1px solid var(--border-subtle)", fontFamily: FONT }}>
+          <div style={{ position: "absolute", inset: 0, background: "var(--overlay)", backdropFilter: "blur(3px)" }} onClick={() => setShowPalette(false)} />
+          <div style={{ position: "relative", borderRadius: 14, boxShadow: "0 24px 64px rgba(0,0,0,0.6)", width: 480, maxWidth: "calc(100vw - 32px)", zIndex: 10, overflow: "hidden", background: "var(--modal-bg)", border: "1px solid var(--border-subtle)", fontFamily: FONT }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 16px", borderBottom: "1px solid var(--border-subtle)" }}>
               <Search size={14} style={{ color: MUTED, flexShrink: 0 }} />
               <input
@@ -1067,15 +1067,15 @@ export default function Sidebar({ onNewNote, onToggle }: SidebarProps = {}) {
 
       {showHelp && (
         <div style={{ position: "fixed", inset: 0, zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.65)", backdropFilter: "blur(3px)" }} onClick={() => setShowHelp(false)} />
-          <div style={{ position: "relative", borderRadius: 14, boxShadow: "0 24px 64px rgba(0,0,0,0.6)", width: 500, maxWidth: "calc(100vw - 32px)", zIndex: 10, overflow: "hidden", background: "#1c1c1f", border: "1px solid var(--border-subtle)", fontFamily: FONT }}>
+          <div style={{ position: "absolute", inset: 0, background: "var(--overlay)", backdropFilter: "blur(3px)" }} onClick={() => setShowHelp(false)} />
+          <div style={{ position: "relative", borderRadius: 14, boxShadow: "0 24px 64px rgba(0,0,0,0.6)", width: 500, maxWidth: "calc(100vw - 32px)", zIndex: 10, overflow: "hidden", background: "var(--modal-bg)", border: "1px solid var(--border-subtle)", fontFamily: FONT }}>
             <div style={{ display: "flex", borderBottom: "1px solid var(--border-subtle)" }}>
               {(["shortcuts", "started", "tips", "bug"] as const).map(tab => (
                 <button key={tab} onClick={() => setHelpTab(tab)} style={{ padding: "10px 14px", fontSize: 12, fontWeight: 500, background: "none", border: "none", cursor: "pointer", borderBottom: helpTab === tab ? "2px solid var(--text-1)" : "2px solid transparent", color: helpTab === tab ? "var(--text-1)" : MUTED, fontFamily: FONT, transition: "color 0.12s" }}>
                   {tab === "shortcuts" && "Shortcuts"}{tab === "started" && "Getting Started"}{tab === "tips" && "Tips"}{tab === "bug" && "Report a Bug"}
                 </button>
               ))}
-              <button onClick={() => setShowHelp(false)} style={{ marginLeft: "auto", padding: "8px 14px", fontSize: 13, color: MUTED, background: "none", border: "none", cursor: "pointer" }} onMouseEnter={e => (e.currentTarget.style.color = "#aaa")} onMouseLeave={e => (e.currentTarget.style.color = MUTED)}>✕</button>
+              <button onClick={() => setShowHelp(false)} style={{ marginLeft: "auto", padding: "8px 14px", fontSize: 13, color: MUTED, background: "none", border: "none", cursor: "pointer" }} onMouseEnter={e => (e.currentTarget.style.color = "var(--sb-text-soft)")} onMouseLeave={e => (e.currentTarget.style.color = MUTED)}>✕</button>
             </div>
             <div style={{ overflowY: "auto", maxHeight: 380 }}>
               {helpTab === "shortcuts" && (
@@ -1084,9 +1084,9 @@ export default function Sidebar({ onNewNote, onToggle }: SidebarProps = {}) {
                     <div key={section.label}>
                       <p style={{ fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em", color: MUTED, marginBottom: 8 }}>{section.label}</p>
                       {section.rows.map(row => (
-                        <div key={row.action} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "6px 0", borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
+                        <div key={row.action} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "6px 0", borderBottom: "1px solid var(--border-subtle)" }}>
                           <span style={{ fontSize: 12, color: ITEM_COLOR }}>{row.action}</span>
-                          <div style={{ display: "flex", gap: 4 }}>{row.keys.map(k => <kbd key={k} style={{ fontFamily: "monospace", fontSize: 11, padding: "2px 6px", borderRadius: 5, background: "var(--hover)", border: "1px solid var(--border-subtle)", color: "#c0bfba" }}>{k}</kbd>)}</div>
+                          <div style={{ display: "flex", gap: 4 }}>{row.keys.map(k => <kbd key={k} style={{ fontFamily: "monospace", fontSize: 11, padding: "2px 6px", borderRadius: 5, background: "var(--hover)", border: "1px solid var(--border-subtle)", color: "var(--text-2)" }}>{k}</kbd>)}</div>
                         </div>
                       ))}
                     </div>
@@ -1096,9 +1096,9 @@ export default function Sidebar({ onNewNote, onToggle }: SidebarProps = {}) {
               {helpTab === "started" && (
                 <div style={{ padding: 20 }}>
                   {[{ n: 1, title: "Create your first doc", desc: "Press ⌘N or tap + in the sidebar to create a new doc instantly." }, { n: 2, title: "Format as you write", desc: "Select any text to reveal the formatting toolbar." }, { n: 3, title: "Find anything fast", desc: "Press ⌘K to search across all your docs instantly." }, { n: 4, title: "Your docs save automatically", desc: "Every change is saved in the background — no manual saving needed." }].map(step => (
-                    <div key={step.n} style={{ display: "flex", gap: 12, padding: "12px 0", borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
+                    <div key={step.n} style={{ display: "flex", gap: 12, padding: "12px 0", borderBottom: "1px solid var(--border-subtle)" }}>
                       <div style={{ width: 20, height: 20, borderRadius: "50%", border: "1px solid var(--border-subtle)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontFamily: "monospace", color: MUTED, flexShrink: 0, marginTop: 2 }}>{step.n}</div>
-                      <div><p style={{ fontSize: 12, fontWeight: 500, color: "var(--text-1)", marginBottom: 4 }}>{step.title}</p><p style={{ fontSize: 12, lineHeight: 1.6, color: "#4a4a52" }}>{step.desc}</p></div>
+                      <div><p style={{ fontSize: 12, fontWeight: 500, color: "var(--text-1)", marginBottom: 4 }}>{step.title}</p><p style={{ fontSize: 12, lineHeight: 1.6, color: "var(--sb-hint)" }}>{step.desc}</p></div>
                     </div>
                   ))}
                 </div>
@@ -1112,13 +1112,13 @@ export default function Sidebar({ onNewNote, onToggle }: SidebarProps = {}) {
                     { Icon: Layers, title: "Docs, Notes, or Canvas", desc: "Docs for writing, Notes for quick capture, Canvas for freeform boards, pick what fits." },
                     { Icon: ChevronRight, title: "Jump back with breadcrumbs", desc: "Every nested page shows a trail back to where it lives, click it to jump up." },
                   ].map(tip => (
-                    <div key={tip.title} style={{ display: "flex", gap: 12, padding: "12px 0", borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
-                      <div style={{ width: 24, height: 24, borderRadius: 7, border: "1px solid var(--border-subtle)", background: "rgba(255,255,255,0.03)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 1, color: ITEM_COLOR }}>
+                    <div key={tip.title} style={{ display: "flex", gap: 12, padding: "12px 0", borderBottom: "1px solid var(--border-subtle)" }}>
+                      <div style={{ width: 24, height: 24, borderRadius: 7, border: "1px solid var(--border-subtle)", background: "var(--hover)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 1, color: ITEM_COLOR }}>
                         <tip.Icon size={13} />
                       </div>
                       <div>
                         <p style={{ fontSize: 12, fontWeight: 500, color: "var(--text-1)", marginBottom: 4 }}>{tip.title}</p>
-                        <p style={{ fontSize: 12, lineHeight: 1.6, color: "#4a4a52" }}>{tip.desc}</p>
+                        <p style={{ fontSize: 12, lineHeight: 1.6, color: "var(--sb-hint)" }}>{tip.desc}</p>
                       </div>
                     </div>
                   ))}
@@ -1126,7 +1126,7 @@ export default function Sidebar({ onNewNote, onToggle }: SidebarProps = {}) {
               )}
               {helpTab === "bug" && (
                 <div style={{ padding: 20 }}>
-                  <p style={{ fontSize: 12, lineHeight: 1.65, color: "#4a4a52", marginBottom: 18 }}>
+                  <p style={{ fontSize: 12, lineHeight: 1.65, color: "var(--sb-hint)", marginBottom: 18 }}>
                     Found something broken, or a rough edge that shouldn't be there?
                     Let us know. The more detail you can give (what you were doing,
                     what you expected, what happened instead), the faster we can
@@ -1150,7 +1150,7 @@ export default function Sidebar({ onNewNote, onToggle }: SidebarProps = {}) {
             </div>
             <div style={{ padding: "10px 20px", borderTop: "1px solid var(--border-subtle)", display: "flex", alignItems: "center", gap: 6 }}>
               <span style={{ fontSize: 11, color: MUTED }}>Press</span>
-              <kbd style={{ fontFamily: "monospace", fontSize: 10, padding: "2px 6px", borderRadius: 5, background: "var(--hover)", border: "1px solid var(--border-subtle)", color: "#c0bfba" }}>Esc</kbd>
+              <kbd style={{ fontFamily: "monospace", fontSize: 10, padding: "2px 6px", borderRadius: 5, background: "var(--hover)", border: "1px solid var(--border-subtle)", color: "var(--text-2)" }}>Esc</kbd>
               <span style={{ fontSize: 11, color: MUTED }}>to close</span>
             </div>
           </div>

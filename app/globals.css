@@ -47,6 +47,19 @@
   --canvas-dot: rgba(255,255,255,0.11);
   --danger: #f87171;
   --shadow-card: 0 4px 12px rgba(0,0,0,0.3);
+  --modal-bg: #1c1c1f;
+  --overlay: rgba(0,0,0,0.65);
+  --input-bg: rgba(255,255,255,0.05);
+  --input-border: rgba(255,255,255,0.12);
+
+  /* Sidebar-scoped greys: dark values match the original hardcoded colors exactly */
+  --sb-text-row: #5a5a64;
+  --sb-text-dim: #4a4a54;
+  --sb-text-soft: #a0a0aa;
+  --sb-dot: #3a3a44;
+  --sb-faint: #555555;
+  --sb-icon-hover: #888888;
+  --sb-hint: #4a4a52;
 }
 
 html.light {
@@ -93,6 +106,18 @@ html.light {
   --canvas-dot: rgba(15,15,25,0.11);
   --danger: #C93C3C;
   --shadow-card: 0 1px 2px rgba(15,15,25,0.04);
+  --modal-bg: #FFFFFF;
+  --overlay: rgba(15,15,25,0.25);
+  --input-bg: #FFFFFF;
+  --input-border: rgba(15,15,25,0.14);
+
+  --sb-text-row: #5C5F66;
+  --sb-text-dim: #8A8E96;
+  --sb-text-soft: #5C5F66;
+  --sb-dot: #8A8E96;
+  --sb-faint: #8A8E96;
+  --sb-icon-hover: #5C5F66;
+  --sb-hint: #8A8E96;
 }
 
 /* ── App base ── */
