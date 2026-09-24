@@ -339,10 +339,10 @@ export default function CanvasBoardsPage() {
     .filter(b => !trimmedQuery || b.name.toLowerCase().includes(trimmedQuery))
 
   return (
-    <div className="flex h-screen overflow-hidden" style={{ backgroundColor: 'var(--panel)' }}>
+    <div className="flex h-screen overflow-hidden" style={{ backgroundColor: 'var(--app-frame)' }}>
       <Sidebar collapsed={collapsed} onToggle={() => setCollapsed(v => !v)} />
 
-      <main className="flex-1 overflow-y-auto">
+      <main className="app-panel flex-1 overflow-y-auto">
         <div className="max-w-[1180px] mx-auto px-10 py-10">
           <div className="flex items-center flex-wrap gap-1 mb-3 text-[12px]" style={{ color: 'var(--text-3)' }}>
             <button

@@ -138,7 +138,7 @@ export default function ActivityPage() {
   }
 
   return (
-    <div className="flex h-screen overflow-hidden" style={{ backgroundColor: 'var(--panel)' }}>
+    <div className="flex h-screen overflow-hidden" style={{ backgroundColor: 'var(--app-frame)' }}>
       <Sidebar
         collapsed={collapsed}
         onToggle={() => {
@@ -147,7 +147,7 @@ export default function ActivityPage() {
           localStorage.setItem('sidebar-collapsed', String(next))
         }}
       />
-      <main className="flex-1 overflow-y-auto">
+      <main className="app-panel flex-1 overflow-y-auto">
         <div className="max-w-5xl mx-auto px-10 py-12">
 
           <div className="mb-8">

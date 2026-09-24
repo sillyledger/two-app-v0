@@ -340,10 +340,10 @@ export default function FolderPage() {
   }
 
   return (
-    <div className="flex h-screen overflow-hidden" style={{ backgroundColor: "var(--panel)" }}>
+    <div className="flex h-screen overflow-hidden" style={{ backgroundColor: "var(--app-frame)" }}>
       <Sidebar collapsed={collapsed} onToggle={() => setCollapsed((v) => !v)} />
 
-      <main className="flex-1 overflow-y-auto">
+      <main className="app-panel flex-1 overflow-y-auto">
         <div className="max-w-[1180px] mx-auto px-10 py-10">
 
           {/* Breadcrumb */}

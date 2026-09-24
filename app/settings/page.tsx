@@ -426,19 +426,19 @@ function SettingsPageInner() {
   const storageBarColor = storagePercent > 90 ? '#ef4444' : storagePercent > 70 ? '#f59e0b' : '#534AB7'
 
   if (loading) return (
-    <div className="flex h-screen" style={{ backgroundColor: "var(--panel)" }}>
+    <div className="flex h-screen" style={{ backgroundColor: "var(--app-frame)" }}>
       <Sidebar collapsed={collapsed} onToggle={() => setCollapsed(v => !v)} />
-      <main className="flex-1 flex items-center justify-center">
+      <main className="app-panel flex-1 flex items-center justify-center">
         <p style={{ color: "var(--text-3)" }}>Loading...</p>
       </main>
     </div>
   )
 
   return (
-    <div className="flex h-screen overflow-hidden" style={{ backgroundColor: "var(--panel)" }}>
+    <div className="flex h-screen overflow-hidden" style={{ backgroundColor: "var(--app-frame)" }}>
       <Sidebar collapsed={collapsed} onToggle={() => setCollapsed(v => !v)} />
 
-      <main className="flex-1 flex items-center justify-center overflow-y-auto px-4">
+      <main className="app-panel flex-1 flex items-center justify-center overflow-y-auto px-4">
         <div
           className="w-full max-w-[820px] min-h-[560px] rounded-2xl shadow-2xl flex overflow-hidden my-8"
           style={{ backgroundColor: "var(--surface)", border: "1px solid var(--border-subtle)" }}
@@ -898,7 +898,7 @@ function SettingsPageInner() {
                           className="mt-2 px-3 py-1.5 rounded-lg text-[12px] font-medium transition-colors"
                           style={{ backgroundColor: "#534AB7", color: "#fff", border: "none", cursor: "pointer" }}
                         >
-                          {billingYearly ? 'Upgrade — $60/yr' : 'Upgrade'}
+                          {billingYearly ? 'Upgrade · $60/yr' : 'Upgrade'}
                         </button>
                       )}
                     </div>

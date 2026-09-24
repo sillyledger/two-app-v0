@@ -207,10 +207,10 @@ export default function FoldersPage() {
   )
 
   return (
-    <div className="flex h-screen overflow-hidden" style={{ backgroundColor: "var(--panel)" }}>
+    <div className="flex h-screen overflow-hidden" style={{ backgroundColor: "var(--app-frame)" }}>
       {sidebarReady && <Sidebar collapsed={collapsed} onToggle={() => setCollapsed(v => !v)} />}
 
-      <main className="flex-1 overflow-y-auto transition-all duration-200">
+      <main className="app-panel flex-1 overflow-y-auto transition-all duration-200">
         <div className="max-w-[1180px] mx-auto px-10 py-10">
 
           <div className="flex items-center justify-between mb-6 gap-4">

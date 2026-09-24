@@ -86,7 +86,7 @@ export default function TrashPage() {
         }}
       />
 
-      <main style={{ flex: 1, overflowY: "auto" }}>
+      <main className="app-panel" style={{ flex: 1, overflowY: "auto" }}>
         <div style={{ maxWidth: 760, margin: "0 auto", padding: "48px 40px" }}>
 
           {/* Header */}

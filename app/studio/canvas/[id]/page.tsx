@@ -866,10 +866,10 @@ export default function CanvasBoardPage() {
   }
 
   return (
-    <div className="flex h-screen overflow-hidden" style={{ backgroundColor: 'var(--panel)' }}>
+    <div className="flex h-screen overflow-hidden" style={{ backgroundColor: 'var(--app-frame)' }}>
       <Sidebar collapsed={collapsed} onToggle={() => setCollapsed(v => !v)} />
 
-      <main className="flex-1 overflow-hidden flex flex-col">
+      <main className="app-panel flex-1 overflow-hidden flex flex-col">
         <div className="flex items-center justify-between py-5" style={{ position: 'relative', zIndex: 20, paddingLeft: collapsed ? 56 : 32, paddingRight: 32 }}>
           <div className="flex items-center gap-0.5 min-w-0 flex-1">
             <a href="/studio" className="text-[12px] font-medium truncate transition-colors hover:underline" style={{ color: 'var(--text-3)' }}>Studio</a>

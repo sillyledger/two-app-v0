@@ -264,7 +264,7 @@ html.light {
   --planner-btn-bg: #1C1D1F;
   --planner-btn-hover: #3A3B3F;
   --planner-btn-text: #FFFFFF;
-  --trash-bg: #FCFCFC;
+  --trash-bg: #F4F4F5;
   --trash-empty-icon: #D4D5D9;
   --row-hover-faint: #F4F4F5;
 
@@ -286,6 +286,25 @@ body {
   padding: 0;
   background-color: var(--bg);
   color: var(--text-primary);
+}
+
+/* ── Linear-style app frame (light mode only; no effect in dark) ── */
+html.light .app-panel {
+  background-color: var(--panel);
+  margin: 8px 8px 8px 0;
+  height: calc(100vh - 16px);
+  min-height: 0;
+  border-radius: 12px;
+  border: 1px solid var(--border-subtle);
+}
+/* Panels that host fixed top bars (docs/notes): the panel becomes their
+   containing block and clips them to its rounded corners */
+html.light .app-panel[data-panel-contain] {
+  overflow: hidden;
+  transform: translateZ(0);
+}
+html.light .app-panel[data-panel-contain] * {
+  --sidebar-width: 0px;
 }
 
 /* ── Line clamp utility (fallback) ── */

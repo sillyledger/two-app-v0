@@ -172,7 +172,7 @@ export default function DocsLayout({ children }: { children: React.ReactNode }) 
   )
 
   return (
-    <div className="flex h-screen overflow-hidden">
+    <div className="flex h-screen overflow-hidden" style={{ backgroundColor: 'var(--app-frame)' }}>
       <Sidebar
         onNewNote={handleNewDoc}
         collapsed={collapsed}
@@ -180,7 +180,8 @@ export default function DocsLayout({ children }: { children: React.ReactNode }) 
       />
 
       <div
-        className="flex-1 flex flex-col min-w-0 transition-all duration-300 ease-in-out"
+        className="app-panel flex-1 flex flex-col min-w-0 transition-all duration-300 ease-in-out"
+        data-panel-contain=""
         style={{ ['--sidebar-width' as string]: sidebarWidth }}
       >
         {pathname !== '/docs' && <TabBar />}
