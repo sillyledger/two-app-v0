@@ -9,6 +9,22 @@ function getPlanFromPriceId(priceId: string): string {
   return 'free'
 }
 
+async function getCustomerEmail(customerId: string): Promise<string | null> {
+  const paddleEnv = process.env.PADDLE_ENVIRONMENT === 'production'
+    ? 'https://api.paddle.com'
+    : 'https://sandbox-api.paddle.com'
+
+  const res = await fetch(`${paddleEnv}/customers/${customerId}`, {
+    headers: { 'Authorization': `Bearer ${process.env.PADDLE_API_KEY}` },
+  })
+  if (!res.ok) {
+    console.error('Paddle customer lookup failed:', res.status)
+    return null
+  }
+  const json = await res.json()
+  return json?.data?.email ?? null
+}
+
 export async function POST(req: NextRequest) {
   const rawBody = await req.text()
   const signature = req.headers.get('paddle-signature')
@@ -46,29 +62,41 @@ export async function POST(req: NextRequest) {
 
   try {
     if (eventType === 'subscription.activated') {
-      const email = data.customer?.email
+      const email = data.customer?.email ?? (data.customer_id ? await getCustomerEmail(data.customer_id) : null)
       const priceId = data.items?.[0]?.price?.id
       const trialEndsAt = data.trial_dates?.ends_at ?? null
       const customerId = data.customer_id ?? null
-      if (email && priceId) {
+      if (!email) {
+        console.error('Paddle webhook: no user matched', { eventType, transactionId: data.id, customerId: data.customer_id, email: null, priceId })
+      } else if (priceId) {
         const plan = getPlanFromPriceId(priceId)
-        await sql`
+        const updated = await sql`
           UPDATE users SET plan = ${plan}, trial_ends_at = ${trialEndsAt}, paddle_customer_id = COALESCE(${customerId}, paddle_customer_id)
-          WHERE email = ${email}
+          WHERE LOWER(email) = LOWER(${email})
+          RETURNING id
         `
+        if (updated.length === 0) {
+          console.error('Paddle webhook: no user matched', { eventType, transactionId: data.id, customerId: data.customer_id, email, priceId })
+        }
       }
     }
 
     if (eventType === 'transaction.completed') {
-      const email = data.customer?.email
+      const email = data.customer?.email ?? (data.customer_id ? await getCustomerEmail(data.customer_id) : null)
       const priceId = data.items?.[0]?.price?.id
       const customerId = data.customer_id ?? null
-      if (email && priceId) {
+      if (!email) {
+        console.error('Paddle webhook: no user matched', { eventType, transactionId: data.id, customerId: data.customer_id, email: null, priceId })
+      } else if (priceId) {
         const plan = getPlanFromPriceId(priceId)
-        await sql`
+        const updated = await sql`
           UPDATE users SET plan = ${plan}, paddle_customer_id = COALESCE(${customerId}, paddle_customer_id)
-          WHERE email = ${email}
+          WHERE LOWER(email) = LOWER(${email})
+          RETURNING id
         `
+        if (updated.length === 0) {
+          console.error('Paddle webhook: no user matched', { eventType, transactionId: data.id, customerId: data.customer_id, email, priceId })
+        }
       }
     }
 
