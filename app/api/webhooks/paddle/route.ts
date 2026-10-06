@@ -3,10 +3,26 @@ import { neon } from '@neondatabase/serverless'
 
 const sql = neon(process.env.DATABASE_URL!)
 
-function getPlanFromPriceId(priceId: string): string {
-  if (priceId === process.env.PADDLE_FOUNDING_PRICE_ID) return 'founding'
-  if (priceId === process.env.PADDLE_PRO_PRICE_ID) return 'pro'
-  return 'free'
+type PaidPlan = 'founding' | 'pro'
+type PaddleItem = { price?: { id?: string } }
+
+// Same IDs as app/settings/page.tsx and app/checkout/page.tsx
+const PRICE_PLANS: Record<string, PaidPlan> = {
+  'pri_01ksjx6e6xtrmq324ama45zyr0': 'founding',
+  'pri_01ksjx3b0n6pg6fw44hbq9r03p': 'pro', // Pro Monthly
+  'pri_01ksxjysx4n6ewv4dq2mxn5kjr': 'pro', // Pro Annual
+}
+
+function getPlanFromPriceIds(priceIds: (string | undefined)[]): PaidPlan | null {
+  const plans = priceIds.map(id => (id ? PRICE_PLANS[id] : undefined))
+  if (plans.includes('founding')) return 'founding'
+  if (plans.includes('pro')) return 'pro'
+  return null
+}
+
+async function findUserByEmail(email: string): Promise<{ id: string; plan: string } | null> {
+  const rows = await sql`SELECT id, plan FROM users WHERE LOWER(email) = LOWER(${email})`
+  return (rows[0] as { id: string; plan: string } | undefined) ?? null
 }
 
 async function getCustomerEmail(customerId: string): Promise<string | null> {
@@ -62,48 +78,64 @@ export async function POST(req: NextRequest) {
 
   try {
     if (eventType === 'subscription.activated') {
-      const email = data.customer?.email ?? (data.customer_id ? await getCustomerEmail(data.customer_id) : null)
-      const priceId = data.items?.[0]?.price?.id
+      const priceIds: (string | undefined)[] = (data.items ?? []).map((item: PaddleItem) => item.price?.id)
+      const plan = getPlanFromPriceIds(priceIds)
       const trialEndsAt = data.trial_dates?.ends_at ?? null
       const customerId = data.customer_id ?? null
-      if (!email) {
-        console.error('Paddle webhook: no user matched', { eventType, transactionId: data.id, customerId: data.customer_id, email: null, priceId })
-      } else if (priceId) {
-        const plan = getPlanFromPriceId(priceId)
-        const updated = await sql`
-          UPDATE users SET plan = ${plan}, trial_ends_at = ${trialEndsAt}, paddle_customer_id = COALESCE(${customerId}, paddle_customer_id)
-          WHERE LOWER(email) = LOWER(${email})
-          RETURNING id
-        `
-        if (updated.length === 0) {
-          console.error('Paddle webhook: no user matched', { eventType, transactionId: data.id, customerId: data.customer_id, email, priceId })
+      if (!plan) {
+        console.error('Paddle webhook: unknown price', { eventType, transactionId: data.id, priceIds })
+      } else {
+        const email = data.customer?.email ?? (data.customer_id ? await getCustomerEmail(data.customer_id) : null)
+        const user = email ? await findUserByEmail(email) : null
+        if (!user) {
+          console.error('Paddle webhook: no user matched', { eventType, transactionId: data.id, customerId: data.customer_id, email: email ?? null, priceIds })
+        } else if (user.plan === 'founding' && plan !== 'founding') {
+          console.log('Paddle webhook: skipped, user is founding', { eventType, userId: user.id })
+        } else {
+          await sql`
+            UPDATE users SET plan = ${plan}, trial_ends_at = ${trialEndsAt}, paddle_customer_id = COALESCE(${customerId}, paddle_customer_id)
+            WHERE id = ${user.id}
+          `
         }
       }
     }
 
     if (eventType === 'transaction.completed') {
-      const email = data.customer?.email ?? (data.customer_id ? await getCustomerEmail(data.customer_id) : null)
-      const priceId = data.items?.[0]?.price?.id
+      const priceIds: (string | undefined)[] = (data.items ?? []).map((item: PaddleItem) => item.price?.id)
+      const plan = getPlanFromPriceIds(priceIds)
       const customerId = data.customer_id ?? null
-      if (!email) {
-        console.error('Paddle webhook: no user matched', { eventType, transactionId: data.id, customerId: data.customer_id, email: null, priceId })
-      } else if (priceId) {
-        const plan = getPlanFromPriceId(priceId)
-        const updated = await sql`
-          UPDATE users SET plan = ${plan}, paddle_customer_id = COALESCE(${customerId}, paddle_customer_id)
-          WHERE LOWER(email) = LOWER(${email})
-          RETURNING id
-        `
-        if (updated.length === 0) {
-          console.error('Paddle webhook: no user matched', { eventType, transactionId: data.id, customerId: data.customer_id, email, priceId })
+      if (!plan) {
+        console.error('Paddle webhook: unknown price', { eventType, transactionId: data.id, priceIds })
+      } else {
+        const email = data.customer?.email ?? (data.customer_id ? await getCustomerEmail(data.customer_id) : null)
+        const user = email ? await findUserByEmail(email) : null
+        if (!user) {
+          console.error('Paddle webhook: no user matched', { eventType, transactionId: data.id, customerId: data.customer_id, email: email ?? null, priceIds })
+        } else if (user.plan === 'founding' && plan !== 'founding') {
+          console.log('Paddle webhook: skipped, user is founding', { eventType, userId: user.id })
+        } else {
+          await sql`
+            UPDATE users SET plan = ${plan}, paddle_customer_id = COALESCE(${customerId}, paddle_customer_id)
+            WHERE id = ${user.id}
+          `
         }
       }
     }
 
     if (eventType === 'subscription.canceled') {
-      const email = data.customer?.email
-      if (email) {
-        await sql`UPDATE users SET plan = 'free' WHERE email = ${email}`
+      let user: { id: string; plan: string } | null = null
+      if (data.customer_id) {
+        const rows = await sql`SELECT id, plan FROM users WHERE paddle_customer_id = ${data.customer_id}`
+        user = (rows[0] as { id: string; plan: string } | undefined) ?? null
+        if (!user) {
+          const email = await getCustomerEmail(data.customer_id)
+          if (email) user = await findUserByEmail(email)
+        }
+      }
+      if (!user) {
+        console.error('Paddle webhook: no user matched', { eventType, subscriptionId: data.id, customerId: data.customer_id })
+      } else if (user.plan !== 'founding') {
+        await sql`UPDATE users SET plan = 'free' WHERE id = ${user.id}`
       }
     }
 
