@@ -7,6 +7,7 @@ import Sidebar from "@/components/sidebar"
 import { formatDate as formatDateI18n, getUserDatePrefs } from "@/lib/format-date"
 import { getDescendantIds } from "@/lib/folder-tree"
 import MoveToFolderModal from "@/components/move-to-folder-modal"
+import { folderAccent } from "@/lib/folder-colors"
 
 interface Doc {
   id: string
@@ -37,16 +38,8 @@ interface FolderData {
   workspace_id?: string | null
   parent_id?: string | null
   pinned?: boolean
+  color?: string | null
   [key: string]: unknown
-}
-
-const ACCENT_COLORS = [
-  "#EF9F27", "#85B7EB", "#5DCAA5", "#F0997B",
-  "#AFA9EC", "#97C459", "#ED93B1", "#B4B2A9", "#5DCAA5",
-]
-
-function getAccent(index: number) {
-  return ACCENT_COLORS[index % ACCENT_COLORS.length]
 }
 
 let hasMountedOnClient = false
@@ -438,7 +431,7 @@ export default function FolderPage() {
                     onMouseEnter={e => (e.currentTarget.style.borderColor = "var(--text-3)")}
                     onMouseLeave={e => (e.currentTarget.style.borderColor = "var(--border-subtle)")}
                   >
-                    <span style={{ width: "14px", height: "14px", borderRadius: "4px", backgroundColor: getAccent(i), flexShrink: 0 }} />
+                    <span style={{ width: "14px", height: "14px", borderRadius: "4px", backgroundColor: folderAccent(sub, i), flexShrink: 0 }} />
                     <span className="text-[13px]" style={{ color: "var(--text-1)" }}>{sub.name}</span>
                     <span className="text-[11px]" style={{ color: "var(--text-3)" }}>{subDocCount}</span>
                     <div className="relative" ref={isSubMenuOpen ? menuRef : null}>

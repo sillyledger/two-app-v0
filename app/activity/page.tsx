@@ -6,21 +6,10 @@ import { useRouter } from 'next/navigation'
 import { Users } from 'lucide-react'
 import Sidebar from '@/components/sidebar'
 import { formatDate, formatDayHeader, dayKey, getUserDatePrefs } from '@/lib/format-date'
+import { useFolderColors } from '@/hooks/use-folder-colors'
 
 type FilterTab = 'all' | 'created' | 'edited'
 type SpaceTab = 'all' | 'mine' | 'shared'
-
-const ACCENT_COLORS = [
-  "#EF9F27", "#85B7EB", "#5DCAA5", "#F0997B",
-  "#AFA9EC", "#97C459", "#ED93B1", "#B4B2A9", "#5DCAA5",
-]
-
-function folderDotColor(folderId: string | null) {
-  if (!folderId) return null
-  let hash = 0
-  for (let i = 0; i < folderId.length; i++) hash = (hash * 31 + folderId.charCodeAt(i)) >>> 0
-  return ACCENT_COLORS[hash % ACCENT_COLORS.length]
-}
 
 let hasMountedOnClient = false
 
@@ -67,6 +56,7 @@ function initials(name: string | null | undefined): string {
 export default function ActivityPage() {
   const router = useRouter()
   const [entries, setEntries] = useState<any[]>([])
+  const folderColorFor = useFolderColors()
   const [loading, setLoading] = useState(true)
   const [collapsed, setCollapsed] = useState(false)
   const [activeTab, setActiveTab] = useState<FilterTab>('all')
@@ -238,7 +228,7 @@ export default function ActivityPage() {
                 const href = entry.type === 'doc' ? `/docs/${entry.link_id}` : entry.type === 'note' ? `/notes/${entry.link_id}` : `/folders/${entry.link_id}`
                 const isYou = entry.is_you === true
                 const actorName = isYou ? 'You' : (entry.editor_name ? entry.editor_name.split(' ')[0] : 'Someone')
-                const dotColor = entry.type === 'doc' ? folderDotColor(entry.context_id) : entry.context_color
+                const dotColor = entry.type === 'doc' ? folderColorFor(entry.context_id) : entry.context_color
 
                 return (
                   <div key={row.key} style={{ display: 'flex', gap: 14, opacity: isDeleted ? 0.55 : 1 }}>

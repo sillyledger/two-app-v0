@@ -5,6 +5,7 @@ import { Plus, MoreVertical, Pencil, FolderInput, Trash2, LayoutTemplate, Star, 
 import TemplatePickerModal from "@/components/template-picker-modal"
 import { useTabStore } from "@/hooks/use-tab-store"
 import MoveToFolderModal from "@/components/move-to-folder-modal"
+import { useFolderColors } from "@/hooks/use-folder-colors"
 
 interface Doc {
   id: string
@@ -32,18 +33,6 @@ function formatDate(dateStr: string) {
   const date = new Date(dateStr)
   if (isNaN(date.getTime())) return ""
   return date.toLocaleDateString("en-US", { month: "short", day: "numeric" })
-}
-
-const ACCENT_COLORS = [
-  "#EF9F27", "#85B7EB", "#5DCAA5", "#F0997B",
-  "#AFA9EC", "#97C459", "#ED93B1", "#B4B2A9", "#5DCAA5",
-]
-
-function folderDotColor(folderId: string | null) {
-  if (!folderId) return null
-  let hash = 0
-  for (let i = 0; i < folderId.length; i++) hash = (hash * 31 + folderId.charCodeAt(i)) >>> 0
-  return ACCENT_COLORS[hash % ACCENT_COLORS.length]
 }
 
 type ViewMode = "grid" | "list"
@@ -78,6 +67,7 @@ export default function DocsPage() {
   const [renameValue, setRenameValue] = useState("")
   const [movingDoc, setMovingDoc] = useState<Doc | null>(null)
   const [folders, setFolders] = useState<Folder[]>([])
+  const folderColorFor = useFolderColors()
   const [deletingDoc, setDeletingDoc] = useState<Doc | null>(null)
   const [userPlan, setUserPlan] = useState<string>("free")
 
@@ -400,7 +390,7 @@ export default function DocsPage() {
                           </span>
                         )}
                         <div style={{ width: 130, display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--text-3)", flexShrink: 0 }}>
-                          {doc.folder_name ? (<><span style={{ width: 6, height: 6, borderRadius: "50%", backgroundColor: folderDotColor(doc.folder_id ?? null) ?? undefined, flexShrink: 0 }} />{doc.folder_name}</>) : <span>—</span>}
+                          {doc.folder_name ? (<><span style={{ width: 6, height: 6, borderRadius: "50%", backgroundColor: folderColorFor(doc.folder_id) ?? undefined, flexShrink: 0 }} />{doc.folder_name}</>) : <span>—</span>}
                         </div>
                         <p className="text-[12px] flex-shrink-0" style={{ color: "var(--text-3)" }}>{formatDate(doc.created_at)}</p>
                       </button>

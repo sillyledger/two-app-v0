@@ -1,8 +1,10 @@
 import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
+import { randomUUID } from 'crypto'
 import { verifyToken } from '@/lib/auth'
 import { sql } from '@/lib/db'
 import { isWorkspaceOwner, getUserRoleInWorkspace } from '@/lib/workspaces'
+import { getAccent, hashColor } from '@/lib/folder-colors'
 
 export async function GET(request: Request) {
   const cookieStore = await cookies()
@@ -15,6 +17,7 @@ export async function GET(request: Request) {
   const workspaceId = searchParams.get('workspace_id')
   const parentId = searchParams.get('parent_id')
   const all = searchParams.get('all') === 'true'
+  const colorsOnly = searchParams.get('colors') === 'true'
 
   if (workspaceId) {
     const accessCheck = await sql`
@@ -36,7 +39,18 @@ export async function GET(request: Request) {
     // across that subtree so doc_count reflects docs at any depth, not just
     // docs directly in the folder. Same descendant-walk pattern as the
     // recursive DELETE below.
-    const folders = all && workspaceId
+    const folders = colorsOnly
+      ? await sql`
+          SELECT folders.id, folders.color
+          FROM folders
+          WHERE (
+            folders.user_id = ${payload.userId}
+            OR folders.workspace_id::text IN (SELECT id::text FROM workspaces WHERE user_id = ${payload.userId})
+            OR folders.workspace_id::text IN (SELECT workspace_id::text FROM workspace_members WHERE user_id = ${payload.userId} AND status = 'accepted')
+          )
+          ORDER BY folders.created_at ASC
+        `
+      : all && workspaceId
       ? await sql`
           WITH RECURSIVE folder_tree AS (
             SELECT id AS root_id, id AS descendant_id FROM folders WHERE workspace_id = ${workspaceId}
@@ -54,7 +68,7 @@ export async function GET(request: Request) {
           )
           SELECT
             folders.id, folders.workspace_id, folders.created_at, folders.pinned,
-            folders.name, folders.user_id, folders.parent_id,
+            folders.name, folders.user_id, folders.parent_id, folders.color,
             COALESCE(doc_counts.doc_count, 0) AS doc_count,
             doc_counts.last_edited
           FROM folders
@@ -83,7 +97,7 @@ export async function GET(request: Request) {
           )
           SELECT
             folders.id, folders.workspace_id, folders.created_at, folders.pinned,
-            folders.name, folders.user_id, folders.parent_id,
+            folders.name, folders.user_id, folders.parent_id, folders.color,
             COALESCE(doc_counts.doc_count, 0) AS doc_count,
             doc_counts.last_edited
           FROM folders
@@ -113,7 +127,7 @@ export async function GET(request: Request) {
           )
           SELECT
             folders.id, folders.workspace_id, folders.created_at, folders.pinned,
-            folders.name, folders.user_id, folders.parent_id,
+            folders.name, folders.user_id, folders.parent_id, folders.color,
             COALESCE(doc_counts.doc_count, 0) AS doc_count,
             doc_counts.last_edited
           FROM folders
@@ -140,7 +154,7 @@ export async function GET(request: Request) {
           )
           SELECT
             folders.id, folders.workspace_id, folders.created_at, folders.pinned,
-            folders.name, folders.user_id, folders.parent_id,
+            folders.name, folders.user_id, folders.parent_id, folders.color,
             COALESCE(doc_counts.doc_count, 0) AS doc_count,
             doc_counts.last_edited
           FROM folders
@@ -167,7 +181,7 @@ export async function GET(request: Request) {
           )
           SELECT
             folders.id, folders.workspace_id, folders.created_at, folders.pinned,
-            folders.name, folders.user_id, folders.parent_id,
+            folders.name, folders.user_id, folders.parent_id, folders.color,
             COALESCE(doc_counts.doc_count, 0) AS doc_count,
             doc_counts.last_edited
           FROM folders
@@ -193,7 +207,7 @@ export async function GET(request: Request) {
           )
           SELECT
             folders.id, folders.workspace_id, folders.created_at, folders.pinned,
-            folders.name, folders.user_id, folders.parent_id,
+            folders.name, folders.user_id, folders.parent_id, folders.color,
             COALESCE(doc_counts.doc_count, 0) AS doc_count,
             doc_counts.last_edited
           FROM folders
@@ -230,9 +244,22 @@ export async function POST(request: Request) {
       }
     }
 
+    // Colour is stored once at creation: subfolders get the id hash, top-level
+    // folders the next sidebar slot in their workspace (same rule as the backfill).
+    const id = randomUUID()
+    let color: string
+    if (parent_id) {
+      color = hashColor(id)
+    } else {
+      const countRows = workspace_id
+        ? await sql`SELECT COUNT(*) AS n FROM folders WHERE workspace_id::text = ${String(workspace_id)} AND parent_id IS NULL`
+        : await sql`SELECT COUNT(*) AS n FROM folders WHERE workspace_id IS NULL AND user_id = ${payload.userId} AND parent_id IS NULL`
+      color = getAccent(Number(countRows[0]?.n) || 0)
+    }
+
     const result = await sql`
-      INSERT INTO folders (name, workspace_id, user_id, parent_id)
-      VALUES (${name}, ${workspace_id}, ${payload.userId}, ${parent_id ?? null})
+      INSERT INTO folders (id, name, workspace_id, user_id, parent_id, color)
+      VALUES (${id}, ${name}, ${workspace_id}, ${payload.userId}, ${parent_id ?? null}, ${color})
       RETURNING *
     `
     await sql`

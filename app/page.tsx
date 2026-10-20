@@ -8,6 +8,8 @@ import TemplatePickerModal from "@/components/template-picker-modal"
 import { useTabStore } from "@/hooks/use-tab-store"
 import { formatDate as formatDateI18n, getUserDatePrefs } from "@/lib/format-date"
 import MoveToFolderModal from "@/components/move-to-folder-modal"
+import { folderAccent } from "@/lib/folder-colors"
+import { useFolderColors } from "@/hooks/use-folder-colors"
 
 interface Doc {
   id: string
@@ -34,6 +36,7 @@ interface PinnedFolder {
   id: string
   name: string
   doc_count: number | string
+  color: string
 }
 
 let hasMountedOnClient = false
@@ -51,22 +54,6 @@ function formatDate(dateStr: string) {
 function stripHtml(html: string) {
   if (!html) return ""
   return html.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim()
-}
-
-const ACCENT_COLORS = [
-  "#EF9F27", "#85B7EB", "#5DCAA5", "#F0997B",
-  "#AFA9EC", "#97C459", "#ED93B1", "#B4B2A9", "#5DCAA5",
-]
-
-function getAccent(index: number) {
-  return ACCENT_COLORS[index % ACCENT_COLORS.length]
-}
-
-function folderDotColor(folderId: string | null) {
-  if (!folderId) return null
-  let hash = 0
-  for (let i = 0; i < folderId.length; i++) hash = (hash * 31 + folderId.charCodeAt(i)) >>> 0
-  return ACCENT_COLORS[hash % ACCENT_COLORS.length]
 }
 
 function FolderIcon({ color, size = 54 }: { color: string; size?: number }) {
@@ -124,11 +111,12 @@ export default function HomePage() {
   const [folders, setFolders] = useState<Folder[]>([])
   const [deletingDoc, setDeletingDoc] = useState<Doc | null>(null)
   const [pinnedFolders, setPinnedFolders] = useState<PinnedFolder[]>([])
+  const folderColorFor = useFolderColors()
 
   useEffect(() => {
     fetch("/api/folders")
       .then(res => res.json())
-      .then(data => setPinnedFolders(Array.isArray(data) ? data.filter((f: any) => f.pinned) : []))
+      .then(data => setPinnedFolders(Array.isArray(data) ? data.map((f: any, i: number) => ({ ...f, color: folderAccent(f, i) })).filter((f: any) => f.pinned) : []))
       .catch(() => setPinnedFolders([]))
   }, [])
 
@@ -369,7 +357,7 @@ export default function HomePage() {
 
             {pinnedFolders.length > 0 && (
               <div className="grid grid-cols-6 gap-4">
-                {pinnedFolders.map((folder, index) => {
+                {pinnedFolders.map(folder => {
                   const docCount = Number(folder.doc_count) || 0
                   return (
                     <div
@@ -378,7 +366,7 @@ export default function HomePage() {
                       onClick={() => router.push(`/folders/${folder.id}?name=${encodeURIComponent(folder.name)}`)}
                     >
                       <div className="mb-2 transition-transform group-hover:scale-105">
-                        <FolderIcon color={getAccent(index)} size={48} />
+                        <FolderIcon color={folder.color} size={48} />
                       </div>
                       <p className="font-medium text-[13px] truncate w-full" style={{ color: "var(--text-1)" }}>{folder.name}</p>
                       <p className="text-[11px]" style={{ color: "var(--text-3)" }}>{docCount} {docCount === 1 ? "doc" : "docs"}</p>
@@ -610,7 +598,7 @@ export default function HomePage() {
                           </span>
                         )}
                         <div style={{ width: 130, display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--text-3)", flexShrink: 0 }}>
-                          {doc.folder_name ? (<><span style={{ width: 6, height: 6, borderRadius: "50%", backgroundColor: folderDotColor(doc.folder_id ?? null) ?? undefined, flexShrink: 0 }} />{doc.folder_name}</>) : <span>—</span>}
+                          {doc.folder_name ? (<><span style={{ width: 6, height: 6, borderRadius: "50%", backgroundColor: folderColorFor(doc.folder_id) ?? undefined, flexShrink: 0 }} />{doc.folder_name}</>) : <span>—</span>}
                         </div>
                         <p className="text-[12px] flex-shrink-0" style={{ color: "var(--text-3)" }}>{formatDate(doc.created_at)}</p>
                       </button>

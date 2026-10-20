@@ -5,7 +5,8 @@ import { Plus, Search } from "lucide-react"
 import Sidebar from "@/components/sidebar"
 import { getDescendantIds } from "@/lib/folder-tree"
 import MoveToFolderModal from "@/components/move-to-folder-modal"
-import { FolderCard, FolderData, getAccent, markFolderCardMounted } from "@/components/folder-card"
+import { FolderCard, FolderData, markFolderCardMounted } from "@/components/folder-card"
+import { folderAccent } from "@/lib/folder-colors"
 
 export default function FoldersPage() {
   const router = useRouter()
@@ -188,7 +189,7 @@ export default function FoldersPage() {
     <FolderCard
       key={folder.id}
       folder={folder}
-      accentColor={getAccent(folders.findIndex(f => f.id === folder.id))}
+      accentColor={folderAccent(folder, folders.findIndex(f => f.id === folder.id))}
       isMenuOpen={menuOpenId === folder.id}
       menuRef={menuRef}
       onToggleMenu={handleToggleMenu}

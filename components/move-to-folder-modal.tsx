@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react"
 import { Search, Pin } from "lucide-react"
 import { FolderIcon } from "./folder-icon"
-import { folderColor } from "@/lib/folder-colors"
+import { folderAccent } from "@/lib/folder-colors"
 import { sortFoldersForMoveModal } from "@/lib/folder-tree"
 
 interface MoveFolder {
@@ -11,6 +11,7 @@ interface MoveFolder {
   name: string
   parent_id?: string | null
   pinned?: boolean
+  color?: string | null
   [key: string]: unknown
 }
 
@@ -116,7 +117,7 @@ export default function MoveToFolderModal({ folders, onMove, onClose, currentFol
                       style={{ left: 20, top: 0, bottom: "50%", width: 12, borderLeft: "1px solid var(--border)", borderBottom: "1px solid var(--border)", borderRadius: "0 0 0 5px" }}
                     />
                   )}
-                  <FolderIcon color={folderColor(f.id)} size={isChild ? 17 : 20} />
+                  <FolderIcon color={folderAccent(f, folders.findIndex(x => x.id === f.id))} size={isChild ? 17 : 20} />
                   <span className="flex flex-col min-w-0">
                     <span className="flex items-center gap-1.5 truncate">
                       <span className="truncate">{matches ? highlightMatch(f.name, trimmed) : f.name}</span>

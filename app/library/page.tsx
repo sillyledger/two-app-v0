@@ -6,7 +6,8 @@ import Sidebar from '@/components/sidebar'
 import TemplatePickerModal from '@/components/template-picker-modal'
 import MoveToFolderModal from '@/components/move-to-folder-modal'
 import { getDescendantIds } from '@/lib/folder-tree'
-import { FolderCard, FolderData, getAccent, markFolderCardMounted } from '@/components/folder-card'
+import { FolderCard, FolderData, markFolderCardMounted } from '@/components/folder-card'
+import { folderAccent } from '@/lib/folder-colors'
 import { NoteCategoryCard, NoteCategoryData } from '@/components/note-category-card'
 import { FileText, Search, Plus, Users } from 'lucide-react'
 
@@ -457,7 +458,7 @@ export default function LibraryPage() {
                           <FolderCard
                             key={folder.id}
                             folder={folder}
-                            accentColor={getAccent(folders.findIndex(f => f.id === folder.id))}
+                            accentColor={folderAccent(folder, folders.findIndex(f => f.id === folder.id))}
                             isMenuOpen={menuOpenId === folder.id}
                             menuRef={menuRef}
                             onToggleMenu={handleToggleMenu}
@@ -601,7 +602,7 @@ export default function LibraryPage() {
                     sharedWorkspaces.map(ws => {
                       const data = sharedData[ws.id]
                       const wsFolders = (data?.folders ?? []).map((folder, index) => ({
-                        folder, color: getAccent(index),
+                        folder, color: folderAccent(folder, index),
                         docs: (data?.docs ?? []).filter(d => d.folder_id === folder.id),
                       }))
                       const wsUnfiled = (data?.docs ?? []).filter(d => !d.folder_id)

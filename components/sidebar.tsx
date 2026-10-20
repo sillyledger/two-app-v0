@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react"
 import { useTabStore } from "@/hooks/use-tab-store"
+import { folderAccent } from "@/lib/folder-colors"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import {
@@ -13,7 +14,7 @@ import {
 } from "lucide-react"
 
 interface Doc { id: string; uuid: string; title: string }
-interface FolderType { id: string; name: string; pinned?: boolean; doc_count?: number | string }
+interface FolderType { id: string; name: string; pinned?: boolean; doc_count?: number | string; color?: string | null }
 interface Workspace { id: string; name: string }
 interface SidebarProps { onNewNote?: () => void; collapsed?: boolean; onToggle?: () => void }
 
@@ -52,11 +53,6 @@ const BORDER = "1px solid var(--border-subtle)"
 const FONT = "'DM Sans', system-ui, sans-serif"
 
 const PANEL_WIDTH = 240
-
-const ACCENT_COLORS = ["#EF9F27", "#85B7EB", "#5DCAA5", "#F0997B", "#AFA9EC", "#97C459", "#ED93B1", "#B4B2A9", "#5DCAA5"]
-function getAccent(index: number) {
-  return ACCENT_COLORS[index % ACCENT_COLORS.length]
-}
 
 const dropdownStyle: React.CSSProperties = {
   position: "absolute", right: 0, top: 30, zIndex: 50,
@@ -110,7 +106,7 @@ function FolderRow({
       onDragLeave={e => { e.stopPropagation(); setDragOverFolderId(null) }}
       onDrop={e => handleDrop(e, folder.id)}
     >
-      <div style={{ width: 16, height: 12, borderRadius: 3, background: getAccent(index), flexShrink: 0 }} />
+      <div style={{ width: 16, height: 12, borderRadius: 3, background: folderAccent(folder, index), flexShrink: 0 }} />
       {isRenaming
         ? <input ref={folderRenameInputRef} value={folderRenameValue} onChange={e => setFolderRenameValue(e.target.value)} onBlur={() => commitFolderRename(folder.id)} onKeyDown={e => { if (e.key === "Enter") commitFolderRename(folder.id); if (e.key === "Escape") setRenamingFolderId(null) }} onClick={e => e.stopPropagation()} style={{ flex: 1, minWidth: 0, borderRadius: 6, padding: "2px 8px", fontSize: 13, outline: "none", background: "var(--input-bg)", border: "1px solid var(--input-border)", color: "var(--text-1)", fontFamily: FONT }} />
         : <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{folder.name}</span>
@@ -169,7 +165,7 @@ function WsFolderRow({
       onMouseLeave={e => { e.currentTarget.style.background = isActive ? HOVER_BG : "transparent"; e.currentTarget.style.color = isActive ? HOVER_COLOR : "var(--sb-text-row)" }}
       onClick={() => { if (!isRenaming) router.push(`/folders/${folder.id}?name=${encodeURIComponent(folder.name)}`) }}
     >
-      <div style={{ width: 16, height: 12, borderRadius: 3, background: getAccent(index), flexShrink: 0 }} />
+      <div style={{ width: 16, height: 12, borderRadius: 3, background: folderAccent(folder, index), flexShrink: 0 }} />
       {isRenaming
         ? <input ref={wsFolderRenameInputRef} value={wsFolderRenameValue} onChange={e => setWsFolderRenameValue(e.target.value)} onBlur={() => commitWsFolderRename(wsId, folder.id)} onKeyDown={e => { if (e.key === "Enter") commitWsFolderRename(wsId, folder.id); if (e.key === "Escape") setRenamingWsFolderId(null) }} onClick={e => e.stopPropagation()} style={{ flex: 1, minWidth: 0, borderRadius: 6, padding: "2px 8px", fontSize: 13, outline: "none", background: "var(--input-bg)", border: "1px solid var(--input-border)", color: "var(--text-1)", fontFamily: FONT }} />
         : <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{folder.name}</span>

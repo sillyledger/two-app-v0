@@ -11,16 +11,8 @@ export interface FolderData {
   pinned: boolean
   workspace_id?: string | null
   parent_id?: string | null
+  color?: string | null
   [key: string]: unknown
-}
-
-export const ACCENT_COLORS = [
-  "#EF9F27", "#85B7EB", "#5DCAA5", "#F0997B",
-  "#AFA9EC", "#97C459", "#ED93B1", "#B4B2A9", "#5DCAA5",
-]
-
-export function getAccent(index: number) {
-  return ACCENT_COLORS[index % ACCENT_COLORS.length]
 }
 
 let hasMountedOnClient = false

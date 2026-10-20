@@ -8,6 +8,8 @@ import TemplatePickerModal from "@/components/template-picker-modal"
 import { useTabStore } from "@/hooks/use-tab-store"
 import { formatDate as formatDateI18n, getUserDatePrefs } from "@/lib/format-date"
 import MoveToFolderModal from "@/components/move-to-folder-modal"
+import { folderAccent, getAccent, hashColor } from "@/lib/folder-colors"
+import { useFolderColors } from "@/hooks/use-folder-colors"
 
 interface Doc {
   id: string
@@ -37,6 +39,7 @@ interface PinnedFolder {
   id: string
   name: string
   doc_count: number | string
+  color?: string | null
 }
 
 interface Member {
@@ -64,22 +67,6 @@ function formatDate(dateStr: string) {
 function stripHtml(html: string) {
   if (!html) return ""
   return html.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim()
-}
-
-const ACCENT_COLORS = [
-  "#EF9F27", "#85B7EB", "#5DCAA5", "#F0997B",
-  "#AFA9EC", "#97C459", "#ED93B1", "#B4B2A9", "#5DCAA5",
-]
-
-function getAccent(index: number) {
-  return ACCENT_COLORS[index % ACCENT_COLORS.length]
-}
-
-function folderDotColor(folderId: string | null) {
-  if (!folderId) return null
-  let hash = 0
-  for (let i = 0; i < folderId.length; i++) hash = (hash * 31 + folderId.charCodeAt(i)) >>> 0
-  return ACCENT_COLORS[hash % ACCENT_COLORS.length]
 }
 
 function FolderIcon({ color, size = 54 }: { color: string; size?: number }) {
@@ -138,6 +125,7 @@ export default function WorkspaceHomePage() {
   const [folders, setFolders] = useState<Folder[]>([])
   const [deletingDoc, setDeletingDoc] = useState<Doc | null>(null)
   const [pinnedFolders, setPinnedFolders] = useState<PinnedFolder[]>([])
+  const folderColorFor = useFolderColors()
   const [workspaceName, setWorkspaceName] = useState("")
   const [members, setMembers] = useState<Member[]>([])
 
@@ -429,7 +417,7 @@ export default function WorkspaceHomePage() {
                       onClick={() => router.push(`/folders/${folder.id}?name=${encodeURIComponent(folder.name)}`)}
                     >
                       <div className="mb-2 transition-transform group-hover:scale-105">
-                        <FolderIcon color={getAccent(index)} size={48} />
+                        <FolderIcon color={folderAccent(folder, index)} size={48} />
                       </div>
                       <p className="font-medium text-[13px] truncate w-full" style={{ color: "var(--text-1)" }}>{folder.name}</p>
                       <p className="text-[11px]" style={{ color: "var(--text-3)" }}>{docCount} {docCount === 1 ? "doc" : "docs"}</p>
@@ -661,7 +649,7 @@ export default function WorkspaceHomePage() {
                           </span>
                         )}
                         <div style={{ width: 130, display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--text-3)", flexShrink: 0 }}>
-                          {doc.folder_name ? (<><span style={{ width: 6, height: 6, borderRadius: "50%", backgroundColor: folderDotColor(doc.folder_id ?? null) ?? undefined, flexShrink: 0 }} />{doc.folder_name}</>) : <span>—</span>}
+                          {doc.folder_name ? (<><span style={{ width: 6, height: 6, borderRadius: "50%", backgroundColor: folderColorFor(doc.folder_id) ?? undefined, flexShrink: 0 }} />{doc.folder_name}</>) : <span>—</span>}
                         </div>
                         <p className="text-[12px] flex-shrink-0" style={{ color: "var(--text-3)" }}>{formatDate(doc.created_at)}</p>
                       </button>
@@ -720,7 +708,7 @@ export default function WorkspaceHomePage() {
                     <div className="flex items-center justify-between px-5 py-3" style={{ borderTop: "1px solid var(--border-subtle)" }}>
                       <div className="flex items-center gap-2 min-w-0">
                         {(doc.author_name || doc.author_email) && (
-                          <span style={{ width: 16, height: 16, borderRadius: "50%", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, fontWeight: 700, color: "#1a1a1a", backgroundColor: folderDotColor(doc.user_id ?? null) ?? "#888" }}>
+                          <span style={{ width: 16, height: 16, borderRadius: "50%", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, fontWeight: 700, color: "#1a1a1a", backgroundColor: doc.user_id ? hashColor(doc.user_id) : "#888" }}>
                             {(doc.author_name || doc.author_email || "?").charAt(0).toUpperCase()}
                           </span>
                         )}
