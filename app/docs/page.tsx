@@ -486,7 +486,7 @@ export default function DocsPage() {
         <div className="fixed inset-0 flex items-center justify-center z-50" style={{ backgroundColor: "var(--overlay)" }}>
           <div className="rounded-2xl p-6 w-80 shadow-2xl" style={{ backgroundColor: "var(--menu-bg)", border: "1px solid var(--border-subtle)" }}>
             <h2 className="font-semibold text-base mb-2" style={{ color: "var(--text-1)" }}>Delete doc?</h2>
-            <p className="text-sm mb-6" style={{ color: "var(--text-3)" }}>&ldquo;{deletingDoc.title || "Untitled"}&rdquo; will be deleted. This cannot be undone.</p>
+            <p className="text-sm mb-6" style={{ color: "var(--text-3)" }}>This doc will move to Trash. You can restore it from there.</p>
             <div className="flex gap-2 justify-end">
               <button onClick={() => setDeletingDoc(null)} className="px-4 py-2 text-sm" style={{ color: "var(--text-3)" }}>Cancel</button>
               <button onClick={handleDelete} className="px-4 py-2 text-sm rounded-lg bg-red-500/20 hover:bg-red-500/30 text-[var(--danger-text)]">Delete</button>

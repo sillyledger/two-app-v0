@@ -670,7 +670,7 @@ export default function DocTopbar({
           <div className="absolute inset-0 backdrop-blur-[2px]" style={{ backgroundColor: "var(--overlay-soft)" }} onClick={() => setShowDeleteModal(false)} />
           <div className="relative rounded-xl shadow-2xl w-[320px] p-5 z-10" style={{ backgroundColor: "var(--menu-bg)", border: "1px solid var(--border-subtle)" }}>
             <h2 className="text-[14px] font-semibold mb-1" style={{ color: "var(--text-1)" }}>Delete doc</h2>
-            <p className="text-[12px] mb-5" style={{ color: "var(--text-3)" }}>This doc will be permanently deleted. This cannot be undone.</p>
+            <p className="text-[12px] mb-5" style={{ color: "var(--text-3)" }}>This doc will move to Trash. You can restore it from there.</p>
             <div className="flex justify-end gap-2">
               <button onClick={() => setShowDeleteModal(false)} className="px-3 py-1.5 rounded-lg text-[12px] font-medium transition-colors" style={{ color: "var(--text-3)" }}
                 onMouseEnter={e => (e.currentTarget.style.backgroundColor = "var(--surface-2)")} onMouseLeave={e => (e.currentTarget.style.backgroundColor = "transparent")}

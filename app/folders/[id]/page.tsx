@@ -733,7 +733,7 @@ export default function FolderPage() {
           >
             <h2 className="font-semibold text-base mb-2" style={{ color: "var(--text-1)" }}>Delete doc?</h2>
             <p className="text-sm mb-6" style={{ color: "var(--text-3)" }}>
-              &ldquo;{deletingDoc.title || "Untitled"}&rdquo; will be permanently deleted.
+              This doc will move to Trash. You can restore it from there.
             </p>
             <div className="flex gap-2 justify-end">
               <button
