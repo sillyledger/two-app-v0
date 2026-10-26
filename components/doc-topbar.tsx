@@ -43,14 +43,6 @@ interface DocTopbarProps {
   onRestore?: (title: string, content: string) => void
 }
 
-function stripTags(html: string): string {
-  return html
-    .replace(/<[^>]+>/g, '')
-    .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
-    .replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&nbsp;/g, ' ')
-    .trim()
-}
-
 // Inline content, headings, paragraphs, links and images
 function basicHtmlToMarkdown(html: string): string {
   return html
@@ -269,7 +261,244 @@ async function exportAsPDF(docTitle: string, html: string) {
   const domDoc = parser.parseFromString(html, 'text/html')
   const body = domDoc.body
 
-  async function processNode(node: Element) {
+  type RGB = [number, number, number]
+  type InlineStyle = { bold: boolean; italic: boolean; code: boolean; link?: string }
+  type Run = { text: string; style: InlineStyle } | { br: true }
+  type Seg = { text: string; style: InlineStyle; x: number; width: number }
+  type TextOpts = { size: number; bold?: boolean; italic?: boolean; color: RGB }
+  type BlockCtx = { italic: boolean; color: RGB; after: number }
+
+  const BODY_COLOR: RGB = [30, 30, 30]
+  const LINK_COLOR: RGB = [37, 99, 235]
+  const INLINE_SKIP = new Set(['label', 'input', 'colgroup', 'script', 'style'])
+  const BLOCK_TAGS = new Set(['p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol', 'li', 'blockquote', 'pre', 'table', 'hr', 'img', 'div'])
+  const lineHeight = (size: number) => size * 1.15 * 0.3528
+
+  const setFont = (style: InlineStyle, size: number) => {
+    const variant = style.bold && style.italic ? 'bolditalic' : style.bold ? 'bold' : style.italic ? 'italic' : 'normal'
+    doc.setFont(style.code ? 'courier' : 'helvetica', variant)
+    doc.setFontSize(size)
+  }
+
+  // Text, bold/italic/code/link and line breaks, in reading order
+  function collectRuns(nodes: ArrayLike<Node>, style: InlineStyle, runs: Run[] = []): Run[] {
+    for (const node of Array.from(nodes)) {
+      if (node.nodeType === Node.TEXT_NODE) {
+        const text = (node.textContent || '').replace(/\s+/g, ' ')
+        if (text) runs.push({ text, style })
+        continue
+      }
+      if (node.nodeType !== Node.ELEMENT_NODE) continue
+      const el = node as Element
+      const tag = el.tagName.toLowerCase()
+      if (INLINE_SKIP.has(tag)) continue
+      if (tag === 'br') { runs.push({ br: true }); continue }
+      if (BLOCK_TAGS.has(tag) && runs.length > 0 && !('br' in runs[runs.length - 1])) runs.push({ br: true })
+      collectRuns(el.childNodes, {
+        bold: style.bold || tag === 'strong' || tag === 'b' || /^h[1-6]$/.test(tag) || tag === 'th',
+        italic: style.italic || tag === 'em' || tag === 'i',
+        code: style.code || tag === 'code',
+        link: tag === 'a' ? el.getAttribute('href') || style.link : style.link,
+      }, runs)
+    }
+    return runs
+  }
+
+  // Word-wraps runs into lines of positioned segments
+  function layout(runs: Run[], width: number, size: number): Seg[][] {
+    const lines: Seg[][] = []
+    let line: Seg[] = []
+    let x = 0
+    const endLine = () => {
+      while (line.length && line[line.length - 1].text === ' ') line.pop()
+      lines.push(line)
+      line = []
+      x = 0
+    }
+    const push = (text: string, style: InlineStyle) => {
+      setFont(style, size)
+      const w = doc.getTextWidth(text)
+      line.push({ text, style, x, width: w })
+      x += w
+    }
+    for (const run of runs) {
+      if ('br' in run) { endLine(); continue }
+      for (const tok of run.text.split(/( )/)) {
+        if (!tok) continue
+        if (tok === ' ') { if (x > 0) push(' ', run.style); continue }
+        setFont(run.style, size)
+        const w = doc.getTextWidth(tok)
+        if (x > 0 && x + w > width) endLine()
+        if (w > width) {
+          const pieces: string[] = doc.splitTextToSize(tok, width)
+          pieces.forEach((piece, i) => { push(piece, run.style); if (i < pieces.length - 1) endLine() })
+        } else {
+          push(tok, run.style)
+        }
+      }
+    }
+    endLine()
+    while (lines.length && lines[lines.length - 1].length === 0) lines.pop()
+    return lines
+  }
+
+  function drawLine(line: Seg[], x: number, baseline: number, size: number, color: RGB) {
+    for (const seg of line) {
+      setFont(seg.style, size)
+      doc.setTextColor(...(seg.style.link ? LINK_COLOR : color))
+      doc.text(seg.text, x + seg.x, baseline)
+      if (seg.style.link) {
+        const h = size * 0.3528
+        doc.link(x + seg.x, baseline - h * 0.8, seg.width, h, { url: seg.style.link })
+        doc.setDrawColor(...LINK_COLOR)
+        doc.setLineWidth(0.2)
+        doc.line(x + seg.x, baseline + 0.6, x + seg.x + seg.width, baseline + 0.6)
+      }
+    }
+  }
+
+  // Draws wrapped text. Spacing matches the original export: lines are
+  // drawn lineHeight apart, then y moves on by advance per line + after.
+  function renderText(runs: Run[], x: number, width: number, opts: TextOpts, advance: number, after: number): boolean {
+    const lines = layout(runs, width, opts.size)
+    if (lines.length === 0 || lines.every(l => l.length === 0)) return false
+    const lh = lineHeight(opts.size)
+    for (let i = 0; i < lines.length; i++) {
+      if (i > 0) {
+        y += lh
+        if (y > pageHeight - margin) { doc.addPage(); y = margin }
+      }
+      drawLine(lines[i], x, y, opts.size, opts.color)
+    }
+    y += lines.length * advance + after - lh * (lines.length - 1)
+    return true
+  }
+
+  const baseStyle = (opts: { bold?: boolean; italic?: boolean }): InlineStyle => ({ bold: !!opts.bold, italic: !!opts.italic, code: false })
+
+  // Block children of an element; loose inline content becomes a paragraph
+  async function renderBlocks(parent: Element, x: number, width: number, ctx: BlockCtx) {
+    let inline: Node[] = []
+    const flush = () => {
+      if (inline.length === 0) return
+      const runs = collectRuns(inline, baseStyle(ctx))
+      inline = []
+      if (runs.some(r => 'br' in r || r.text.trim())) {
+        checkY(6)
+        renderText(runs, x, width, { size: 10, italic: ctx.italic, color: ctx.color }, 5.5, ctx.after)
+      }
+    }
+    for (const child of Array.from(parent.childNodes)) {
+      const tag = child.nodeType === Node.ELEMENT_NODE ? (child as Element).tagName.toLowerCase() : ''
+      if (tag && BLOCK_TAGS.has(tag)) {
+        flush()
+        await renderBlock(child as Element, x, width, ctx)
+      } else {
+        inline.push(child)
+      }
+    }
+    flush()
+  }
+
+  async function renderList(node: Element, x: number, width: number, ctx: BlockCtx) {
+    const isTask = node.getAttribute('data-type') === 'taskList'
+    const ordered = node.tagName.toLowerCase() === 'ol'
+    const items = Array.from(node.children).filter(c => c.tagName.toLowerCase() === 'li')
+    let n = parseInt(node.getAttribute('start') || '1', 10) || 1
+    const lx = x + 4
+    doc.setFont('helvetica', 'normal')
+    doc.setFontSize(10)
+    const markerW = isTask ? 5 : ordered ? Math.max(5, doc.getTextWidth(`${n + items.length - 1}.`) + 1.5) : 4
+    for (const li of items) {
+      checkY(6)
+      const startY = y
+      doc.setFont('helvetica', 'normal')
+      doc.setFontSize(10)
+      doc.setTextColor(...ctx.color)
+      if (isTask) {
+        const checked = li.getAttribute('data-checked') === 'true'
+        doc.setLineWidth(0.3)
+        doc.setDrawColor(110, 110, 110)
+        if (checked) {
+          doc.setFillColor(60, 60, 60)
+          doc.rect(lx, y - 2.9, 3.2, 3.2, 'FD')
+          doc.setDrawColor(255, 255, 255)
+          doc.setLineWidth(0.45)
+          doc.line(lx + 0.7, y - 1.3, lx + 1.4, y - 0.6)
+          doc.line(lx + 1.4, y - 0.6, lx + 2.6, y - 2.2)
+        } else {
+          doc.rect(lx, y - 2.9, 3.2, 3.2, 'S')
+        }
+        doc.setLineWidth(0.2)
+      } else {
+        doc.text(ordered ? `${n++}.` : '•', lx, y)
+      }
+      await renderBlocks(li, lx + markerW, width - 4 - markerW, { ...ctx, after: 1 })
+      if (y === startY) y += 5.5 + 1
+    }
+  }
+
+  function renderCode(node: Element, x: number, width: number) {
+    const text = (node.textContent || '').replace(/\t/g, '  ').replace(/\n$/, '')
+    const size = 9
+    const lh = 4.2
+    const pad = 3
+    doc.setFont('courier', 'normal')
+    doc.setFontSize(size)
+    const maxChars = Math.max(1, Math.floor((width - pad * 2) / doc.getTextWidth('M')))
+    const lines = text.split('\n').flatMap(l => {
+      if (l.length <= maxChars) return [l]
+      const parts: string[] = []
+      for (let i = 0; i < l.length; i += maxChars) parts.push(l.slice(i, i + maxChars))
+      return parts
+    })
+    checkY(lh + pad * 2)
+    let top = y - 2
+    let i = 0
+    while (i < lines.length) {
+      const fits = Math.floor((pageHeight - margin - top - pad * 2) / lh)
+      const count = Math.max(1, Math.min(lines.length - i, fits))
+      const boxH = count * lh + pad * 2
+      doc.setFillColor(245, 245, 245)
+      doc.rect(x, top, width, boxH, 'F')
+      doc.setFont('courier', 'normal')
+      doc.setFontSize(size)
+      doc.setTextColor(...BODY_COLOR)
+      for (let k = 0; k < count; k++) doc.text(lines[i + k], x + pad, top + pad + (k + 1) * lh - 1.2)
+      top += boxH
+      i += count
+      if (i < lines.length) { doc.addPage(); top = margin }
+    }
+    y = top + 6.5
+  }
+
+  function renderTable(node: Element, x: number, width: number) {
+    const rows = Array.from(node.querySelectorAll('tr'))
+    const cols = Math.max(1, ...rows.map(r => r.querySelectorAll(':scope > th, :scope > td').length))
+    const colW = width / cols
+    const size = 9
+    const lh = lineHeight(size)
+    const pad = 2
+    let top = y - 2
+    for (const row of rows) {
+      const cells = Array.from(row.querySelectorAll(':scope > th, :scope > td'))
+      const isHeader = cells.some(c => c.tagName.toLowerCase() === 'th')
+      const cellLines = cells.map(c => layout(collectRuns(c.childNodes, baseStyle({ bold: c.tagName.toLowerCase() === 'th' })), colW - pad * 2, size))
+      const rowH = Math.max(1, ...cellLines.map(l => l.length)) * lh + pad * 2 + 1
+      if (top + rowH > pageHeight - margin) { doc.addPage(); top = margin }
+      doc.setDrawColor(200, 200, 200)
+      doc.setFillColor(245, 245, 245)
+      doc.setLineWidth(0.2)
+      for (let c = 0; c < cols; c++) doc.rect(x + c * colW, top, colW, rowH, isHeader ? 'FD' : 'S')
+      cellLines.forEach((lines, c) => {
+        lines.forEach((line, k) => drawLine(line, x + c * colW + pad, top + pad + 2.6 + k * lh, size, BODY_COLOR))
+      })
+      top += rowH
+    }
+    y = top + 6.5
+  }
+
+  async function renderBlock(node: Element, x: number, width: number, ctx: BlockCtx) {
     const tag = node.tagName?.toLowerCase()
 
     if (tag === 'img') {
@@ -278,11 +507,11 @@ async function exportAsPDF(docTitle: string, html: string) {
         const imgData = await loadImageAsBase64(src)
         if (imgData) {
           const aspectRatio = imgData.height / imgData.width
-          const imgW = Math.min(maxWidth, 120)
+          const imgW = Math.min(width, 120)
           const imgH = imgW * aspectRatio
           checkY(imgH + 4)
           try {
-            doc.addImage(imgData.dataUrl, 'JPEG', margin, y, imgW, imgH)
+            doc.addImage(imgData.dataUrl, 'JPEG', x, y, imgW, imgH)
             y += imgH + 4
           } catch { }
         }
@@ -291,116 +520,60 @@ async function exportAsPDF(docTitle: string, html: string) {
     }
 
     if (tag === 'ul' || tag === 'ol') {
-      const items = node.querySelectorAll(':scope > li')
-      for (const li of Array.from(items)) {
-        const liText = stripTags(li.innerHTML).replace(/\n+/g, ' ').trim()
-        if (liText) {
-          checkY(6)
-          doc.setFont('helvetica', 'normal')
-          doc.setFontSize(10)
-          doc.setTextColor(30, 30, 30)
-          const prefix = tag === 'ol' ? '  ' : '• '
-          const w = doc.splitTextToSize(prefix + liText, maxWidth - 6)
-          doc.text(w, margin + 4, y)
-          y += w.length * 5.5 + 1
-        }
-        const imgs = li.querySelectorAll('img')
-        for (const img of Array.from(imgs)) { await processNode(img) }
-      }
+      await renderList(node, x, width, ctx)
       return
     }
 
     if (tag === 'blockquote') {
-      const text = stripTags(node.innerHTML).replace(/\n+/g, ' ').trim()
-      if (text) {
-        checkY(6)
-        doc.setFont('helvetica', 'italic')
-        doc.setFontSize(10)
-        doc.setTextColor(100, 100, 100)
-        const w = doc.splitTextToSize(text, maxWidth - 8)
-        doc.text(w, margin + 6, y)
-        y += w.length * 5.5 + 2
-        doc.setTextColor(30, 30, 30)
-      }
+      await renderBlocks(node, x + 6, width - 8, { italic: true, color: [100, 100, 100], after: 2 })
+      return
+    }
+
+    if (tag === 'pre') {
+      renderCode(node, x, width)
+      return
+    }
+
+    if (tag === 'table') {
+      renderTable(node, x, width)
       return
     }
 
     if (tag === 'hr') {
       checkY(6)
       doc.setDrawColor(200, 200, 200)
-      doc.line(margin, y, pageWidth - margin, y)
+      doc.line(x, y, x + width, y)
       y += 6
       return
     }
 
-    if (tag === 'h1') {
-      const text = stripTags(node.innerHTML).replace(/\n+/g, ' ').trim()
-      if (text) {
-        checkY(12)
-        doc.setFont('helvetica', 'bold')
-        doc.setFontSize(16)
-        doc.setTextColor(0, 0, 0)
-        const w = doc.splitTextToSize(text, maxWidth)
-        doc.text(w, margin, y)
-        y += w.length * 8 + 4
-      }
-      return
-    }
-
-    if (tag === 'h2') {
-      const text = stripTags(node.innerHTML).replace(/\n+/g, ' ').trim()
-      if (text) {
-        checkY(10)
-        doc.setFont('helvetica', 'bold')
-        doc.setFontSize(13)
-        doc.setTextColor(0, 0, 0)
-        const w = doc.splitTextToSize(text, maxWidth)
-        doc.text(w, margin, y)
-        y += w.length * 7 + 3
-      }
-      return
-    }
-
-    if (tag === 'h3') {
-      const text = stripTags(node.innerHTML).replace(/\n+/g, ' ').trim()
-      if (text) {
-        checkY(8)
-        doc.setFont('helvetica', 'bold')
-        doc.setFontSize(11)
-        doc.setTextColor(0, 0, 0)
-        const w = doc.splitTextToSize(text, maxWidth)
-        doc.text(w, margin, y)
-        y += w.length * 6 + 2
-      }
+    const heading = ({ h1: [16, 12, 8, 4], h2: [13, 10, 7, 3], h3: [11, 8, 6, 2] } as Record<string, number[]>)[tag]
+    if (heading) {
+      const [size, needed, advance, after] = heading
+      checkY(needed)
+      renderText(collectRuns(node.childNodes, baseStyle({ bold: true })), x, width, { size, bold: true, color: [0, 0, 0] }, advance, after)
       return
     }
 
     if (tag === 'p') {
       const imgs = node.querySelectorAll('img')
       if (imgs.length > 0) {
-        for (const img of Array.from(imgs)) { await processNode(img) }
+        for (const img of Array.from(imgs)) { await renderBlock(img, x, width, ctx) }
         return
       }
-      const text = stripTags(node.innerHTML).replace(/\n+/g, ' ').trim()
-      if (text) {
+      const runs = collectRuns(node.childNodes, baseStyle(ctx))
+      if (runs.some(r => 'br' in r || r.text.trim())) {
         checkY(6)
-        doc.setFont('helvetica', 'normal')
-        doc.setFontSize(10)
-        doc.setTextColor(30, 30, 30)
-        const w = doc.splitTextToSize(text, maxWidth)
-        doc.text(w, margin, y)
-        y += w.length * 5.5 + 2
+        renderText(runs, x, width, { size: 10, italic: ctx.italic, color: ctx.color }, 5.5, ctx.after)
       }
       return
     }
 
-    for (const child of Array.from(node.children)) {
-      await processNode(child as Element)
-    }
+    await renderBlocks(node, x, width, ctx)
   }
 
   for (const child of Array.from(body.children)) {
-    await processNode(child as Element)
+    await renderBlock(child as Element, margin, maxWidth, { italic: false, color: BODY_COLOR, after: 2 })
   }
 
   doc.save(`${docTitle.trim() || 'untitled'}.pdf`)
