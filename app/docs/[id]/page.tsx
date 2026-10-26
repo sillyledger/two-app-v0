@@ -619,6 +619,17 @@ export default function DocPage() {
     setIsFavorite(newValue)
   }
 
+  const handleMoved = async () => {
+    const data = await fetch(`/api/docs/${docId}`).then(res => res.json()).catch(() => null)
+    if (!data || data.error) return
+    if (data.folder_id && data.folder_name) {
+      setFolder({ id: data.folder_id, name: data.folder_name, path: data.folder_path ?? [] })
+    } else {
+      setFolder(null)
+    }
+    window.dispatchEvent(new Event('sb-refresh'))
+  }
+
   const handleDelete = async () => {
     const res = await fetch(`/api/docs/${docId}`, { method: 'DELETE' })
     if (!res.ok) {
@@ -730,6 +741,7 @@ export default function DocPage() {
             saveStatus={saveStatus}
             content={content}
             onDelete={isLoggedIn ? handleDelete : undefined}
+            onMoved={handleMoved}
             docId={docId}
             isPublic={isPublic}
             wideMode={wideMode}
@@ -830,9 +842,9 @@ export default function DocPage() {
 
               {wordCount > 0 && (
                 <div className="mt-16 flex items-center gap-2 text-[11px] text-[var(--doc-hint)] select-none">
-                  <span>{wordCount.toLocaleString()} words</span>
+                  <span>{wordCount.toLocaleString()} {wordCount === 1 ? 'word' : 'words'}</span>
                   <span>·</span>
-                  <span>{charCount.toLocaleString()} characters</span>
+                  <span>{charCount.toLocaleString()} {charCount === 1 ? 'character' : 'characters'}</span>
                 </div>
               )}
             </div>

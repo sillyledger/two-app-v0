@@ -26,6 +26,7 @@ interface DocTopbarProps {
   saveStatus: "saved" | "saving"
   content?: string
   onDelete?: () => void
+  onMoved?: () => Promise<void> | void
   docId?: string | string[]
   isPublic?: boolean
   sidebarWidth?: string
@@ -347,6 +348,7 @@ export default function DocTopbar({
   saveStatus,
   content = '',
   onDelete,
+  onMoved,
   docId,
   isPublic = false,
   sidebarWidth = '0px',
@@ -445,6 +447,7 @@ export default function DocTopbar({
       alert(err.error || 'Failed to move doc.')
       return
     }
+    await onMoved?.()
     setMoveToast(true)
     setTimeout(() => setMoveToast(false), 2000)
   }
