@@ -33,6 +33,7 @@ export default function TrashPage() {
   const [docs, setDocs] = useState<Doc[]>([])
   const [loading, setLoading] = useState(true)
   const [collapsed, setCollapsed] = useState(false)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
 
   useEffect(() => {
     const saved = localStorage.getItem("sidebar-collapsed")
@@ -163,7 +164,7 @@ export default function TrashPage() {
                       <RotateCcw size={13} />
                     </button>
                     <button
-                      onClick={() => handlePermanentDelete(doc.id)}
+                      onClick={() => setDeletingId(doc.id)}
                       title="Delete permanently"
                       style={{ background: "none", border: "none", cursor: "pointer", color: MUTED, padding: 4, borderRadius: 6, display: "flex" }}
                       onMouseEnter={e => (e.currentTarget.style.color = "var(--doc-label-delete)")}
@@ -179,6 +180,19 @@ export default function TrashPage() {
 
         </div>
       </main>
+
+      {deletingId && (
+        <div className="fixed inset-0 flex items-center justify-center z-50" style={{ backgroundColor: "var(--overlay)" }}>
+          <div className="rounded-2xl p-6 w-80 shadow-2xl" style={{ backgroundColor: "var(--menu-bg)", border: "1px solid var(--border-subtle)" }}>
+            <h2 className="font-semibold text-base mb-2" style={{ color: "var(--text-1)" }}>Delete forever?</h2>
+            <p className="text-sm mb-6" style={{ color: "var(--text-3)" }}>This doc will be permanently deleted. This cannot be undone.</p>
+            <div className="flex gap-2 justify-end">
+              <button onClick={() => setDeletingId(null)} className="px-4 py-2 text-sm" style={{ color: "var(--text-3)" }}>Cancel</button>
+              <button onClick={() => { const id = deletingId; setDeletingId(null); handlePermanentDelete(id) }} className="px-4 py-2 text-sm rounded-lg bg-red-500/20 hover:bg-red-500/30 text-[var(--danger-text)]">Delete</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
