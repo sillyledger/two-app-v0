@@ -51,7 +51,8 @@ function stripTags(html: string): string {
     .trim()
 }
 
-function htmlToMarkdown(html: string): string {
+// Inline content, headings, paragraphs, links and images
+function basicHtmlToMarkdown(html: string): string {
   return html
     .replace(/<h1[^>]*>(.*?)<\/h1>/gi, '# $1\n\n')
     .replace(/<h2[^>]*>(.*?)<\/h2>/gi, '## $1\n\n')
@@ -74,6 +75,138 @@ function htmlToMarkdown(html: string): string {
     .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&nbsp;/g, ' ')
     .replace(/\n{3,}/g, '\n\n')
     .trim()
+}
+
+// Lists, checklists, code blocks, tables and quotes nest, so they are
+// converted from a parsed tree. Everything else goes through basicHtmlToMarkdown.
+interface HtmlNode {
+  tag: string
+  attrs: string
+  start: number
+  innerStart: number
+  innerEnd: number
+  end: number
+  children: HtmlNode[]
+}
+
+const VOID_TAGS = new Set(['area', 'br', 'col', 'embed', 'hr', 'img', 'input', 'source', 'wbr'])
+const MD_BLOCK_TAGS = new Set(['ul', 'ol', 'pre', 'table', 'blockquote'])
+
+function parseHtml(html: string): HtmlNode {
+  const root: HtmlNode = { tag: '', attrs: '', start: 0, innerStart: 0, innerEnd: html.length, end: html.length, children: [] }
+  const stack = [root]
+  const re = /<!--[\s\S]*?-->|<(\/?)([a-zA-Z][a-zA-Z0-9]*)\b([^>]*)>/g
+  let m: RegExpExecArray | null
+  while ((m = re.exec(html))) {
+    if (!m[2]) continue
+    const tag = m[2].toLowerCase()
+    if (m[1]) {
+      const i = stack.map(n => n.tag).lastIndexOf(tag)
+      if (i < 1) continue
+      for (let j = stack.length - 1; j >= i; j--) {
+        stack[j].innerEnd = m.index
+        stack[j].end = j === i ? re.lastIndex : m.index
+      }
+      stack.length = i
+    } else {
+      const node: HtmlNode = { tag, attrs: m[3], start: m.index, innerStart: re.lastIndex, innerEnd: re.lastIndex, end: re.lastIndex, children: [] }
+      stack[stack.length - 1].children.push(node)
+      if (!VOID_TAGS.has(tag) && !m[3].endsWith('/')) stack.push(node)
+    }
+  }
+  for (let j = stack.length - 1; j >= 1; j--) {
+    stack[j].innerEnd = html.length
+    stack[j].end = html.length
+  }
+  return root
+}
+
+function decodeEntities(text: string): string {
+  return text
+    .replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+}
+
+// Converts a node's contents. Nested lists inside a list item sit directly
+// under the item's text (tight), elsewhere they get a blank line before them.
+function nodeToMarkdown(html: string, node: HtmlNode, tightLists = false): string {
+  const blocks: string[] = []
+  let out = ''
+  let pos = node.innerStart
+  const visit = (n: HtmlNode) => {
+    for (const c of n.children) {
+      if (MD_BLOCK_TAGS.has(c.tag)) {
+        const kind = c.tag === 'ul' || c.tag === 'ol' ? 'L' : 'B'
+        out += html.slice(pos, c.start) + `\n\n\u0000${kind}${blocks.length}\u0000\n\n`
+        blocks.push(blockToMarkdown(html, c))
+        pos = c.end
+      } else {
+        visit(c)
+      }
+    }
+  }
+  visit(node)
+  out += html.slice(pos, node.innerEnd)
+  let md = basicHtmlToMarkdown(out)
+  if (tightLists) md = md.replace(/\n+(?=\u0000L)/g, '\n')
+  return md.replace(/\u0000[LB](\d+)\u0000/g, (_, i) => blocks[Number(i)])
+}
+
+function blockToMarkdown(html: string, node: HtmlNode): string {
+  if (node.tag === 'pre') {
+    const code = node.children.find(c => c.tag === 'code') ?? node
+    const lang = /language-([\w+#.-]+)/i.exec(code.attrs)?.[1]
+    const text = decodeEntities(html.slice(code.innerStart, code.innerEnd).replace(/<[^>]+>/g, '')).replace(/\n$/, '')
+    let fence = '```'
+    while (text.includes(fence)) fence += '`'
+    return `${fence}${lang && lang !== 'plaintext' ? lang : ''}\n${text}\n${fence}`
+  }
+
+  if (node.tag === 'blockquote') {
+    return nodeToMarkdown(html, node).split('\n').map(line => (line ? `> ${line}` : '>')).join('\n')
+  }
+
+  if (node.tag === 'table') {
+    const rows: string[][] = []
+    const collectRows = (n: HtmlNode) => {
+      for (const c of n.children) {
+        if (c.tag === 'tr') {
+          rows.push(c.children
+            .filter(cell => cell.tag === 'th' || cell.tag === 'td')
+            .map(cell => nodeToMarkdown(html, cell).replace(/\s*\n+\s*/g, ' ').replace(/\|/g, '\\|')))
+        } else if (c.tag !== 'table') {
+          collectRows(c)
+        }
+      }
+    }
+    collectRows(node)
+    if (rows.length === 0) return ''
+    const cols = Math.max(1, ...rows.map(r => r.length))
+    const toLine = (cells: string[]) => `| ${Array.from({ length: cols }, (_, i) => cells[i] ?? '').join(' | ')} |`
+    return [toLine(rows[0]), toLine(Array(cols).fill('---')), ...rows.slice(1).map(toLine)].join('\n')
+  }
+
+  // ul / ol, including checklists (TipTap taskList)
+  const isTask = /data-type="taskList"/i.test(node.attrs)
+  const ordered = node.tag === 'ol'
+  let n = Number(/start="(\d+)"/i.exec(node.attrs)?.[1] ?? 1)
+  return node.children
+    .filter(c => c.tag === 'li')
+    .map(li => {
+      const marker = isTask
+        ? `- [${/data-checked="true"/i.test(li.attrs) ? 'x' : ' '}] `
+        : ordered ? `${n++}. ` : '- '
+      const indent = ' '.repeat(isTask ? 2 : marker.length)
+      return nodeToMarkdown(html, li, true)
+        .split('\n')
+        .map((line, i) => (i === 0 ? marker + line : line ? indent + line : ''))
+        .join('\n')
+    })
+    .join('\n')
+}
+
+function htmlToMarkdown(html: string): string {
+  return nodeToMarkdown(html, parseHtml(html))
 }
 
 function downloadFile(filename: string, content: string, mimeType: string) {
