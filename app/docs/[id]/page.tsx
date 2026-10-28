@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import { useParams, useRouter } from 'next/navigation'
 import Editor from '@/components/editor'
 import DocTopbar from '@/components/doc-topbar'
@@ -173,6 +174,7 @@ export default function DocPage() {
   const [editingLabelId, setEditingLabelId] = useState<number | null>(null)
   const [editingLabelName, setEditingLabelName] = useState('')
   const [editingLabelColor, setEditingLabelColor] = useState('')
+  const [confirmDeleteLabelId, setConfirmDeleteLabelId] = useState<number | null>(null)
 
   const [tasks, setTasks] = useState<Task[]>([])
   const [addingTask, setAddingTask] = useState(false)
@@ -211,11 +213,14 @@ export default function DocPage() {
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && detailOpen) setDetailOpen(false)
+      if (e.key !== 'Escape') return
+      // An open delete-label confirm takes Escape first; the panel stays open
+      if (confirmDeleteLabelId !== null) { setConfirmDeleteLabelId(null); return }
+      if (detailOpen) setDetailOpen(false)
     }
     document.addEventListener('keydown', handler)
     return () => document.removeEventListener('keydown', handler)
-  }, [detailOpen])
+  }, [detailOpen, confirmDeleteLabelId])
 
   useEffect(() => {
     const saved = localStorage.getItem('doc-wide-mode')
@@ -1220,7 +1225,7 @@ export default function DocPage() {
                             </div>
                             <div className="flex items-center justify-between">
                               <button
-                                onClick={() => handleDeleteLabel(label.id)}
+                                onClick={() => setConfirmDeleteLabelId(label.id)}
                                 className="text-[11px] transition-colors"
                                 style={{ color: 'var(--doc-label-delete)' }}
                                 onMouseEnter={e => (e.currentTarget.style.color = 'var(--danger)')}
@@ -1427,6 +1432,22 @@ export default function DocPage() {
             )}
           </div>
         </div>
+
+        {/* Same pop-up as Trash's "Delete forever?". Portalled to body so the
+            Details panel's transform doesn't trap the fixed overlay */}
+        {confirmDeleteLabelId !== null && createPortal(
+          <div className="fixed inset-0 flex items-center justify-center z-50" style={{ backgroundColor: "var(--overlay)", fontFamily: "'DM Sans', system-ui, sans-serif" }}>
+            <div className="rounded-2xl p-6 w-80 shadow-2xl" style={{ backgroundColor: "var(--menu-bg)", border: "1px solid var(--border-subtle)" }}>
+              <h2 className="font-semibold text-base mb-2" style={{ color: "var(--text-1)" }}>Delete label?</h2>
+              <p className="text-sm mb-6" style={{ color: "var(--text-3)" }}>This label will be removed from all docs.</p>
+              <div className="flex gap-2 justify-end">
+                <button onClick={() => setConfirmDeleteLabelId(null)} className="px-4 py-2 text-sm" style={{ color: "var(--text-3)" }}>Cancel</button>
+                <button onClick={() => { const id = confirmDeleteLabelId; setConfirmDeleteLabelId(null); handleDeleteLabel(id) }} className="px-4 py-2 text-sm rounded-lg bg-red-500/20 hover:bg-red-500/30 text-[var(--danger-text)]">Delete</button>
+              </div>
+            </div>
+          </div>,
+          document.body
+        )}
       </>
   )
 }
