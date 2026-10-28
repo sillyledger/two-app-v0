@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { sql } from '@/lib/db'
+import { getPublicDoc } from '@/lib/public-doc'
 
 export async function GET(
   request: Request,
@@ -7,17 +7,10 @@ export async function GET(
 ) {
   try {
     const { id } = await params
-    const result = await sql`
-      SELECT * FROM docs
-      WHERE uuid = ${id}
-        AND deleted_at IS NULL
-    `
-    if (result.length === 0) {
-      return NextResponse.json({ error: 'Doc not found' }, { status: 404 })
-    }
-    const doc = result[0]
-    if (!doc.is_public) {
-      return NextResponse.json({ error: 'Private' }, { status: 403 })
+    const doc = await getPublicDoc(id)
+    // Private and missing docs get the same answer, so a link can't be probed
+    if (!doc) {
+      return NextResponse.json({ error: 'Not found' }, { status: 404 })
     }
     return NextResponse.json(doc)
   } catch (error) {

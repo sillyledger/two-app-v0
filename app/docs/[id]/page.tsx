@@ -262,9 +262,9 @@ export default function DocPage() {
     console.time('[TWO] parallel fetch total')
 
     const authPromise = fetch('/api/auth/me').then(res => res.ok ? res.json() : null)
-    const docPromise = fetch(`/api/docs/${docId}`).then(res => res.json())
+    const docPromise = fetch(`/api/docs/${docId}`).then(async res => ({ status: res.status, data: await res.json() }))
 
-    Promise.all([authPromise, docPromise]).then(([authData, docData]) => {
+    Promise.all([authPromise, docPromise]).then(([authData, { status: docStatus, data: docData }]) => {
       console.timeEnd('[TWO] parallel fetch total')
 
       if (authData?.user) {
@@ -276,16 +276,9 @@ export default function DocPage() {
       setAuthChecked(true)
 
       if (docData?.error) {
-        if (!authData?.user) {
-          fetch(`/api/docs/public/${docId}`).then(res => res.json()).then((data: Doc) => {
-            if (data.error) { router.push('/login'); return }
-            setDoc(data)
-            setTitle(data.title)
-            setContent(data.content || '')
-            setIsPublic(data.is_public ?? false)
-            setPriority((data.priority as Priority) ?? null)
-            setLastSaved(data.updated_at ?? null)
-          })
+        // Not this user's doc (or a stale session): show it as a visitor would
+        if (docStatus === 404 || docStatus === 401) {
+          router.replace(`/p/${docId}`)
         } else {
           router.push('/')
         }
