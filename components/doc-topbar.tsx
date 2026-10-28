@@ -726,7 +726,7 @@ export default function DocTopbar({
   }
 
   const handleCopyLink = () => {
-    const url = `${window.location.origin}/docs/${docId}`
+    const url = `${window.location.origin}/p/${docId}`
     navigator.clipboard.writeText(url).then(() => {
       setLinkCopied(true)
       setTimeout(() => setLinkCopied(false), 2000)
