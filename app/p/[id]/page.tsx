@@ -67,8 +67,15 @@ export default async function PublicDocPage({ params }: Props) {
           </footer>
         </main>
       ) : (
-        <main className="flex min-h-[calc(100vh-56px)] items-center justify-center px-[22px] text-center">
+        <main className="flex min-h-[calc(100vh-56px)] flex-col items-center justify-center px-[22px] text-center">
           <p className="text-[var(--text-2)]">This doc isn&apos;t shared, or it doesn&apos;t exist.</p>
+          {/* The owner may just be logged out; bring them back to the doc after */}
+          <a
+            href={`/login?redirect=${encodeURIComponent(`/docs/${id}`)}`}
+            className="mt-3 text-[12px] text-[var(--text-3)] hover:underline"
+          >
+            Log in
+          </a>
         </main>
       )}
     </div>

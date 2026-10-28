@@ -37,8 +37,10 @@ function LoginContent() {
     })
     const data = await res.json()
     if (res.ok) {
+      // Only same-site paths, so a crafted link can't send people elsewhere
       const redirect = searchParams.get('redirect')
-      router.push(redirect || '/')
+      const safeRedirect = redirect && /^\/(?![/\\])\S*$/.test(redirect) ? redirect : '/'
+      router.push(safeRedirect)
     } else {
       setError(data.error || 'Login failed')
     }
