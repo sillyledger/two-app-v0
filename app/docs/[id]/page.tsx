@@ -1404,7 +1404,7 @@ export default function DocPage() {
                             )}
                           </div>
                         </div>
-                        <p className="text-[12px] mt-0.5 leading-relaxed break-words" style={{ color: 'var(--text-2)' }}>{comment.body}</p>
+                        <p className="text-[12px] mt-0.5 leading-relaxed break-words" style={{ color: 'var(--text-2)', whiteSpace: 'pre-wrap' }}>{comment.body}</p>
                       </div>
                     </div>
                   ))}
