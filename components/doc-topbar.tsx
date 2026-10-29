@@ -234,6 +234,59 @@ async function loadImageAsBase64(src: string): Promise<{ dataUrl: string; width:
   })
 }
 
+// One whole emoji: flags, keycaps, tag sequences (🏴󠁧󠁢󠁳󠁣󠁴󠁿), and pictographs with
+// variation selectors or skin tones, ZWJ-joined into families and the like.
+// Built from a string because \p{} needs a newer TS target than this repo's.
+const EMOJI_RE = new RegExp(String.raw`\p{Regional_Indicator}{2}|[#*0-9]️?⃣|\p{Extended_Pictographic}(?:️|\p{Emoji_Modifier})*(?:[\u{E0020}-\u{E007E}]+\u{E007F})?(?:‍\p{Extended_Pictographic}(?:️|\p{Emoji_Modifier})*)*`, 'gu')
+// Pictographs the PDF's built-in fonts already draw fine as text
+const PDF_TEXT_SYMBOLS = new Set(['©', '®', '™'])
+
+type TextPart = { text: string; emoji: boolean }
+
+function splitEmoji(text: string): TextPart[] {
+  const parts: TextPart[] = []
+  let last = 0
+  for (const m of Array.from(text.matchAll(EMOJI_RE))) {
+    if (PDF_TEXT_SYMBOLS.has(m[0])) continue
+    if (m.index! > last) parts.push({ text: text.slice(last, m.index), emoji: false })
+    parts.push({ text: m[0], emoji: true })
+    last = m.index! + m[0].length
+  }
+  if (last < text.length) parts.push({ text: text.slice(last), emoji: false })
+  return parts
+}
+
+const hasEmoji = (text: string) => splitEmoji(text).some(p => p.emoji)
+
+// Emoji are drawn by the browser's emoji font onto a canvas. The font size is
+// one em; the canvas leaves room around it because emoji glyphs can draw a
+// little larger than the em. 128px per em stays sharp in print even at title size.
+const EMOJI_EM_PX = 128
+const EMOJI_CANVAS_PX = 192
+const emojiImages = new Map<string, string | null>()
+
+function emojiImage(emoji: string): string | null {
+  if (emojiImages.has(emoji)) return emojiImages.get(emoji)!
+  let dataUrl: string | null = null
+  try {
+    const canvas = document.createElement('canvas')
+    canvas.width = canvas.height = EMOJI_CANVAS_PX
+    const ctx = canvas.getContext('2d')
+    if (ctx) {
+      ctx.font = `${EMOJI_EM_PX}px "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif`
+      ctx.textBaseline = 'alphabetic'
+      const m = ctx.measureText(emoji)
+      // Centre the drawn glyph on the canvas
+      const inkW = m.actualBoundingBoxLeft + m.actualBoundingBoxRight
+      const inkH = m.actualBoundingBoxAscent + m.actualBoundingBoxDescent
+      ctx.fillText(emoji, (EMOJI_CANVAS_PX - inkW) / 2 + m.actualBoundingBoxLeft, (EMOJI_CANVAS_PX - inkH) / 2 + m.actualBoundingBoxAscent)
+      dataUrl = canvas.toDataURL('image/png')
+    }
+  } catch { }
+  emojiImages.set(emoji, dataUrl)
+  return dataUrl
+}
+
 async function exportAsPDF(docTitle: string, html: string) {
   const { jsPDF } = await import('jspdf')
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
@@ -247,16 +300,6 @@ async function exportAsPDF(docTitle: string, html: string) {
     if (y + needed > pageHeight - margin) { doc.addPage(); y = margin }
   }
 
-  doc.setFont('helvetica', 'bold')
-  doc.setFontSize(22)
-  doc.setTextColor(0, 0, 0)
-  const titleLines = doc.splitTextToSize(docTitle || 'Untitled', maxWidth)
-  doc.text(titleLines, margin, y)
-  y += titleLines.length * 10 + 4
-  doc.setDrawColor(200, 200, 200)
-  doc.line(margin, y, pageWidth - margin, y)
-  y += 8
-
   const parser = new DOMParser()
   const domDoc = parser.parseFromString(html, 'text/html')
   const body = domDoc.body
@@ -264,7 +307,7 @@ async function exportAsPDF(docTitle: string, html: string) {
   type RGB = [number, number, number]
   type InlineStyle = { bold: boolean; italic: boolean; code: boolean; link?: string }
   type Run = { text: string; style: InlineStyle } | { br: true }
-  type Seg = { text: string; style: InlineStyle; x: number; width: number }
+  type Seg = { text: string; style: InlineStyle; x: number; width: number; emoji?: boolean }
   type TextOpts = { size: number; bold?: boolean; italic?: boolean; color: RGB }
   type BlockCtx = { italic: boolean; color: RGB; after: number }
 
@@ -278,6 +321,17 @@ async function exportAsPDF(docTitle: string, html: string) {
     const variant = style.bold && style.italic ? 'bolditalic' : style.bold ? 'bold' : style.italic ? 'italic' : 'normal'
     doc.setFont(style.code ? 'courier' : 'helvetica', variant)
     doc.setFontSize(size)
+  }
+
+  // An emoji takes one em; its image sits on the baseline, one font size tall
+  const emWidth = (size: number) => size * 0.3528
+  const drawEmoji = (emoji: string, x: number, baseline: number, size: number) => {
+    const dataUrl = emojiImage(emoji)
+    if (!dataUrl) return
+    const em = emWidth(size)
+    const side = em * EMOJI_CANVAS_PX / EMOJI_EM_PX
+    const alias = 'emoji-' + Array.from(emoji).map(c => c.codePointAt(0)!.toString(16)).join('-')
+    doc.addImage(dataUrl, 'PNG', x + (em - side) / 2, baseline - em / 2 - side / 2, side, side, alias, 'FAST')
   }
 
   // Text, bold/italic/code/link and line breaks, in reading order
@@ -321,11 +375,40 @@ async function exportAsPDF(docTitle: string, html: string) {
       line.push({ text, style, x, width: w })
       x += w
     }
+    const pushEmoji = (emoji: string, style: InlineStyle) => {
+      const w = emWidth(size)
+      line.push({ text: emoji, style, x, width: w, emoji: true })
+      x += w
+    }
+    // A word with emoji in it: wraps as a whole like any word, and only
+    // breaks between its parts when it's wider than the line
+    const pushMixed = (parts: TextPart[], style: InlineStyle) => {
+      const partWidth = (p: TextPart) => {
+        if (p.emoji) return emWidth(size)
+        setFont(style, size)
+        return doc.getTextWidth(p.text)
+      }
+      if (x > 0 && x + parts.reduce((sum, p) => sum + partWidth(p), 0) > width) endLine()
+      for (const p of parts) {
+        const w = partWidth(p)
+        if (x > 0 && x + w > width) endLine()
+        if (p.emoji) {
+          pushEmoji(p.text, style)
+        } else if (w > width) {
+          const pieces: string[] = doc.splitTextToSize(p.text, width)
+          pieces.forEach((piece, i) => { push(piece, style); if (i < pieces.length - 1) endLine() })
+        } else {
+          push(p.text, style)
+        }
+      }
+    }
     for (const run of runs) {
       if ('br' in run) { endLine(); continue }
       for (const tok of run.text.split(/( )/)) {
         if (!tok) continue
         if (tok === ' ') { if (x > 0) push(' ', run.style); continue }
+        const parts = splitEmoji(tok)
+        if (parts.some(p => p.emoji)) { pushMixed(parts, run.style); continue }
         setFont(run.style, size)
         const w = doc.getTextWidth(tok)
         if (x > 0 && x + w > width) endLine()
@@ -344,9 +427,13 @@ async function exportAsPDF(docTitle: string, html: string) {
 
   function drawLine(line: Seg[], x: number, baseline: number, size: number, color: RGB) {
     for (const seg of line) {
-      setFont(seg.style, size)
-      doc.setTextColor(...(seg.style.link ? LINK_COLOR : color))
-      doc.text(seg.text, x + seg.x, baseline)
+      if (seg.emoji) {
+        drawEmoji(seg.text, x + seg.x, baseline, size)
+      } else {
+        setFont(seg.style, size)
+        doc.setTextColor(...(seg.style.link ? LINK_COLOR : color))
+        doc.text(seg.text, x + seg.x, baseline)
+      }
       if (seg.style.link) {
         const h = size * 0.3528
         doc.link(x + seg.x, baseline - h * 0.8, seg.width, h, { url: seg.style.link })
@@ -445,8 +532,37 @@ async function exportAsPDF(docTitle: string, html: string) {
     const pad = 3
     doc.setFont('courier', 'normal')
     doc.setFontSize(size)
-    const maxChars = Math.max(1, Math.floor((width - pad * 2) / doc.getTextWidth('M')))
+    const charW = doc.getTextWidth('M')
+    const maxChars = Math.max(1, Math.floor((width - pad * 2) / charW))
+    // Lines with emoji wrap by width, an emoji being one em, and never split one
+    const wrapEmojiLine = (l: string) => {
+      const parts: string[] = []
+      let cur = ''
+      let w = 0
+      for (const p of splitEmoji(l)) {
+        for (const unit of p.emoji ? [p.text] : Array.from(p.text)) {
+          const uw = p.emoji ? emWidth(size) : charW
+          if (cur && w + uw > width - pad * 2) { parts.push(cur); cur = ''; w = 0 }
+          cur += unit
+          w += uw
+        }
+      }
+      parts.push(cur)
+      return parts
+    }
+    const drawEmojiLine = (l: string, lx: number, baseline: number) => {
+      for (const p of splitEmoji(l)) {
+        if (p.emoji) {
+          drawEmoji(p.text, lx, baseline, size)
+          lx += emWidth(size)
+        } else {
+          doc.text(p.text, lx, baseline)
+          lx += doc.getTextWidth(p.text)
+        }
+      }
+    }
     const lines = text.split('\n').flatMap(l => {
+      if (hasEmoji(l)) return wrapEmojiLine(l)
       if (l.length <= maxChars) return [l]
       const parts: string[] = []
       for (let i = 0; i < l.length; i += maxChars) parts.push(l.slice(i, i + maxChars))
@@ -464,7 +580,11 @@ async function exportAsPDF(docTitle: string, html: string) {
       doc.setFont('courier', 'normal')
       doc.setFontSize(size)
       doc.setTextColor(...BODY_COLOR)
-      for (let k = 0; k < count; k++) doc.text(lines[i + k], x + pad, top + pad + (k + 1) * lh - 1.2)
+      for (let k = 0; k < count; k++) {
+        const baseline = top + pad + (k + 1) * lh - 1.2
+        if (hasEmoji(lines[i + k])) drawEmojiLine(lines[i + k], x + pad, baseline)
+        else doc.text(lines[i + k], x + pad, baseline)
+      }
       top += boxH
       i += count
       if (i < lines.length) { doc.addPage(); top = margin }
@@ -571,6 +691,25 @@ async function exportAsPDF(docTitle: string, html: string) {
 
     await renderBlocks(node, x, width, ctx)
   }
+
+  // Title: drawn after the helpers above exist, since a title with emoji
+  // goes through the same layout as body text
+  const title = docTitle || 'Untitled'
+  if (hasEmoji(title)) {
+    const titleLines = layout([{ text: title, style: { bold: true, italic: false, code: false } }], maxWidth, 22)
+    titleLines.forEach((line, i) => drawLine(line, margin, y + i * lineHeight(22), 22, [0, 0, 0]))
+    y += titleLines.length * 10 + 4
+  } else {
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(22)
+    doc.setTextColor(0, 0, 0)
+    const titleLines = doc.splitTextToSize(title, maxWidth)
+    doc.text(titleLines, margin, y)
+    y += titleLines.length * 10 + 4
+  }
+  doc.setDrawColor(200, 200, 200)
+  doc.line(margin, y, pageWidth - margin, y)
+  y += 8
 
   for (const child of Array.from(body.children)) {
     await renderBlock(child as Element, margin, maxWidth, { italic: false, color: BODY_COLOR, after: 2 })
