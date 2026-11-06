@@ -118,11 +118,12 @@ export default function SplitPane({ type, id, onClose }: SplitPaneProps) {
   )
 
   return (
-    <div className="flex flex-col h-full overflow-y-auto" style={{ backgroundColor: 'var(--bg)', paddingTop: 0 }}>
+    <div className="flex flex-col h-full overflow-y-auto" style={{ backgroundColor: 'var(--bg)', paddingTop: '84px' }}>
       {/* Pane header: title, save status, close */}
       <div
-        className="sticky top-0 z-10"
+        className="sticky z-10"
         style={{
+          top: '84px',
           height: '40px',
           padding: '0 16px',
           display: 'flex',
@@ -156,7 +157,7 @@ export default function SplitPane({ type, id, onClose }: SplitPaneProps) {
         )}
       </div>
 
-      <div className="mx-auto w-full px-16 pt-16 pb-32 max-w-[800px]" style={{ paddingTop: 'calc(4rem + 40px)' /* pt-16 + 40px for the header */ }}>
+      <div className="mx-auto w-full px-16 pt-16 pb-32 max-w-[800px]" style={{ paddingTop: '36px' }}>
         <textarea
           ref={titleRef}
           value={title}
