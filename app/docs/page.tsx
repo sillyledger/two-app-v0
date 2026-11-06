@@ -134,15 +134,7 @@ export default function DocsPage() {
       .catch(() => setLoadingMore(false))
   }
 
-  const handleNewDoc = async () => {
-    const res = await fetch("/api/docs", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ title: "", content: "", color: "" }) })
-    if (res.status === 403) {
-      const data = await res.json()
-      if (data.error === "free_limit_reached") {
-        setLimitModalOpen(true)
-        return
-      }
-    }
+  const handleNewDoc = () => {
     setTemplateModalOpen(true)
   }
 
@@ -447,7 +439,7 @@ export default function DocsPage() {
           )}
       </div>
 
-      <TemplatePickerModal open={templateModalOpen} onClose={() => setTemplateModalOpen(false)} />
+      <TemplatePickerModal open={templateModalOpen} onClose={() => setTemplateModalOpen(false)} onLimitReached={() => setLimitModalOpen(true)} />
 
       {limitModalOpen && (
         <div className="fixed inset-0 flex items-center justify-center z-50" style={{ backgroundColor: "var(--overlay)" }}>

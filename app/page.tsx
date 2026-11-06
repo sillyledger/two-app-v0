@@ -147,15 +147,7 @@ export default function HomePage() {
     return () => document.removeEventListener("mousedown", handleClick)
   }, [openMenuId])
 
-  const handleNewDoc = async () => {
-    const res = await fetch("/api/docs", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ title: "", content: "", color: "" }) })
-    if (res.status === 403) {
-      const data = await res.json()
-      if (data.error === "free_limit_reached") {
-        setLimitModalOpen(true)
-        return
-      }
-    }
+  const handleNewDoc = () => {
     setTemplateModalOpen(true)
   }
 
@@ -674,7 +666,7 @@ export default function HomePage() {
         </div>
       </main>
 
-      <TemplatePickerModal open={templateModalOpen} onClose={() => setTemplateModalOpen(false)} />
+      <TemplatePickerModal open={templateModalOpen} onClose={() => setTemplateModalOpen(false)} onLimitReached={() => setLimitModalOpen(true)} />
 
       {/* Free limit modal */}
       {limitModalOpen && (

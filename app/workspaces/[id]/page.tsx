@@ -176,15 +176,7 @@ export default function WorkspaceHomePage() {
     return () => document.removeEventListener("mousedown", handleClick)
   }, [openMenuId])
 
-  const handleNewDoc = async () => {
-    const res = await fetch("/api/docs", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ title: "", content: "", color: "", workspace_id: workspaceId }) })
-    if (res.status === 403) {
-      const data = await res.json()
-      if (data.error === "free_limit_reached") {
-        setLimitModalOpen(true)
-        return
-      }
-    }
+  const handleNewDoc = () => {
     setTemplateModalOpen(true)
   }
 
@@ -732,7 +724,7 @@ export default function WorkspaceHomePage() {
         </div>
       </main>
 
-      <TemplatePickerModal open={templateModalOpen} onClose={() => setTemplateModalOpen(false)} workspaceId={workspaceId} />
+      <TemplatePickerModal open={templateModalOpen} onClose={() => setTemplateModalOpen(false)} workspaceId={workspaceId} onLimitReached={() => setLimitModalOpen(true)} />
 
       {/* Free limit modal */}
       {limitModalOpen && (

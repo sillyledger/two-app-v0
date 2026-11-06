@@ -9,9 +9,10 @@ interface Props {
   open: boolean
   onClose: () => void
   workspaceId?: string | null
+  onLimitReached?: () => void
 }
 
-export default function TemplatePickerModal({ open, onClose, workspaceId }: Props) {
+export default function TemplatePickerModal({ open, onClose, workspaceId, onLimitReached }: Props) {
   const router = useRouter()
   const [creating, setCreating] = useState<string | null>(null)
 
@@ -32,7 +33,24 @@ export default function TemplatePickerModal({ open, onClose, workspaceId }: Prop
           workspace_id: workspaceId ?? null,
         }),
       })
+      if (res.status === 403) {
+        const data = await res.json().catch(() => null)
+        if (data?.error === "free_limit_reached") {
+          setCreating(null)
+          onClose()
+          onLimitReached?.()
+          return
+        }
+      }
+      if (!res.ok) {
+        setCreating(null)
+        return
+      }
       const doc = await res.json()
+      if (!doc?.uuid) {
+        setCreating(null)
+        return
+      }
       onClose()
       router.push(`/docs/${doc.uuid}`)
     } catch {
