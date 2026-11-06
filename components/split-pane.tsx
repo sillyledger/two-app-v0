@@ -123,7 +123,7 @@ export default function SplitPane({ type, id, onClose }: SplitPaneProps) {
       <div
         className="sticky z-10"
         style={{
-          top: '84px',
+          top: 0,
           height: '40px',
           padding: '0 16px',
           display: 'flex',
@@ -157,7 +157,7 @@ export default function SplitPane({ type, id, onClose }: SplitPaneProps) {
         )}
       </div>
 
-      <div className="mx-auto w-full px-16 pt-16 pb-32 max-w-[800px]" style={{ paddingTop: '36px' }}>
+      <div className="mx-auto w-full px-16 pt-16 pb-32 max-w-[800px]" style={{ paddingTop: '20px' }}>
         <textarea
           ref={titleRef}
           value={title}
