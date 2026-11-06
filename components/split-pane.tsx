@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback, useRef } from 'react'
-import { FileText, StickyNote, X } from 'lucide-react'
+import { X } from 'lucide-react'
 import Editor from '@/components/editor'
 import type { Doc } from '@/lib/db'
 
@@ -119,45 +119,27 @@ export default function SplitPane({ type, id, onClose }: SplitPaneProps) {
 
   return (
     <div className="flex flex-col h-full overflow-y-auto" style={{ backgroundColor: 'var(--bg)', paddingTop: '84px' }}>
-      {/* Pane header: title, save status, close */}
-      <div
-        className="sticky z-10"
-        style={{
-          top: 0,
-          height: '40px',
-          padding: '0 16px',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '8px',
-          backgroundColor: 'var(--bg)',
-          borderBottom: '1px solid var(--border-subtle)',
-          flexShrink: 0,
-        }}
-      >
-        {type === 'doc'
-          ? <FileText size={13} style={{ color: 'var(--text-3)', flexShrink: 0 }} />
-          : <StickyNote size={13} style={{ color: 'var(--text-3)', flexShrink: 0 }} />
-        }
-        <span style={{ flex: 1, minWidth: 0, fontSize: '13px', color: 'var(--text-2)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-          {title || 'Untitled'}
-        </span>
-        <span style={{ fontSize: '11px', color: 'var(--text-muted)', flexShrink: 0 }}>
-          {saveStatus === 'saving' ? 'Saving...' : 'Saved'}
-        </span>
-        {onClose && (
-          <button
-            onClick={onClose}
-            aria-label="Close split view"
-            style={{ background: 'none', border: 'none', color: 'var(--text-3)', cursor: 'pointer', padding: '4px', display: 'flex', flexShrink: 0 }}
-            onMouseEnter={e => (e.currentTarget.style.color = 'var(--text-1)')}
-            onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-3)')}
-          >
-            <X size={14} />
-          </button>
-        )}
+      {/* Floating save status + close (takes no layout space) */}
+      <div className="sticky z-10" style={{ top: 0, height: 0, overflow: 'visible' }}>
+        <div style={{ position: 'absolute', top: 10, right: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+            {saveStatus === 'saving' ? 'Saving...' : 'Saved'}
+          </span>
+          {onClose && (
+            <button
+              onClick={onClose}
+              aria-label="Close split view"
+              style={{ background: 'none', border: 'none', color: 'var(--text-3)', cursor: 'pointer', padding: '4px', display: 'flex' }}
+              onMouseEnter={e => (e.currentTarget.style.color = 'var(--text-1)')}
+              onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-3)')}
+            >
+              <X size={14} />
+            </button>
+          )}
+        </div>
       </div>
 
-      <div className="mx-auto w-full px-16 pt-16 pb-32 max-w-[800px]" style={{ paddingTop: '20px' }}>
+      <div className="mx-auto w-full px-16 pt-16 pb-32 max-w-[800px]" style={{ paddingTop: '60px' }}>
         <textarea
           ref={titleRef}
           value={title}
