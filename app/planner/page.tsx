@@ -83,9 +83,12 @@ export default function PlannerPage() {
   const [docResults, setDocResults] = useState<Doc[]>([])
   const [selectedDoc, setSelectedDoc] = useState<Doc | null>(null)
   const [docDropdownOpen, setDocDropdownOpen] = useState(false)
+  const [docSearching, setDocSearching] = useState(false)
+  const [docSearchDone, setDocSearchDone] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const taskTitleRef = useRef<HTMLInputElement>(null)
   const docInputRef = useRef<HTMLInputElement>(null)
+  const needsDoc = !!taskTitle.trim() && !selectedDoc && !docQuery.trim()
 
   // Row action menu + edit mode
   const [openMenuId, setOpenMenuId] = useState<number | null>(null)
@@ -120,11 +123,16 @@ export default function PlannerPage() {
 
   // Fetch docs for autocomplete
   useEffect(() => {
-    if (!docQuery.trim()) { setDocResults([]); return }
+    if (!docQuery.trim()) { setDocResults([]); setDocSearching(false); setDocSearchDone(false); return }
+    let cancelled = false
+    setDocSearching(true)
+    setDocSearchDone(false)
+    setDocDropdownOpen(true)
     const timeout = setTimeout(() => {
       fetch('/api/docs')
         .then(r => r.json())
         .then(data => {
+          if (cancelled) return
           const all: Doc[] = Array.isArray(data) ? data : []
           const filtered = all.filter(d =>
             (d.title || 'Untitled').toLowerCase().includes(docQuery.toLowerCase())
@@ -133,8 +141,13 @@ export default function PlannerPage() {
           setDocDropdownOpen(true)
         })
         .catch(() => {})
+        .finally(() => {
+          if (cancelled) return
+          setDocSearching(false)
+          setDocSearchDone(true)
+        })
     }, 150)
-    return () => clearTimeout(timeout)
+    return () => { cancelled = true; clearTimeout(timeout) }
   }, [docQuery])
 
   useEffect(() => {
@@ -415,17 +428,36 @@ onMouseLeave={e => (e.currentTarget.style.background = 'var(--planner-btn-bg)')}
 
             {/* Doc autocomplete */}
             <label style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.07em', color: MUTED, display: 'block', marginBottom: 6 }}>Doc</label>
-            <div style={{ position: 'relative', marginBottom: 16 }}>
+            <div style={{ marginBottom: 16 }}>
+            <div style={{ position: 'relative' }}>
               <input
                 ref={docInputRef}
                 type="text"
-                placeholder="Search docs..."
+                placeholder="Search for a doc to link..."
                 value={selectedDoc ? (selectedDoc.title || 'Untitled') : docQuery}
                 onChange={e => { setSelectedDoc(null); setDocQuery(e.target.value) }}
-                onFocus={() => { if (docResults.length > 0) setDocDropdownOpen(true) }}
-                style={{ width: '100%', borderRadius: 9, padding: '9px 12px', fontSize: 13.5, outline: 'none', background: 'var(--input-bg)', border: selectedDoc ? '1px solid #6b5ce7' : '1px solid var(--input-border)', color: 'var(--text-1)', fontFamily: FONT, boxSizing: 'border-box' }}
+                onFocus={() => { if (docQuery.trim()) setDocDropdownOpen(true) }}
+                style={{
+                  width: '100%', borderRadius: 9, padding: '9px 12px', fontSize: 13.5, outline: 'none', background: 'var(--input-bg)',
+                  border: selectedDoc ? '1px solid #6b5ce7' : needsDoc ? '1px solid rgba(107,92,231,0.75)' : '1px solid var(--input-border)',
+                  boxShadow: !selectedDoc && needsDoc ? '0 0 0 3px rgba(107,92,231,0.14)' : 'none',
+                  color: 'var(--text-1)', fontFamily: FONT, boxSizing: 'border-box',
+                }}
               />
-              {docDropdownOpen && docResults.length > 0 && (
+              {docDropdownOpen && !!docQuery.trim() && !selectedDoc && docSearching ? (
+                <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, marginTop: 4, borderRadius: 10, background: 'var(--menu-bg)', border: '1px solid var(--border-subtle)', boxShadow: '0 8px 32px rgba(0,0,0,0.5)', zIndex: 60, overflow: 'hidden' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 12px', fontSize: 13, color: MUTED, fontFamily: FONT }}>
+                    <div className="animate-spin" style={{ width: 11, height: 11, borderRadius: '50%', border: '1.5px solid rgba(255,255,255,0.12)', borderTopColor: 'rgba(255,255,255,0.45)', flexShrink: 0, boxSizing: 'border-box' }} />
+                    Searching...
+                  </div>
+                </div>
+              ) : docDropdownOpen && !!docQuery.trim() && !selectedDoc && docSearchDone && docResults.length === 0 ? (
+                <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, marginTop: 4, borderRadius: 10, background: 'var(--menu-bg)', border: '1px solid var(--border-subtle)', boxShadow: '0 8px 32px rgba(0,0,0,0.5)', zIndex: 60, overflow: 'hidden' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 12px', fontSize: 13, color: MUTED, fontFamily: FONT }}>
+                    {`No docs match "${docQuery.trim()}"`}
+                  </div>
+                </div>
+              ) : docDropdownOpen && docResults.length > 0 && (
                 <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, marginTop: 4, borderRadius: 10, background: 'var(--menu-bg)', border: '1px solid var(--border-subtle)', boxShadow: '0 8px 32px rgba(0,0,0,0.5)', zIndex: 60, overflow: 'hidden' }}>
                   {docResults.map(doc => (
                     <button
@@ -441,6 +473,10 @@ onMouseLeave={e => (e.currentTarget.style.background = 'var(--planner-btn-bg)')}
                   ))}
                 </div>
               )}
+            </div>
+            <div style={{ fontSize: 12, lineHeight: 1.4, marginTop: 7, fontFamily: FONT, color: needsDoc ? 'var(--text-1)' : 'var(--text-3)' }}>
+              Every task is linked to a doc.
+            </div>
             </div>
 
             {/* Due date + Priority row */}
