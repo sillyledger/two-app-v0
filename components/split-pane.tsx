@@ -1,12 +1,14 @@
 'use client'
 
 import { useEffect, useState, useCallback, useRef } from 'react'
+import { FileText, StickyNote, X } from 'lucide-react'
 import Editor from '@/components/editor'
 import type { Doc } from '@/lib/db'
 
 interface SplitPaneProps {
   type: 'doc' | 'note'
   id: string
+  onClose?: () => void
 }
 
 interface NoteCategory {
@@ -26,7 +28,7 @@ interface Note {
   error?: string
 }
 
-export default function SplitPane({ type, id }: SplitPaneProps) {
+export default function SplitPane({ type, id, onClose }: SplitPaneProps) {
   const itemId = id
   const [doc, setDoc] = useState<Doc | null>(null)
   const [note, setNote] = useState<Note | null>(null)
@@ -116,15 +118,45 @@ export default function SplitPane({ type, id }: SplitPaneProps) {
   )
 
   return (
-    <div className="flex flex-col h-full overflow-y-auto" style={{ backgroundColor: 'var(--bg)', paddingTop: '80px' }}>
-      {/* Minimal save indicator */}
-      <div className="sticky top-3 flex justify-end px-4 z-10 pointer-events-none">
-        <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+    <div className="flex flex-col h-full overflow-y-auto" style={{ backgroundColor: 'var(--bg)', paddingTop: 0 }}>
+      {/* Pane header: title, save status, close */}
+      <div
+        className="sticky top-0 z-10"
+        style={{
+          height: '40px',
+          padding: '0 16px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px',
+          backgroundColor: 'var(--bg)',
+          borderBottom: '1px solid var(--border-subtle)',
+          flexShrink: 0,
+        }}
+      >
+        {type === 'doc'
+          ? <FileText size={13} style={{ color: 'var(--text-3)', flexShrink: 0 }} />
+          : <StickyNote size={13} style={{ color: 'var(--text-3)', flexShrink: 0 }} />
+        }
+        <span style={{ flex: 1, minWidth: 0, fontSize: '13px', color: 'var(--text-2)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {title || 'Untitled'}
+        </span>
+        <span style={{ fontSize: '11px', color: 'var(--text-muted)', flexShrink: 0 }}>
           {saveStatus === 'saving' ? 'Saving...' : 'Saved'}
         </span>
+        {onClose && (
+          <button
+            onClick={onClose}
+            aria-label="Close split view"
+            style={{ background: 'none', border: 'none', color: 'var(--text-3)', cursor: 'pointer', padding: '4px', display: 'flex', flexShrink: 0 }}
+            onMouseEnter={e => (e.currentTarget.style.color = 'var(--text-1)')}
+            onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-3)')}
+          >
+            <X size={14} />
+          </button>
+        )}
       </div>
 
-      <div className="mx-auto w-full px-16 pt-16 pb-32 max-w-[800px]">
+      <div className="mx-auto w-full px-16 pt-16 pb-32 max-w-[800px]" style={{ paddingTop: 'calc(4rem + 40px)' /* pt-16 + 40px for the header */ }}>
         <textarea
           ref={titleRef}
           value={title}

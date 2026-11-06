@@ -46,6 +46,13 @@ export default function NotesLayout({ children }: { children: React.ReactNode })
     if (saved === 'true') setCollapsed(true)
   }, [])
 
+  const closeSplit = () => {
+    setSplitActive(false)
+    setSplitTarget(null)
+    setLeftWidth(50)
+    localStorage.removeItem('split-target')
+  }
+
   useEffect(() => {
     const savedTarget = localStorage.getItem('split-target')
     if (savedTarget) {
@@ -82,15 +89,17 @@ export default function NotesLayout({ children }: { children: React.ReactNode })
           .finally(() => setSplitLoading(false))
         setTimeout(() => searchRef.current?.focus(), 80)
       } else {
-        setSplitActive(false)
-        setSplitTarget(null)
-        setLeftWidth(50)
-        localStorage.removeItem('split-target')
+        closeSplit()
       }
     }
     window.addEventListener('toggle-split-view', handler)
     return () => window.removeEventListener('toggle-split-view', handler)
   }, [splitActive])
+
+  // Tell the editor topbar whether the split is really open
+  useEffect(() => {
+    window.dispatchEvent(new CustomEvent('split-view-state', { detail: { active: splitActive && !!splitTarget } }))
+  }, [splitActive, splitTarget, splitPickerOpen])
 
   useEffect(() => {
     if (!splitPickerOpen) return
@@ -145,6 +154,8 @@ export default function NotesLayout({ children }: { children: React.ReactNode })
     document.addEventListener('mouseup', onUp)
   }, [])
 
+  const isEditorRoute = pathname.startsWith('/notes/')
+
   const filteredItems = splitItems.filter(d =>
     (d.title || 'Untitled').toLowerCase().includes(splitQuery.toLowerCase())
   )
@@ -168,7 +179,7 @@ export default function NotesLayout({ children }: { children: React.ReactNode })
         style={{ ['--sidebar-width' as string]: sidebarWidth }}
       >
         {pathname !== '/notes' && <TabBar />}
-        {splitActive && splitTarget ? (
+        {splitActive && splitTarget && isEditorRoute ? (
           <div ref={containerRef} className="flex flex-1 min-h-0">
 
             <div className="min-w-0 overflow-hidden flex flex-col" style={{ width: `${leftWidth}%` }}>
@@ -186,7 +197,7 @@ export default function NotesLayout({ children }: { children: React.ReactNode })
             />
 
             <div className="min-w-0 overflow-hidden flex flex-col" style={{ width: `${100 - leftWidth}%` }}>
-              <SplitPane type={splitTarget.type} id={splitTarget.id} />
+              <SplitPane type={splitTarget.type} id={splitTarget.id} onClose={closeSplit} />
             </div>
 
           </div>

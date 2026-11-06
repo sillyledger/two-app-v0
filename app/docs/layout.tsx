@@ -50,6 +50,13 @@ export default function DocsLayout({ children }: { children: React.ReactNode }) 
     if (saved === 'true') setCollapsed(true)
   }, [])
 
+  const closeSplit = () => {
+    setSplitActive(false)
+    setSplitTarget(null)
+    setLeftWidth(50)
+    localStorage.removeItem('split-target')
+  }
+
   useEffect(() => {
     const savedTarget = localStorage.getItem('split-target')
     if (savedTarget) {
@@ -88,15 +95,17 @@ export default function DocsLayout({ children }: { children: React.ReactNode }) 
         setTimeout(() => searchRef.current?.focus(), 80)
       } else {
         // Closing split
-        setSplitActive(false)
-        setSplitTarget(null)
-        setLeftWidth(50)
-        localStorage.removeItem('split-target')
+        closeSplit()
       }
     }
     window.addEventListener('toggle-split-view', handler)
     return () => window.removeEventListener('toggle-split-view', handler)
   }, [splitActive])
+
+  // Tell the editor topbar whether the split is really open
+  useEffect(() => {
+    window.dispatchEvent(new CustomEvent('split-view-state', { detail: { active: splitActive && !!splitTarget } }))
+  }, [splitActive, splitTarget, splitPickerOpen])
 
   // Close picker on outside click
   useEffect(() => {
@@ -167,6 +176,8 @@ export default function DocsLayout({ children }: { children: React.ReactNode }) 
 
   const sidebarWidth = collapsed ? '56px' : '256px'
 
+  const isEditorRoute = pathname.startsWith('/docs/')
+
   const filteredItems = splitItems.filter(d =>
     (d.title || 'Untitled').toLowerCase().includes(splitQuery.toLowerCase())
   )
@@ -187,7 +198,7 @@ export default function DocsLayout({ children }: { children: React.ReactNode }) 
         {pathname !== '/docs' && <TabBar />}
 
         {/* Main content area — single or split */}
-        {splitActive && splitTarget ? (
+        {splitActive && splitTarget && isEditorRoute ? (
           <div ref={containerRef} className="flex flex-1 min-h-0 overflow-hidden" style={{ paddingTop: '0' }}>
 
             {/* Left pane — current doc */}
@@ -208,7 +219,7 @@ export default function DocsLayout({ children }: { children: React.ReactNode }) 
 
             {/* Right pane — second doc or note rendered directly */}
             <div className="min-w-0 overflow-hidden flex flex-col" style={{ width: `${100 - leftWidth}%` }}>
-              <SplitPane type={splitTarget.type} id={splitTarget.id} />
+              <SplitPane type={splitTarget.type} id={splitTarget.id} onClose={closeSplit} />
             </div>
 
           </div>

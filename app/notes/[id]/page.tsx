@@ -181,6 +181,16 @@ export default function NotePage() {
     } catch {}
   }, [noteId, categories])
 
+  // Keep the Split View button in sync with the layout's real split state
+  useEffect(() => {
+    setSplitViewActive(!!localStorage.getItem('split-target'))
+    const onSplitState = (e: Event) => {
+      setSplitViewActive((e as CustomEvent<{ active: boolean }>).detail.active)
+    }
+    window.addEventListener('split-view-state', onSplitState)
+    return () => window.removeEventListener('split-view-state', onSplitState)
+  }, [])
+
   const handleToggleSplitView = () => {
     setSplitViewActive(v => !v)
     window.dispatchEvent(new Event('toggle-split-view'))
