@@ -63,6 +63,9 @@
 
   /* Docs and editor scoped tokens: dark values match the original hardcoded colors exactly */
   --color-scheme: dark;
+  color-scheme: dark;
+  --scrollbar-thumb: rgba(255,255,255,0.14);
+  --scrollbar-thumb-hover: rgba(255,255,255,0.26);
   --menu-bg-2: #2e2e30;
   --overlay-soft: rgba(0,0,0,0.45);
   --danger-text: oklch(70.4% 0.191 22.216);
@@ -201,6 +204,9 @@ html.light {
   --sb-hint: #8A8E96;
 
   --color-scheme: light;
+  color-scheme: light;
+  --scrollbar-thumb: rgba(0,0,0,0.16);
+  --scrollbar-thumb-hover: rgba(0,0,0,0.3);
   --menu-bg-2: #FFFFFF;
   --overlay-soft: rgba(15,15,25,0.2);
   --danger-text: #C93C3C;
@@ -502,3 +508,13 @@ html.light .ProseMirror div[data-callout="note"] {
   background: rgba(168, 85, 247, 0.07);
   border-color: rgba(168, 85, 247, 0.3);
 }
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) transparent;
+}
+*::-webkit-scrollbar { width: 6px; height: 6px; background: transparent; }
+*::-webkit-scrollbar-track { background: transparent; }
+*::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: 6px; }
+*::-webkit-scrollbar-thumb:hover { background: var(--scrollbar-thumb-hover); }
+*::-webkit-scrollbar-corner { background: transparent; }
