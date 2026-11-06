@@ -191,7 +191,7 @@ function WsFolderRow({
 export default function Sidebar({ onNewNote, onToggle }: SidebarProps = {}) {
   const pathname = usePathname()
   const router = useRouter()
-  const { openTab } = useTabStore()
+  const { openTab, closeAll } = useTabStore()
   const [collapsed, setCollapsed] = useState(() => typeof window !== "undefined" ? localStorage.getItem("sidebar-collapsed") === "true" : false)
   const [myDocsOpen, setMyDocsOpen] = useState(true)
   const [unfiledOpen, setUnfiledOpen] = useState(true)
@@ -522,7 +522,7 @@ export default function Sidebar({ onNewNote, onToggle }: SidebarProps = {}) {
     setWsData(prev => ({ ...prev, [wsId]: { ...prev[wsId], docs: prev[wsId]?.docs ?? [], folders: (prev[wsId]?.folders ?? []).filter(f => f.id !== folderId) } }))
     try { await fetch(`/api/folders/${folderId}`, { method: "DELETE" }) } catch {}
   }
-  const handleLogout = async () => { sessionStorage.clear(); await fetch("/api/auth", { method: "DELETE" }); router.push("/login") }
+  const handleLogout = async () => { closeAll(); sessionStorage.clear(); await fetch("/api/auth", { method: "DELETE" }); router.push("/login") }
   const handleDrop = async (e: React.DragEvent, folderId: string) => {
     e.preventDefault(); e.stopPropagation()
     const docId = e.dataTransfer.getData("docId"); if (!docId) return

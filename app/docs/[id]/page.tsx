@@ -281,12 +281,39 @@ export default function DocPage() {
       setAuthChecked(true)
 
       if (docData?.error) {
-        // Not this user's doc (or a stale session): show it as a visitor would
-        if (docStatus === 404 || docStatus === 401) {
-          router.replace(`/p/${docId}`)
-        } else {
-          router.push('/')
+        if (!authData?.user) {
+          // Not logged in (or a stale session): show it as a visitor would
+          if (docStatus === 404 || docStatus === 401) {
+            router.replace(`/p/${docId}`)
+          } else {
+            router.push('/')
+          }
+          return
         }
+
+        // Logged in: only go to the public page if the doc really is public.
+        // Otherwise drop the stale tab and move to the next one.
+        ;(async () => {
+          try {
+            const publicRes = await fetch(`/api/docs/public/${docId}`)
+            if (publicRes.status === 200) {
+              router.replace(`/p/${docId}`)
+              return
+            }
+          } catch {}
+
+          closeTab(docId)
+          const raw = localStorage.getItem("two-open-tabs")
+          const remaining: { id: string; type?: 'doc' | 'note' }[] = raw ? JSON.parse(raw) : []
+          const newActiveRaw = localStorage.getItem("two-active-tab")
+          const newActive: string | null = newActiveRaw ? JSON.parse(newActiveRaw) : null
+          const target = (newActive ? remaining.find(t => t.id === newActive) : undefined) ?? remaining[remaining.length - 1]
+          if (target) {
+            router.replace(target.type === 'note' ? `/notes/${target.id}` : `/docs/${target.id}`)
+          } else {
+            router.replace('/')
+          }
+        })()
         return
       }
 
