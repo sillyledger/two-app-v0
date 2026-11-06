@@ -820,7 +820,7 @@ function SettingsPageInner() {
                       >
                         Yearly
                         <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full" style={{ backgroundColor: "#16a34a", color: "#ffffff" }}>
-                          −20%
+                          Save $12
                         </span>
                       </button>
                     </div>
